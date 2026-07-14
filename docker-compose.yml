@@ -1,0 +1,23 @@
+services:
+  postgres:
+    image: postgres:18-alpine
+    container_name: finance-postgres
+    environment:
+      POSTGRES_USER: finance
+      POSTGRES_PASSWORD: finance
+      POSTGRES_DB: finance
+    ports:
+      - "5432:5432"
+    volumes:
+      # Postgres 18+: o data dir da imagem oficial fica em /var/lib/postgresql (sem /data)
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U finance -d finance"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # Redis entra aqui no M2 (BullMQ)
+
+volumes:
+  pgdata:

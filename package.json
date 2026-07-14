@@ -1,0 +1,19 @@
+{
+  "name": "finance-guide",
+  "private": true,
+  "packageManager": "bun@1.3.14",
+  "workspaces": ["apps/*", "packages/*"],
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "test": "turbo test",
+    "typecheck": "turbo typecheck",
+    "db:generate": "bun --cwd packages/db run generate",
+    "db:migrate": "bun --cwd packages/db run migrate",
+    "db:seed": "bun --cwd packages/db run seed"
+  },
+  "devDependencies": {
+    "turbo": "^2.5.0",
+    "typescript": "^5.8.0"
+  }
+}
