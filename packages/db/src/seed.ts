@@ -27,7 +27,7 @@ function normalize(description: string): string {
   return description
     .toLowerCase()
     .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
+    .replace(/[\u0300-\u036f]/g, "")
     .trim();
 }
 

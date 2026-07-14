@@ -19,7 +19,10 @@ export function createDirectDispatcher(
 ): QueueDispatcher {
   return {
     async dispatch(name, payload) {
-      void handlers[name](payload).catch((error) => onError(name, error));
+      // Promise.resolve().then(...) captura também erros SÍNCRONOS do handler
+      void Promise.resolve()
+        .then(() => handlers[name](payload))
+        .catch((error) => onError(name, error));
     },
   };
 }

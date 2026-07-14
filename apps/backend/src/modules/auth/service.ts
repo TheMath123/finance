@@ -72,7 +72,9 @@ export async function register(
 
   const passwordHash = await Bun.password.hash(input.password, BCRYPT);
 
-  const { user, workspace } = await deps.db.transaction(async (tx) => {
+  let created: { user: User; workspace: { id: string } };
+  try {
+    created = await deps.db.transaction(async (tx) => {
     const [user] = await tx
       .insert(users)
       .values({
@@ -104,8 +106,14 @@ export async function register(
         isFallback: c.isFallback ?? false,
       })),
     );
-    return { user, workspace };
-  });
+      return { user, workspace };
+    });
+  } catch (error) {
+    // Corrida: dois registros simultâneos do mesmo e-mail — o unique index decide
+    if ((error as { code?: string }).code === "23505") return left("email_taken");
+    throw error;
+  }
+  const { user, workspace } = created;
 
   const verify = generateOpaqueToken();
   await deps.db.insert(authTokens).values({

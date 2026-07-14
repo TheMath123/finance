@@ -60,7 +60,7 @@ export function normalizeDescription(description: string): string {
   return description
     .toLowerCase()
     .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
+    .replace(/[\u0300-\u036f]/g, "")
     .trim();
 }
 
@@ -348,32 +348,39 @@ export async function deleteTransaction(
   return right({ deletedIds });
 }
 
+/** Restaura simetricamente ao delete: parcelada restaura todo o grupo excluído. */
 export async function restoreTransaction(
   deps: TransactionDeps,
   actor: Actor,
   id: string,
-): Promise<Either<TransactionError, Transaction>> {
+): Promise<Either<TransactionError, { restoredIds: string[] }>> {
   const { db } = deps;
   const existing = await loadTransaction(db, actor.workspaceId, id);
   if (!existing || !existing.deletedAt) return left("transaction_not_found");
 
-  const restored = await db.transaction(async (tx) => {
-    const [row] = await tx
-      .update(transactions)
-      .set({ deletedAt: null })
-      .where(eq(transactions.id, existing.id))
-      .returning();
-    if (!row) throw new Error("falha ao restaurar transação");
-    await recordAudit(tx, {
-      workspaceId: actor.workspaceId,
-      userId: actor.userId,
-      action: "restore",
-      entity: "transaction",
-      entityId: row.id,
-    });
-    return row;
+  const restoredIds = await db.transaction(async (tx) => {
+    const group = existing.installmentGroupId
+      ? await tx.query.transactions.findMany({
+          where: eq(transactions.installmentGroupId, existing.installmentGroupId),
+        })
+      : [existing];
+    const deletedTargets = group.filter((t) => t.deletedAt !== null);
+
+    const ids: string[] = [];
+    for (const t of deletedTargets) {
+      await tx.update(transactions).set({ deletedAt: null }).where(eq(transactions.id, t.id));
+      await recordAudit(tx, {
+        workspaceId: actor.workspaceId,
+        userId: actor.userId,
+        action: "restore",
+        entity: "transaction",
+        entityId: t.id,
+      });
+      ids.push(t.id);
+    }
+    return ids;
   });
-  return right(restored);
+  return right({ restoredIds });
 }
 
 export interface ListTransactionsFilters {
