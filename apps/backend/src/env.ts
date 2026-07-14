@@ -1,0 +1,15 @@
+import { z } from "zod";
+
+/** Envs do backend, validadas no boot (regra: toda env nova entra aqui E no .env.example). */
+const envSchema = z.object({
+  PORT: z.coerce.number().int().positive().default(3000),
+  JWT_SECRET: z.string().min(32, "JWT_SECRET precisa ter ao menos 32 caracteres"),
+  APP_URL: z.string().url().default("http://localhost:3000"),
+  TERMS_VERSION: z.string().min(1).default("2026-07-13"),
+});
+
+export type Env = z.infer<typeof envSchema>;
+
+export function loadEnv(): Env {
+  return envSchema.parse(process.env);
+}
