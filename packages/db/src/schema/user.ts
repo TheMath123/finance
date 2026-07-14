@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm";
-import { pgEnum, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { integer, pgEnum, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import { createdAt, id, updatedAt } from "./helpers";
 import { workspaces } from "./workspace";
 import { workspaceMembers } from "./workspace-member";
@@ -18,6 +18,9 @@ export const users = pgTable("users", {
   termsAcceptedAt: timestamp("terms_accepted_at", { withTimezone: true }).notNull(),
   termsVersion: text("terms_version").notNull(),
   platformRole: platformRoleEnum("platform_role").notNull().default("user"),
+  /** Lockout progressivo de login (spec: Rate limiting). */
+  failedLoginAttempts: integer("failed_login_attempts").notNull().default(0),
+  lockedUntil: timestamp("locked_until", { withTimezone: true }),
   /** Nullable apenas pela ordem de criação (user → workspace → update); a aplicação garante preenchimento. */
   defaultWorkspaceId: uuid("default_workspace_id").references(() => workspaces.id),
   createdAt: createdAt(),

@@ -9,6 +9,7 @@ import { PasswordResetEmail } from "./templates/password-reset";
 import { VerifyEmailEmail } from "./templates/verify-email";
 import { PasswordChangedEmail } from "./templates/password-changed";
 import { WorkspaceInviteEmail } from "./templates/workspace-invite";
+import { AccountLockedEmail } from "./templates/account-locked";
 
 async function send(to: string, subject: string, element: ReactElement): Promise<void> {
   const { transporter, env } = getTransport();
@@ -20,6 +21,7 @@ export interface Mailer {
   sendPasswordReset(input: { to: string; name: string; resetUrl: string }): Promise<void>;
   sendEmailVerification(input: { to: string; name: string; verifyUrl: string }): Promise<void>;
   sendPasswordChanged(input: { to: string; name: string }): Promise<void>;
+  sendAccountLocked(input: { to: string; name: string; minutes: number }): Promise<void>;
   sendWorkspaceInvite(input: {
     to: string;
     inviterName: string;
@@ -35,6 +37,8 @@ export const mailer: Mailer = {
     send(to, "Confirme seu e-mail", VerifyEmailEmail({ name, verifyUrl })),
   sendPasswordChanged: ({ to, name }) =>
     send(to, "Sua senha foi alterada", PasswordChangedEmail({ name })),
+  sendAccountLocked: ({ to, name, minutes }) =>
+    send(to, "Atividade suspeita na sua conta", AccountLockedEmail({ name, minutes })),
   sendWorkspaceInvite: ({ to, inviterName, workspaceName, acceptUrl }) =>
     send(
       to,

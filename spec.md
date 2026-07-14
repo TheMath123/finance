@@ -190,10 +190,16 @@ Princípio: os dados são estruturados, então **não usar RAG/embeddings sobre 
     o schema e os services já nascem prontos para plugar os workers.
   - Auth: JWT de acesso (15 min) + refresh token opaco (random 256-bit, hash SHA-256 no banco,
     30 dias, rotação a cada refresh). Senhas com `Bun.password` (bcrypt, cost 12).
-  - **Validação com Zod** em duas frentes: (a) payloads de entrada das rotas/services; (b) **envs
-    validadas no boot** — um schema Zod por app/package lê `process.env`, e a aplicação não sobe
-    com env faltando ou inválida. Regra: toda env nova entra no schema Zod **e** no `.env.example`
-    no mesmo commit.
+  - **Validação com Zod em TODA entrada** (segurança/compliance — fechado em 2026-07-14):
+    (a) **body, query string e path params** de toda rota passam por schema Zod na borda —
+    nenhum valor da request (nem um UUID de rota) chega ao service sem validação, eliminando
+    classes de injeção e IDs malformados; (b) **envs validadas no boot** — um schema Zod por
+    app/package lê `process.env`, e a aplicação não sobe com env faltando ou inválida. Regra:
+    toda env nova entra no schema Zod **e** no `.env.example` no mesmo commit.
+  - **Organização do backend** (fechado em 2026-07-14): cada módulo em pasta própria com
+    `routes/` (**um arquivo por endpoint**) e `services/` (**um arquivo por função de negócio**),
+    mais `schemas.ts` (Zod) e `errors.ts` por módulo; `index.ts` apenas compõe. Nenhum arquivo
+    concentra múltiplas rotas ou services.
   - **E-mail**: **Nodemailer** via SMTP (para não acoplar a SDK de provedor), com **Resend** como
     provedor. Templates escritos com **React Email** (renderizados para HTML no envio). Trocar de
     provedor = trocar credenciais SMTP, sem mudar código.
@@ -258,6 +264,8 @@ password_hash | text (bcrypt)
 email_verified_at | isoDate (nullable)
 terms_accepted_at | isoDate (aceite de termos/privacidade no cadastro, com versão aceita)
 platform_role | Enum (user, superadmin) — default `user`; ver "Papéis de plataforma"
+failed_login_attempts | int — default 0 (lockout progressivo; ver "Rate limiting")
+locked_until | isoDate (nullable — conta travada até este instante)
 default_workspace_id | Workspace_Relation
 created_at | isoDate
 updated_at | isoDate
@@ -576,6 +584,32 @@ Princípio: o vínculo **nasce no app autenticado**, nunca só pela conversa —
 4. Vínculo criado → notificação no app e mensagem de confirmação no WhatsApp. O usuário pode **revogar o vínculo** a qualquer momento nas configurações.
 5. **Grupos**: vincular um grupo a um workspace exige comando vindo de um membro já vinculado com papel `owner`/`admin` naquele workspace.
 6. Mensagens de número não vinculado recebem apenas a instrução de vínculo — nunca dados financeiros.
+
+### Rate limiting e proteção contra abuso (plano fechado em 2026-07-14)
+
+Três camadas complementares:
+
+1. **Por IP** (anti força bruta simples): limites por rota — login 10/min, registro 5/h,
+   forgot/reset 5/h, refresh 30/min. M1 em memória (instância única); M2 migra para Redis
+   (janela deslizante) atrás da mesma interface. O IP de `X-Forwarded-For` só é confiado com
+   `TRUST_PROXY=true` (atrás do proxy do provedor); caso contrário usa o IP do socket —
+   evita spoof da chave de limite.
+2. **Por identidade-alvo** (anti credential stuffing distribuído):
+   - **Login com lockout progressivo persistido no banco** (`failed_login_attempts` +
+     `locked_until` no User): a cada 5 falhas consecutivas, trava por 1 → 5 → 15 → 60 min.
+     Zerado em login com sucesso ou reset de senha. A resposta durante o lockout é o mesmo
+     `invalid_credentials` genérico (sem `Retry-After`) — qualquer diferenciação viraria
+     oráculo de existência de conta.
+   - **Forgot password**: máx. 3/h por e-mail alvo, além do limite por IP (anti flood de
+     e-mail na vítima).
+   - Lockout dispara **e-mail de atividade suspeita** ao dono da conta.
+3. **Por usuário autenticado** (anti abuso/scraping): limite geral nas rotas de domínio
+   (300 req/min por usuário). No M2 somam-se os limites de OTP (3 tentativas/código +
+   cooldown por conta e por telefone) e o orçamento do chatbot já especificados.
+
+Transversal: respostas de limite são **429 + `Retry-After`** (exceto o lockout de login,
+acima); todo evento de limite/lockout gera **log estruturado** sem dados sensíveis —
+é o sinal de ataque em andamento.
 
 ## Operação e requisitos não-funcionais
 

@@ -6,6 +6,7 @@ export interface JobPayloads {
   "email.password-reset": { to: string; name: string; resetUrl: string };
   "email.verify-email": { to: string; name: string; verifyUrl: string };
   "email.password-changed": { to: string; name: string };
+  "email.account-locked": { to: string; name: string; minutes: number };
   "email.workspace-invite": { to: string; inviterName: string; workspaceName: string; acceptUrl: string };
 }
 
