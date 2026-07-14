@@ -1,0 +1,1 @@
+ALTER TABLE "transactions" ADD COLUMN "installment_group_id" uuid;

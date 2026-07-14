@@ -53,6 +53,8 @@ export const transactions = pgTable(
     invoiceId: uuid("invoice_id").references(() => cardInvoices.id),
     installmentNumber: integer("installment_number"),
     installmentTotal: integer("installment_total"),
+    /** Agrupa as N parcelas de uma mesma compra (exclusão em grupo das não pagas). */
+    installmentGroupId: uuid("installment_group_id"),
     recurringId: uuid("recurring_id").references(() => recurringTransactions.id, {
       onDelete: "set null",
     }),
