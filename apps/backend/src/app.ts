@@ -1,4 +1,6 @@
 import { Elysia } from "elysia";
+import { requestId } from "./http/request-id";
+import { errorHandler } from "./http/error-handler";
 import { authRoutes } from "./modules/auth/routes";
 import { workspaceRoutes } from "./modules/workspace/routes";
 import { bankRoutes } from "./modules/bank/routes";
@@ -14,6 +16,8 @@ export type { AppDeps };
 
 export function createApp(deps: AppDeps) {
   return new Elysia()
+    .use(requestId)
+    .use(errorHandler)
     .get("/health", () => ({ status: "ok" }))
     .use(authRoutes(deps))
     .use(workspaceRoutes(deps))
