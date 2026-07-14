@@ -6,6 +6,8 @@ import { accountRoutes } from "./modules/account/routes";
 import { cardRoutes } from "./modules/card/routes";
 import { categoryRoutes } from "./modules/category/routes";
 import { transactionRoutes } from "./modules/transaction/routes";
+import { recurringRoutes } from "./modules/recurring/routes";
+import { summaryRoutes } from "./modules/summary/routes";
 import type { AuthDeps } from "./modules/auth/service";
 
 export type AppDeps = AuthDeps;
@@ -19,5 +21,7 @@ export function createApp(deps: AppDeps) {
     .use(accountRoutes(deps))
     .use(cardRoutes(deps))
     .use(categoryRoutes(deps))
-    .use(transactionRoutes(deps));
+    .use(transactionRoutes(deps))
+    .use(recurringRoutes(deps))
+    .use(summaryRoutes(deps));
 }

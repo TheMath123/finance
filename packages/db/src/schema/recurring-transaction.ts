@@ -45,8 +45,10 @@ export const recurringTransactions = pgTable(
     accountId: uuid("account_id").references(() => bankAccounts.id),
     cardId: uuid("card_id").references(() => cards.id),
     frequency: recurrenceFrequencyEnum("frequency").notNull(),
-    /** Dia do mês (monthly/yearly) ou da semana (weekly) em que ocorre. */
+    /** Dia do mês (monthly/yearly) ou da semana em JS 0-6, domingo=0 (weekly). */
     dayOfReference: integer("day_of_reference").notNull(),
+    /** Apenas yearly: mês (1-12) em que ocorre. */
+    monthOfReference: integer("month_of_reference"),
     active: boolean("active").notNull().default(true),
     createdAt: createdAt(),
     updatedAt: updatedAt(),

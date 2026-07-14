@@ -457,7 +457,8 @@ category_id | Category_Relation
 account_id | BankAccount_Relation (nullable)
 card_id | Card_Relation (nullable)
 frequency | Enum (monthly, weekly, yearly)
-day_of_reference | int (dia do mês/semana em que ocorre)
+day_of_reference | int (dia do mês — monthly/yearly — ou da semana — weekly)
+month_of_reference | int (nullable — apenas yearly: mês 1-12 em que ocorre)
 active | boolean
 created_at | isoDate
 updated_at | isoDate

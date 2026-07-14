@@ -44,6 +44,8 @@ export interface CreateTransactionInput {
   cardId?: string;
   /** Apenas method=credit; 1 = à vista. */
   installments?: number;
+  /** Preenchido quando a transação materializa uma recorrência confirmada. */
+  recurringId?: string;
 }
 
 export interface UpdateTransactionInput {
@@ -97,6 +99,7 @@ export async function createTransaction(
     method: input.method,
     date: input.date,
     categoryId: input.categoryId,
+    recurringId: input.recurringId ?? null,
     source: "app" as const,
   };
 
