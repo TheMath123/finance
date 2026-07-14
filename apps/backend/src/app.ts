@@ -8,9 +8,9 @@ import { categoryRoutes } from "./modules/category/routes";
 import { transactionRoutes } from "./modules/transaction/routes";
 import { recurringRoutes } from "./modules/recurring/routes";
 import { summaryRoutes } from "./modules/summary/routes";
-import type { AuthDeps } from "./modules/auth/service";
+import type { AppDeps } from "./lib/deps";
 
-export type AppDeps = AuthDeps;
+export type { AppDeps };
 
 export function createApp(deps: AppDeps) {
   return new Elysia()

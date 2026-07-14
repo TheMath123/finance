@@ -12,6 +12,7 @@ const dispatcher = createDirectDispatcher({
   "email.password-reset": (p) => mailer.sendPasswordReset(p),
   "email.verify-email": (p) => mailer.sendEmailVerification(p),
   "email.password-changed": (p) => mailer.sendPasswordChanged(p),
+  "email.account-locked": (p) => mailer.sendAccountLocked(p),
   "email.workspace-invite": (p) => mailer.sendWorkspaceInvite(p),
 });
 
@@ -21,6 +22,7 @@ const app = createApp({
   jwtSecret: env.JWT_SECRET,
   appUrl: env.APP_URL,
   termsVersion: env.TERMS_VERSION,
+  trustProxy: env.TRUST_PROXY,
 }).listen(env.PORT);
 
 console.log(`🦊 backend rodando em http://localhost:${app.server?.port}`);

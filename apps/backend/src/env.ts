@@ -6,6 +6,11 @@ const envSchema = z.object({
   JWT_SECRET: z.string().min(32, "JWT_SECRET precisa ter ao menos 32 caracteres"),
   APP_URL: z.string().url().default("http://localhost:3000"),
   TERMS_VERSION: z.string().min(1).default("2026-07-13"),
+  /** true apenas atrás do proxy do provedor (X-Forwarded-For confiável). */
+  TRUST_PROXY: z
+    .enum(["true", "false"])
+    .default("false")
+    .transform((v) => v === "true"),
 });
 
 export type Env = z.infer<typeof envSchema>;

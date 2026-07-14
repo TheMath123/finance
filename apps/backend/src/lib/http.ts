@@ -4,6 +4,8 @@ import type { WorkspaceRole } from "@finance/shared";
 import { left, right, type Either } from "@finance/shared";
 import { verifyAccessToken } from "./tokens";
 import { getMembership, roleAtLeast } from "./authz";
+import { isRateLimited } from "./rate-limit";
+import { securityLog } from "./log";
 
 export interface HttpError {
   status: number;
@@ -21,10 +23,8 @@ export function fail(set: StatusSetter, error: HttpError) {
   return { error: { code: error.code, message: error.message, issues: error.issues } };
 }
 
-export function parse<T>(
-  schema: ZodType<T>,
-  body: unknown,
-): Either<HttpError, T> {
+/** Valida body/query com Zod (400 com issues). */
+export function parse<T>(schema: ZodType<T>, body: unknown): Either<HttpError, T> {
   const result = schema.safeParse(body);
   if (result.success) return right(result.data);
   return left({
@@ -35,15 +35,30 @@ export function parse<T>(
   });
 }
 
+/**
+ * Valida path params com Zod (spec: toda entrada HTTP validada na borda).
+ * Param malformado responde 404 genérico — um UUID inválido não identifica recurso algum,
+ * e o 404 não diferencia "malformado" de "inexistente" (não vira oráculo).
+ */
+export function parseParams<T>(schema: ZodType<T>, params: unknown): Either<HttpError, T> {
+  const result = schema.safeParse(params);
+  if (result.success) return right(result.data);
+  return left({ status: 404, code: "not_found", message: "Recurso não encontrado." });
+}
+
 export interface Actor {
   userId: string;
   workspaceId: string;
   role: WorkspaceRole;
 }
 
+/** Limite geral por usuário autenticado (camada 3 do plano de rate limiting). */
+const USER_RATE_MAX = 300;
+const USER_RATE_WINDOW_MS = 60_000;
+
 /**
- * Autentica o Bearer token e valida membership + papel mínimo no workspace.
- * Chamado no início de cada handler de rota de domínio (spec: autorização por workspace).
+ * Autentica o Bearer token, aplica o limite por usuário e valida membership + papel
+ * mínimo no workspace (spec: autorização por workspace).
  */
 export async function requireRole(
   deps: { db: Db; jwtSecret: string },
@@ -57,6 +72,16 @@ export async function requireRole(
   if (!payload) {
     return left({ status: 401, code: "unauthorized", message: "Autenticação necessária." });
   }
+
+  if (isRateLimited(`user:${payload.userId}`, USER_RATE_MAX, USER_RATE_WINDOW_MS)) {
+    securityLog("rate_limited", { scopeKey: "user", userId: payload.userId });
+    return left({
+      status: 429,
+      code: "rate_limited",
+      message: "Muitas requisições. Aguarde um instante.",
+    });
+  }
+
   const role = await getMembership(deps.db, workspaceId, payload.userId);
   if (!role) {
     // 404 (não 403) para não revelar a existência do workspace a não-membros

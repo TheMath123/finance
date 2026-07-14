@@ -14,12 +14,12 @@ import {
   register,
   resetPassword,
   verifyEmail,
-  type AuthDeps,
-} from "./service";
+} from "./services";
+import type { AppDeps } from "../../lib/deps";
 
 type DispatchedJob = { name: JobName; payload: JobPayloads[JobName] };
 
-function makeDeps(db: Db, jobs: DispatchedJob[]): AuthDeps {
+function makeDeps(db: Db, jobs: DispatchedJob[]): AppDeps {
   return {
     db,
     dispatch: async (name, payload) => {
@@ -28,6 +28,7 @@ function makeDeps(db: Db, jobs: DispatchedJob[]): AuthDeps {
     jwtSecret: "segredo-de-teste-com-mais-de-32-caracteres!!",
     appUrl: "http://localhost:3000",
     termsVersion: "test",
+    trustProxy: false,
   };
 }
 
@@ -198,5 +199,42 @@ describe("auth: verificação de e-mail e reset de senha", () => {
     const deps = makeDeps(db, []);
     const result = await resetPassword(deps, { token: "token-inexistente", password: "12345678" });
     expect(result.ok).toBe(false);
+  });
+});
+
+describe("auth: lockout progressivo", () => {
+  test("5 falhas travam a conta (mesmo com a senha certa), e-mail de aviso é disparado e o reset destrava", async () => {
+    const jobs: DispatchedJob[] = [];
+    const deps = makeDeps(db, jobs);
+    const email = uniqueEmail();
+    await register(deps, { name: "L", email, password: "senha-certa-123", termsAccepted: true });
+
+    for (let i = 0; i < 5; i++) {
+      const attempt = await login(deps, { email, password: "senha-errada-000" });
+      expect(attempt.ok).toBe(false);
+    }
+    // e-mail de atividade suspeita disparado no lockout
+    expect(jobs.some((j) => j.name === "email.account-locked")).toBe(true);
+
+    // conta travada: senha CERTA também falha, com o mesmo erro genérico
+    const locked = await login(deps, { email, password: "senha-certa-123" });
+    expect(locked.ok).toBe(false);
+    if (!locked.ok) expect(locked.error).toBe("invalid_credentials");
+
+    // reset de senha zera o lockout: verifica e-mail, pede reset e redefine
+    const verifyJob = jobs.find((j) => j.name === "email.verify-email");
+    if (!verifyJob) throw new Error("job de verificação não disparado");
+    const verifyToken = extractToken((verifyJob.payload as { verifyUrl: string }).verifyUrl);
+    expect((await verifyEmail(deps, { token: verifyToken })).ok).toBe(true);
+    await forgotPassword(deps, { email });
+    const resetJob = jobs.find((j) => j.name === "email.password-reset");
+    if (!resetJob) throw new Error("job de reset não disparado");
+    const resetToken = extractToken((resetJob.payload as { resetUrl: string }).resetUrl);
+    expect((await resetPassword(deps, { token: resetToken, password: "senha-nova-456" })).ok).toBe(
+      true,
+    );
+
+    // destravada: login com a nova senha funciona imediatamente
+    expect((await login(deps, { email, password: "senha-nova-456" })).ok).toBe(true);
   });
 });
