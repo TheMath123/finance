@@ -196,10 +196,22 @@ Princípio: os dados são estruturados, então **não usar RAG/embeddings sobre 
     classes de injeção e IDs malformados; (b) **envs validadas no boot** — um schema Zod por
     app/package lê `process.env`, e a aplicação não sobe com env faltando ou inválida. Regra:
     toda env nova entra no schema Zod **e** no `.env.example` no mesmo commit.
-  - **Organização do backend** (fechado em 2026-07-14): cada módulo em pasta própria com
-    `routes/` (**um arquivo por endpoint**) e `services/` (**um arquivo por função de negócio**),
-    mais `schemas.ts` (Zod) e `errors.ts` por módulo; `index.ts` apenas compõe. Nenhum arquivo
-    concentra múltiplas rotas ou services.
+  - **Organização do backend — Clean Architecture completa** (decisão de 2026-07-14, substitui a
+    "inspiração em clean arch"): camadas `domain/` (entidades + regras puras — competência de
+    fatura, parcelamento, lockout, ocorrências de recorrência — sem dependência de infra),
+    `application/` (**um use case por arquivo** em `use-cases/<módulo>/`, mais `ports/` com as
+    interfaces de repositórios/serviços que os use cases enxergam), `infra/` (implementações:
+    um repositório Drizzle por entidade, Unit of Work transacional sobre `db.transaction`, hasher
+    bcrypt, token service JWT/opaco, rate limiter em memória, logger) e `http/` (**uma rota por
+    arquivo** em `modules/<módulo>/routes/`, compondo os helpers `validateBody/validateParams`
+    (Zod), `requireAuthenticated/requireWorkspaceRole` (guards) e `respond/fail` (envelope de
+    erro), com `schemas.ts` e `errors.ts` por módulo). Composition root em `main/composition.ts`
+    liga as implementações de infra aos ports; `main/app.ts` monta as rotas; `main/index.ts` é o
+    entrypoint. Use cases dependem só de ports — nunca de Drizzle/Elysia diretamente.
+  - **Tratamento de erros** (fechado em 2026-07-14): envelope único `{ error: { code, message,
+    details? } }` em toda a API; `x-request-id` em toda resposta e em todo log; erros esperados
+    são `Either` tipado mapeado por módulo; exceção inesperada cai no `onError` global — log
+    estruturado com request-id e resposta 500 sanitizada (nunca vaza stack/internals).
   - **E-mail**: **Nodemailer** via SMTP (para não acoplar a SDK de provedor), com **Resend** como
     provedor. Templates escritos com **React Email** (renderizados para HTML no envio). Trocar de
     provedor = trocar credenciais SMTP, sem mudar código.
