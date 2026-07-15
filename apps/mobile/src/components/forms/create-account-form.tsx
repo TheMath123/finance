@@ -10,7 +10,7 @@ import { TextField } from '@/components/form/text-field';
 import { ThemedText } from '@/components/themed-text';
 import { Button } from '@/components/ui/button';
 import { useSession } from '@/context/session';
-import { accountsApi } from '@/lib/accounts-api';
+import { accountsApi, type Account } from '@/lib/accounts-api';
 import { ApiError } from '@/lib/api-client';
 import type { Bank } from '@/lib/banks-api';
 import { accountSchema, type AccountInput } from '@/lib/schemas/finance';
@@ -22,16 +22,30 @@ const TYPE_LABELS: Record<(typeof ACCOUNT_TYPES)[number], string> = {
 };
 const TYPE_OPTIONS = ACCOUNT_TYPES.map((type) => ({ label: TYPE_LABELS[type], value: type }));
 
-export function CreateAccountForm({ banks, onDone }: { banks: Bank[]; onDone: () => void }) {
+export function CreateAccountForm({
+  account,
+  banks,
+  onDone,
+}: {
+  account?: Account;
+  banks: Bank[];
+  onDone: () => void;
+}) {
   const { workspaceId } = useSession();
   const queryClient = useQueryClient();
   const { control, handleSubmit } = useForm<AccountInput>({
     resolver: zodResolver(accountSchema),
-    defaultValues: { name: '', bankId: '', type: 'checking', initialBalance: 0 },
+    defaultValues: {
+      name: account?.name ?? '',
+      bankId: account?.bankId ?? '',
+      type: account?.type ?? 'checking',
+      initialBalance: account?.initialBalance ?? 0,
+    },
   });
 
   const mutation = useMutation({
-    mutationFn: (input: AccountInput) => accountsApi.create(workspaceId!, input),
+    mutationFn: (input: AccountInput) =>
+      account ? accountsApi.update(workspaceId!, account.id, input) : accountsApi.create(workspaceId!, input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['accounts', workspaceId] });
       queryClient.invalidateQueries({ queryKey: ['summary', workspaceId] });
@@ -59,7 +73,7 @@ export function CreateAccountForm({ banks, onDone }: { banks: Bank[]; onDone: ()
         </ThemedText>
       )}
       <Button loading={mutation.isPending} onPress={handleSubmit((input) => mutation.mutate(input))}>
-        Adicionar conta
+        {account ? 'Salvar alterações' : 'Adicionar conta'}
       </Button>
     </View>
   );

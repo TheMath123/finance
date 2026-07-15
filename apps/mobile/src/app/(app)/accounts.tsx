@@ -12,6 +12,7 @@ import { ApiError } from '@/lib/api-client';
 import { banksApi } from '@/lib/banks-api';
 import { categoriesApi, type Category } from '@/lib/categories-api';
 import { cardsApi } from '@/lib/cards-api';
+import { cn } from '@/lib/cn';
 import { formatCents } from '@/lib/money';
 
 function SectionHeader({ title, onAdd }: { title: string; onAdd: () => void }) {
@@ -81,12 +82,19 @@ export default function AccountsScreen() {
           <ActivityIndicator />
         ) : banks && banks.length > 0 ? (
           banks.map((bank) => (
-            <Card key={bank.id} className="flex-row items-center gap-3">
-              <View className="h-9 w-9 items-center justify-center rounded-full bg-primary/10">
-                <BankIcon size={18} color="#2563EB" />
-              </View>
-              <ThemedText type="smallBold">{bank.name}</ThemedText>
-            </Card>
+            <Pressable key={bank.id} onPress={() => router.push(`/banks/${bank.id}`)}>
+              <Card className={cn('flex-row items-center gap-3', bank.archivedAt && 'opacity-50')}>
+                <View className="h-9 w-9 items-center justify-center rounded-full bg-primary/10">
+                  <BankIcon size={18} color="#2563EB" />
+                </View>
+                <ThemedText type="smallBold">{bank.name}</ThemedText>
+                {bank.archivedAt && (
+                  <ThemedText type="small" themeColor="textSecondary">
+                    Arquivado
+                  </ThemedText>
+                )}
+              </Card>
+            </Pressable>
           ))
         ) : (
           <Card className="items-center py-6">
@@ -103,15 +111,25 @@ export default function AccountsScreen() {
           <ActivityIndicator />
         ) : accounts && accounts.length > 0 ? (
           accounts.map((account) => (
-            <Card key={account.id} className="flex-row items-center justify-between">
-              <View>
-                <ThemedText type="smallBold">{account.name}</ThemedText>
-                <ThemedText type="small" themeColor="textSecondary">
-                  {bankName(account.bankId)}
-                </ThemedText>
-              </View>
-              <ThemedText type="smallBold">{formatCents(account.balance)}</ThemedText>
-            </Card>
+            <Pressable key={account.id} onPress={() => router.push(`/accounts/${account.id}`)}>
+              <Card
+                className={cn('flex-row items-center justify-between', account.archivedAt && 'opacity-50')}>
+                <View>
+                  <View className="flex-row items-center gap-2">
+                    <ThemedText type="smallBold">{account.name}</ThemedText>
+                    {account.archivedAt && (
+                      <ThemedText type="small" themeColor="textSecondary">
+                        Arquivado
+                      </ThemedText>
+                    )}
+                  </View>
+                  <ThemedText type="small" themeColor="textSecondary">
+                    {bankName(account.bankId)}
+                  </ThemedText>
+                </View>
+                <ThemedText type="smallBold">{formatCents(account.balance)}</ThemedText>
+              </Card>
+            </Pressable>
           ))
         ) : (
           <Card className="items-center py-6">
@@ -129,13 +147,24 @@ export default function AccountsScreen() {
         ) : cards && cards.length > 0 ? (
           cards.map((cardItem) => (
             <Pressable key={cardItem.id} onPress={() => router.push(`/cards/${cardItem.id}`)}>
-              <Card className="flex-row items-center justify-between">
+              <Card
+                className={cn(
+                  'flex-row items-center justify-between',
+                  cardItem.archivedAt && 'opacity-50',
+                )}>
                 <View className="flex-row items-center gap-3">
                   <View className="h-9 w-9 items-center justify-center rounded-full bg-primary/10">
                     <CreditCardIcon size={18} color="#2563EB" />
                   </View>
                   <View>
-                    <ThemedText type="smallBold">{cardItem.name}</ThemedText>
+                    <View className="flex-row items-center gap-2">
+                      <ThemedText type="smallBold">{cardItem.name}</ThemedText>
+                      {cardItem.archivedAt && (
+                        <ThemedText type="small" themeColor="textSecondary">
+                          Arquivado
+                        </ThemedText>
+                      )}
+                    </View>
                     <ThemedText type="small" themeColor="textSecondary">
                       {bankName(cardItem.bankId)}
                     </ThemedText>

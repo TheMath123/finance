@@ -55,6 +55,18 @@ export const cardsApi = {
   create: (workspaceId: string, input: CreateCardInput) =>
     apiRequest<Card>(`/workspaces/${workspaceId}/cards`, { method: "POST", body: input }),
 
+  update: (workspaceId: string, cardId: string, input: Partial<CreateCardInput>) =>
+    apiRequest<Card>(`/workspaces/${workspaceId}/cards/${cardId}`, { method: "PATCH", body: input }),
+
+  archive: (workspaceId: string, cardId: string) =>
+    apiRequest<Card>(`/workspaces/${workspaceId}/cards/${cardId}/archive`, { method: "POST" }),
+
+  unarchive: (workspaceId: string, cardId: string) =>
+    apiRequest<Card>(`/workspaces/${workspaceId}/cards/${cardId}/unarchive`, { method: "POST" }),
+
+  delete: (workspaceId: string, cardId: string) =>
+    apiRequest<void>(`/workspaces/${workspaceId}/cards/${cardId}`, { method: "DELETE" }),
+
   listInvoices: (workspaceId: string, cardId: string) =>
     apiRequest<Invoice[]>(`/workspaces/${workspaceId}/cards/${cardId}/invoices`),
 

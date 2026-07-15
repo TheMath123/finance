@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { useSession } from '@/context/session';
 import { ApiError } from '@/lib/api-client';
 import type { Bank } from '@/lib/banks-api';
-import { cardsApi } from '@/lib/cards-api';
+import { cardsApi, type Card } from '@/lib/cards-api';
 import { cardSchema, type CardInput } from '@/lib/schemas/finance';
 
 const DAY_OPTIONS = Array.from({ length: 28 }, (_, index) => {
@@ -19,23 +19,41 @@ const DAY_OPTIONS = Array.from({ length: 28 }, (_, index) => {
   return { label: day, value: day };
 });
 
-export function CreateCardForm({ banks, onDone }: { banks: Bank[]; onDone: () => void }) {
+export function CreateCardForm({
+  card,
+  banks,
+  onDone,
+}: {
+  card?: Card;
+  banks: Bank[];
+  onDone: () => void;
+}) {
   const { workspaceId } = useSession();
   const queryClient = useQueryClient();
   const { control, handleSubmit } = useForm<CardInput>({
     resolver: zodResolver(cardSchema),
-    defaultValues: { name: '', bankId: '', limit: 0, closingDay: '', dueDay: '' },
+    defaultValues: {
+      name: card?.name ?? '',
+      bankId: card?.bankId ?? '',
+      limit: card?.limit ?? 0,
+      closingDay: card ? String(card.closingDay) : '',
+      dueDay: card ? String(card.dueDay) : '',
+    },
   });
 
   const mutation = useMutation({
-    mutationFn: (input: CardInput) =>
-      cardsApi.create(workspaceId!, {
+    mutationFn: (input: CardInput) => {
+      const payload = {
         name: input.name,
         bankId: input.bankId,
         limit: input.limit,
         closingDay: Number(input.closingDay),
         dueDay: Number(input.dueDay),
-      }),
+      };
+      return card
+        ? cardsApi.update(workspaceId!, card.id, payload)
+        : cardsApi.create(workspaceId!, payload);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cards', workspaceId] });
       onDone();
@@ -75,7 +93,7 @@ export function CreateCardForm({ banks, onDone }: { banks: Bank[]; onDone: () =>
         </ThemedText>
       )}
       <Button loading={mutation.isPending} onPress={handleSubmit((input) => mutation.mutate(input))}>
-        Adicionar cartão
+        {card ? 'Salvar alterações' : 'Adicionar cartão'}
       </Button>
     </View>
   );

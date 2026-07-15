@@ -239,7 +239,10 @@ Princípio: os dados são estruturados, então **não usar RAG/embeddings sobre 
     decimais, sem stepper +/-, alinhado à esquerda), valor do form já em **centavos** (integer), sem
     conversão reais↔centavos no submit. Campo de data é o **`DateField`** (próprio, usando o
     `DatePicker` da registry por baixo) em vez de texto livre "AAAA-MM-DD". Categorias do seed
-    (`isDefault`) não podem ser editadas/excluídas pelo usuário — só as criadas depois.
+    (`isDefault`) não podem ser editadas/excluídas pelo usuário — só as criadas depois. Banco, conta,
+    cartão e recorrência têm edição, arquivar/desarquivar (banco/conta/cartão) e exclusão completas
+    no app — mesmos formulários da criação, reaproveitados com o registro existente preenchendo os
+    campos.
   - **Estilo: Tailwind CSS** via **NativeWind** (classes utilitárias no React Native; o widget,
     por rodar fora da árvore do NativeWind, usa estilos inline do `react-native-android-widget`).
     Classes condicionais usam **`cn()`** (`clsx` + `tailwind-merge`, `src/lib/cn.ts`) em vez de

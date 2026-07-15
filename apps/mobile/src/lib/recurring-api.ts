@@ -41,6 +41,9 @@ export interface CreateRecurringInput {
   active?: boolean;
 }
 
+/** PATCH parcial — a API aceita partial de CreateRecurringInput, e ainda o toggle `active`. */
+export type UpdateRecurringInput = Partial<CreateRecurringInput>;
+
 export interface PendingOccurrence {
   recurringId: string;
   /** YYYY-MM-DD. */
@@ -74,5 +77,16 @@ export const recurringApi = {
     apiRequest(`/workspaces/${workspaceId}/recurring/${recurringId}/confirm`, {
       method: "POST",
       body: { date },
+    }),
+
+  update: (workspaceId: string, recurringId: string, input: UpdateRecurringInput) =>
+    apiRequest<RecurringTransaction>(`/workspaces/${workspaceId}/recurring/${recurringId}`, {
+      method: "PATCH",
+      body: input,
+    }),
+
+  delete: (workspaceId: string, recurringId: string) =>
+    apiRequest<void>(`/workspaces/${workspaceId}/recurring/${recurringId}`, {
+      method: "DELETE",
     }),
 };

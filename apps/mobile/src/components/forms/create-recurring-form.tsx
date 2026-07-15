@@ -5,6 +5,7 @@ import { useEffect } from 'react';
 import { useController, useForm, useWatch } from 'react-hook-form';
 import { View } from 'react-native';
 
+import { CheckboxField } from '@/components/form/checkbox-field';
 import { MoneyField } from '@/components/form/money-field';
 import { SelectField } from '@/components/form/select-field';
 import { TextField } from '@/components/form/text-field';
@@ -17,7 +18,7 @@ import { accountsApi } from '@/lib/accounts-api';
 import { ApiError } from '@/lib/api-client';
 import { cardsApi } from '@/lib/cards-api';
 import { categoriesApi } from '@/lib/categories-api';
-import { recurringApi } from '@/lib/recurring-api';
+import { recurringApi, type RecurringTransaction } from '@/lib/recurring-api';
 import { recurringSchema, type RecurringInput } from '@/lib/schemas/finance';
 
 const TYPE_LABELS: Record<(typeof TRANSACTION_TYPES)[number], string> = {
@@ -118,9 +119,20 @@ function MonthOfReferenceField({ control }: { control: ReturnType<typeof useForm
   );
 }
 
-export function CreateRecurringForm({ onDone }: { onDone: () => void }) {
+/**
+ * Formulário de criação e edição de recorrência. Passe `recurring` pra editar
+ * uma regra existente (preenche defaultValues e usa PATCH); sem ele, cria uma nova.
+ */
+export function CreateRecurringForm({
+  recurring,
+  onDone,
+}: {
+  recurring?: RecurringTransaction;
+  onDone: () => void;
+}) {
   const { workspaceId } = useSession();
   const queryClient = useQueryClient();
+  const isEditing = Boolean(recurring);
 
   const { data: categories } = useQuery({
     queryKey: ['categories', workspaceId],
@@ -141,17 +153,17 @@ export function CreateRecurringForm({ onDone }: { onDone: () => void }) {
   const { control, handleSubmit, setValue } = useForm<RecurringInput>({
     resolver: zodResolver(recurringSchema),
     defaultValues: {
-      description: '',
-      amount: 0,
-      type: 'expense',
-      method: 'pix',
-      categoryId: '',
-      accountId: undefined,
-      cardId: undefined,
-      frequency: 'monthly',
-      dayOfReference: 1,
-      monthOfReference: undefined,
-      active: true,
+      description: recurring?.description ?? '',
+      amount: recurring?.amount ?? 0,
+      type: recurring?.type ?? 'expense',
+      method: recurring?.method ?? 'pix',
+      categoryId: recurring?.categoryId ?? '',
+      accountId: recurring?.accountId ?? undefined,
+      cardId: recurring?.cardId ?? undefined,
+      frequency: recurring?.frequency ?? 'monthly',
+      dayOfReference: recurring?.dayOfReference ?? 1,
+      monthOfReference: recurring?.monthOfReference ?? undefined,
+      active: recurring?.active ?? true,
     },
   });
 
@@ -166,7 +178,10 @@ export function CreateRecurringForm({ onDone }: { onDone: () => void }) {
   }, [isCredit, setValue]);
 
   const mutation = useMutation({
-    mutationFn: (input: RecurringInput) => recurringApi.create(workspaceId!, input),
+    mutationFn: (input: RecurringInput) =>
+      isEditing
+        ? recurringApi.update(workspaceId!, recurring!.id, input)
+        : recurringApi.create(workspaceId!, input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['recurring', workspaceId] });
       queryClient.invalidateQueries({ queryKey: ['recurring-pending', workspaceId] });
@@ -211,13 +226,14 @@ export function CreateRecurringForm({ onDone }: { onDone: () => void }) {
       <SelectField control={control} name="frequency" label="Frequência" options={FREQUENCY_OPTIONS} />
       <DayOfReferenceField control={control} frequency={frequency} />
       {frequency === 'yearly' && <MonthOfReferenceField control={control} />}
+      {isEditing && <CheckboxField control={control} name="active" label="Recorrência ativa" />}
       {mutation.isError && (
         <ThemedText type="small" style={{ color: '#DC2626' }}>
           {mutation.error instanceof ApiError ? mutation.error.message : 'Erro inesperado'}
         </ThemedText>
       )}
       <Button loading={mutation.isPending} onPress={handleSubmit((input) => mutation.mutate(input))}>
-        Salvar recorrência
+        {isEditing ? 'Salvar alterações' : 'Salvar recorrência'}
       </Button>
     </View>
   );

@@ -10,21 +10,22 @@ import { ThemedText } from '@/components/themed-text';
 import { Button } from '@/components/ui/button';
 import { useSession } from '@/context/session';
 import { ApiError } from '@/lib/api-client';
-import { banksApi } from '@/lib/banks-api';
+import { banksApi, type Bank } from '@/lib/banks-api';
 import { bankSchema, type BankInput } from '@/lib/schemas/finance';
 
 const BANK_OPTIONS = BANK_CATALOG.map((bank) => ({ label: bank.name, value: bank.code }));
 
-export function CreateBankForm({ onDone }: { onDone: () => void }) {
+export function CreateBankForm({ bank, onDone }: { bank?: Bank; onDone: () => void }) {
   const { workspaceId } = useSession();
   const queryClient = useQueryClient();
   const { control, handleSubmit } = useForm<BankInput>({
     resolver: zodResolver(bankSchema),
-    defaultValues: { name: '', bankCode: '' },
+    defaultValues: { name: bank?.name ?? '', bankCode: bank?.bankCode ?? '' },
   });
 
   const mutation = useMutation({
-    mutationFn: (input: BankInput) => banksApi.create(workspaceId!, input),
+    mutationFn: (input: BankInput) =>
+      bank ? banksApi.update(workspaceId!, bank.id, input) : banksApi.create(workspaceId!, input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['banks', workspaceId] });
       onDone();
@@ -47,7 +48,7 @@ export function CreateBankForm({ onDone }: { onDone: () => void }) {
         </ThemedText>
       )}
       <Button loading={mutation.isPending} onPress={handleSubmit((input) => mutation.mutate(input))}>
-        Adicionar banco
+        {bank ? 'Salvar alterações' : 'Adicionar banco'}
       </Button>
     </View>
   );

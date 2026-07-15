@@ -1,5 +1,12 @@
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
-import { ArrowsClockwiseIcon, MagnifyingGlassIcon, PlusIcon, ReceiptIcon, TrashIcon } from 'phosphor-react-native';
+import {
+  ArrowsClockwiseIcon,
+  MagnifyingGlassIcon,
+  PencilIcon,
+  PlusIcon,
+  ReceiptIcon,
+  TrashIcon,
+} from 'phosphor-react-native';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Pressable, View } from 'react-native';
 
@@ -101,13 +108,38 @@ function PendingOccurrenceRow({ occurrence, workspaceId }: { occurrence: Pending
 
 function RecurringManagerDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const { workspaceId } = useSession();
+  const queryClient = useQueryClient();
   const [createOpen, setCreateOpen] = useState(false);
+  const [editingRecurring, setEditingRecurring] = useState<RecurringTransaction | null>(null);
 
   const { data: recurring, isLoading } = useQuery({
     queryKey: ['recurring', workspaceId],
     queryFn: () => recurringApi.list(workspaceId!),
     enabled: Boolean(workspaceId) && open,
   });
+
+  const deleteMutation = useMutation({
+    mutationFn: (recurringId: string) => recurringApi.delete(workspaceId!, recurringId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['recurring', workspaceId] });
+      queryClient.invalidateQueries({ queryKey: ['recurring-pending', workspaceId] });
+    },
+  });
+
+  const handleDelete = (item: RecurringTransaction) => {
+    Alert.alert(
+      'Excluir recorrência',
+      `Excluir "${item.description}"? As transações já confirmadas não são afetadas.`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Excluir',
+          style: 'destructive',
+          onPress: () => deleteMutation.mutate(item.id),
+        },
+      ],
+    );
+  };
 
   return (
     <>
@@ -138,10 +170,18 @@ function RecurringManagerDialog({ open, onOpenChange }: { open: boolean; onOpenC
                         {!item.active ? ' · Inativa' : ''}
                       </ThemedText>
                     </View>
-                    <ThemedText type="smallBold" style={{ color: item.type === 'expense' ? '#DC2626' : '#16A34A' }}>
-                      {item.type === 'expense' ? '-' : '+'}
-                      {formatCents(item.amount)}
-                    </ThemedText>
+                    <View className="flex-row items-center gap-3">
+                      <ThemedText type="smallBold" style={{ color: item.type === 'expense' ? '#DC2626' : '#16A34A' }}>
+                        {item.type === 'expense' ? '-' : '+'}
+                        {formatCents(item.amount)}
+                      </ThemedText>
+                      <Pressable onPress={() => setEditingRecurring(item)} hitSlop={8} className="active:opacity-60">
+                        <PencilIcon size={18} color="#71717a" />
+                      </Pressable>
+                      <Pressable onPress={() => handleDelete(item)} hitSlop={8} className="active:opacity-60">
+                        <TrashIcon size={18} color="#DC2626" />
+                      </Pressable>
+                    </View>
                   </View>
                 </Card>
               ))}
@@ -160,6 +200,17 @@ function RecurringManagerDialog({ open, onOpenChange }: { open: boolean; onOpenC
             <DialogTitle>Nova recorrência</DialogTitle>
           </DialogHeader>
           <CreateRecurringForm onDone={() => setCreateOpen(false)} />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={Boolean(editingRecurring)} onOpenChange={(open) => !open && setEditingRecurring(null)}>
+        <DialogContent className="w-full max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Editar recorrência</DialogTitle>
+          </DialogHeader>
+          {editingRecurring && (
+            <CreateRecurringForm recurring={editingRecurring} onDone={() => setEditingRecurring(null)} />
+          )}
         </DialogContent>
       </Dialog>
     </>
