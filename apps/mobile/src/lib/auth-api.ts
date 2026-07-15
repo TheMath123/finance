@@ -1,5 +1,11 @@
 import { apiRequest } from "@/lib/api-client";
-import type { LoginInput, RegisterInput } from "@/lib/schemas/auth";
+import type {
+  ForgotPasswordInput,
+  LoginInput,
+  RegisterInput,
+  ResetPasswordInput,
+  VerifyEmailInput,
+} from "@/lib/schemas/auth";
 
 export interface AuthSession {
   user: { id: string; name: string; email: string };
@@ -24,4 +30,13 @@ export const authApi = {
     apiRequest<void>("/auth/logout", { method: "POST", body: { refreshToken } }),
 
   me: () => apiRequest<MeOutput>("/auth/me"),
+
+  forgotPassword: (input: ForgotPasswordInput) =>
+    apiRequest<{ message: string }>("/auth/forgot-password", { method: "POST", body: input, skipAuth: true }),
+
+  resetPassword: (input: ResetPasswordInput) =>
+    apiRequest<{ message: string }>("/auth/reset-password", { method: "POST", body: input, skipAuth: true }),
+
+  verifyEmail: (input: VerifyEmailInput) =>
+    apiRequest<{ message: string }>("/auth/verify-email", { method: "POST", body: input, skipAuth: true }),
 };

@@ -17,5 +17,21 @@ export const registerSchema = z.object({
   termsAccepted: z.boolean().refine((v) => v, { message: "aceite dos termos é obrigatório" }),
 });
 
+export const forgotPasswordSchema = z.object({
+  email: z.string().email("E-mail inválido"),
+});
+
+export const resetPasswordSchema = z.object({
+  token: z.string().min(1, "Informe o token recebido por e-mail"),
+  password: z.string().min(8, "Mínimo de 8 caracteres").max(128),
+});
+
+export const verifyEmailSchema = z.object({
+  token: z.string().min(1, "Informe o token recebido por e-mail"),
+});
+
 export type LoginInput = z.infer<typeof loginSchema>;
 export type RegisterInput = z.infer<typeof registerSchema>;
+export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
+export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
+export type VerifyEmailInput = z.infer<typeof verifyEmailSchema>;

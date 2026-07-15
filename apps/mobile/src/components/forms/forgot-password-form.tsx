@@ -4,26 +4,41 @@ import { Link } from 'expo-router';
 import { useForm } from 'react-hook-form';
 import { View } from 'react-native';
 
-import { PasswordField } from '@/components/form/password-field';
 import { TextField } from '@/components/form/text-field';
 import { ThemedText } from '@/components/themed-text';
 import { Button } from '@/components/ui/button';
-import { useSession } from '@/context/session';
 import { ApiError } from '@/lib/api-client';
 import { authApi } from '@/lib/auth-api';
-import { loginSchema, type LoginInput } from '@/lib/schemas/auth';
+import { forgotPasswordSchema, type ForgotPasswordInput } from '@/lib/schemas/auth';
 
-export function LoginForm() {
-  const { signIn } = useSession();
-  const { control, handleSubmit } = useForm<LoginInput>({
-    resolver: zodResolver(loginSchema),
-    defaultValues: { email: '', password: '' },
+export function ForgotPasswordForm() {
+  const { control, handleSubmit } = useForm<ForgotPasswordInput>({
+    resolver: zodResolver(forgotPasswordSchema),
+    defaultValues: { email: '' },
   });
 
   const mutation = useMutation({
-    mutationFn: authApi.login,
-    onSuccess: signIn,
+    mutationFn: authApi.forgotPassword,
   });
+
+  if (mutation.isSuccess) {
+    return (
+      <View className="gap-4">
+        <ThemedText type="small" themeColor="textSecondary">
+          Se esse e-mail existir na nossa base, você vai receber um link com as instruções de
+          redefinição de senha.
+        </ThemedText>
+
+        <Link href="/reset-password" className="pt-2 text-center">
+          <ThemedText type="linkPrimary">Já tenho um token de redefinição</ThemedText>
+        </Link>
+
+        <Link href="/login" className="text-center">
+          <ThemedText type="linkPrimary">Voltar para o login</ThemedText>
+        </Link>
+      </View>
+    );
+  }
 
   return (
     <View className="gap-4">
@@ -36,13 +51,6 @@ export function LoginForm() {
         autoComplete="email"
         keyboardType="email-address"
       />
-      <PasswordField
-        control={control}
-        name="password"
-        label="Senha"
-        placeholder="••••••••"
-        autoComplete="password"
-      />
 
       {mutation.isError && (
         <ThemedText type="small" style={{ color: '#DC2626' }}>
@@ -51,15 +59,11 @@ export function LoginForm() {
       )}
 
       <Button loading={mutation.isPending} onPress={handleSubmit((input) => mutation.mutate(input))}>
-        Entrar
+        Enviar link de redefinição
       </Button>
 
-      <Link href="/register" className="pt-2 text-center">
-        <ThemedText type="linkPrimary">Ainda não tem conta? Criar conta</ThemedText>
-      </Link>
-
-      <Link href="/forgot-password" className="text-center">
-        <ThemedText type="linkPrimary">Esqueci minha senha</ThemedText>
+      <Link href="/login" className="pt-2 text-center">
+        <ThemedText type="linkPrimary">Voltar para o login</ThemedText>
       </Link>
     </View>
   );
