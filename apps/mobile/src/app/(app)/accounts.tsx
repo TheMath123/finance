@@ -1,16 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { BankIcon, CreditCardIcon, PencilIcon, PlusIcon, TrashIcon } from 'phosphor-react-native';
-import { useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, View } from 'react-native';
+import { Alert, ActivityIndicator, Pressable, View } from 'react-native';
 
-import { CategoryForm } from '@/components/forms/category-form';
-import { CreateAccountForm } from '@/components/forms/create-account-form';
-import { CreateBankForm } from '@/components/forms/create-bank-form';
-import { CreateCardForm } from '@/components/forms/create-card-form';
 import { ThemedText } from '@/components/themed-text';
 import { Card } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Screen } from '@/components/ui/screen';
 import { useSession } from '@/context/session';
 import { accountsApi } from '@/lib/accounts-api';
@@ -36,8 +30,6 @@ function SectionHeader({ title, onAdd }: { title: string; onAdd: () => void }) {
 export default function AccountsScreen() {
   const { workspaceId } = useSession();
   const queryClient = useQueryClient();
-  const [dialog, setDialog] = useState<'bank' | 'account' | 'card' | 'category' | null>(null);
-  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
 
   const { data: banks, isLoading: loadingBanks } = useQuery({
     queryKey: ['banks', workspaceId],
@@ -70,11 +62,6 @@ export default function AccountsScreen() {
     },
   });
 
-  const openCategoryDialog = (category?: Category) => {
-    setEditingCategory(category ?? null);
-    setDialog('category');
-  };
-
   const confirmDeleteCategory = (category: Category) => {
     Alert.alert('Excluir categoria', `Deseja excluir "${category.name}"?`, [
       { text: 'Cancelar', style: 'cancel' },
@@ -89,7 +76,7 @@ export default function AccountsScreen() {
       <ThemedText type="subtitle">Contas</ThemedText>
 
       <View className="gap-3">
-        <SectionHeader title="Bancos" onAdd={() => setDialog('bank')} />
+        <SectionHeader title="Bancos" onAdd={() => router.push('/banks/new')} />
         {loadingBanks ? (
           <ActivityIndicator />
         ) : banks && banks.length > 0 ? (
@@ -111,7 +98,7 @@ export default function AccountsScreen() {
       </View>
 
       <View className="gap-3">
-        <SectionHeader title="Contas" onAdd={() => setDialog('account')} />
+        <SectionHeader title="Contas" onAdd={() => router.push('/accounts/new')} />
         {loadingAccounts ? (
           <ActivityIndicator />
         ) : accounts && accounts.length > 0 ? (
@@ -136,7 +123,7 @@ export default function AccountsScreen() {
       </View>
 
       <View className="gap-3">
-        <SectionHeader title="Cartões" onAdd={() => setDialog('card')} />
+        <SectionHeader title="Cartões" onAdd={() => router.push('/cards/new')} />
         {loadingCards ? (
           <ActivityIndicator />
         ) : cards && cards.length > 0 ? (
@@ -173,7 +160,7 @@ export default function AccountsScreen() {
       </View>
 
       <View className="gap-3">
-        <SectionHeader title="Categorias" onAdd={() => openCategoryDialog()} />
+        <SectionHeader title="Categorias" onAdd={() => router.push('/categories/new')} />
         {loadingCategories ? (
           <ActivityIndicator />
         ) : categories && categories.length > 0 ? (
@@ -192,7 +179,7 @@ export default function AccountsScreen() {
               <Card key={category.id} className="flex-row items-center justify-between">
                 <Pressable
                   className="flex-1 flex-row items-center gap-3"
-                  onPress={() => openCategoryDialog(category)}>
+                  onPress={() => router.push(`/categories/${category.id}`)}>
                   <View
                     className="h-3 w-3 rounded-full"
                     style={{ backgroundColor: category.color }}
@@ -201,7 +188,7 @@ export default function AccountsScreen() {
                 </Pressable>
                 <View className="flex-row items-center gap-2">
                   <Pressable
-                    onPress={() => openCategoryDialog(category)}
+                    onPress={() => router.push(`/categories/${category.id}`)}
                     className="h-8 w-8 items-center justify-center rounded-full bg-primary/10 active:opacity-70">
                     <PencilIcon size={16} color="#2563EB" />
                   </Pressable>
@@ -222,53 +209,6 @@ export default function AccountsScreen() {
           </Card>
         )}
       </View>
-
-      <Dialog open={dialog === 'bank'} onOpenChange={(open) => setDialog(open ? 'bank' : null)}>
-        <DialogContent className="w-full max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Novo banco</DialogTitle>
-          </DialogHeader>
-          <CreateBankForm onDone={() => setDialog(null)} />
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={dialog === 'account'} onOpenChange={(open) => setDialog(open ? 'account' : null)}>
-        <DialogContent className="w-full max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Nova conta</DialogTitle>
-          </DialogHeader>
-          <CreateAccountForm banks={banks ?? []} onDone={() => setDialog(null)} />
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={dialog === 'card'} onOpenChange={(open) => setDialog(open ? 'card' : null)}>
-        <DialogContent className="w-full max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Novo cartão</DialogTitle>
-          </DialogHeader>
-          <CreateCardForm banks={banks ?? []} onDone={() => setDialog(null)} />
-        </DialogContent>
-      </Dialog>
-
-      <Dialog
-        open={dialog === 'category'}
-        onOpenChange={(open) => {
-          setDialog(open ? 'category' : null);
-          if (!open) setEditingCategory(null);
-        }}>
-        <DialogContent className="w-full max-w-sm">
-          <DialogHeader>
-            <DialogTitle>{editingCategory ? 'Editar categoria' : 'Nova categoria'}</DialogTitle>
-          </DialogHeader>
-          <CategoryForm
-            category={editingCategory ?? undefined}
-            onDone={() => {
-              setDialog(null);
-              setEditingCategory(null);
-            }}
-          />
-        </DialogContent>
-      </Dialog>
     </Screen>
   );
 }

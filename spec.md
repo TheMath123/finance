@@ -228,12 +228,18 @@ Princípio: os dados são estruturados, então **não usar RAG/embeddings sobre 
     Transações/Contas — 3 abas); cada grupo tem seu próprio `_layout.tsx` que redireciona conforme a
     sessão (`SessionProvider`/`useSession`, expõe `user` **e** `workspaceId`, tokens lidos de
     `expo-secure-store`). Dados: TanStack Query + um client HTTP fino que anexa o access token e
-    renova a sessão automaticamente em 401. Telas de criação (banco/conta/transação) usam `Dialog`
-    (registry AniUI) com formulário React Hook Form + Zod dentro. Campo de valor monetário é o
-    **`MoneyField`** (`src/components/form/money-field.tsx`, próprio — não é da registry): input
-    "digita da direita pra esquerda" (padrão de app bancário, sempre 2 casas decimais, sem stepper
-    +/-); o valor do form já fica em **centavos** (integer), igual ao contrato da API, sem conversão
-    reais↔centavos no submit.
+    renova a sessão automaticamente em 401. Criar/editar banco, conta, cartão e categoria (recursos
+    da tela Contas) são **telas próprias** (`/banks/new`, `/accounts/new`, `/cards/new`,
+    `/categories/new`, `/categories/[categoryId]`), não `Dialog` — decisão de 2026-07-15, mais fácil
+    de usar que modal pequeno pra formulário com vários campos. `Dialog` (registry AniUI) continua
+    valendo pra fluxos rápidos e pontuais (criar/editar transação, pagar fatura, gerenciar
+    recorrências), onde o formulário é curto ou o contexto de onde foi aberto importa. Campo de valor
+    monetário é o **`MoneyField`** (`src/components/form/money-field.tsx`, próprio — não é da
+    registry): input "digita da direita pra esquerda" (padrão de app bancário, sempre 2 casas
+    decimais, sem stepper +/-, alinhado à esquerda), valor do form já em **centavos** (integer), sem
+    conversão reais↔centavos no submit. Campo de data é o **`DateField`** (próprio, usando o
+    `DatePicker` da registry por baixo) em vez de texto livre "AAAA-MM-DD". Categorias do seed
+    (`isDefault`) não podem ser editadas/excluídas pelo usuário — só as criadas depois.
   - **Estilo: Tailwind CSS** via **NativeWind** (classes utilitárias no React Native; o widget,
     por rodar fora da árvore do NativeWind, usa estilos inline do `react-native-android-widget`).
     Classes condicionais usam **`cn()`** (`clsx` + `tailwind-merge`, `src/lib/cn.ts`) em vez de
