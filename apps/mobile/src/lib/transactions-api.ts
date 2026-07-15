@@ -17,7 +17,14 @@ export interface Transaction {
 export interface ListTransactionsFilters {
   from?: string;
   to?: string;
+  categoryId?: string;
+  accountId?: string;
+  cardId?: string;
+  createdBy?: string;
+  /** Busca por texto na descrição (max 120 chars). */
+  q?: string;
   limit?: number;
+  offset?: number;
 }
 
 export interface CreateTransactionInput {
@@ -30,6 +37,14 @@ export interface CreateTransactionInput {
   categoryId: string;
   accountId?: string;
   cardId?: string;
+}
+
+export interface UpdateTransactionInput {
+  description?: string;
+  /** Centavos. */
+  amount?: number;
+  categoryId?: string;
+  date?: string;
 }
 
 export const transactionsApi = {
@@ -47,5 +62,23 @@ export const transactionsApi = {
     apiRequest<Transaction[]>(`/workspaces/${workspaceId}/transactions`, {
       method: "POST",
       body: input,
+    }),
+
+  /** Só descrição, valor, categoria e data são editáveis (tipo/método/conta não). */
+  update: (workspaceId: string, transactionId: string, input: UpdateTransactionInput) =>
+    apiRequest<Transaction>(`/workspaces/${workspaceId}/transactions/${transactionId}`, {
+      method: "PATCH",
+      body: input,
+    }),
+
+  /** Soft delete — some da listagem, mas pode ser restaurada. */
+  delete: (workspaceId: string, transactionId: string) =>
+    apiRequest<void>(`/workspaces/${workspaceId}/transactions/${transactionId}`, {
+      method: "DELETE",
+    }),
+
+  restore: (workspaceId: string, transactionId: string) =>
+    apiRequest<Transaction>(`/workspaces/${workspaceId}/transactions/${transactionId}/restore`, {
+      method: "POST",
     }),
 };

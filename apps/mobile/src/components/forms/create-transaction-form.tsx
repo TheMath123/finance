@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { useSession } from '@/context/session';
 import { accountsApi } from '@/lib/accounts-api';
 import { ApiError } from '@/lib/api-client';
-import { categoriesApi } from '@/lib/categories-api';
+import { useCategories } from '@/lib/hooks/use-categories';
 import { transactionSchema, type TransactionInput } from '@/lib/schemas/finance';
 import { transactionsApi } from '@/lib/transactions-api';
 
@@ -40,11 +40,7 @@ export function CreateTransactionForm({ onDone }: { onDone: () => void }) {
   const { workspaceId } = useSession();
   const queryClient = useQueryClient();
 
-  const { data: categories } = useQuery({
-    queryKey: ['categories', workspaceId],
-    queryFn: () => categoriesApi.list(workspaceId!),
-    enabled: Boolean(workspaceId),
-  });
+  const { data: categories } = useCategories(workspaceId);
   const { data: accounts } = useQuery({
     queryKey: ['accounts', workspaceId],
     queryFn: () => accountsApi.list(workspaceId!),

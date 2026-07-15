@@ -1,11 +1,29 @@
-import { ACCOUNT_TYPES, TRANSACTION_METHODS, TRANSACTION_TYPES } from "@finance/shared";
+import {
+  ACCOUNT_TYPES,
+  RECURRENCE_FREQUENCIES,
+  TRANSACTION_METHODS,
+  TRANSACTION_TYPES,
+} from "@finance/shared";
 import { z } from "zod";
+
+/** Recorrência não permite "transfer" (fora do M1 — sem conta destino). */
+const RECURRING_METHODS = TRANSACTION_METHODS.filter((method) => method !== "transfer") as Exclude<
+  (typeof TRANSACTION_METHODS)[number],
+  "transfer"
+>[];
 
 export const bankSchema = z.object({
   name: z.string().min(1, "Informe o nome").max(80),
   bankCode: z.string().min(1, "Selecione o banco"),
 });
 export type BankInput = z.infer<typeof bankSchema>;
+
+export const categorySchema = z.object({
+  name: z.string().min(1, "Informe o nome").max(60),
+  icon: z.string().min(1, "Informe um ícone").max(60),
+  color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Selecione uma cor"),
+});
+export type CategoryInput = z.infer<typeof categorySchema>;
 
 export const accountSchema = z.object({
   name: z.string().min(1, "Informe o nome").max(80),
@@ -33,3 +51,58 @@ export const transactionSchema = z
     path: ["accountId"],
   });
 export type TransactionInput = z.infer<typeof transactionSchema>;
+
+/**
+ * Edição de transação — só descrição, valor, categoria e data são
+ * editáveis via PATCH (tipo/método/conta não mudam depois de criada).
+ * Campos ficam obrigatórios aqui (form sempre reenvia os 4), mas a API
+ * aceita parcial.
+ */
+export const editTransactionSchema = z.object({
+  description: z.string().min(1, "Informe a descrição").max(200),
+  /** Centavos (integer) — mesmo formato da API, nunca reais/float. */
+  amount: z.number().int().positive("Informe um valor maior que zero"),
+  categoryId: z.string().uuid("Selecione a categoria"),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data inválida"),
+});
+export type EditTransactionInput = z.infer<typeof editTransactionSchema>;
+
+export const cardSchema = z.object({
+  name: z.string().min(1, "Informe o nome").max(80),
+  bankId: z.string().uuid("Selecione o banco"),
+  /** Centavos (integer) — mesmo formato da API, nunca reais/float. */
+  limit: z.number().int().positive("Informe um limite maior que zero"),
+  /** Select de 1 a 28 — string na UI, convertido para número ao enviar. */
+  closingDay: z.string().min(1, "Selecione o dia"),
+  dueDay: z.string().min(1, "Selecione o dia"),
+});
+export type CardInput = z.infer<typeof cardSchema>;
+
+export const payInvoiceSchema = z.object({
+  accountId: z.string().uuid("Selecione a conta"),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data inválida"),
+  method: z.enum(["pix", "debit"], { error: "Selecione o método" }),
+});
+export type PayInvoiceInput = z.infer<typeof payInvoiceSchema>;
+
+export const recurringSchema = z
+  .object({
+    description: z.string().min(1, "Informe a descrição").max(200),
+    /** Centavos (integer) — mesmo formato da API, nunca reais/float. */
+    amount: z.number().int().positive("Informe um valor maior que zero"),
+    type: z.enum(TRANSACTION_TYPES, { error: "Selecione o tipo" }),
+    method: z.enum(RECURRING_METHODS, { error: "Selecione o método" }),
+    categoryId: z.string().uuid("Selecione a categoria"),
+    accountId: z.string().uuid().optional(),
+    cardId: z.string().uuid().optional(),
+    frequency: z.enum(RECURRENCE_FREQUENCIES, { error: "Selecione a frequência" }),
+    /** Dia do mês (1-31) pra monthly/yearly, ou dia da semana 0-6 (domingo=0) pra weekly. */
+    dayOfReference: z.number().int().min(0).max(31),
+    monthOfReference: z.number().int().min(1).max(12).optional(),
+    active: z.boolean().optional(),
+  })
+  .refine((data) => data.accountId ?? data.cardId, {
+    message: "Selecione uma conta ou cartão",
+    path: ["accountId"],
+  });
+export type RecurringInput = z.infer<typeof recurringSchema>;
