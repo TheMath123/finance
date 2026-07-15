@@ -220,13 +220,20 @@ Princípio: os dados são estruturados, então **não usar RAG/embeddings sobre 
     Elysia; testes de repos contra um Postgres de teste — docker compose ou Testcontainers).
 - **App**: Expo (React Native + TypeScript) com dev build (`expo prebuild` — Expo Go não suporta widget).
   - Widget de tela inicial: **react-native-android-widget** (JSX → RemoteViews).
-  - Navegação: expo-router. Dados: TanStack Query + fetch. Tokens: expo-secure-store.
+  - Navegação: expo-router, com grupos de rota `(auth)` (login/registro) e `(app)` (telas
+    autenticadas); cada grupo tem seu próprio `_layout.tsx` que redireciona conforme a sessão
+    (`SessionProvider`/`useSession`, tokens lidos de `expo-secure-store`). Dados: TanStack Query +
+    um client HTTP fino que anexa o access token e renova a sessão automaticamente em 401.
   - **Estilo: Tailwind CSS** via **NativeWind** (classes utilitárias no React Native; o widget,
     por rodar fora da árvore do NativeWind, usa estilos inline do `react-native-android-widget`).
-  - **Validação de formulário: Zod** (decisão de 2026-07-14, mesma convenção do backend) — todo
-    formulário do app valida com o mesmo schema Zod que o payload da rota correspondente espera
-    (schemas compartilhados via `packages/shared` quando fizer sentido, evitando duplicação e
-    dessincronia entre validação de tela e validação de API).
+  - **Formulários: React Hook Form + Zod** (`@hookform/resolvers/zod`, decisão de 2026-07-15) — todo
+    formulário valida com o mesmo schema Zod que o payload da rota correspondente espera (schemas
+    compartilhados via `packages/shared` quando fizer sentido, evitando duplicação e dessincronia
+    entre validação de tela e validação de API). Cada tela de formulário é um wrapper fino de rota
+    que renderiza um componente de formulário próprio (`src/components/forms/<nome>-form.tsx`, com
+    `useForm` + mutation), montado a partir de componentes de campo reutilizáveis em
+    `src/components/form/` (um por tipo: `text-field`, `password-field`, `number-field`,
+    `checkbox-field`, …) que encapsulam o `useController` e a exibição do erro daquele campo.
   - **Ícones: Phosphor Icons** (`phosphor-react-native`, componentes SVG via `react-native-svg`) —
     decisão de 2026-07-15: nunca baixar/versionar arquivos de ícone individuais (PNG/SVG soltos),
     sempre importar o componente do pacote.

@@ -9,8 +9,8 @@ import { ThemedView } from './themed-view';
 import { Colors, MaxContentWidth, Spacing } from '@/constants/theme';
 
 const TABS = [
-  { name: 'home', href: '/' as const, label: 'Home', Icon: HouseIcon },
-  { name: 'explore', href: '/explore' as const, label: 'Explore', Icon: CompassIcon },
+  { name: 'home', href: '/index' as const, label: 'Resumo', Icon: HouseIcon },
+  { name: 'explore', href: '/explore' as const, label: 'Transações', Icon: CompassIcon },
 ] satisfies { name: string; href: string; label: string; Icon: ComponentType<IconProps> }[];
 
 export default function AppTabs() {
