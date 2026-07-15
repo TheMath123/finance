@@ -227,6 +227,9 @@ Princípio: os dados são estruturados, então **não usar RAG/embeddings sobre 
     formulário do app valida com o mesmo schema Zod que o payload da rota correspondente espera
     (schemas compartilhados via `packages/shared` quando fizer sentido, evitando duplicação e
     dessincronia entre validação de tela e validação de API).
+  - **Ícones: Phosphor Icons** (`phosphor-react-native`, componentes SVG via `react-native-svg`) —
+    decisão de 2026-07-15: nunca baixar/versionar arquivos de ícone individuais (PNG/SVG soltos),
+    sempre importar o componente do pacote.
   - Dados do widget: cache local (AsyncStorage) atualizado pelo app + `requestWidgetUpdate()`; o widget não faz fetch próprio.
 - **Chatbot WhatsApp**: **Meta Cloud API (oficial)** — milestone futuro. A camada de service do backend é canal-agnóstica (`TransactionService.create(workspaceId, userId, input)`), então o webhook futuro chama o service diretamente sem mudanças estruturais.
 
