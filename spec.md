@@ -43,7 +43,11 @@ Os dados financeiros vivem em **workspaces**, que podem ser pessoais ou comparti
 ### Dashboard web (futuro — M4)
 
 - Citado como parte do ecossistema; será especificado quando o milestone se aproximar. A camada de services do backend é canal-agnóstica, então o dashboard consome a mesma API.
-- Já fica registrado desde já: **Tailwind CSS** (nativo, sem NativeWind) e **Zod** para validação de formulário — mesma convenção de estilo/validação do app, para o ecossistema ficar consistente entre frontends.
+- **Framework: Svelte** (decisão de 2026-07-15) — diferente do app (Expo/React Native), o dashboard web é o único frontend em Svelte.
+- **Componentes: Bits UI** (headless, sem estilo próprio, acessível — mesmo usado pelo shadcn-svelte) — cogitou-se Base UI, mas é uma lib **React-only** (`base-ui.com/react/...`, sem porta para outros frameworks) e incompatível com Svelte; Bits UI é o equivalente direto no ecossistema Svelte.
+- **Estilo: Tailwind CSS** (nativo, sem NativeWind) — mesma convenção do app.
+- **Validação: Zod** para (a) todo formulário e (b) envs validadas no boot — mesma convenção do backend e do app (schema Zod por app/package, `.env.example` escopado, nunca um geral).
+- **Organização: um componente por arquivo**, cada um com sua própria lógica (mesma convenção de modularização do backend/app) — nunca vários componentes agrupados num arquivo só.
 - Terá também um **modo superadmin** (ver "Papéis de plataforma" abaixo): área administrativa da plataforma para configurações globais — gestão de usuários (suspender/reativar), categorias padrão do seed, parâmetros dos guardrails de IA (orçamentos de tokens), feature flags e métricas de uso.
 
 ### Papéis de plataforma (≠ papéis de workspace)
