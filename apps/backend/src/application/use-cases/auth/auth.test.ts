@@ -4,7 +4,7 @@
  */
 import { beforeAll, describe, expect, test } from "bun:test";
 import { eq } from "drizzle-orm";
-import { createDb, categories, refreshTokens, workspaceMembers, type Db } from "@finance/db";
+import { createDb, categories, refreshTokens, workspaceMembers, banks, bankAccounts, type Db } from "@finance/db";
 import { createTestDeps, type DispatchedJob } from "../../../test/deps";
 import {
   forgotPassword,
@@ -61,6 +61,28 @@ describe("auth: registro", () => {
     expect(cats.some((c) => c.isFallback)).toBe(true);
 
     expect(jobs.some((j) => j.name === "email.verify-email")).toBe(true);
+  });
+
+  test("cria banco e conta padrão", async () => {
+    const deps = createTestDeps(db);
+    const email = uniqueEmail();
+
+    const result = await register(deps, { name: "Teste", email, password: "senha-forte-123" });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    const workspaceBanks = await db
+      .select()
+      .from(banks)
+      .where(eq(banks.workspaceId, result.value.defaultWorkspaceId));
+    expect(workspaceBanks).toHaveLength(1);
+
+    const workspaceAccounts = await db
+      .select()
+      .from(bankAccounts)
+      .where(eq(bankAccounts.workspaceId, result.value.defaultWorkspaceId));
+    expect(workspaceAccounts).toHaveLength(1);
+    expect(workspaceAccounts[0]?.bankId).toBe(workspaceBanks[0]?.id);
   });
 
   test("rejeita e-mail duplicado", async () => {

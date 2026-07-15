@@ -45,6 +45,17 @@ export async function register(
           isFallback: c.isFallback ?? false,
         })),
       );
+
+      // Banco + conta padrão — usuário começa com algo pra lançar transação sem
+      // precisar cadastrar banco/conta manualmente primeiro.
+      const bank = await repos.bank.create(workspace.id, { name: "Minha carteira", bankCode: "other" });
+      await repos.account.create(workspace.id, {
+        name: "Conta principal",
+        bankId: bank.id,
+        type: "checking",
+        initialBalance: 0,
+      });
+
       return { user, workspaceId: workspace.id };
     });
   } catch (error) {
