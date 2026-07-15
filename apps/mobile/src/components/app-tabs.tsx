@@ -1,16 +1,17 @@
 import { Tabs, TabList, TabTrigger, TabSlot, TabTriggerSlotProps, TabListProps } from 'expo-router/ui';
-import { CompassIcon, HouseIcon, type IconProps } from 'phosphor-react-native';
+import { HouseIcon, ReceiptIcon, type IconProps } from 'phosphor-react-native';
 import { type ComponentType } from 'react';
-import { Pressable, useColorScheme, View, StyleSheet } from 'react-native';
+import { Pressable, View } from 'react-native';
 
 import { ThemedText } from './themed-text';
 import { ThemedView } from './themed-view';
 
-import { Colors, MaxContentWidth, Spacing } from '@/constants/theme';
+import { MaxContentWidth } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 
 const TABS = [
   { name: 'home', href: '/index' as const, label: 'Resumo', Icon: HouseIcon },
-  { name: 'explore', href: '/explore' as const, label: 'Transações', Icon: CompassIcon },
+  { name: 'explore', href: '/explore' as const, label: 'Transações', Icon: ReceiptIcon },
 ] satisfies { name: string; href: string; label: string; Icon: ComponentType<IconProps> }[];
 
 export default function AppTabs() {
@@ -36,62 +37,35 @@ function TabButton({
   icon: Icon,
   ...props
 }: TabTriggerSlotProps & { icon: ComponentType<IconProps> }) {
-  const scheme = useColorScheme();
-  const colors = Colors[scheme === 'unspecified' ? 'light' : scheme ?? 'light'];
-  const color = isFocused ? colors.text : colors.textSecondary;
+  const theme = useTheme();
 
   return (
-    <Pressable {...props} style={({ pressed }) => pressed && styles.pressed}>
-      <ThemedView
-        type={isFocused ? 'backgroundSelected' : 'backgroundElement'}
-        style={styles.tabButtonView}>
-        <Icon color={color} size={20} weight={isFocused ? 'fill' : 'regular'} />
-        <ThemedText type="small" themeColor={isFocused ? 'text' : 'textSecondary'}>
+    <Pressable {...props} className="active:opacity-70">
+      <View
+        className={`flex-row items-center gap-1.5 rounded-full px-4 py-2 ${
+          isFocused ? 'bg-brand-600' : ''
+        }`}>
+        <Icon color={isFocused ? '#FFFFFF' : theme.textSecondary} size={20} weight={isFocused ? 'fill' : 'regular'} />
+        <ThemedText
+          type="smallBold"
+          themeColor={isFocused ? undefined : 'textSecondary'}
+          style={isFocused ? { color: '#FFFFFF' } : undefined}>
           {children}
         </ThemedText>
-      </ThemedView>
+      </View>
     </Pressable>
   );
 }
 
 function CustomTabList(props: TabListProps) {
   return (
-    <View {...props} style={styles.tabListContainer}>
-      <ThemedView type="backgroundElement" style={styles.innerContainer}>
+    <View {...props} className="absolute bottom-0 w-full flex-row items-center justify-center p-4">
+      <ThemedView
+        type="backgroundElement"
+        className="flex-row justify-center gap-1 rounded-full p-1.5 shadow-md"
+        style={{ maxWidth: MaxContentWidth }}>
         {props.children}
       </ThemedView>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  tabListContainer: {
-    position: 'absolute',
-    bottom: 0,
-    width: '100%',
-    padding: Spacing.three,
-    justifyContent: 'center',
-    alignItems: 'center',
-    flexDirection: 'row',
-  },
-  innerContainer: {
-    paddingVertical: Spacing.two,
-    paddingHorizontal: Spacing.three,
-    borderRadius: Spacing.five,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: Spacing.two,
-    maxWidth: MaxContentWidth,
-  },
-  pressed: {
-    opacity: 0.7,
-  },
-  tabButtonView: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.one,
-    paddingVertical: Spacing.one,
-    paddingHorizontal: Spacing.three,
-    borderRadius: Spacing.three,
-  },
-});

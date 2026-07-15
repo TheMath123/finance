@@ -2,12 +2,13 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
 import { Link } from 'expo-router';
 import { useForm } from 'react-hook-form';
-import { Pressable } from 'react-native';
+import { View } from 'react-native';
 
 import { CheckboxField } from '@/components/form/checkbox-field';
-import { TextField } from '@/components/form/text-field';
 import { PasswordField } from '@/components/form/password-field';
+import { TextField } from '@/components/form/text-field';
 import { ThemedText } from '@/components/themed-text';
+import { Button } from '@/components/ui/button';
 import { useSession } from '@/context/session';
 import { ApiError } from '@/lib/api-client';
 import { authApi } from '@/lib/auth-api';
@@ -26,37 +27,39 @@ export function RegisterForm() {
   });
 
   return (
-    <>
-      <TextField control={control} name="name" placeholder="Nome" autoComplete="name" />
+    <View className="gap-4">
+      <TextField control={control} name="name" label="Nome" placeholder="Seu nome" autoComplete="name" />
       <TextField
         control={control}
         name="email"
-        placeholder="E-mail"
+        label="E-mail"
+        placeholder="voce@exemplo.com"
         autoCapitalize="none"
         autoComplete="email"
         keyboardType="email-address"
       />
-      <PasswordField control={control} name="password" placeholder="Senha" autoComplete="new-password" />
+      <PasswordField
+        control={control}
+        name="password"
+        label="Senha"
+        placeholder="Mínimo de 8 caracteres"
+        autoComplete="new-password"
+      />
       <CheckboxField control={control} name="termsAccepted" label="Aceito os termos de uso" />
 
       {mutation.isError && (
-        <ThemedText type="small" themeColor="textSecondary">
+        <ThemedText type="small" style={{ color: '#DC2626' }}>
           {mutation.error instanceof ApiError ? mutation.error.message : 'Erro inesperado'}
         </ThemedText>
       )}
 
-      <Pressable
-        className="items-center rounded-xl bg-blue-600 py-3 disabled:opacity-50"
-        disabled={mutation.isPending}
-        onPress={handleSubmit((input) => mutation.mutate(input))}>
-        <ThemedText type="smallBold" style={{ color: 'white' }}>
-          {mutation.isPending ? 'Criando…' : 'Criar conta'}
-        </ThemedText>
-      </Pressable>
+      <Button loading={mutation.isPending} onPress={handleSubmit((input) => mutation.mutate(input))}>
+        Criar conta
+      </Button>
 
-      <Link href="/login" className="text-center">
+      <Link href="/login" className="pt-2 text-center">
         <ThemedText type="linkPrimary">Já tenho conta</ThemedText>
       </Link>
-    </>
+    </View>
   );
 }

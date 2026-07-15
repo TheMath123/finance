@@ -7,22 +7,33 @@ export interface TextFieldProps<T extends FieldValues>
   extends Pick<TextInputProps, 'placeholder' | 'autoCapitalize' | 'keyboardType' | 'autoComplete'> {
   control: Control<T>;
   name: Path<T>;
+  label?: string;
 }
 
-export function TextField<T extends FieldValues>({ control, name, ...inputProps }: TextFieldProps<T>) {
+export function TextField<T extends FieldValues>({
+  control,
+  name,
+  label,
+  ...inputProps
+}: TextFieldProps<T>) {
   const { field, fieldState } = useController({ control, name });
+  const hasError = Boolean(fieldState.error);
 
   return (
-    <View className="gap-1">
+    <View className="gap-1.5">
+      {label && <ThemedText type="smallBold">{label}</ThemedText>}
       <TextInput
-        className="rounded-xl border border-neutral-300 px-4 py-3 dark:border-neutral-700 dark:text-white"
+        className={`rounded-xl border px-4 py-3 text-base dark:text-white ${
+          hasError ? 'border-danger' : 'border-neutral-300 dark:border-neutral-700'
+        }`}
+        placeholderTextColor="#9CA3AF"
         value={(field.value as string | undefined) ?? ''}
         onChangeText={field.onChange}
         onBlur={field.onBlur}
         {...inputProps}
       />
       {fieldState.error?.message && (
-        <ThemedText type="small" themeColor="textSecondary">
+        <ThemedText type="small" style={{ color: '#DC2626' }}>
           {fieldState.error.message}
         </ThemedText>
       )}

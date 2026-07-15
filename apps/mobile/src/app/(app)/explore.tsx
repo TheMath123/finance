@@ -1,17 +1,24 @@
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ReceiptIcon } from 'phosphor-react-native';
+import { View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
+import { Card } from '@/components/ui/card';
+import { Screen } from '@/components/ui/screen';
 
 export default function TransactionsScreen() {
   return (
-    <ThemedView className="flex-1">
-      <SafeAreaView className="flex-1 items-center justify-center gap-2 px-6">
-        <ThemedText type="title">Transações</ThemedText>
-        <ThemedText type="small" themeColor="textSecondary">
-          Lista de transações do workspace aparece aqui.
+    <Screen className="gap-4 pb-28">
+      <ThemedText type="subtitle">Transações</ThemedText>
+
+      <Card className="items-center gap-3 py-10">
+        <View className="h-12 w-12 items-center justify-center rounded-full bg-brand-100 dark:bg-brand-600/20">
+          <ReceiptIcon size={22} color="#2563EB" />
+        </View>
+        <ThemedText type="smallBold">Nenhuma transação ainda</ThemedText>
+        <ThemedText type="small" themeColor="textSecondary" style={{ textAlign: 'center' }}>
+          Lançamentos de contas e cartões deste workspace aparecem aqui.
         </ThemedText>
-      </SafeAreaView>
-    </ThemedView>
+      </Card>
+    </Screen>
   );
 }
