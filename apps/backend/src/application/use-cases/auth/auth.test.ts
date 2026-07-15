@@ -11,6 +11,7 @@ import {
   login,
   refresh,
   logout,
+  me,
   register,
   resetPassword,
   verifyEmail,
@@ -110,6 +111,19 @@ describe("auth: login e refresh", () => {
     await logout(deps, { refreshToken: session.value.refreshToken });
     const after = await refresh(deps, { refreshToken: session.value.refreshToken });
     expect(after.ok).toBe(false);
+  });
+
+  test("me retorna os dados do usuário autenticado", async () => {
+    const deps = createTestDeps(db);
+    const email = uniqueEmail();
+    const session = await register(deps, { name: "E", email, password: "senha-forte-123" });
+    if (!session.ok) throw new Error("registro falhou");
+
+    const result = await me(deps, session.value.user.id);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.user.email).toBe(email);
+    expect(result.value.defaultWorkspaceId).toBe(session.value.defaultWorkspaceId);
   });
 });
 

@@ -6,4 +6,5 @@ export { forgotPassword, type ForgotPasswordInput } from "./forgot-password";
 export { resetPassword, type ResetPasswordInput } from "./reset-password";
 export { verifyEmail, type VerifyEmailInput } from "./verify-email";
 export { issueSession, type AuthSession } from "./session";
+export { me, type MeOutput } from "./me";
 export type { AuthError } from "./errors";
