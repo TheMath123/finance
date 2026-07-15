@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { getBank } from '@finance/shared';
 import { router } from 'expo-router';
-import { CaretRightIcon, CreditCardIcon, PlusIcon, TagIcon } from 'phosphor-react-native';
+import { CaretRightIcon, CreditCardIcon, PlusIcon, TagIcon, UserIcon } from 'phosphor-react-native';
 import type { ReactNode } from 'react';
 import { ActivityIndicator, Pressable, View } from 'react-native';
 
@@ -36,7 +36,7 @@ function NavRow({
 }: {
   icon: ReactNode;
   label: string;
-  count: number;
+  count?: number;
   onPress: () => void;
 }) {
   return (
@@ -47,9 +47,11 @@ function NavRow({
           <ThemedText type="smallBold">{label}</ThemedText>
         </View>
         <View className="flex-row items-center gap-2">
-          <ThemedText type="small" themeColor="textSecondary">
-            {count}
-          </ThemedText>
+          {count !== undefined && (
+            <ThemedText type="small" themeColor="textSecondary">
+              {count}
+            </ThemedText>
+          )}
           <CaretRightIcon size={16} color="#71717a" />
         </View>
       </Card>
@@ -130,6 +132,11 @@ export default function AccountsScreen() {
           label="Categorias"
           count={categories?.length ?? 0}
           onPress={() => router.push('/categories')}
+        />
+        <NavRow
+          icon={<UserIcon size={18} color="#2563EB" />}
+          label="Perfil"
+          onPress={() => router.push('/profile')}
         />
       </View>
     </Screen>
