@@ -2,7 +2,11 @@ import type { AccountError } from "../../../application/use-cases/account";
 import type { HttpError } from "../../http-error";
 
 export const ACCOUNT_ERRORS: Record<AccountError, HttpError> = {
-  bank_not_found: { status: 404, code: "bank_not_found", message: "Banco não encontrado." },
+  invalid_bank_code: {
+    status: 400,
+    code: "invalid_bank_code",
+    message: "Código de banco fora do catálogo.",
+  },
   account_not_found: { status: 404, code: "account_not_found", message: "Conta não encontrada." },
   account_has_transactions: {
     status: 409,

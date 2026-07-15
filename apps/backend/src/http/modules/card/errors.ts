@@ -2,7 +2,11 @@ import type { CardError } from "../../../application/use-cases/card";
 import type { HttpError } from "../../http-error";
 
 export const CARD_ERRORS: Record<CardError, HttpError> = {
-  bank_not_found: { status: 404, code: "bank_not_found", message: "Banco não encontrado." },
+  invalid_bank_code: {
+    status: 400,
+    code: "invalid_bank_code",
+    message: "Código de banco fora do catálogo.",
+  },
   card_not_found: { status: 404, code: "card_not_found", message: "Cartão não encontrado." },
   card_has_transactions: {
     status: 409,

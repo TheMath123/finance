@@ -416,6 +416,16 @@ archived_at | isoDate (nullable — ver "Arquivamento e exclusão de cadastros")
 created_at | isoDate
 updated_at | isoDate
 
+**Usuário não cadastra banco manualmente** (decisão de 2026-07-15) — não interfere na vida financeira
+dele e o catálogo (com "Outro" cobrindo qualquer banco fora da lista) já basta. Ao criar conta ou
+cartão, o app manda direto o `bankCode` escolhido no catálogo; o backend resolve/cria a linha `Bank`
+por trás (`findOrCreateBank`, dentro da mesma transação da operação), idempotente por
+`(workspace_id, bank_code)` — a segunda conta com o mesmo banco reaproveita a mesma linha, nunca
+duplica. `POST/PATCH /workspaces/:id/accounts` e `.../cards` recebem `bankCode` (não `bankId`); as
+respostas de listagem (`GET .../accounts`, `GET .../cards`) devolvem `bankCode` direto (join
+interno), então o app nunca precisa buscar a lista de bancos. As rotas de CRUD de `Bank` continuam
+existindo no backend (não foram removidas), só não têm mais UI de gestão no app.
+
 ### BankAccount
 
 Name | Type

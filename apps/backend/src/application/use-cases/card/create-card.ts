@@ -1,11 +1,13 @@
 import { left, right, type Either } from "@finance/shared";
 import type { Card } from "../../../domain/entities/card";
 import type { Actor, UseCaseDeps } from "../../deps";
+import { findOrCreateBank } from "../bank/find-or-create-bank";
 import type { CardError } from "./errors";
 
 export interface CreateCardInput {
   name: string;
-  bankId: string;
+  /** Código do catálogo (spec: usuário não cadastra banco manualmente — o banco é resolvido por trás). */
+  bankCode: string;
   limit: number;
   closingDay: number;
   dueDay: number;
@@ -16,11 +18,17 @@ export async function createCard(
   actor: Actor,
   input: CreateCardInput,
 ): Promise<Either<CardError, Card>> {
-  const bank = await deps.repos.bank.findInWorkspace(actor.workspaceId, input.bankId);
-  if (!bank) return left("bank_not_found");
-
   const created = await deps.uow.run(async (repos) => {
-    const card = await repos.card.create(actor.workspaceId, input);
+    const bank = await findOrCreateBank(repos, actor.workspaceId, input.bankCode);
+    if (!bank.ok) return bank;
+
+    const card = await repos.card.create(actor.workspaceId, {
+      name: input.name,
+      bankId: bank.value.id,
+      limit: input.limit,
+      closingDay: input.closingDay,
+      dueDay: input.dueDay,
+    });
     await repos.audit.record({
       workspaceId: actor.workspaceId,
       userId: actor.userId,
@@ -28,7 +36,8 @@ export async function createCard(
       entity: "card",
       entityId: card.id,
     });
-    return card;
+    return right(card);
   });
-  return right(created);
+  if (!created.ok) return left("invalid_bank_code");
+  return created;
 }

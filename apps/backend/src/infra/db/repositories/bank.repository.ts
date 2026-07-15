@@ -17,6 +17,10 @@ export function createBankRepository(db: DbHandle): BankRepository {
       db.query.banks.findFirst({
         where: and(eq(banks.id, bankId), eq(banks.workspaceId, workspaceId)),
       }),
+    findByCode: (workspaceId, bankCode) =>
+      db.query.banks.findFirst({
+        where: and(eq(banks.workspaceId, workspaceId), eq(banks.bankCode, bankCode)),
+      }),
     listByWorkspace: (workspaceId) =>
       db.query.banks.findMany({ where: eq(banks.workspaceId, workspaceId) }),
     async update(bankId, patch) {

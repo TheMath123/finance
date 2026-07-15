@@ -8,7 +8,7 @@ export const invoiceParamsSchema = workspaceParamsSchema.extend({
 
 export const createCardSchema = z.object({
   name: z.string().min(1).max(80),
-  bankId: z.string().uuid(),
+  bankCode: z.string().min(1),
   limit: z.number().int().positive(),
   closingDay: z.number().int().min(1).max(28),
   dueDay: z.number().int().min(1).max(28),

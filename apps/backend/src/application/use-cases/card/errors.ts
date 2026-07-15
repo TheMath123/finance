@@ -1,5 +1,5 @@
 export type CardError =
-  | "bank_not_found"
+  | "invalid_bank_code"
   | "card_not_found"
   | "card_has_transactions"
   | "invoice_not_found"

@@ -8,7 +8,7 @@ export const accountParamsSchema = workspaceParamsSchema.extend({
 
 export const createAccountSchema = z.object({
   name: z.string().min(1).max(80),
-  bankId: z.string().uuid(),
+  bankCode: z.string().min(1),
   type: z.enum(ACCOUNT_TYPES),
   initialBalance: z.number().int().default(0),
 });

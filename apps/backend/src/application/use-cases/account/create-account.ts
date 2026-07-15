@@ -2,11 +2,13 @@ import { left, right, type Either } from "@finance/shared";
 import type { AccountType } from "@finance/shared";
 import type { BankAccount } from "../../../domain/entities/bank-account";
 import type { Actor, UseCaseDeps } from "../../deps";
+import { findOrCreateBank } from "../bank/find-or-create-bank";
 import type { AccountError } from "./errors";
 
 export interface CreateAccountInput {
   name: string;
-  bankId: string;
+  /** Código do catálogo (spec: usuário não cadastra banco manualmente — o banco é resolvido por trás). */
+  bankCode: string;
   type: AccountType;
   initialBalance: number;
 }
@@ -16,11 +18,16 @@ export async function createAccount(
   actor: Actor,
   input: CreateAccountInput,
 ): Promise<Either<AccountError, BankAccount>> {
-  const bank = await deps.repos.bank.findInWorkspace(actor.workspaceId, input.bankId);
-  if (!bank) return left("bank_not_found");
-
   const created = await deps.uow.run(async (repos) => {
-    const account = await repos.account.create(actor.workspaceId, input);
+    const bank = await findOrCreateBank(repos, actor.workspaceId, input.bankCode);
+    if (!bank.ok) return bank;
+
+    const account = await repos.account.create(actor.workspaceId, {
+      name: input.name,
+      bankId: bank.value.id,
+      type: input.type,
+      initialBalance: input.initialBalance,
+    });
     await repos.audit.record({
       workspaceId: actor.workspaceId,
       userId: actor.userId,
@@ -28,7 +35,8 @@ export async function createAccount(
       entity: "bank_account",
       entityId: account.id,
     });
-    return account;
+    return right(account);
   });
-  return right(created);
+  if (!created.ok) return left("invalid_bank_code");
+  return created;
 }
