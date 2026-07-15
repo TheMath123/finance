@@ -43,6 +43,7 @@ Os dados financeiros vivem em **workspaces**, que podem ser pessoais ou comparti
 ### Dashboard web (futuro — M4)
 
 - Citado como parte do ecossistema; será especificado quando o milestone se aproximar. A camada de services do backend é canal-agnóstica, então o dashboard consome a mesma API.
+- Já fica registrado desde já: **Tailwind CSS** (nativo, sem NativeWind) e **Zod** para validação de formulário — mesma convenção de estilo/validação do app, para o ecossistema ficar consistente entre frontends.
 - Terá também um **modo superadmin** (ver "Papéis de plataforma" abaixo): área administrativa da plataforma para configurações globais — gestão de usuários (suspender/reativar), categorias padrão do seed, parâmetros dos guardrails de IA (orçamentos de tokens), feature flags e métricas de uso.
 
 ### Papéis de plataforma (≠ papéis de workspace)
@@ -220,6 +221,12 @@ Princípio: os dados são estruturados, então **não usar RAG/embeddings sobre 
 - **App**: Expo (React Native + TypeScript) com dev build (`expo prebuild` — Expo Go não suporta widget).
   - Widget de tela inicial: **react-native-android-widget** (JSX → RemoteViews).
   - Navegação: expo-router. Dados: TanStack Query + fetch. Tokens: expo-secure-store.
+  - **Estilo: Tailwind CSS** via **NativeWind** (classes utilitárias no React Native; o widget,
+    por rodar fora da árvore do NativeWind, usa estilos inline do `react-native-android-widget`).
+  - **Validação de formulário: Zod** (decisão de 2026-07-14, mesma convenção do backend) — todo
+    formulário do app valida com o mesmo schema Zod que o payload da rota correspondente espera
+    (schemas compartilhados via `packages/shared` quando fizer sentido, evitando duplicação e
+    dessincronia entre validação de tela e validação de API).
   - Dados do widget: cache local (AsyncStorage) atualizado pelo app + `requestWidgetUpdate()`; o widget não faz fetch próprio.
 - **Chatbot WhatsApp**: **Meta Cloud API (oficial)** — milestone futuro. A camada de service do backend é canal-agnóstica (`TransactionService.create(workspaceId, userId, input)`), então o webhook futuro chama o service diretamente sem mudanças estruturais.
 
@@ -627,6 +634,11 @@ acima); todo evento de limite/lockout gera **log estruturado** sem dados sensív
 
 - **Deploy**: backend + Postgres em provedor gerenciado (a definir na implementação: Railway/Fly.io/VPS + Docker); Postgres gerenciado com backup automático (ou `pg_dump` diário se self-hosted).
 - **Ambientes**: dev e prod; variáveis via `.env` (nunca commitadas, com `.env.example` versionado).
+  **`.env`/`.env.example` são escopados por app/package** (`apps/backend/.env.example`,
+  `apps/mobile/.env.example`, `packages/db/.env.example`, `packages/email/.env.example`), nunca um
+  arquivo geral na raiz — cada processo carrega só as envs que ele próprio consome (regra fechada em
+  2026-07-15). O backend duplica as chaves de `db`/`email` no seu próprio `.env.example` porque é o
+  processo runtime que efetivamente as lê no boot.
 - **Infra local via docker compose** (`docker-compose.yml` na raiz): sobe o Postgres de dev com um
   comando (`docker compose up -d`); o Redis entra no mesmo compose quando chegar o M2. O mesmo
   compose serve de banco para os testes de repositório.
