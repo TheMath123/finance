@@ -20,7 +20,6 @@ import { Screen } from '@/components/ui/screen';
 import { useSession } from '@/context/session';
 import { accountsApi } from '@/lib/accounts-api';
 import { ApiError } from '@/lib/api-client';
-import { banksApi } from '@/lib/banks-api';
 import { cardsApi, type Invoice } from '@/lib/cards-api';
 import { formatCents } from '@/lib/money';
 
@@ -55,11 +54,6 @@ export default function CardDetailScreen() {
   const { data: cards } = useQuery({
     queryKey: ['cards', workspaceId],
     queryFn: () => cardsApi.list(workspaceId!),
-    enabled: Boolean(workspaceId),
-  });
-  const { data: banks } = useQuery({
-    queryKey: ['banks', workspaceId],
-    queryFn: () => banksApi.list(workspaceId!),
     enabled: Boolean(workspaceId),
   });
   const { data: invoices, isLoading: loadingInvoices } = useQuery({
@@ -147,7 +141,7 @@ export default function CardDetailScreen() {
       {editing && cardItem && (
         <View className="gap-2">
           <ThemedText type="smallBold">Editar cartão</ThemedText>
-          <CreateCardForm card={cardItem} banks={banks ?? []} onDone={() => setEditing(false)} />
+          <CreateCardForm card={cardItem} onDone={() => setEditing(false)} />
         </View>
       )}
 

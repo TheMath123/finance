@@ -5,7 +5,8 @@ import { apiRequest } from "@/lib/api-client";
 export interface Account {
   id: string;
   name: string;
-  bankId: string;
+  /** Código do catálogo (@finance/shared BANK_CATALOG) — usuário não cadastra banco manualmente. */
+  bankCode: string;
   type: AccountType;
   /** Centavos. */
   initialBalance: number;
@@ -16,7 +17,7 @@ export interface Account {
 
 export interface CreateAccountInput {
   name: string;
-  bankId: string;
+  bankCode: string;
   type: AccountType;
   initialBalance: number;
 }

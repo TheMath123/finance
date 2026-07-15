@@ -10,7 +10,6 @@ import { Screen } from '@/components/ui/screen';
 import { useSession } from '@/context/session';
 import { accountsApi } from '@/lib/accounts-api';
 import { ApiError } from '@/lib/api-client';
-import { banksApi } from '@/lib/banks-api';
 
 export default function EditAccountScreen() {
   const { accountId } = useLocalSearchParams<{ accountId: string }>();
@@ -22,12 +21,6 @@ export default function EditAccountScreen() {
     queryFn: () => accountsApi.list(workspaceId!),
     enabled: Boolean(workspaceId),
   });
-  const { data: banks } = useQuery({
-    queryKey: ['banks', workspaceId],
-    queryFn: () => banksApi.list(workspaceId!),
-    enabled: Boolean(workspaceId),
-  });
-
   const account = accounts?.find((item) => item.id === accountId);
 
   useEffect(() => {
@@ -101,7 +94,7 @@ export default function EditAccountScreen() {
       {isLoading || !account ? (
         <ActivityIndicator />
       ) : (
-        <CreateAccountForm account={account} banks={banks ?? []} onDone={() => router.back()} />
+        <CreateAccountForm account={account} onDone={() => router.back()} />
       )}
     </Screen>
   );

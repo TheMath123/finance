@@ -12,12 +12,6 @@ const RECURRING_METHODS = TRANSACTION_METHODS.filter((method) => method !== "tra
   "transfer"
 >[];
 
-export const bankSchema = z.object({
-  name: z.string().min(1, "Informe o nome").max(80),
-  bankCode: z.string().min(1, "Selecione o banco"),
-});
-export type BankInput = z.infer<typeof bankSchema>;
-
 export const categorySchema = z.object({
   name: z.string().min(1, "Informe o nome").max(60),
   icon: z.string().min(1, "Informe um ícone").max(60),
@@ -27,7 +21,7 @@ export type CategoryInput = z.infer<typeof categorySchema>;
 
 export const accountSchema = z.object({
   name: z.string().min(1, "Informe o nome").max(80),
-  bankId: z.string().uuid("Selecione o banco"),
+  bankCode: z.string().min(1, "Selecione o banco"),
   type: z.enum(ACCOUNT_TYPES, { error: "Selecione o tipo" }),
   /** Centavos (integer) — mesmo formato da API, nunca reais/float. */
   initialBalance: z.number().int(),
@@ -69,7 +63,7 @@ export type EditTransactionInput = z.infer<typeof editTransactionSchema>;
 
 export const cardSchema = z.object({
   name: z.string().min(1, "Informe o nome").max(80),
-  bankId: z.string().uuid("Selecione o banco"),
+  bankCode: z.string().min(1, "Selecione o banco"),
   /** Centavos (integer) — mesmo formato da API, nunca reais/float. */
   limit: z.number().int().positive("Informe um limite maior que zero"),
   /** Select de 1 a 28 — string na UI, convertido para número ao enviar. */

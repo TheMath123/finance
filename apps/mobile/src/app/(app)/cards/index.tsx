@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { getBank } from '@finance/shared';
 import { router } from 'expo-router';
 import { ArrowLeftIcon, CreditCardIcon, PlusIcon } from 'phosphor-react-native';
 import { ActivityIndicator, Pressable, View } from 'react-native';
@@ -7,7 +8,6 @@ import { ThemedText } from '@/components/themed-text';
 import { Card } from '@/components/ui/card';
 import { Screen } from '@/components/ui/screen';
 import { useSession } from '@/context/session';
-import { banksApi } from '@/lib/banks-api';
 import { cardsApi } from '@/lib/cards-api';
 import { cn } from '@/lib/cn';
 import { formatCents } from '@/lib/money';
@@ -15,18 +15,13 @@ import { formatCents } from '@/lib/money';
 export default function CardsScreen() {
   const { workspaceId } = useSession();
 
-  const { data: banks } = useQuery({
-    queryKey: ['banks', workspaceId],
-    queryFn: () => banksApi.list(workspaceId!),
-    enabled: Boolean(workspaceId),
-  });
   const { data: cards, isLoading } = useQuery({
     queryKey: ['cards', workspaceId],
     queryFn: () => cardsApi.list(workspaceId!),
     enabled: Boolean(workspaceId),
   });
 
-  const bankName = (bankId: string) => banks?.find((b) => b.id === bankId)?.name ?? '—';
+  const bankName = (bankCode: string) => getBank(bankCode)?.name ?? bankCode;
 
   return (
     <Screen className="gap-6 pb-28">
@@ -65,7 +60,7 @@ export default function CardsScreen() {
                     )}
                   </View>
                   <ThemedText type="small" themeColor="textSecondary">
-                    {bankName(cardItem.bankId)}
+                    {bankName(cardItem.bankCode)}
                   </ThemedText>
                 </View>
               </View>

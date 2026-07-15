@@ -1,6 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
+import { getBank } from '@finance/shared';
 import { router } from 'expo-router';
-import { BankIcon, CaretRightIcon, CreditCardIcon, TagIcon, PlusIcon } from 'phosphor-react-native';
+import { CaretRightIcon, CreditCardIcon, PlusIcon, TagIcon } from 'phosphor-react-native';
+import type { ReactNode } from 'react';
 import { ActivityIndicator, Pressable, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
@@ -8,9 +10,8 @@ import { Card } from '@/components/ui/card';
 import { Screen } from '@/components/ui/screen';
 import { useSession } from '@/context/session';
 import { accountsApi } from '@/lib/accounts-api';
-import { banksApi } from '@/lib/banks-api';
-import { categoriesApi } from '@/lib/categories-api';
 import { cardsApi } from '@/lib/cards-api';
+import { categoriesApi } from '@/lib/categories-api';
 import { cn } from '@/lib/cn';
 import { formatCents } from '@/lib/money';
 
@@ -33,7 +34,7 @@ function NavRow({
   count,
   onPress,
 }: {
-  icon: React.ReactNode;
+  icon: ReactNode;
   label: string;
   count: number;
   onPress: () => void;
@@ -59,11 +60,6 @@ function NavRow({
 export default function AccountsScreen() {
   const { workspaceId } = useSession();
 
-  const { data: banks, isLoading: loadingBanks } = useQuery({
-    queryKey: ['banks', workspaceId],
-    queryFn: () => banksApi.list(workspaceId!),
-    enabled: Boolean(workspaceId),
-  });
   const { data: accounts, isLoading: loadingAccounts } = useQuery({
     queryKey: ['accounts', workspaceId],
     queryFn: () => accountsApi.list(workspaceId!),
@@ -80,40 +76,11 @@ export default function AccountsScreen() {
     enabled: Boolean(workspaceId),
   });
 
-  const bankName = (bankId: string) => banks?.find((b) => b.id === bankId)?.name ?? '—';
+  const bankName = (bankCode: string) => getBank(bankCode)?.name ?? bankCode;
 
   return (
     <Screen className="gap-6 pb-28">
       <ThemedText type="subtitle">Contas</ThemedText>
-
-      <View className="gap-3">
-        <SectionHeader title="Bancos" onAdd={() => router.push('/banks/new')} />
-        {loadingBanks ? (
-          <ActivityIndicator />
-        ) : banks && banks.length > 0 ? (
-          banks.map((bank) => (
-            <Pressable key={bank.id} onPress={() => router.push(`/banks/${bank.id}`)}>
-              <Card className={cn('flex-row items-center gap-3', bank.archivedAt && 'opacity-50')}>
-                <View className="h-9 w-9 items-center justify-center rounded-full bg-primary/10">
-                  <BankIcon size={18} color="#2563EB" />
-                </View>
-                <ThemedText type="smallBold">{bank.name}</ThemedText>
-                {bank.archivedAt && (
-                  <ThemedText type="small" themeColor="textSecondary">
-                    Arquivado
-                  </ThemedText>
-                )}
-              </Card>
-            </Pressable>
-          ))
-        ) : (
-          <Card className="items-center py-6">
-            <ThemedText type="small" themeColor="textSecondary">
-              Nenhum banco cadastrado ainda.
-            </ThemedText>
-          </Card>
-        )}
-      </View>
 
       <View className="gap-3">
         <SectionHeader title="Contas" onAdd={() => router.push('/accounts/new')} />
@@ -134,7 +101,7 @@ export default function AccountsScreen() {
                     )}
                   </View>
                   <ThemedText type="small" themeColor="textSecondary">
-                    {bankName(account.bankId)}
+                    {bankName(account.bankCode)}
                   </ThemedText>
                 </View>
                 <ThemedText type="smallBold">{formatCents(account.balance)}</ThemedText>

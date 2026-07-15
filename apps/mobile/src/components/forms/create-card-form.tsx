@@ -1,4 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
+import { BANK_CATALOG } from '@finance/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { View } from 'react-native';
@@ -10,7 +11,6 @@ import { ThemedText } from '@/components/themed-text';
 import { Button } from '@/components/ui/button';
 import { useSession } from '@/context/session';
 import { ApiError } from '@/lib/api-client';
-import type { Bank } from '@/lib/banks-api';
 import { cardsApi, type Card } from '@/lib/cards-api';
 import { cardSchema, type CardInput } from '@/lib/schemas/finance';
 
@@ -18,23 +18,16 @@ const DAY_OPTIONS = Array.from({ length: 28 }, (_, index) => {
   const day = String(index + 1);
   return { label: day, value: day };
 });
+const BANK_OPTIONS = BANK_CATALOG.map((bank) => ({ label: bank.name, value: bank.code }));
 
-export function CreateCardForm({
-  card,
-  banks,
-  onDone,
-}: {
-  card?: Card;
-  banks: Bank[];
-  onDone: () => void;
-}) {
+export function CreateCardForm({ card, onDone }: { card?: Card; onDone: () => void }) {
   const { workspaceId } = useSession();
   const queryClient = useQueryClient();
   const { control, handleSubmit } = useForm<CardInput>({
     resolver: zodResolver(cardSchema),
     defaultValues: {
       name: card?.name ?? '',
-      bankId: card?.bankId ?? '',
+      bankCode: card?.bankCode ?? '',
       limit: card?.limit ?? 0,
       closingDay: card ? String(card.closingDay) : '',
       dueDay: card ? String(card.dueDay) : '',
@@ -45,7 +38,7 @@ export function CreateCardForm({
     mutationFn: (input: CardInput) => {
       const payload = {
         name: input.name,
-        bankId: input.bankId,
+        bankCode: input.bankCode,
         limit: input.limit,
         closingDay: Number(input.closingDay),
         dueDay: Number(input.dueDay),
@@ -60,17 +53,15 @@ export function CreateCardForm({
     },
   });
 
-  const bankOptions = banks.map((bank) => ({ label: bank.name, value: bank.id }));
-
   return (
     <View className="gap-4">
       <TextField control={control} name="name" label="Nome" placeholder="Ex.: Nubank Ultravioleta" />
       <SelectField
         control={control}
-        name="bankId"
+        name="bankCode"
         label="Banco"
         placeholder="Selecione o banco"
-        options={bankOptions}
+        options={BANK_OPTIONS}
       />
       <MoneyField control={control} name="limit" label="Limite" />
       <SelectField
