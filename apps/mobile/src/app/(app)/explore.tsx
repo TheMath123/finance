@@ -1,9 +1,12 @@
 import { useQuery } from '@tanstack/react-query';
-import { ReceiptIcon } from 'phosphor-react-native';
-import { ActivityIndicator, FlatList, View } from 'react-native';
+import { PlusIcon, ReceiptIcon } from 'phosphor-react-native';
+import { useState } from 'react';
+import { ActivityIndicator, FlatList, Pressable, View } from 'react-native';
 
+import { CreateTransactionForm } from '@/components/forms/create-transaction-form';
 import { ThemedText } from '@/components/themed-text';
 import { Card } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Screen } from '@/components/ui/screen';
 import { useSession } from '@/context/session';
 import { formatCents } from '@/lib/money';
@@ -32,6 +35,7 @@ function TransactionRow({ transaction }: { transaction: Transaction }) {
 
 export default function TransactionsScreen() {
   const { workspaceId } = useSession();
+  const [createOpen, setCreateOpen] = useState(false);
 
   const { data: transactions, isLoading } = useQuery({
     queryKey: ['transactions', workspaceId],
@@ -41,7 +45,14 @@ export default function TransactionsScreen() {
 
   return (
     <Screen className="gap-4 pb-28">
-      <ThemedText type="subtitle">Transações</ThemedText>
+      <View className="flex-row items-center justify-between">
+        <ThemedText type="subtitle">Transações</ThemedText>
+        <Pressable
+          onPress={() => setCreateOpen(true)}
+          className="h-9 w-9 items-center justify-center rounded-full bg-primary active:opacity-80">
+          <PlusIcon size={18} color="#FFFFFF" weight="bold" />
+        </Pressable>
+      </View>
 
       {isLoading ? (
         <ActivityIndicator className="mt-8" />
@@ -63,6 +74,15 @@ export default function TransactionsScreen() {
           </ThemedText>
         </Card>
       )}
+
+      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+        <DialogContent className="w-full max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Nova transação</DialogTitle>
+          </DialogHeader>
+          <CreateTransactionForm onDone={() => setCreateOpen(false)} />
+        </DialogContent>
+      </Dialog>
     </Screen>
   );
 }

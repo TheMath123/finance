@@ -2,37 +2,34 @@ import { useController, type Control, type FieldValues, type Path } from 'react-
 import { View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { NumberInput } from '@/components/ui/number-input';
+import { Select, type SelectOption } from '@/components/ui/select';
 
-export interface NumberFieldProps<T extends FieldValues> {
+export interface SelectFieldProps<T extends FieldValues> {
   control: Control<T>;
   name: Path<T>;
   label?: string;
-  min?: number;
-  max?: number;
-  step?: number;
+  placeholder?: string;
+  options: SelectOption[];
 }
 
-export function NumberField<T extends FieldValues>({
+export function SelectField<T extends FieldValues>({
   control,
   name,
   label,
-  min,
-  max,
-  step,
-}: NumberFieldProps<T>) {
+  placeholder,
+  options,
+}: SelectFieldProps<T>) {
   const { field, fieldState } = useController({ control, name });
 
   return (
     <View className="gap-1.5">
       {label && <ThemedText type="smallBold">{label}</ThemedText>}
-      <NumberInput
+      <Select
         className={fieldState.error ? 'border-destructive' : undefined}
-        value={(field.value as number | undefined) ?? min ?? 0}
+        placeholder={placeholder}
+        options={options}
+        value={field.value as string | undefined}
         onValueChange={field.onChange}
-        min={min}
-        max={max}
-        step={step}
       />
       {fieldState.error?.message && (
         <ThemedText type="small" style={{ color: '#DC2626' }}>

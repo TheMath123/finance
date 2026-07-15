@@ -224,10 +224,16 @@ Princípio: os dados são estruturados, então **não usar RAG/embeddings sobre 
     Elysia; testes de repos contra um Postgres de teste — docker compose ou Testcontainers).
 - **App**: Expo (React Native + TypeScript) com dev build (`expo prebuild` — Expo Go não suporta widget).
   - Widget de tela inicial: **react-native-android-widget** (JSX → RemoteViews).
-  - Navegação: expo-router, com grupos de rota `(auth)` (login/registro) e `(app)` (telas
-    autenticadas); cada grupo tem seu próprio `_layout.tsx` que redireciona conforme a sessão
-    (`SessionProvider`/`useSession`, tokens lidos de `expo-secure-store`). Dados: TanStack Query +
-    um client HTTP fino que anexa o access token e renova a sessão automaticamente em 401.
+  - Navegação: expo-router, com grupos de rota `(auth)` (login/registro) e `(app)` (Resumo/
+    Transações/Contas — 3 abas); cada grupo tem seu próprio `_layout.tsx` que redireciona conforme a
+    sessão (`SessionProvider`/`useSession`, expõe `user` **e** `workspaceId`, tokens lidos de
+    `expo-secure-store`). Dados: TanStack Query + um client HTTP fino que anexa o access token e
+    renova a sessão automaticamente em 401. Telas de criação (banco/conta/transação) usam `Dialog`
+    (registry AniUI) com formulário React Hook Form + Zod dentro. Campo de valor monetário é o
+    **`MoneyField`** (`src/components/form/money-field.tsx`, próprio — não é da registry): input
+    "digita da direita pra esquerda" (padrão de app bancário, sempre 2 casas decimais, sem stepper
+    +/-); o valor do form já fica em **centavos** (integer), igual ao contrato da API, sem conversão
+    reais↔centavos no submit.
   - **Estilo: Tailwind CSS** via **NativeWind** (classes utilitárias no React Native; o widget,
     por rodar fora da árvore do NativeWind, usa estilos inline do `react-native-android-widget`).
     Classes condicionais usam **`cn()`** (`clsx` + `tailwind-merge`, `src/lib/cn.ts`) em vez de

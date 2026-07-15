@@ -1,3 +1,5 @@
+import type { TransactionMethod, TransactionType } from "@finance/shared";
+
 import { apiRequest } from "@/lib/api-client";
 
 export interface Transaction {
@@ -5,8 +7,8 @@ export interface Transaction {
   description: string;
   /** Centavos. */
   amount: number;
-  type: "income" | "expense" | "transfer";
-  method: string;
+  type: TransactionType;
+  method: TransactionMethod;
   /** Competência local (YYYY-MM-DD). */
   date: string;
   categoryId: string;
@@ -18,6 +20,18 @@ export interface ListTransactionsFilters {
   limit?: number;
 }
 
+export interface CreateTransactionInput {
+  description: string;
+  /** Centavos. */
+  amount: number;
+  type: TransactionType;
+  method: TransactionMethod;
+  date: string;
+  categoryId: string;
+  accountId?: string;
+  cardId?: string;
+}
+
 export const transactionsApi = {
   list: (workspaceId: string, filters: ListTransactionsFilters = {}) => {
     const query = new URLSearchParams(
@@ -27,4 +41,11 @@ export const transactionsApi = {
       `/workspaces/${workspaceId}/transactions${query ? `?${query}` : ""}`,
     );
   },
+
+  /** Retorna um array — parcelas geram uma Transaction por parcela. */
+  create: (workspaceId: string, input: CreateTransactionInput) =>
+    apiRequest<Transaction[]>(`/workspaces/${workspaceId}/transactions`, {
+      method: "POST",
+      body: input,
+    }),
 };
