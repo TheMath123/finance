@@ -1,0 +1,21 @@
+import type { InvoiceStatus } from "@finance/shared";
+import type { CardInvoice } from "../../domain/entities/card";
+import type { InvoicePeriod } from "../../domain/services/invoice-rules";
+
+export interface InvoiceRepository {
+  findInWorkspace(workspaceId: string, invoiceId: string): Promise<CardInvoice | undefined>;
+  findById(invoiceId: string): Promise<CardInvoice | undefined>;
+  /** Criação lazy por competência (única por cartão+período; tolera corrida). */
+  getOrCreate(workspaceId: string, cardId: string, period: InvoicePeriod): Promise<CardInvoice>;
+  listByCard(cardId: string): Promise<CardInvoice[]>;
+  setStatus(invoiceId: string, status: InvoiceStatus): Promise<void>;
+  markPaid(invoiceId: string, paymentTransactionId: string): Promise<CardInvoice>;
+  /** Total derivado: Σ despesas − Σ receitas das transações não deletadas. */
+  total(invoiceId: string): Promise<number>;
+  /** Σ dos totais das faturas não pagas (limite disponível derivado). */
+  unpaidTotalByCard(cardId: string): Promise<number>;
+  listUnpaidWithDue(
+    workspaceId: string,
+  ): Promise<{ id: string; month: number; year: number; dueDay: number }[]>;
+  deleteByCard(cardId: string): Promise<void>;
+}

@@ -1,0 +1,27 @@
+import type { Db } from "@finance/db";
+import type { JobName, JobPayloads } from "@finance/queues";
+import { createRepositories } from "../infra/db/repositories";
+import { createUnitOfWork } from "../infra/db/unit-of-work";
+import { bunPasswordHasher } from "../infra/security/bun-password-hasher";
+import { createTokenService } from "../infra/security/jose-token-service";
+import { createInMemoryRateLimiter } from "../infra/security/in-memory-rate-limiter";
+import type { UseCaseDeps } from "../application/deps";
+
+export type DispatchedJob = { name: JobName; payload: JobPayloads[JobName] };
+
+/** Monta UseCaseDeps reais (mesmas fábricas do composition root) para testes contra Postgres. */
+export function createTestDeps(db: Db, jobs: DispatchedJob[] = []): UseCaseDeps {
+  return {
+    repos: createRepositories(db),
+    uow: createUnitOfWork(db),
+    hasher: bunPasswordHasher,
+    tokens: createTokenService("segredo-de-teste-com-mais-de-32-caracteres!!"),
+    dispatch: async (name, payload) => {
+      jobs.push({ name, payload });
+    },
+    logger: { log: () => {} },
+    rateLimiter: createInMemoryRateLimiter(),
+    appUrl: "http://localhost:3000",
+    termsVersion: "test",
+  };
+}
