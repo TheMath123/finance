@@ -230,6 +230,10 @@ Princípio: os dados são estruturados, então **não usar RAG/embeddings sobre 
     um client HTTP fino que anexa o access token e renova a sessão automaticamente em 401.
   - **Estilo: Tailwind CSS** via **NativeWind** (classes utilitárias no React Native; o widget,
     por rodar fora da árvore do NativeWind, usa estilos inline do `react-native-android-widget`).
+    Classes condicionais usam **`cn()`** (`clsx` + `tailwind-merge`, `src/lib/cn.ts`) em vez de
+    template literal manual; componentes com variantes nomeadas (ex.: `Button`) usam **`cva`**
+    (`class-variance-authority`) — evita conflito de classes Tailwind não resolvido e duplicação de
+    lógica de estilo entre componentes.
   - **Formulários: React Hook Form + Zod** (`@hookform/resolvers/zod`, decisão de 2026-07-15) — todo
     formulário valida com o mesmo schema Zod que o payload da rota correspondente espera (schemas
     compartilhados via `packages/shared` quando fizer sentido, evitando duplicação e dessincronia

@@ -3,8 +3,10 @@ import { useController, type Control, type FieldValues, type Path } from 'react-
 import { Pressable, TextInput, View, type TextInputProps } from 'react-native';
 import { EyeIcon, EyeSlashIcon } from 'phosphor-react-native';
 
+import { inputField } from '@/components/form/input-variants';
 import { ThemedText } from '@/components/themed-text';
 import { useTheme } from '@/hooks/use-theme';
+import { cn } from '@/lib/cn';
 
 export interface PasswordFieldProps<T extends FieldValues>
   extends Pick<TextInputProps, 'placeholder' | 'autoComplete'> {
@@ -22,16 +24,13 @@ export function PasswordField<T extends FieldValues>({
   const { field, fieldState } = useController({ control, name });
   const [visible, setVisible] = useState(false);
   const theme = useTheme();
-  const hasError = Boolean(fieldState.error);
 
   return (
     <View className="gap-1.5">
       {label && <ThemedText type="smallBold">{label}</ThemedText>}
       <View className="justify-center">
         <TextInput
-          className={`rounded-xl border py-3 pl-4 pr-11 text-base dark:text-white ${
-            hasError ? 'border-danger' : 'border-neutral-300 dark:border-neutral-700'
-          }`}
+          className={cn(inputField({ error: Boolean(fieldState.error) }), 'pl-4 pr-11')}
           placeholderTextColor="#9CA3AF"
           value={(field.value as string | undefined) ?? ''}
           onChangeText={field.onChange}

@@ -4,6 +4,7 @@ import { Pressable, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { cn } from '@/lib/cn';
 
 export interface CheckboxFieldProps<T extends FieldValues> {
   control: Control<T>;
@@ -20,9 +21,10 @@ export function CheckboxField<T extends FieldValues>({ control, name, label }: C
     <View className="gap-1.5">
       <Pressable className="flex-row items-center gap-2.5" onPress={() => field.onChange(!checked)}>
         <ThemedView
-          className={`h-5 w-5 items-center justify-center rounded-md border ${
-            hasError && !checked ? 'border-danger' : 'border-neutral-400 dark:border-neutral-600'
-          }`}
+          className={cn(
+            'h-5 w-5 items-center justify-center rounded-md border',
+            hasError && !checked ? 'border-danger' : 'border-neutral-400 dark:border-neutral-600',
+          )}
           type={checked ? 'backgroundSelected' : 'background'}>
           {checked && <CheckIcon size={14} weight="bold" color="#2563EB" />}
         </ThemedView>

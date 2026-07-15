@@ -1,7 +1,9 @@
 import { useController, type Control, type FieldValues, type Path } from 'react-hook-form';
 import { TextInput, View, type TextInputProps } from 'react-native';
 
+import { inputField } from '@/components/form/input-variants';
 import { ThemedText } from '@/components/themed-text';
+import { cn } from '@/lib/cn';
 
 export interface NumberFieldProps<T extends FieldValues>
   extends Pick<TextInputProps, 'placeholder'> {
@@ -19,15 +21,12 @@ export function NumberField<T extends FieldValues>({
 }: NumberFieldProps<T>) {
   const { field, fieldState } = useController({ control, name });
   const value = field.value as number | undefined;
-  const hasError = Boolean(fieldState.error);
 
   return (
     <View className="gap-1.5">
       {label && <ThemedText type="smallBold">{label}</ThemedText>}
       <TextInput
-        className={`rounded-xl border px-4 py-3 text-base dark:text-white ${
-          hasError ? 'border-danger' : 'border-neutral-300 dark:border-neutral-700'
-        }`}
+        className={cn(inputField({ error: Boolean(fieldState.error) }), 'px-4')}
         placeholderTextColor="#9CA3AF"
         keyboardType="decimal-pad"
         value={value === undefined ? '' : String(value)}

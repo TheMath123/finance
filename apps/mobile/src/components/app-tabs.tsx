@@ -9,6 +9,7 @@ import { ThemedView } from './themed-view';
 
 import { MaxContentWidth } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { cn } from '@/lib/cn';
 
 // "/" é o path correto em runtime para o index de um grupo, mas o gerador de
 // tipos do expo-router não expõe esse literal (só "/index", que resolve para
@@ -45,10 +46,7 @@ function TabButton({
 
   return (
     <Pressable {...props} className="active:opacity-70">
-      <View
-        className={`flex-row items-center gap-1.5 rounded-full px-4 py-2 ${
-          isFocused ? 'bg-brand-600' : ''
-        }`}>
+      <View className={cn('flex-row items-center gap-1.5 rounded-full px-4 py-2', isFocused && 'bg-brand-600')}>
         <Icon color={isFocused ? '#FFFFFF' : theme.textSecondary} size={20} weight={isFocused ? 'fill' : 'regular'} />
         <ThemedText
           type="smallBold"
