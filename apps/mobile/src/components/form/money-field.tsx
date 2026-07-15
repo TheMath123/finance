@@ -31,7 +31,7 @@ export function MoneyField<T extends FieldValues>({ control, name, label }: Mone
       {label && <ThemedText type="smallBold">{label}</ThemedText>}
       <TextInput
         className={cn(
-          'rounded-xl border px-4 py-3 text-right text-xl font-semibold dark:text-white',
+          'rounded-xl border px-4 py-3 text-left text-xl font-semibold dark:text-white',
           fieldState.error ? 'border-destructive' : 'border-neutral-300 dark:border-neutral-700',
         )}
         keyboardType="number-pad"

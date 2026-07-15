@@ -177,33 +177,43 @@ export default function AccountsScreen() {
         {loadingCategories ? (
           <ActivityIndicator />
         ) : categories && categories.length > 0 ? (
-          categories.map((category) => (
-            <Card key={category.id} className="flex-row items-center justify-between">
-              <Pressable
-                className="flex-1 flex-row items-center gap-3"
-                onPress={() => openCategoryDialog(category)}>
-                <View
-                  className="h-3 w-3 rounded-full"
-                  style={{ backgroundColor: category.color }}
-                />
-                <ThemedText type="smallBold">{category.name}</ThemedText>
-              </Pressable>
-              <View className="flex-row items-center gap-2">
+          categories.map((category) =>
+            category.isDefault ? (
+              <Card key={category.id} className="flex-row items-center justify-between">
+                <View className="flex-row items-center gap-3">
+                  <View className="h-3 w-3 rounded-full" style={{ backgroundColor: category.color }} />
+                  <ThemedText type="smallBold">{category.name}</ThemedText>
+                </View>
+                <ThemedText type="small" themeColor="textSecondary">
+                  Padrão
+                </ThemedText>
+              </Card>
+            ) : (
+              <Card key={category.id} className="flex-row items-center justify-between">
                 <Pressable
-                  onPress={() => openCategoryDialog(category)}
-                  className="h-8 w-8 items-center justify-center rounded-full bg-primary/10 active:opacity-70">
-                  <PencilIcon size={16} color="#2563EB" />
+                  className="flex-1 flex-row items-center gap-3"
+                  onPress={() => openCategoryDialog(category)}>
+                  <View
+                    className="h-3 w-3 rounded-full"
+                    style={{ backgroundColor: category.color }}
+                  />
+                  <ThemedText type="smallBold">{category.name}</ThemedText>
                 </Pressable>
-                {!category.isFallback && (
+                <View className="flex-row items-center gap-2">
+                  <Pressable
+                    onPress={() => openCategoryDialog(category)}
+                    className="h-8 w-8 items-center justify-center rounded-full bg-primary/10 active:opacity-70">
+                    <PencilIcon size={16} color="#2563EB" />
+                  </Pressable>
                   <Pressable
                     onPress={() => confirmDeleteCategory(category)}
                     className="h-8 w-8 items-center justify-center rounded-full bg-destructive/10 active:opacity-70">
                     <TrashIcon size={16} color="#DC2626" />
                   </Pressable>
-                )}
-              </View>
-            </Card>
-          ))
+                </View>
+              </Card>
+            ),
+          )
         ) : (
           <Card className="items-center py-6">
             <ThemedText type="small" themeColor="textSecondary">

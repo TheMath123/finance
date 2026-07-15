@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { View } from 'react-native';
 
+import { DateField } from '@/components/form/date-field';
 import { MoneyField } from '@/components/form/money-field';
 import { SelectField } from '@/components/form/select-field';
 import { TextField } from '@/components/form/text-field';
@@ -63,7 +64,7 @@ export function EditTransactionForm({
         placeholder="Selecione a categoria"
         options={categoryOptions}
       />
-      <TextField control={control} name="date" label="Data (AAAA-MM-DD)" placeholder="2026-07-15" />
+      <DateField control={control} name="date" label="Data" />
       {mutation.isError && (
         <ThemedText type="small" style={{ color: '#DC2626' }}>
           {mutation.error instanceof ApiError ? mutation.error.message : 'Erro inesperado'}

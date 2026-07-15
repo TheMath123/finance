@@ -3,8 +3,8 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { View } from 'react-native';
 
+import { DateField } from '@/components/form/date-field';
 import { SelectField } from '@/components/form/select-field';
-import { TextField } from '@/components/form/text-field';
 import { ThemedText } from '@/components/themed-text';
 import { Button } from '@/components/ui/button';
 import { useSession } from '@/context/session';
@@ -57,7 +57,7 @@ export function PayInvoiceForm({
         placeholder="Selecione a conta"
         options={accountOptions}
       />
-      <TextField control={control} name="date" label="Data" placeholder="AAAA-MM-DD" />
+      <DateField control={control} name="date" label="Data" />
       <SelectField control={control} name="method" label="Método" options={METHOD_OPTIONS} />
       {mutation.isError && (
         <ThemedText type="small" style={{ color: '#DC2626' }}>

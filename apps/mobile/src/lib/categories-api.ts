@@ -6,6 +6,8 @@ export interface Category {
   icon: string;
   color: string;
   isFallback: boolean;
+  /** Categoria do seed (criada junto com o workspace) — não editável nem excluível. */
+  isDefault: boolean;
 }
 
 export interface CategoryInput {

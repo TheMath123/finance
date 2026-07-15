@@ -1,6 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { RECURRENCE_FREQUENCIES, TRANSACTION_TYPES } from '@finance/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useEffect } from 'react';
 import { useController, useForm, useWatch } from 'react-hook-form';
 import { View } from 'react-native';
 
@@ -14,6 +15,7 @@ import { Select } from '@/components/ui/select';
 import { useSession } from '@/context/session';
 import { accountsApi } from '@/lib/accounts-api';
 import { ApiError } from '@/lib/api-client';
+import { cardsApi } from '@/lib/cards-api';
 import { categoriesApi } from '@/lib/categories-api';
 import { recurringApi } from '@/lib/recurring-api';
 import { recurringSchema, type RecurringInput } from '@/lib/schemas/finance';
@@ -130,8 +132,13 @@ export function CreateRecurringForm({ onDone }: { onDone: () => void }) {
     queryFn: () => accountsApi.list(workspaceId!),
     enabled: Boolean(workspaceId),
   });
+  const { data: cards } = useQuery({
+    queryKey: ['cards', workspaceId],
+    queryFn: () => cardsApi.list(workspaceId!),
+    enabled: Boolean(workspaceId),
+  });
 
-  const { control, handleSubmit } = useForm<RecurringInput>({
+  const { control, handleSubmit, setValue } = useForm<RecurringInput>({
     resolver: zodResolver(recurringSchema),
     defaultValues: {
       description: '',
@@ -140,6 +147,7 @@ export function CreateRecurringForm({ onDone }: { onDone: () => void }) {
       method: 'pix',
       categoryId: '',
       accountId: undefined,
+      cardId: undefined,
       frequency: 'monthly',
       dayOfReference: 1,
       monthOfReference: undefined,
@@ -148,6 +156,14 @@ export function CreateRecurringForm({ onDone }: { onDone: () => void }) {
   });
 
   const frequency = useWatch({ control, name: 'frequency' });
+  const method = useWatch({ control, name: 'method' });
+  const isCredit = method === 'credit';
+
+  // Mesma regra do form de transação: crédito manda cardId (nunca accountId).
+  useEffect(() => {
+    if (isCredit) setValue('accountId', undefined);
+    else setValue('cardId', undefined);
+  }, [isCredit, setValue]);
 
   const mutation = useMutation({
     mutationFn: (input: RecurringInput) => recurringApi.create(workspaceId!, input),
@@ -160,6 +176,7 @@ export function CreateRecurringForm({ onDone }: { onDone: () => void }) {
 
   const categoryOptions = (categories ?? []).map((c) => ({ label: c.name, value: c.id }));
   const accountOptions = (accounts ?? []).map((a) => ({ label: a.name, value: a.id }));
+  const cardOptions = (cards ?? []).map((c) => ({ label: c.name, value: c.id }));
 
   return (
     <View className="gap-4">
@@ -174,13 +191,23 @@ export function CreateRecurringForm({ onDone }: { onDone: () => void }) {
         placeholder="Selecione a categoria"
         options={categoryOptions}
       />
-      <SelectField
-        control={control}
-        name="accountId"
-        label="Conta"
-        placeholder="Selecione a conta"
-        options={accountOptions}
-      />
+      {isCredit ? (
+        <SelectField
+          control={control}
+          name="cardId"
+          label="Cartão"
+          placeholder="Selecione o cartão"
+          options={cardOptions}
+        />
+      ) : (
+        <SelectField
+          control={control}
+          name="accountId"
+          label="Conta"
+          placeholder="Selecione a conta"
+          options={accountOptions}
+        />
+      )}
       <SelectField control={control} name="frequency" label="Frequência" options={FREQUENCY_OPTIONS} />
       <DayOfReferenceField control={control} frequency={frequency} />
       {frequency === 'yearly' && <MonthOfReferenceField control={control} />}

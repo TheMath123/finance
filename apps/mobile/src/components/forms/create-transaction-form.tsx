@@ -1,9 +1,11 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { TRANSACTION_METHODS, TRANSACTION_TYPES } from '@finance/shared';
+import { TRANSACTION_TYPES } from '@finance/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useForm } from 'react-hook-form';
+import { useEffect } from 'react';
+import { useForm, useWatch } from 'react-hook-form';
 import { View } from 'react-native';
 
+import { DateField } from '@/components/form/date-field';
 import { MoneyField } from '@/components/form/money-field';
 import { SelectField } from '@/components/form/select-field';
 import { TextField } from '@/components/form/text-field';
@@ -12,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { useSession } from '@/context/session';
 import { accountsApi } from '@/lib/accounts-api';
 import { ApiError } from '@/lib/api-client';
+import { cardsApi } from '@/lib/cards-api';
 import { useCategories } from '@/lib/hooks/use-categories';
 import { transactionSchema, type TransactionInput } from '@/lib/schemas/finance';
 import { transactionsApi } from '@/lib/transactions-api';
@@ -22,14 +25,16 @@ const TYPE_LABELS: Record<(typeof TRANSACTION_TYPES)[number], string> = {
 };
 const TYPE_OPTIONS = TRANSACTION_TYPES.map((type) => ({ label: TYPE_LABELS[type], value: type }));
 
-const METHOD_LABELS: Record<(typeof TRANSACTION_METHODS)[number], string> = {
-  pix: 'Pix',
-  debit: 'Débito',
-  cash: 'Dinheiro',
-  credit: 'Crédito',
-  transfer: 'Transferência',
-};
-const METHOD_OPTIONS = TRANSACTION_METHODS.map((method) => ({ label: METHOD_LABELS[method], value: method }));
+/**
+ * "transfer" fica fora por enquanto: exige conta origem + destino, e o form
+ * ainda não tem esse segundo seletor — ver spec/backlog.
+ */
+const METHOD_OPTIONS = [
+  { label: 'Pix', value: 'pix' },
+  { label: 'Débito', value: 'debit' },
+  { label: 'Dinheiro', value: 'cash' },
+  { label: 'Crédito', value: 'credit' },
+];
 
 function todayIso(): string {
   const now = new Date();
@@ -46,8 +51,13 @@ export function CreateTransactionForm({ onDone }: { onDone: () => void }) {
     queryFn: () => accountsApi.list(workspaceId!),
     enabled: Boolean(workspaceId),
   });
+  const { data: cards } = useQuery({
+    queryKey: ['cards', workspaceId],
+    queryFn: () => cardsApi.list(workspaceId!),
+    enabled: Boolean(workspaceId),
+  });
 
-  const { control, handleSubmit } = useForm<TransactionInput>({
+  const { control, handleSubmit, setValue } = useForm<TransactionInput>({
     resolver: zodResolver(transactionSchema),
     defaultValues: {
       description: '',
@@ -57,8 +67,20 @@ export function CreateTransactionForm({ onDone }: { onDone: () => void }) {
       date: todayIso(),
       categoryId: '',
       accountId: undefined,
+      cardId: undefined,
     },
   });
+
+  const method = useWatch({ control, name: 'method' });
+  const isCredit = method === 'credit';
+
+  // Ao trocar de método, limpa o campo do "modo" anterior — crédito manda cardId
+  // (nunca accountId), os demais mandam accountId (nunca cardId); a API rejeita
+  // se os dois vierem juntos.
+  useEffect(() => {
+    if (isCredit) setValue('accountId', undefined);
+    else setValue('cardId', undefined);
+  }, [isCredit, setValue]);
 
   const mutation = useMutation({
     mutationFn: (input: TransactionInput) => transactionsApi.create(workspaceId!, input),
@@ -71,11 +93,13 @@ export function CreateTransactionForm({ onDone }: { onDone: () => void }) {
 
   const categoryOptions = (categories ?? []).map((c) => ({ label: c.name, value: c.id }));
   const accountOptions = (accounts ?? []).map((a) => ({ label: a.name, value: a.id }));
+  const cardOptions = (cards ?? []).map((c) => ({ label: c.name, value: c.id }));
 
   return (
     <View className="gap-4">
       <TextField control={control} name="description" label="Descrição" placeholder="Ex.: Mercado" />
       <MoneyField control={control} name="amount" label="Valor" />
+      <DateField control={control} name="date" label="Data" />
       <SelectField control={control} name="type" label="Tipo" options={TYPE_OPTIONS} />
       <SelectField control={control} name="method" label="Método" options={METHOD_OPTIONS} />
       <SelectField
@@ -85,13 +109,23 @@ export function CreateTransactionForm({ onDone }: { onDone: () => void }) {
         placeholder="Selecione a categoria"
         options={categoryOptions}
       />
-      <SelectField
-        control={control}
-        name="accountId"
-        label="Conta"
-        placeholder="Selecione a conta"
-        options={accountOptions}
-      />
+      {isCredit ? (
+        <SelectField
+          control={control}
+          name="cardId"
+          label="Cartão"
+          placeholder="Selecione o cartão"
+          options={cardOptions}
+        />
+      ) : (
+        <SelectField
+          control={control}
+          name="accountId"
+          label="Conta"
+          placeholder="Selecione a conta"
+          options={accountOptions}
+        />
+      )}
       {mutation.isError && (
         <ThemedText type="small" style={{ color: '#DC2626' }}>
           {mutation.error instanceof ApiError ? mutation.error.message : 'Erro inesperado'}
