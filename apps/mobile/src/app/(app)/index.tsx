@@ -1,18 +1,37 @@
+import { useQuery } from '@tanstack/react-query';
 import { TrendUpIcon, TrendDownIcon } from 'phosphor-react-native';
-import { View } from 'react-native';
+import { ActivityIndicator, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { Card } from '@/components/ui/card';
 import { Screen } from '@/components/ui/screen';
+import { useSession } from '@/context/session';
+import { formatCents } from '@/lib/money';
+import { summaryApi } from '@/lib/summary-api';
 
 export default function HomeScreen() {
+  const { workspaceId } = useSession();
+  const now = new Date();
+
+  const { data: summary, isLoading } = useQuery({
+    queryKey: ['summary', workspaceId, now.getFullYear(), now.getMonth() + 1],
+    queryFn: () => summaryApi.getMonthly(workspaceId!, now.getFullYear(), now.getMonth() + 1),
+    enabled: Boolean(workspaceId),
+  });
+
   return (
     <Screen className="gap-6 pb-28">
       <View>
         <ThemedText type="small" themeColor="textSecondary">
           Saldo disponível
         </ThemedText>
-        <ThemedText type="title">R$ 0,00</ThemedText>
+        {isLoading ? (
+          <ActivityIndicator className="mt-2 self-start" />
+        ) : (
+          <ThemedText type="title">
+            {formatCents(summary?.projectedAvailable ?? summary?.totalBalance ?? 0)}
+          </ThemedText>
+        )}
       </View>
 
       <View className="flex-row gap-3">
@@ -24,7 +43,7 @@ export default function HomeScreen() {
             <ThemedText type="small" themeColor="textSecondary">
               Receitas
             </ThemedText>
-            <ThemedText type="smallBold">R$ 0,00</ThemedText>
+            <ThemedText type="smallBold">{formatCents(summary?.income ?? 0)}</ThemedText>
           </View>
         </Card>
 
@@ -36,7 +55,7 @@ export default function HomeScreen() {
             <ThemedText type="small" themeColor="textSecondary">
               Despesas
             </ThemedText>
-            <ThemedText type="smallBold">R$ 0,00</ThemedText>
+            <ThemedText type="smallBold">{formatCents(summary?.expense ?? 0)}</ThemedText>
           </View>
         </Card>
       </View>
