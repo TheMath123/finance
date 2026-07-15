@@ -1,5 +1,7 @@
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
+import { router } from 'expo-router';
 import {
+  ArchiveIcon,
   ArrowsClockwiseIcon,
   MagnifyingGlassIcon,
   PencilIcon,
@@ -281,6 +283,11 @@ export default function TransactionsScreen() {
       <View className="flex-row items-center justify-between">
         <ThemedText type="subtitle">Transações</ThemedText>
         <View className="flex-row items-center gap-2">
+          <Pressable
+            onPress={() => router.push('/transactions/trash')}
+            className="h-9 w-9 items-center justify-center rounded-full bg-muted active:opacity-80">
+            <ArchiveIcon size={18} weight="bold" />
+          </Pressable>
           <Pressable
             onPress={() => setRecurringManagerOpen(true)}
             className="h-9 w-9 items-center justify-center rounded-full bg-muted active:opacity-80">

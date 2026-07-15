@@ -25,6 +25,8 @@ export interface ListTransactionsFilters {
   q?: string;
   limit?: number;
   offset?: number;
+  /** Quando true, lista apenas transações excluídas (soft delete) em vez das ativas. */
+  deletedOnly?: boolean;
 }
 
 export interface CreateTransactionInput {
