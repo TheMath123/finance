@@ -9,7 +9,7 @@ export default function RegisterScreen() {
   return (
     <Screen center>
       <View className="items-center gap-3 pb-4">
-        <View className="h-14 w-14 items-center justify-center rounded-2xl bg-brand-600">
+        <View className="h-14 w-14 items-center justify-center rounded-2xl bg-primary">
           <WalletIcon size={28} color="#FFFFFF" weight="fill" />
         </View>
         <ThemedText type="subtitle">Criar conta</ThemedText>

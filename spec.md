@@ -234,6 +234,17 @@ Princípio: os dados são estruturados, então **não usar RAG/embeddings sobre 
     template literal manual; componentes com variantes nomeadas (ex.: `Button`) usam **`cva`**
     (`class-variance-authority`) — evita conflito de classes Tailwind não resolvido e duplicação de
     lógica de estilo entre componentes.
+  - **Componentes de UI: registry AniUI** (aniui.dev, decisão de 2026-07-15) — estilo shadcn/ui
+    para React Native: o CLI (`npx @aniui/cli add <componente>`) copia o código-fonte do componente
+    pra `src/components/ui/`, então cada um é código nosso (não dependência opaca), editável à
+    vontade. Tokens de cor (shadcn-style, `--background`/`--primary`/`--destructive`/… em
+    `src/global.css`, mapeados no `tailwind.config.js`) substituem a paleta `brand`/`danger` que
+    existia antes. Componentes de campo do formulário (`text-field`/`password-field`/`number-field`/
+    `checkbox-field` em `src/components/form/`) continuam existindo como wrapper fino: eles seguram a
+    lógica do React Hook Form (`useController`) e delegam a renderização visual pro componente da
+    registry (`Input`/`PasswordInput`/`NumberInput`/`Checkbox`). Ícones dentro de componentes da
+    registry são trocados para Phosphor ao serem importados (ex.: `password-input.tsx` usava SVG
+    inline, trocado por `EyeIcon`/`EyeSlashIcon`), mantendo a convenção de ícones já fechada.
   - **Formulários: React Hook Form + Zod** (`@hookform/resolvers/zod`, decisão de 2026-07-15) — todo
     formulário valida com o mesmo schema Zod que o payload da rota correspondente espera (schemas
     compartilhados via `packages/shared` quando fizer sentido, evitando duplicação e dessincronia

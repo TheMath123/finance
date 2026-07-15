@@ -46,7 +46,7 @@ function TabButton({
 
   return (
     <Pressable {...props} className="active:opacity-70">
-      <View className={cn('flex-row items-center gap-1.5 rounded-full px-4 py-2', isFocused && 'bg-brand-600')}>
+      <View className={cn('flex-row items-center gap-1.5 rounded-full px-4 py-2', isFocused && 'bg-primary')}>
         <Icon color={isFocused ? '#FFFFFF' : theme.textSecondary} size={20} weight={isFocused ? 'fill' : 'regular'} />
         <ThemedText
           type="smallBold"

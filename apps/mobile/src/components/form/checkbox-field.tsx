@@ -1,10 +1,8 @@
-import { CheckIcon } from 'phosphor-react-native';
 import { useController, type Control, type FieldValues, type Path } from 'react-hook-form';
 import { Pressable, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { cn } from '@/lib/cn';
+import { Checkbox } from '@/components/ui/checkbox';
 
 export interface CheckboxFieldProps<T extends FieldValues> {
   control: Control<T>;
@@ -15,19 +13,13 @@ export interface CheckboxFieldProps<T extends FieldValues> {
 export function CheckboxField<T extends FieldValues>({ control, name, label }: CheckboxFieldProps<T>) {
   const { field, fieldState } = useController({ control, name });
   const checked = Boolean(field.value);
-  const hasError = Boolean(fieldState.error);
 
   return (
     <View className="gap-1.5">
-      <Pressable className="flex-row items-center gap-2.5" onPress={() => field.onChange(!checked)}>
-        <ThemedView
-          className={cn(
-            'h-5 w-5 items-center justify-center rounded-md border',
-            hasError && !checked ? 'border-danger' : 'border-neutral-400 dark:border-neutral-600',
-          )}
-          type={checked ? 'backgroundSelected' : 'background'}>
-          {checked && <CheckIcon size={14} weight="bold" color="#2563EB" />}
-        </ThemedView>
+      <Pressable className="flex-row items-center gap-2" onPress={() => field.onChange(!checked)}>
+        {/* onCheckedChange fica de fora de propósito — o toque é tratado pelo Pressable
+            de fora, que cobre a linha inteira (caixinha + label), não só a caixinha. */}
+        <Checkbox checked={checked} />
         <ThemedText type="small" themeColor="textSecondary">
           {label}
         </ThemedText>

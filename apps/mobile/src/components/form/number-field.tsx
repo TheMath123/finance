@@ -1,41 +1,38 @@
 import { useController, type Control, type FieldValues, type Path } from 'react-hook-form';
-import { TextInput, View, type TextInputProps } from 'react-native';
+import { View } from 'react-native';
 
-import { inputField } from '@/components/form/input-variants';
 import { ThemedText } from '@/components/themed-text';
-import { cn } from '@/lib/cn';
+import { NumberInput } from '@/components/ui/number-input';
 
-export interface NumberFieldProps<T extends FieldValues>
-  extends Pick<TextInputProps, 'placeholder'> {
+export interface NumberFieldProps<T extends FieldValues> {
   control: Control<T>;
   name: Path<T>;
   label?: string;
+  min?: number;
+  max?: number;
+  step?: number;
 }
 
-/** Guarda o valor do form como number — o input só aceita dígitos e um separador decimal. */
 export function NumberField<T extends FieldValues>({
   control,
   name,
   label,
-  ...inputProps
+  min,
+  max,
+  step,
 }: NumberFieldProps<T>) {
   const { field, fieldState } = useController({ control, name });
-  const value = field.value as number | undefined;
 
   return (
     <View className="gap-1.5">
       {label && <ThemedText type="smallBold">{label}</ThemedText>}
-      <TextInput
-        className={cn(inputField({ error: Boolean(fieldState.error) }), 'px-4')}
-        placeholderTextColor="#9CA3AF"
-        keyboardType="decimal-pad"
-        value={value === undefined ? '' : String(value)}
-        onChangeText={(text) => {
-          const normalized = text.replace(',', '.').replace(/[^0-9.]/g, '');
-          field.onChange(normalized === '' ? undefined : Number(normalized));
-        }}
-        onBlur={field.onBlur}
-        {...inputProps}
+      <NumberInput
+        className={fieldState.error ? 'border-destructive' : undefined}
+        value={(field.value as number | undefined) ?? min ?? 0}
+        onValueChange={field.onChange}
+        min={min}
+        max={max}
+        step={step}
       />
       {fieldState.error?.message && (
         <ThemedText type="small" style={{ color: '#DC2626' }}>

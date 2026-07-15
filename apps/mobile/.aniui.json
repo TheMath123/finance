@@ -1,0 +1,45 @@
+{
+  "componentsDir": "src/components/ui",
+  "utilPath": "src/lib/cn.ts",
+  "theme": "default",
+  "style": "nativewind",
+  "tsx": true,
+  "sdkGeneration": "v4",
+  "installed": {
+    "checkbox": {
+      "version": "0.4.0",
+      "hash": "29bae838",
+      "addedAt": "2026-07-15T19:06:36.483Z"
+    },
+    "number-input": {
+      "version": "0.4.0",
+      "hash": "c61acb61",
+      "addedAt": "2026-07-15T19:06:36.485Z"
+    },
+    "password-input": {
+      "version": "0.4.0",
+      "hash": "05bd9649",
+      "addedAt": "2026-07-15T19:06:36.485Z"
+    },
+    "input": {
+      "version": "0.4.0",
+      "hash": "0adc2ab2",
+      "addedAt": "2026-07-15T19:06:36.485Z"
+    },
+    "text": {
+      "version": "0.4.0",
+      "hash": "04b32788",
+      "addedAt": "2026-07-15T19:06:36.495Z"
+    },
+    "card": {
+      "version": "0.4.0",
+      "hash": "ca946978",
+      "addedAt": "2026-07-15T19:07:07.772Z"
+    },
+    "button": {
+      "version": "0.4.0",
+      "hash": "52f20340",
+      "addedAt": "2026-07-15T19:07:07.785Z"
+    }
+  }
+}
