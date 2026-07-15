@@ -42,6 +42,7 @@ export interface TransactionFilters {
   qNormalized?: string;
   limit?: number;
   offset?: number;
+  deletedOnly?: boolean;
 }
 
 export interface TransactionRepository {

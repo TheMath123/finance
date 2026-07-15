@@ -36,7 +36,7 @@ export function createTransactionRepository(db: DbHandle): TransactionRepository
     async list(workspaceId, filters) {
       const conditions = [
         eq(transactions.workspaceId, workspaceId),
-        isNull(transactions.deletedAt),
+        filters.deletedOnly ? isNotNull(transactions.deletedAt) : isNull(transactions.deletedAt),
       ];
       if (filters.from) conditions.push(gte(transactions.date, filters.from));
       if (filters.to) conditions.push(lte(transactions.date, filters.to));

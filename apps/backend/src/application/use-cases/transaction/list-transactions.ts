@@ -12,6 +12,7 @@ export interface ListTransactionsFilters {
   q?: string;
   limit?: number;
   offset?: number;
+  deletedOnly?: boolean;
 }
 
 export async function listTransactions(
