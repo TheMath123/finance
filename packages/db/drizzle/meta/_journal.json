@@ -29,6 +29,13 @@
       "when": 1784051818376,
       "tag": "0003_panoramic_shinobi_shaw",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1784147183436,
+      "tag": "0004_safe_vulcan",
+      "breakpoints": true
     }
   ]
 }

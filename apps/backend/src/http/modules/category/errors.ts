@@ -7,9 +7,9 @@ export const CATEGORY_ERRORS: Record<CategoryError, HttpError> = {
     code: "category_not_found",
     message: "Categoria não encontrada.",
   },
-  fallback_not_deletable: {
+  default_category_protected: {
     status: 409,
-    code: "fallback_not_deletable",
-    message: 'A categoria "Outros" não pode ser excluída.',
+    code: "default_category_protected",
+    message: "Categorias padrão não podem ser editadas ou excluídas.",
   },
 };

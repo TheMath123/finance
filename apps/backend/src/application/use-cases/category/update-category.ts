@@ -12,6 +12,7 @@ export async function updateCategory(
 ): Promise<Either<CategoryError, Category>> {
   const existing = await deps.repos.category.findInWorkspace(actor.workspaceId, categoryId);
   if (!existing) return left("category_not_found");
+  if (existing.isFallback || existing.isDefault) return left("default_category_protected");
 
   const updated = await deps.uow.run(async (repos) => {
     const category = await repos.category.update(categoryId, input);

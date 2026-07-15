@@ -77,6 +77,7 @@ beforeAll(async () => {
         icon: c.icon,
         color: c.color,
         isFallback: c.isFallback ?? false,
+        isDefault: true,
       })),
     )
     .returning();

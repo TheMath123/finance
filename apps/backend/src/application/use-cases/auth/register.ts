@@ -43,6 +43,7 @@ export async function register(
           icon: c.icon,
           color: c.color,
           isFallback: c.isFallback ?? false,
+          isDefault: true,
         })),
       );
 

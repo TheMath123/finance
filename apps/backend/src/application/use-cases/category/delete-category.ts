@@ -13,7 +13,9 @@ export async function deleteCategory(
 ): Promise<Either<CategoryError, { reassignedTo: string }>> {
   const existing = await deps.repos.category.findInWorkspace(actor.workspaceId, categoryId);
   if (!existing) return left("category_not_found");
-  if (existing.isFallback) return left("fallback_not_deletable");
+  // isFallback: invariante estrutural — é o alvo de reatribuição, nunca pode sumir.
+  // isDefault: regra de negócio — categoria do seed não é editável/excluível pelo usuário.
+  if (existing.isFallback || existing.isDefault) return left("default_category_protected");
 
   const fallback = await deps.repos.category.findFallback(actor.workspaceId);
   if (!fallback) throw new Error("workspace sem categoria fallback");

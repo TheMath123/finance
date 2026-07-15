@@ -15,6 +15,8 @@ export const categories = pgTable(
     color: text("color").notNull(),
     /** "Outros" (seed) é a categoria fallback do workspace: não-deletável; recebe transações de categorias excluídas. */
     isFallback: boolean("is_fallback").notNull().default(false),
+    /** Categoria do seed (criada junto com o workspace) — não editável nem excluível pelo usuário. */
+    isDefault: boolean("is_default").notNull().default(false),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },

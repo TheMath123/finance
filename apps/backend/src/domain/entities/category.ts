@@ -6,6 +6,8 @@ export interface Category {
   color: string;
   /** "Outros": não-deletável, destino de transações de categorias excluídas. */
   isFallback: boolean;
+  /** Categoria do seed (criada junto com o workspace) — não editável nem excluível pelo usuário. */
+  isDefault: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
