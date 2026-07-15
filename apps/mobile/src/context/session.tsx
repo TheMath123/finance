@@ -17,12 +17,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    tokenStore.getAccessToken().then((token) => {
-      // Sem um endpoint "me" ainda, só sabemos que existe uma sessão salva —
-      // o nome/e-mail chegam de novo no próximo login/refresh bem-sucedido.
-      setUser(token ? { id: '', name: '', email: '' } : null);
-      setIsLoading(false);
-    });
+    tokenStore
+      .getAccessToken()
+      .then((token) => (token ? authApi.me() : null))
+      .then((me) => setUser(me?.user ?? null))
+      .catch(() => setUser(null))
+      .finally(() => setIsLoading(false));
   }, []);
 
   const signIn = async (session: AuthSession) => {

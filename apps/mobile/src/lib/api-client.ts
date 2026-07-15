@@ -51,7 +51,7 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
     const refreshToken = await tokenStore.getRefreshToken();
     if (!refreshToken) throw error;
 
-    const session = await rawRequest<{ accessToken: string; refreshToken: string }>("/refresh", {
+    const session = await rawRequest<{ accessToken: string; refreshToken: string }>("/auth/refresh", {
       method: "POST",
       body: { refreshToken },
       skipAuth: true,

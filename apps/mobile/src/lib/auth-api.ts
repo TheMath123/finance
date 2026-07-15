@@ -8,13 +8,20 @@ export interface AuthSession {
   refreshToken: string;
 }
 
+export interface MeOutput {
+  user: AuthSession["user"];
+  defaultWorkspaceId: string;
+}
+
 export const authApi = {
   login: (input: LoginInput) =>
-    apiRequest<AuthSession>("/login", { method: "POST", body: input, skipAuth: true }),
+    apiRequest<AuthSession>("/auth/login", { method: "POST", body: input, skipAuth: true }),
 
   register: (input: RegisterInput) =>
-    apiRequest<AuthSession>("/register", { method: "POST", body: input, skipAuth: true }),
+    apiRequest<AuthSession>("/auth/register", { method: "POST", body: input, skipAuth: true }),
 
   logout: (refreshToken: string) =>
-    apiRequest<void>("/logout", { method: "POST", body: { refreshToken } }),
+    apiRequest<void>("/auth/logout", { method: "POST", body: { refreshToken } }),
+
+  me: () => apiRequest<MeOutput>("/auth/me"),
 };
