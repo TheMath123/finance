@@ -1,3 +1,4 @@
+import type { Href } from 'expo-router';
 import { Tabs, TabList, TabTrigger, TabSlot, TabTriggerSlotProps, TabListProps } from 'expo-router/ui';
 import { HouseIcon, ReceiptIcon, type IconProps } from 'phosphor-react-native';
 import { type ComponentType } from 'react';
@@ -9,10 +10,13 @@ import { ThemedView } from './themed-view';
 import { MaxContentWidth } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
+// "/" é o path correto em runtime para o index de um grupo, mas o gerador de
+// tipos do expo-router não expõe esse literal (só "/index", que resolve para
+// +not-found) — daqui o cast explícito.
 const TABS = [
-  { name: 'home', href: '/index' as const, label: 'Resumo', Icon: HouseIcon },
-  { name: 'explore', href: '/explore' as const, label: 'Transações', Icon: ReceiptIcon },
-] satisfies { name: string; href: string; label: string; Icon: ComponentType<IconProps> }[];
+  { name: 'home', href: '/' as Href, label: 'Resumo', Icon: HouseIcon },
+  { name: 'explore', href: '/explore' as Href, label: 'Transações', Icon: ReceiptIcon },
+] satisfies { name: string; href: Href; label: string; Icon: ComponentType<IconProps> }[];
 
 export default function AppTabs() {
   return (
