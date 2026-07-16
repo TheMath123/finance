@@ -19,7 +19,7 @@ onde sobrar capacidade.
 | M2-07 | [Pipeline de IA: interpretar/categorizar transações](m2-07-ia-pipeline-transacoes.md) | 🔵 Backlog | — (valor pleno com M2-06) |
 | M2-08 | [IA de previsão de gastos variáveis](m2-08-ia-previsao-gastos.md) | 🔵 Backlog | M2-07 (recomendado) |
 | M2-09 | [Auto-lançamento de recorrências (job)](m2-09-auto-lancamento-recorrencias.md) | 🔵 Backlog | M2-01 |
-| M2-10 | [Notificações push](m2-10-notificacoes-push.md) | 🔵 Backlog | M2-01 |
+| M2-10 | [Sistema de notificações + push](m2-10-notificacoes-push.md) | 🟢 Concluída | M2-01 |
 | M2-11 | [Export CSV (LGPD)](m2-11-export-csv-lgpd.md) | 🔵 Backlog | — |
 | M2-12 | [Biometria para abrir o app](m2-12-biometria-app.md) | 🔵 Backlog | — |
 
@@ -30,8 +30,10 @@ onde sobrar capacidade.
 Decisões de produto tomadas no M1, sem relação com o escopo do M2 do spec —
 não fazem parte desta leva, ficam aqui só pra não se perder:
 
-- [01 — Widget de tela inicial (Android)](01-widget-tela-inicial.md): adiado
-  até decidirem sair do Expo Go (dev build).
+- [01 — Widget de tela inicial (Android)](01-widget-tela-inicial.md): o
+  bloqueio original (precisar de dev build) **foi resolvido** na M2-10 —
+  `expo prebuild`/`android/` já existem. O widget em si continua não
+  implementado, mas não tem mais pré-requisito técnico pendente.
 - [03 — Onboarding guiado](03-onboarding-guiado.md): decidido manter o
   comportamento silencioso atual por enquanto.
 

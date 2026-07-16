@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 
 import { authApi, type AuthSession } from '@/lib/auth-api';
+import { registerForPushNotifications, unregisterCurrentPushToken } from '@/lib/push-notifications';
 import { tokenStore, workspaceStore } from '@/lib/secure-store';
 
 interface SessionContextValue {
@@ -34,6 +35,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         setUser(me.user);
         const stored = await workspaceStore.getActiveWorkspaceId();
         setWorkspaceId(stored ?? me.defaultWorkspaceId);
+        void registerForPushNotifications();
       } catch {
         setUser(null);
         setWorkspaceId(null);
@@ -48,6 +50,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     await workspaceStore.setActiveWorkspaceId(session.defaultWorkspaceId);
     setUser(session.user);
     setWorkspaceId(session.defaultWorkspaceId);
+    void registerForPushNotifications();
   };
 
   const signOut = async () => {
@@ -57,6 +60,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     setUser(null);
     setWorkspaceId(null);
     if (refreshToken) await authApi.logout(refreshToken).catch(() => {});
+    void unregisterCurrentPushToken();
   };
 
   const refreshUser = async () => {

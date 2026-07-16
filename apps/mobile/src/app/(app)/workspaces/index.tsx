@@ -132,13 +132,6 @@ export default function WorkspacesScreen() {
         </View>
       )}
 
-      <Pressable onPress={() => router.push('/invites')}>
-        <Card className="flex-row items-center justify-between">
-          <ThemedText type="smallBold">Convites recebidos</ThemedText>
-          <CaretRightIcon size={16} color="#71717a" />
-        </Card>
-      </Pressable>
-
       <Button icon={<PlusIcon size={18} color="#fafafa" />} onPress={() => router.push('/workspaces/new')}>
         Criar workspace
       </Button>

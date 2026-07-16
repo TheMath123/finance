@@ -1,6 +1,6 @@
 import type { Href } from 'expo-router';
 import { Tabs, TabList, TabTrigger, TabSlot, TabTriggerSlotProps, TabListProps } from 'expo-router/ui';
-import { HouseIcon, ReceiptIcon, WalletIcon, type IconProps } from 'phosphor-react-native';
+import { BellIcon, HouseIcon, ReceiptIcon, WalletIcon, type IconProps } from 'phosphor-react-native';
 import { type ComponentType } from 'react';
 import { Pressable, View } from 'react-native';
 
@@ -18,6 +18,7 @@ const TABS = [
   { name: 'home', href: '/' as Href, label: 'Resumo', Icon: HouseIcon },
   { name: 'explore', href: '/explore' as Href, label: 'Transações', Icon: ReceiptIcon },
   { name: 'accounts', href: '/accounts' as Href, label: 'Contas', Icon: WalletIcon },
+  { name: 'notifications', href: '/notifications' as Href, label: 'Avisos', Icon: BellIcon },
 ] satisfies { name: string; href: Href; label: string; Icon: ComponentType<IconProps> }[];
 
 export default function AppTabs() {
@@ -49,15 +50,18 @@ function TabButton({
     <Pressable
       {...props}
       className={cn(
-        'flex-row items-center gap-1.5 overflow-hidden rounded-full px-4 py-2 active:opacity-70',
+        'flex-1 flex-col items-center justify-center gap-1.5 overflow-hidden rounded-xl px-1 py-3 active:opacity-70',
         isFocused && 'bg-primary',
       )}
       android_ripple={{ color: 'rgba(0,0,0,0.1)', borderless: false }}>
-      <Icon color={isFocused ? '#FFFFFF' : theme.textSecondary} size={20} weight={isFocused ? 'fill' : 'regular'} />
+      <Icon color={isFocused ? '#FFFFFF' : theme.textSecondary} size={24} weight={isFocused ? 'fill' : 'regular'} />
       <ThemedText
         type="smallBold"
         themeColor={isFocused ? undefined : 'textSecondary'}
-        style={isFocused ? { color: '#FFFFFF' } : undefined}>
+        style={[{ fontSize: 12, lineHeight: 14 }, isFocused ? { color: '#FFFFFF' } : undefined]}
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.8}>
         {children}
       </ThemedText>
     </Pressable>
@@ -69,7 +73,7 @@ function CustomTabList(props: TabListProps) {
     <View {...props} className="absolute bottom-0 w-full flex-row items-center justify-center p-4">
       <ThemedView
         type="backgroundElement"
-        className="flex-row justify-center gap-1 rounded-full p-1.5 shadow-md"
+        className="w-full flex-row justify-between gap-1.5 rounded-2xl p-2 shadow-md"
         style={{ maxWidth: MaxContentWidth }}>
         {props.children}
       </ThemedView>
