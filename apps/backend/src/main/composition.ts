@@ -6,7 +6,8 @@ import { createUnitOfWork } from "../infra/db/unit-of-work";
 import { bunPasswordHasher } from "../infra/security/bun-password-hasher";
 import { createTokenService } from "../infra/security/jose-token-service";
 import { createInMemoryRateLimiter } from "../infra/security/in-memory-rate-limiter";
-import { consoleSecurityLogger } from "../infra/observability/console-security-logger";
+import { createLogger } from "../infra/observability/logger";
+import { createSecurityLogger } from "../infra/observability/pino-security-logger";
 import type { AppDeps } from "../http/deps";
 import type { Env } from "./env";
 
@@ -16,14 +17,18 @@ import type { Env } from "./env";
  */
 export function createAppDeps(env: Env): AppDeps {
   const db = createDb();
+  const logger = createLogger(env.LOG_LEVEL);
 
-  const dispatcher = createDirectDispatcher({
-    "email.password-reset": (p) => mailer.sendPasswordReset(p),
-    "email.verify-email": (p) => mailer.sendEmailVerification(p),
-    "email.password-changed": (p) => mailer.sendPasswordChanged(p),
-    "email.account-locked": (p) => mailer.sendAccountLocked(p),
-    "email.workspace-invite": (p) => mailer.sendWorkspaceInvite(p),
-  });
+  const dispatcher = createDirectDispatcher(
+    {
+      "email.password-reset": (p) => mailer.sendPasswordReset(p),
+      "email.verify-email": (p) => mailer.sendEmailVerification(p),
+      "email.password-changed": (p) => mailer.sendPasswordChanged(p),
+      "email.account-locked": (p) => mailer.sendAccountLocked(p),
+      "email.workspace-invite": (p) => mailer.sendWorkspaceInvite(p),
+    },
+    (job, error) => logger.error({ scope: "queues", job, err: error }, "job_failed"),
+  );
 
   return {
     repos: createRepositories(db),
@@ -31,10 +36,11 @@ export function createAppDeps(env: Env): AppDeps {
     hasher: bunPasswordHasher,
     tokens: createTokenService(env.JWT_SECRET),
     dispatch: dispatcher.dispatch,
-    logger: consoleSecurityLogger,
+    logger: createSecurityLogger(logger),
     rateLimiter: createInMemoryRateLimiter(),
     appUrl: env.APP_URL,
     termsVersion: env.TERMS_VERSION,
     trustProxy: env.TRUST_PROXY,
+    httpLogger: logger,
   };
 }

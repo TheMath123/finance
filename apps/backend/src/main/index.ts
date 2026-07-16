@@ -7,4 +7,4 @@ const deps = createAppDeps(env);
 
 const app = createApp(deps).listen(env.PORT);
 
-console.log(`🦊 backend rodando em http://localhost:${app.server?.port}`);
+deps.httpLogger.info(`🦊 backend rodando em http://localhost:${app.server?.port}`);

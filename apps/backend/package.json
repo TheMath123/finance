@@ -18,6 +18,8 @@
     "drizzle-orm": "^0.44.0",
     "elysia": "latest",
     "jose": "^6.2.3",
+    "pino": "^9.5.0",
+    "pino-pretty": "^13.0.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {

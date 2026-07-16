@@ -15,7 +15,7 @@ import type { AppDeps } from "../http/deps";
 export function createApp(deps: AppDeps) {
   return new Elysia()
     .use(requestId)
-    .use(errorHandler)
+    .use(errorHandler(deps.httpLogger))
     .get("/health", () => ({ status: "ok" }))
     .use(authRoutes(deps))
     .use(workspaceRoutes(deps))
