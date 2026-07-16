@@ -18,7 +18,8 @@ function parseIsoDate(value: string | undefined): Date | undefined {
   return new Date(year, month - 1, day, 12);
 }
 
-function formatIsoDate(date: Date): string {
+/** "YYYY-MM-DD" a partir do ano/mês/dia LOCAL — nunca `toISOString()` (vira UTC e pode trocar o dia). */
+export function formatIsoDate(date: Date): string {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');

@@ -22,9 +22,11 @@ import { transactionsApi, type Transaction } from '@/lib/transactions-api';
 export function EditTransactionForm({
   transaction,
   onDone,
+  onDelete,
 }: {
   transaction: Transaction;
   onDone: () => void;
+  onDelete?: () => void;
 }) {
   const { workspaceId } = useSession();
   const queryClient = useQueryClient();
@@ -73,6 +75,11 @@ export function EditTransactionForm({
       <Button loading={mutation.isPending} onPress={handleSubmit((input) => mutation.mutate(input))}>
         Salvar alterações
       </Button>
+      {onDelete && (
+        <Button variant="ghost" textClassName="text-destructive" onPress={onDelete}>
+          Excluir transação
+        </Button>
+      )}
     </View>
   );
 }

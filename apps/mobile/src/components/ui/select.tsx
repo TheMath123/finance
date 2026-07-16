@@ -57,7 +57,13 @@ export function Select({
   const fitsBelow = belowY + totalH < screenH;
 
   return (
-    <View collapsable={false}>
+    // className também vai pro wrapper: um View sem flex-basis próprio, dentro de um
+    // flex-row do chamador (ex. ao lado do botão de funil em explore.tsx), encolhe pro
+    // tamanho do conteúdo em vez de dividir o espaço — o flex-1 no Pressable interno
+    // não ajuda porque o Pressable não é filho direto do flex-row do chamador. Sem isso,
+    // o dropdown herda uma largura errada (measureInWindow no trigger encolhido) e o
+    // texto das opções trunca pra "...".
+    <View collapsable={false} className={className}>
       <Pressable
         ref={triggerRef}
         className={cn("flex-row items-center justify-between h-12 px-4 border border-input rounded-lg bg-background active:bg-accent/30", className)}
