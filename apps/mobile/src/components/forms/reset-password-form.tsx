@@ -12,11 +12,16 @@ import { ApiError } from '@/lib/api-client';
 import { authApi } from '@/lib/auth-api';
 import { resetPasswordSchema, type ResetPasswordInput } from '@/lib/schemas/auth';
 
-export function ResetPasswordForm() {
+interface ResetPasswordFormProps {
+  /** Token pré-preenchido vindo do deep link do e-mail (`mobile://reset-password?token=...`). */
+  defaultToken?: string;
+}
+
+export function ResetPasswordForm({ defaultToken }: ResetPasswordFormProps) {
   const router = useRouter();
   const { control, handleSubmit } = useForm<ResetPasswordInput>({
     resolver: zodResolver(resetPasswordSchema),
-    defaultValues: { token: '', password: '' },
+    defaultValues: { token: defaultToken ?? '', password: '' },
   });
 
   const mutation = useMutation({

@@ -11,10 +11,15 @@ import { ApiError } from '@/lib/api-client';
 import { authApi } from '@/lib/auth-api';
 import { verifyEmailSchema, type VerifyEmailInput } from '@/lib/schemas/auth';
 
-export function VerifyEmailForm() {
+interface VerifyEmailFormProps {
+  /** Token pré-preenchido vindo do deep link do e-mail (`mobile://verify-email?token=...`). */
+  defaultToken?: string;
+}
+
+export function VerifyEmailForm({ defaultToken }: VerifyEmailFormProps) {
   const { control, handleSubmit } = useForm<VerifyEmailInput>({
     resolver: zodResolver(verifyEmailSchema),
-    defaultValues: { token: '' },
+    defaultValues: { token: defaultToken ?? '' },
   });
 
   const mutation = useMutation({

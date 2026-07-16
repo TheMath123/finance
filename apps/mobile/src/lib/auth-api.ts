@@ -39,4 +39,7 @@ export const authApi = {
 
   verifyEmail: (input: VerifyEmailInput) =>
     apiRequest<{ message: string }>("/auth/verify-email", { method: "POST", body: input, skipAuth: true }),
+
+  deleteAccount: (password: string) =>
+    apiRequest<void>("/auth/me", { method: "DELETE", body: { password } }),
 };
