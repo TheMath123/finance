@@ -25,12 +25,12 @@ const RATE_LIMITS: Record<string, { max: number; windowMs: number }> = {
 
 export function authRoutes(deps: AppDeps) {
   return new Elysia({ prefix: "/auth" })
-    .onBeforeHandle(({ request, set, server }) => {
+    .onBeforeHandle(async ({ request, set, server }) => {
       const path = new URL(request.url).pathname;
       const limit = RATE_LIMITS[path];
       if (!limit) return;
       const ip = getClientIp(request, server, deps.trustProxy);
-      if (deps.rateLimiter.isLimited(`ip:${ip}:${path}`, limit.max, limit.windowMs)) {
+      if (await deps.rateLimiter.isLimited(`ip:${ip}:${path}`, limit.max, limit.windowMs)) {
         deps.logger.log("rate_limited", { scopeKey: "ip", path });
         set.status = 429;
         set.headers["retry-after"] = String(Math.ceil(limit.windowMs / 1000));

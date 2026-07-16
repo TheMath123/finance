@@ -36,7 +36,7 @@ export async function requireWorkspaceRole(
   const auth = await requireAuthenticated(deps, request);
   if (!auth.ok) return auth;
 
-  if (deps.rateLimiter.isLimited(`user:${auth.value.userId}`, USER_RATE_MAX, USER_RATE_WINDOW_MS)) {
+  if (await deps.rateLimiter.isLimited(`user:${auth.value.userId}`, USER_RATE_MAX, USER_RATE_WINDOW_MS)) {
     deps.logger.log("rate_limited", { scopeKey: "user", userId: auth.value.userId });
     return left({
       status: 429,

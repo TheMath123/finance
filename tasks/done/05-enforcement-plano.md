@@ -1,6 +1,9 @@
 # 05 — Enforcement de limite de plano (workspace free/premium)
 
-**Status:** ⚪ Bloqueada — depende do M2.
+**Status:** 🟢 Arquivada — decisão de adiar cumprida, virou task real do M2.
+
+> O M2 começou: esta decisão de "esperar" está resolvida. A implementação de
+> verdade agora é [`m2-03-enforcement-plano.md`](../m2-03-enforcement-plano.md).
 
 ## Contexto
 

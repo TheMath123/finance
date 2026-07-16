@@ -4,14 +4,15 @@
   "packageManager": "bun@1.3.14",
   "workspaces": ["apps/*", "packages/*"],
   "scripts": {
-    "dev": "turbo dev --filter='./apps/*'",
+    "dev": "turbo dev worker --filter='./apps/*'",
     "build": "turbo build",
     "test": "turbo test",
     "typecheck": "turbo typecheck",
     "db:generate": "bun --cwd=packages/db run generate",
     "db:migrate": "bun --cwd=packages/db run migrate",
     "db:seed": "bun --cwd=packages/db run seed",
-    "db:studio": "bun --cwd=packages/db run studio"
+    "db:studio": "bun --cwd=packages/db run studio",
+    "worker": "bun --cwd=apps/backend run worker"
   },
   "devDependencies": {
     "turbo": "^2.5.0",

@@ -1,18 +1,42 @@
-# Backlog M1
+# Backlog M2
 
-Índice das tarefas que sobraram do M1 depois da leva de integrações de 2026-07-15
-(auth completo, cartões/contas/categorias/recorrências com CRUD, lixeira de
-transações). Cada arquivo tem status, contexto e próximo passo — o suficiente pra
-retomar sem reabrir a auditoria original.
+Índice das tarefas do Milestone 2 (compartilhamento de workspace + chatbot
+WhatsApp com IA + infra assíncrona + push/CSV/biometria), definidas a partir
+da leitura do `spec.md` em 2026-07-16, logo após o fechamento e validação do
+M1. Ordem sugerida de execução: a infra (M2-01) primeiro, compartilhamento
+(M2-02/03/04) em seguida, WhatsApp (M2-05/06) depois, IA (M2-07/08) por
+último entre as grandes, e as três independentes (M2-09/10/11/12) encaixam
+onde sobrar capacidade.
 
-| # | Tarefa | Status |
-|---|---|---|
-| 01 | [Widget de tela inicial (Android)](01-widget-tela-inicial.md) | 🔵 Backlog — decidido adiar |
-| 02 | [Filtros completos na lista de transações](02-filtros-transacao.md) | 🟢 Concluída |
-| 03 | [Onboarding guiado](03-onboarding-guiado.md) | 🔵 Backlog — decidido manter silencioso |
-| 04 | [Exclusão de conta (LGPD)](04-exclusao-conta-lgpd.md) | 🟢 Concluída |
-| 05 | [Enforcement de limite de plano](05-enforcement-plano.md) | ⚪ Bloqueada (depende do M2) |
-| 06 | [Destino do módulo bank órfão](06-modulo-bank-destino.md) | 🟢 Decidida (manter) |
-| 07 | [Recuperação de senha e verificação de e-mail](07-deep-link-emails-auth.md) | 🟢 Concluída |
+| # | Tarefa | Status | Depende de |
+|---|---|---|---|
+| M2-01 | [Infra Redis + BullMQ](m2-01-infra-redis-bullmq.md) | 🟢 Concluída | — |
+| M2-02 | [Workspaces compartilhados (convites, papéis, seletor)](m2-02-workspaces-compartilhamento.md) | 🔵 Backlog | — |
+| M2-03 | [Enforcement de limite de plano](m2-03-enforcement-plano.md) | 🔵 Backlog | M2-02 |
+| M2-04 | [Atividade do workspace (leitura do AuditLog)](m2-04-atividade-audit-log.md) | 🔵 Backlog | M2-02 (recomendado) |
+| M2-05 | [Vínculo do WhatsApp por OTP](m2-05-whatsapp-vinculo-otp.md) | 🔵 Backlog | — |
+| M2-06 | [Chatbot WhatsApp: webhook Meta Cloud API](m2-06-whatsapp-webhook-chatbot.md) | 🔵 Backlog | M2-01, M2-05 |
+| M2-07 | [Pipeline de IA: interpretar/categorizar transações](m2-07-ia-pipeline-transacoes.md) | 🔵 Backlog | — (valor pleno com M2-06) |
+| M2-08 | [IA de previsão de gastos variáveis](m2-08-ia-previsao-gastos.md) | 🔵 Backlog | M2-07 (recomendado) |
+| M2-09 | [Auto-lançamento de recorrências (job)](m2-09-auto-lancamento-recorrencias.md) | 🔵 Backlog | M2-01 |
+| M2-10 | [Notificações push](m2-10-notificacoes-push.md) | 🔵 Backlog | M2-01 |
+| M2-11 | [Export CSV (LGPD)](m2-11-export-csv-lgpd.md) | 🔵 Backlog | — |
+| M2-12 | [Biometria para abrir o app](m2-12-biometria-app.md) | 🔵 Backlog | — |
 
 **Legenda:** 🔵 Backlog (não iniciada) · 🟡 Em andamento · 🟢 Concluída/decidida · ⚪ Bloqueada
+
+## Backlog adiado (fora do escopo do M2)
+
+Decisões de produto tomadas no M1, sem relação com o escopo do M2 do spec —
+não fazem parte desta leva, ficam aqui só pra não se perder:
+
+- [01 — Widget de tela inicial (Android)](01-widget-tela-inicial.md): adiado
+  até decidirem sair do Expo Go (dev build).
+- [03 — Onboarding guiado](03-onboarding-guiado.md): decidido manter o
+  comportamento silencioso atual por enquanto.
+
+## Histórico do M1
+
+Tarefas do M1 já concluídas/decididas — ver [`done/`](done/). A antiga task
+05 (enforcement de plano) foi arquivada lá com uma nota apontando pra M2-03,
+que é a implementação real.

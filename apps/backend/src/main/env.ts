@@ -4,6 +4,8 @@ import { z } from "zod";
 const envSchema = z.object({
   PORT: z.coerce.number().int().positive().default(3000),
   JWT_SECRET: z.string().min(32, "JWT_SECRET precisa ter ao menos 32 caracteres"),
+  /** Fila (BullMQ) e rate limiter — M2 (spec: Redis entra no M2). */
+  REDIS_URL: z.string().url(),
   TERMS_VERSION: z.string().min(1).default("2026-07-13"),
   /** true apenas atrás do proxy do provedor (X-Forwarded-For confiável). */
   TRUST_PROXY: z

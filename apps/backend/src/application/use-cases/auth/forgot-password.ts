@@ -12,7 +12,7 @@ export async function forgotPassword(
   input: ForgotPasswordInput,
 ): Promise<Either<never, null>> {
   // Limite por e-mail ALVO (anti flood na vítima) — silencioso: resposta continua genérica
-  if (deps.rateLimiter.isLimited(`forgot:${input.email}`, 3, 3_600_000)) {
+  if (await deps.rateLimiter.isLimited(`forgot:${input.email}`, 3, 3_600_000)) {
     deps.logger.log("forgot_password_throttled");
     return right(null);
   }

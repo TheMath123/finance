@@ -18,7 +18,7 @@ export async function verifyResetCode(
   input: VerifyResetCodeInput,
 ): Promise<Either<AuthError, null>> {
   // Código de 6 dígitos = espaço pequeno; limite curto por e-mail alvo evita força bruta
-  if (deps.rateLimiter.isLimited(`reset-code:${input.email}`, 5, 15 * 60_000)) {
+  if (await deps.rateLimiter.isLimited(`reset-code:${input.email}`, 5, 15 * 60_000)) {
     return left("invalid_code");
   }
 

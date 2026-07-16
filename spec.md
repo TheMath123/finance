@@ -193,6 +193,12 @@ Princípio: os dados são estruturados, então **não usar RAG/embeddings sobre 
     webhooks do WhatsApp (a Meta exige resposta rápida), categorização por IA em background e
     cache de categorização. No M1 não há job assíncrono real, então não sobe Redis (YAGNI);
     o schema e os services já nascem prontos para plugar os workers.
+    **Um único processo worker, várias filas** (decisão de 2026-07-16): pode haver mais de uma
+    fila BullMQ — uma por domínio, se fizer sentido pra concorrência/prioridade (ex.: e-mail,
+    WhatsApp, notificações) — mas todas são consumidas por **um único processo** (`bun run
+    worker`, `apps/backend/src/main/worker.ts`, orquestrado junto do `bun run dev` via Turborepo).
+    Nunca subir um processo de worker por fila — simplicidade operacional (um processo a mais
+    pra rodar/monitorar/deployar) importa mais do que isolamento de processo entre filas.
   - Auth: JWT de acesso (15 min) + refresh token opaco (random 256-bit, hash SHA-256 no banco,
     30 dias, rotação a cada refresh). Senhas com `Bun.password` (bcrypt, cost 12).
   - **Validação com Zod em TODA entrada** (segurança/compliance — fechado em 2026-07-14):
@@ -300,10 +306,12 @@ Convenções dos packages:
   `sendWorkspaceInvite`, …); templates React Email num diretório próprio, renderizados no envio.
   Nenhum app monta e-mail manualmente.
 - **`queues`**: define a interface de enfileiramento e os tipos dos jobs desde o M1; a
-  implementação BullMQ é ligada no M2 junto com o Redis (notificações, webhooks do WhatsApp,
+  implementação BullMQ foi ligada no M2 junto com o Redis (notificações, webhooks do WhatsApp,
   auto-lançamento de recorrências). No M1, tarefas assíncronas leves (ex.: envio de e-mail sem
-  bloquear a request) usam despacho direto fire-and-forget — trocar para BullMQ depois é só mudar
-  a implementação por trás da interface.
+  bloquear a request) usavam despacho direto fire-and-forget — trocar para BullMQ foi só mudar
+  a implementação por trás da interface. Novas filas de domínio entram neste package, mas o
+  worker que as consome continua sendo um processo só (ver "Um único processo worker, várias
+  filas" em Stack > Backend).
 - **`shared`**: só o que backend **e** mobile consomem (tipos do domínio, enums espelhados,
   `Either`, **catálogo de bancos** — código/nome/cor/ícone, usado na validação do backend e na
   renderização do app); nada de dependência de servidor aqui (o mobile importa esse pacote).

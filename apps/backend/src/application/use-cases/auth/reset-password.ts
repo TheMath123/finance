@@ -13,7 +13,7 @@ export async function resetPassword(
   input: ResetPasswordInput,
 ): Promise<Either<AuthError, null>> {
   // Mesmo limite do verify-reset-code — é a mesma superfície de força bruta do código
-  if (deps.rateLimiter.isLimited(`reset-code:${input.email}`, 5, 15 * 60_000)) {
+  if (await deps.rateLimiter.isLimited(`reset-code:${input.email}`, 5, 15 * 60_000)) {
     return left("invalid_code");
   }
 
