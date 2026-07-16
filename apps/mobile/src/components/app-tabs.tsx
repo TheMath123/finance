@@ -49,16 +49,22 @@ function TabButton({
   return (
     <Pressable
       {...props}
+      // TabTrigger (asChild) injeta style={flexDirection:'row', justifyContent:'space-between'}
+      // por padrão — sobrepõe o className do NativeWind, então precisa ser cancelado aqui.
+      style={{ flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}
       className={cn(
-        'flex-1 flex-col items-center justify-center gap-1.5 overflow-hidden rounded-xl px-1 py-3 active:opacity-70',
+        'flex-1 flex-col items-center justify-center gap-0.5 rounded-lg px-1 py-2 active:opacity-70',
         isFocused && 'bg-primary',
       )}
       android_ripple={{ color: 'rgba(0,0,0,0.1)', borderless: false }}>
-      <Icon color={isFocused ? '#FFFFFF' : theme.textSecondary} size={24} weight={isFocused ? 'fill' : 'regular'} />
+      <Icon color={isFocused ? '#FFFFFF' : theme.textSecondary} size={16} weight={isFocused ? 'fill' : 'regular'} />
       <ThemedText
-        type="smallBold"
+        type="small"
         themeColor={isFocused ? undefined : 'textSecondary'}
-        style={[{ fontSize: 12, lineHeight: 14 }, isFocused ? { color: '#FFFFFF' } : undefined]}
+        style={[
+          { fontSize: 10, lineHeight: 12, fontWeight: '400' },
+          isFocused ? { color: '#FFFFFF' } : undefined,
+        ]}
         numberOfLines={1}
         adjustsFontSizeToFit
         minimumFontScale={0.8}>
@@ -73,7 +79,7 @@ function CustomTabList(props: TabListProps) {
     <View {...props} className="absolute bottom-0 w-full flex-row items-center justify-center p-4">
       <ThemedView
         type="backgroundElement"
-        className="w-full flex-row justify-between gap-1.5 rounded-2xl p-2 shadow-md"
+        className="w-full flex-row justify-between gap-4 rounded-lg p-2 shadow-md"
         style={{ maxWidth: MaxContentWidth }}>
         {props.children}
       </ThemedView>
