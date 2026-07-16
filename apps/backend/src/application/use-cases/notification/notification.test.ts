@@ -5,11 +5,13 @@
 import { beforeAll, describe, expect, test } from "bun:test";
 import { eq } from "drizzle-orm";
 import {
+  bankAccounts,
   banks,
   cardInvoices,
   cards,
   createDb,
   recurringTransactions,
+  transactions,
   users,
   workspaceMembers,
   workspaces,
@@ -264,13 +266,28 @@ describe("notification: sweep diário (fatura fechou/vence, recorrência pendent
     ).toBe(true);
   });
 
-  test("recorrência ativa com ocorrência hoje e não confirmada notifica", async () => {
+  test("recorrência ativa com ocorrência hoje e não confirmada é lançada automaticamente e notifica (M2-09)", async () => {
     const deps = createTestDeps(db);
     const actor = await newOwnerActor();
     const now = new Date();
 
     const categories = await db.query.categories.findMany({ where: (c, { eq }) => eq(c.workspaceId, actor.workspaceId) });
     const categoryId = categories[0]!.id;
+
+    const [bank] = await db
+      .insert(banks)
+      .values({ workspaceId: actor.workspaceId, name: "Banco Sweep Recorrência", bankCode: "other" })
+      .returning();
+    const [account] = await db
+      .insert(bankAccounts)
+      .values({
+        workspaceId: actor.workspaceId,
+        bankId: bank!.id,
+        name: "Conta Sweep",
+        type: "checking",
+        initialBalance: 0,
+      })
+      .returning();
 
     const [recurring] = await db
       .insert(recurringTransactions)
@@ -279,10 +296,10 @@ describe("notification: sweep diário (fatura fechou/vence, recorrência pendent
         description: "Assinatura Sweep",
         amount: 5_000,
         type: "expense",
-        method: "credit",
+        method: "pix",
         categoryId,
         cardId: null,
-        accountId: null,
+        accountId: account!.id,
         frequency: "monthly",
         dayOfReference: now.getDate(),
         monthOfReference: null,
@@ -292,11 +309,22 @@ describe("notification: sweep diário (fatura fechou/vence, recorrência pendent
 
     await runNotificationSweep(deps);
 
+    const created = await db.query.transactions.findFirst({ where: eq(transactions.recurringId, recurring!.id) });
+    expect(created).toBeDefined();
+    expect(created?.date).toBe(
+      `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`,
+    );
+
     const notifications = await listNotifications(deps, actor.userId, false);
     expect(
       notifications.some(
         (n) => n.type === "recurring_pending" && (n.data as { recurringId?: string })?.recurringId === recurring!.id,
       ),
     ).toBe(true);
+
+    // Rodar de novo não duplica o lançamento nem a notificação (dedup por recurringId+data / entityKey).
+    await runNotificationSweep(deps);
+    const allCreated = await db.query.transactions.findMany({ where: eq(transactions.recurringId, recurring!.id) });
+    expect(allCreated.length).toBe(1);
   });
 });

@@ -1,8 +1,11 @@
 import type { NotificationType } from "@finance/shared";
 import { effectiveStatus } from "../../../domain/services/invoice-rules";
 import { occurrencesInMonth } from "../../../domain/services/occurrence-rules";
-import type { UseCaseDeps } from "../../deps";
+import type { Actor, UseCaseDeps } from "../../deps";
+import { confirmOccurrence } from "../recurring/confirm-occurrence";
 import { createNotification } from "./create-notification";
+
+type SweepDeps = Pick<UseCaseDeps, "repos" | "dispatch" | "uow">;
 
 function daysInMonth(year: number, month: number): number {
   return new Date(year, month, 0).getDate();
@@ -14,7 +17,7 @@ function todayIso(): string {
 }
 
 async function notifyWorkspaceMembers(
-  deps: Pick<UseCaseDeps, "repos" | "dispatch">,
+  deps: SweepDeps,
   workspaceId: string,
   type: NotificationType,
   title: string,
@@ -38,7 +41,7 @@ async function notifyWorkspaceMembers(
 }
 
 /** Fatura ainda `open` cujo `closingDay` já passou — persiste a transição (igual à leitura) e notifica. */
-async function sweepInvoiceClosed(deps: Pick<UseCaseDeps, "repos" | "dispatch">): Promise<void> {
+async function sweepInvoiceClosed(deps: SweepDeps): Promise<void> {
   const rows = await deps.repos.invoice.listAllOpen();
   for (const { invoice, closingDay, cardName } of rows) {
     const status = effectiveStatus(invoice, closingDay);
@@ -57,7 +60,7 @@ async function sweepInvoiceClosed(deps: Pick<UseCaseDeps, "repos" | "dispatch">)
 }
 
 /** Fatura `closed` (não paga) cujo `dueDay` é hoje. */
-async function sweepInvoiceDue(deps: Pick<UseCaseDeps, "repos" | "dispatch">): Promise<void> {
+async function sweepInvoiceDue(deps: SweepDeps): Promise<void> {
   const rows = await deps.repos.invoice.listAllClosedUnpaid();
   const now = new Date();
   for (const { invoice, dueDay, cardName } of rows) {
@@ -76,8 +79,16 @@ async function sweepInvoiceDue(deps: Pick<UseCaseDeps, "repos" | "dispatch">): P
   }
 }
 
-/** Recorrência ativa com ocorrência prevista pra hoje e ainda não confirmada. */
-async function sweepRecurringPending(deps: Pick<UseCaseDeps, "repos" | "dispatch">): Promise<void> {
+/**
+ * Recorrência ativa com ocorrência prevista pra hoje e ainda não confirmada:
+ * materializa a transação sozinho (M2-09, decisão de produto: substitui a
+ * confirmação manual, não fica como pendência) e só então notifica os
+ * membros do workspace. Reaproveita `confirmOccurrence` (mesma lógica de
+ * crédito/fatura/parcelas da confirmação com um toque) com um ator sintético
+ * — o job não tem um usuário autenticado, então usa o `owner` do workspace
+ * (ou o primeiro membro, se não houver owner) só pra preencher `createdBy`.
+ */
+async function sweepRecurringAutoLaunch(deps: SweepDeps): Promise<void> {
   const rules = await deps.repos.recurring.listAllActive();
   if (rules.length === 0) return;
 
@@ -98,26 +109,37 @@ async function sweepRecurringPending(deps: Pick<UseCaseDeps, "repos" | "dispatch
     const key = `${rule.id}:${today}`;
     if (confirmedKeys.has(key)) continue;
 
-    await notifyWorkspaceMembers(
-      deps,
-      rule.workspaceId,
-      "recurring_pending",
-      "Recorrência pendente",
-      `"${rule.description}" está prevista pra hoje — confirme o lançamento.`,
-      { recurringId: rule.id, date: today },
-      key,
-    );
+    const members = await deps.repos.workspace.listMembers(rule.workspaceId);
+    const actorMember = members.find((m) => m.role === "owner") ?? members[0];
+    if (!actorMember) continue; // workspace sem membros — não deveria acontecer
+
+    const actor: Actor = { userId: actorMember.userId, workspaceId: rule.workspaceId, role: actorMember.role };
+    const result = await confirmOccurrence(deps, actor, rule.id, today);
+    // Falhou (ex.: fatura já paga, regra ficou inválida) — não notifica lançamento que não aconteceu.
+    if (!result.ok) continue;
+
+    for (const member of members) {
+      const already = await deps.repos.notification.existsForEntity(member.userId, "recurring_pending", key);
+      if (already) continue;
+      await createNotification(deps, {
+        userId: member.userId,
+        workspaceId: rule.workspaceId,
+        type: "recurring_pending",
+        title: "Recorrência lançada",
+        body: `"${rule.description}" foi lançada automaticamente hoje.`,
+        data: { recurringId: rule.id, date: today, entityKey: key },
+      });
+    }
   }
 }
 
 /**
  * Sweep diário (job repetível do BullMQ, `main/worker.ts`) — sistema inteiro,
- * não escopado a um workspace. Gera as notificações de fatura fechou/vence e
- * recorrência pendente (spec M2-09/M2-10, adiantadas junto do sistema de
- * notificações).
+ * não escopado a um workspace. Fecha faturas vencidas, notifica vencimento e
+ * auto-lança recorrências do dia (M2-09/M2-10).
  */
-export async function runNotificationSweep(deps: Pick<UseCaseDeps, "repos" | "dispatch">): Promise<void> {
+export async function runNotificationSweep(deps: SweepDeps): Promise<void> {
   await sweepInvoiceClosed(deps);
   await sweepInvoiceDue(deps);
-  await sweepRecurringPending(deps);
+  await sweepRecurringAutoLaunch(deps);
 }

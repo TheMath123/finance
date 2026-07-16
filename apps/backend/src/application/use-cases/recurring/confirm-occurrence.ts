@@ -8,7 +8,7 @@ import type { CreateRecurringInput } from "./create-recurring";
 
 /** Confirmação com um toque: materializa a ocorrência como transação real. */
 export async function confirmOccurrence(
-  deps: UseCaseDeps,
+  deps: Pick<UseCaseDeps, "repos" | "uow">,
   actor: Actor,
   recurringId: string,
   date: string,

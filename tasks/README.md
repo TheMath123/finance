@@ -18,7 +18,7 @@ onde sobrar capacidade.
 | M2-06 | [Chatbot WhatsApp: webhook Meta Cloud API](m2-06-whatsapp-webhook-chatbot.md) | 🔵 Backlog | M2-01, M2-05 |
 | M2-07 | [Pipeline de IA: interpretar/categorizar transações](m2-07-ia-pipeline-transacoes.md) | 🔵 Backlog | — (valor pleno com M2-06) |
 | M2-08 | [IA de previsão de gastos variáveis](m2-08-ia-previsao-gastos.md) | 🔵 Backlog | M2-07 (recomendado) |
-| M2-09 | [Auto-lançamento de recorrências (job)](m2-09-auto-lancamento-recorrencias.md) | 🔵 Backlog | M2-01 |
+| M2-09 | [Auto-lançamento de recorrências (job)](m2-09-auto-lancamento-recorrencias.md) | 🟢 Concluída | M2-01 |
 | M2-10 | [Sistema de notificações + push](m2-10-notificacoes-push.md) | 🟢 Concluída | M2-01 |
 | M2-11 | [Export CSV (LGPD)](m2-11-export-csv-lgpd.md) | 🔵 Backlog | — |
 | M2-12 | [Biometria para abrir o app](m2-12-biometria-app.md) | 🔵 Backlog | — |

@@ -27,7 +27,7 @@ export interface CreateTransactionInput {
 }
 
 export async function createTransaction(
-  deps: UseCaseDeps,
+  deps: Pick<UseCaseDeps, "repos" | "uow">,
   actor: Actor,
   input: CreateTransactionInput,
 ): Promise<Either<TransactionError, Transaction[]>> {

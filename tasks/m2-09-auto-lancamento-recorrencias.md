@@ -1,6 +1,6 @@
 # M2-09 — Auto-lançamento de recorrências (job BullMQ)
 
-**Status:** 🔵 Backlog — não iniciada.
+**Status:** 🟢 Concluída.
 
 ## Contexto
 
@@ -11,27 +11,48 @@ No M1, `RecurringTransaction` não gera transação sozinha — o app oferece
 job como melhoria explícita do M2 ("Auto-lançamento de recorrências no M1"
 está em "Escopo negativo... entra no M2 com BullMQ").
 
-## Escopo
+## Decisão de produto (2026-07-16)
 
-- Job BullMQ agendado (diário) que percorre `RecurringTransaction.active` e,
-  ao chegar o `day_of_reference` (ou `month_of_reference`+dia, no caso
-  `yearly`), materializa a transação automaticamente — mesma lógica de
-  `confirm-occurrence.ts`, só que disparada pelo worker em vez de um toque do
-  usuário.
-- Decisão de produto a fechar: o auto-lançamento **substitui** a confirmação
-  manual (silencioso) ou só faz o que hoje é manual continuar existindo como
-  fallback/preferência configurável por `RecurringTransaction`? O spec não
-  detalha — alinhar antes de implementar (mesmo estilo da decisão registrada
-  na antiga task de onboarding).
-- Idempotência: job não pode duplicar lançamento se rodar mais de uma vez no
-  mesmo dia (checar se já existe transação com aquele `recurring_id` no
-  período antes de criar).
+O auto-lançamento **substitui** a confirmação manual — é silencioso, não uma
+preferência configurável por recorrência. Quando o dia chega, o job lança a
+transação sozinho; o usuário vê na lista já confirmada (pode editar/excluir
+depois, como qualquer transação) e recebe uma notificação avisando.
+
+A tela/rota de confirmação manual (`PendingOccurrenceRow`,
+`list-pending-occurrences`, `confirm-occurrence` HTTP) **não foi removida** —
+fica como fallback inofensivo pro intervalo entre a criação de uma
+recorrência e a próxima execução do sweep no mesmo dia (o worker roda no
+boot + a cada 24h). `confirmOccurrence` já responde
+`occurrence_already_confirmed` de forma graciosa se o job já tiver lançado
+antes do toque manual.
+
+## Implementação
+
+- `apps/backend/src/application/use-cases/notification/sweep.ts`:
+  `sweepRecurringPending` virou `sweepRecurringAutoLaunch` — pra cada regra
+  ativa com ocorrência prevista hoje e ainda não confirmada, chama
+  `confirmOccurrence` (reaproveitando toda a lógica de crédito/fatura/
+  parcelas já existente) com um ator sintético — o `owner` do workspace (ou
+  o primeiro membro) só pra preencher `createdBy`/auditoria, já que o job não
+  tem um usuário autenticado. Só notifica os membros (`recurring_pending`,
+  copy "Recorrência lançada") se o lançamento deu certo; se falhar (ex.:
+  fatura já paga), não notifica um lançamento que não aconteceu.
+- `createTransaction`/`confirmOccurrence` tiveram a assinatura estreitada de
+  `UseCaseDeps` completo para `Pick<UseCaseDeps, "repos" | "uow">` — é tudo
+  que usam, e isso permite chamar os dois a partir do sweep (que não tem
+  `hasher`/`tokens`/`logger`/`rateLimiter` do processo HTTP).
+- `apps/backend/src/main/worker.ts`: monta `uow` (`createUnitOfWork`) junto
+  do `repos`/`dispatch` que já existiam pro sweep.
+- Idempotência: dupla checagem — `confirmedOccurrenceKeys` (bulk, evita
+  chamar `confirmOccurrence` à toa) e o próprio `confirmOccurrence` via
+  `findByRecurringAndDate` antes de criar.
+- Testes: `notification.test.ts` — cenário atualizado pra criar conta/banco
+  reais (método `pix`, não mais `credit` com `cardId: null`, que sempre
+  falharia em `createTransaction`) e agora afirma que a transação foi
+  criada, não só a notificação; roda o sweep duas vezes pra confirmar que
+  não duplica.
 
 ## Dependências
 
-[[m2-01-infra-redis-bullmq]] (precisa do worker/scheduler existir primeiro).
-
-## Próximo passo
-
-Alinhar a decisão de produto (silencioso vs. confirmação) antes de escrever o
-job — evita implementar o comportamento errado.
+[[m2-01-infra-redis-bullmq]] (precisava do worker/scheduler existir
+primeiro — já concluída).
