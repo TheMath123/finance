@@ -318,7 +318,7 @@ export default function TransactionsScreen() {
   });
 
   return (
-    <Screen className="gap-4 pb-28">
+    <Screen className="gap-4 pb-28" scroll={false}>
       <View className="flex-row items-center justify-between">
         <ThemedText type="subtitle">Transações</ThemedText>
         <View className="flex-row items-center gap-2">
