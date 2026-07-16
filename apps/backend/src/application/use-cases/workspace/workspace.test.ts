@@ -29,6 +29,7 @@ import {
   removeMember,
   revokeInvite,
   updateMemberRole,
+  updateWorkspace,
 } from ".";
 
 const uniqueEmail = () => `test-${crypto.randomUUID()}@test.local`;
@@ -74,6 +75,17 @@ describe("workspace: criação", () => {
 
     const mine = await listMyWorkspaces(deps, actor.userId);
     expect(mine.some((w) => w.id === workspace.id && w.role === "owner")).toBe(true);
+  });
+
+  test("owner/admin pode renomear o workspace (inclusive o pessoal)", async () => {
+    const deps = createTestDeps(db);
+    const { actor } = await newOwnerActor();
+
+    const renamed = await updateWorkspace(deps, actor, { name: "Nome Novo" });
+    expect(renamed.name).toBe("Nome Novo");
+
+    const found = await deps.repos.workspace.findById(actor.workspaceId);
+    expect(found?.name).toBe("Nome Novo");
   });
 
   test("já nasce com categorias padrão, banco e conta zerada (mesmo onboarding do registro)", async () => {

@@ -2,11 +2,15 @@ import type { AuditAction, InviteRole, WorkspacePlan, WorkspaceRole, WorkspaceTy
 
 import { apiRequest } from "@/lib/api-client";
 
-export interface WorkspaceSummary {
+/** Resposta crua de create/update (sem `role` — não é vínculo de membership). */
+export interface WorkspaceInfo {
   id: string;
   name: string;
   type: WorkspaceType;
   plan: WorkspacePlan;
+}
+
+export interface WorkspaceSummary extends WorkspaceInfo {
   role: WorkspaceRole;
 }
 
@@ -39,6 +43,10 @@ export interface CreateWorkspaceInput {
   name: string;
 }
 
+export interface UpdateWorkspaceInput {
+  name: string;
+}
+
 export interface CreateInviteInput {
   emailOrPhone: string;
   role: InviteRole;
@@ -59,7 +67,10 @@ export const workspaceApi = {
   listMine: () => apiRequest<WorkspaceSummary[]>("/workspaces"),
 
   create: (input: CreateWorkspaceInput) =>
-    apiRequest<WorkspaceSummary>("/workspaces", { method: "POST", body: input }),
+    apiRequest<WorkspaceInfo>("/workspaces", { method: "POST", body: input }),
+
+  update: (workspaceId: string, input: UpdateWorkspaceInput) =>
+    apiRequest<WorkspaceInfo>(`/workspaces/${workspaceId}`, { method: "PATCH", body: input }),
 
   listMembers: (workspaceId: string) =>
     apiRequest<WorkspaceMemberView[]>(`/workspaces/${workspaceId}/members`),

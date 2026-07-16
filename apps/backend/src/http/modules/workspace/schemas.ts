@@ -9,6 +9,10 @@ export const createWorkspaceSchema = z.object({
   name: z.string().min(1, "Informe um nome").max(120),
 });
 
+export const updateWorkspaceSchema = z.object({
+  name: z.string().min(1, "Informe um nome").max(120),
+});
+
 export const updateMemberRoleSchema = z.object({
   role: z.enum(WORKSPACE_ROLES),
 });

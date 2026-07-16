@@ -12,6 +12,11 @@ export function createWorkspaceRepository(db: DbHandle): WorkspaceRepository {
     },
     findById: (workspaceId) =>
       db.query.workspaces.findFirst({ where: eq(workspaces.id, workspaceId) }),
+    async update(workspaceId, patch) {
+      const [row] = await db.update(workspaces).set(patch).where(eq(workspaces.id, workspaceId)).returning();
+      if (!row) throw new Error("falha ao atualizar workspace");
+      return row;
+    },
     async addMember(data) {
       await db.insert(workspaceMembers).values(data);
     },

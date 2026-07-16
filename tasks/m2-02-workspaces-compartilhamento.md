@@ -113,6 +113,20 @@ app — sem seletor funcionando, não dá pra testar o resto na prática.
   accounts.tsx/cards/categories, confirmados inofensivos via `expo export -p
   web`, que gerou todas as rotas novas como estáticas válidas).
 
+## Ajuste pós-teste manual do usuário (2026-07-16, rodada 2)
+
+- **Faltava editar o workspace** — só dava pra criar, nunca renomear depois.
+  Adicionado `PATCH /workspaces/:workspaceId` (`update-workspace.ts`, guard
+  `admin` — owner e admin podem, member/viewer não), vale pra qualquer tipo de
+  workspace (inclusive o `personal` — nada no spec proíbe renomear "Pessoal").
+  Mobile: ícone de lápis ao lado do nome em `/workspaces` (só visível pra
+  quem é owner/admin daquele workspace), abre um `Dialog` simples de
+  renomear. Corrigido de passagem: `workspaceApi.create`/`update` estavam
+  tipados como `WorkspaceSummary` (que inclui `role`), mas a resposta crua
+  de criar/editar não tem esse campo — novo tipo `WorkspaceInfo` sem `role`.
+  Teste novo + validado ao vivo (renomear funciona; não-membro tentando
+  renomear recebe 404 genérico; nome vazio é rejeitado). Suite: **45/45**.
+
 ## Ajustes pós-teste manual do usuário (2026-07-16)
 
 Dois gaps reais encontrados testando o app de verdade:

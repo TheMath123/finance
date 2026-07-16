@@ -1,6 +1,7 @@
 export { listMyWorkspaces, type WorkspaceSummary } from "./list-my-workspaces";
 export { listActivity } from "./list-activity";
 export { createWorkspace, type CreateWorkspaceInput } from "./create-workspace";
+export { updateWorkspace, type UpdateWorkspaceInput } from "./update-workspace";
 export { listMembers } from "./list-members";
 export { updateMemberRole, type UpdateMemberRoleInput } from "./update-member-role";
 export { removeMember } from "./remove-member";

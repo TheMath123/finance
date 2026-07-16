@@ -2,6 +2,7 @@ import { Elysia } from "elysia";
 import type { AppDeps } from "../../../deps";
 import { listMyWorkspacesRoute } from "./list-my-workspaces";
 import { createWorkspaceRoute } from "./create-workspace";
+import { updateWorkspaceRoute } from "./update-workspace";
 import { listMembersRoute } from "./list-members";
 import { updateMemberRoleRoute } from "./update-member-role";
 import { removeMemberRoute } from "./remove-member";
@@ -16,6 +17,7 @@ export function workspaceRoutes(deps: AppDeps) {
   return new Elysia()
     .use(listMyWorkspacesRoute(deps))
     .use(createWorkspaceRoute(deps))
+    .use(updateWorkspaceRoute(deps))
     .use(listMembersRoute(deps))
     .use(updateMemberRoleRoute(deps))
     .use(removeMemberRoute(deps))
