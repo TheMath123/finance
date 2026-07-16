@@ -1,6 +1,9 @@
 import { DEFAULT_CATEGORIES } from "@finance/db";
+import { left, right, type Either } from "@finance/shared";
+import { FREE_PLAN_LIMITS } from "../../../domain/services/plan-limits";
 import type { Workspace } from "../../../domain/entities/workspace";
 import type { UseCaseDeps } from "../../deps";
+import type { WorkspaceError } from "./errors";
 
 export interface CreateWorkspaceInput {
   name: string;
@@ -12,14 +15,26 @@ export interface CreateWorkspaceInput {
  * padrão + criação guiada da primeira conta/cartão — nunca deixar o usuário
  * numa tela vazia"): categorias padrão + banco/conta zerados, pra já dar pra
  * lançar transação sem cadastro manual antes.
- * Limite de plano (free = 1 compartilhado por usuário) é checado em M2-03, não aqui.
+ *
+ * Enforcement de plano (M2-03): free = no máximo 1 workspace compartilhado
+ * por usuário (contando só os que ele possui/criou — ser convidado pro
+ * workspace de outra pessoa não consome a cota). Workspace novo sempre nasce
+ * `free` (não existe fluxo de criar já `premium` — cobrança é milestone futuro).
  */
 export async function createWorkspace(
   deps: UseCaseDeps,
   userId: string,
   input: CreateWorkspaceInput,
-): Promise<Workspace> {
-  return deps.uow.run(async (repos) => {
+): Promise<Either<WorkspaceError, Workspace>> {
+  const memberships = await deps.repos.workspace.listByUser(userId);
+  const ownedSharedFree = memberships.filter(
+    (m) => m.role === "owner" && m.workspace.type !== "personal" && m.workspace.plan === "free",
+  );
+  if (ownedSharedFree.length >= FREE_PLAN_LIMITS.maxOwnedSharedWorkspaces) {
+    return left("plan_limit_reached");
+  }
+
+  const workspace = await deps.uow.run(async (repos) => {
     const workspace = await repos.workspace.create({ name: input.name, type: "family" });
     await repos.workspace.addMember({ workspaceId: workspace.id, userId, role: "owner" });
 
@@ -51,4 +66,6 @@ export async function createWorkspace(
     });
     return workspace;
   });
+
+  return right(workspace);
 }

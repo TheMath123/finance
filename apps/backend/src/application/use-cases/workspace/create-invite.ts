@@ -1,5 +1,6 @@
 import type { InviteRole } from "@finance/shared";
 import { left, right, type Either } from "@finance/shared";
+import { FREE_PLAN_LIMITS } from "../../../domain/services/plan-limits";
 import type { WorkspaceInvite } from "../../../domain/entities/workspace";
 import type { Actor, UseCaseDeps } from "../../deps";
 import type { WorkspaceError } from "./errors";
@@ -30,6 +31,17 @@ export async function createInvite(
     }
   }
 
+  // Enforcement de plano (M2-03): free = no máximo 5 membros por workspace.
+  // Reforçado de novo no aceite (accept-invite.ts) — vários convites pendentes
+  // podem ser aceitos em paralelo depois deste check.
+  const workspace = await deps.repos.workspace.findById(actor.workspaceId);
+  if (workspace?.plan === "free") {
+    const members = await deps.repos.workspace.listMembers(actor.workspaceId);
+    if (members.length >= FREE_PLAN_LIMITS.maxMembersPerWorkspace) {
+      return left("plan_limit_reached");
+    }
+  }
+
   const existing = await deps.repos.invite.findPendingForTarget(actor.workspaceId, target);
   if (existing) await deps.repos.invite.updateStatus(existing.id, "revoked");
 
@@ -41,12 +53,9 @@ export async function createInvite(
     expiresAt: new Date(Date.now() + INVITE_TTL_MS),
   });
 
-  if (looksLikeEmail) {
-    const [workspace, inviter] = await Promise.all([
-      deps.repos.workspace.findById(actor.workspaceId),
-      deps.repos.user.findById(actor.userId),
-    ]);
-    if (workspace && inviter) {
+  if (looksLikeEmail && workspace) {
+    const inviter = await deps.repos.user.findById(actor.userId);
+    if (inviter) {
       await deps.dispatch("email.workspace-invite", {
         to: target,
         inviterName: inviter.name,

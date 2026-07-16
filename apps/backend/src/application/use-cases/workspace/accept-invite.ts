@@ -1,4 +1,5 @@
 import { left, right, type Either } from "@finance/shared";
+import { FREE_PLAN_LIMITS } from "../../../domain/services/plan-limits";
 import type { UseCaseDeps } from "../../deps";
 import type { WorkspaceError } from "./errors";
 
@@ -28,6 +29,19 @@ export async function acceptInvite(
   const matches =
     user.email.toLowerCase() === target || (!!user.phone && user.phone.toLowerCase() === target);
   if (!matches) return left("invite_forbidden");
+
+  // Reforça o limite de membros (M2-03) — já checado na criação do convite, mas
+  // vários convites pendentes podem ter sido aceitos em paralelo desde então.
+  const existingRole = await deps.repos.workspace.getMemberRole(invite.workspaceId, userId);
+  if (!existingRole) {
+    const workspace = await deps.repos.workspace.findById(invite.workspaceId);
+    if (workspace?.plan === "free") {
+      const members = await deps.repos.workspace.listMembers(invite.workspaceId);
+      if (members.length >= FREE_PLAN_LIMITS.maxMembersPerWorkspace) {
+        return left("plan_limit_reached");
+      }
+    }
+  }
 
   await deps.uow.run(async (repos) => {
     const existingRole = await repos.workspace.getMemberRole(invite.workspaceId, userId);

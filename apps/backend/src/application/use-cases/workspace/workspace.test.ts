@@ -1,12 +1,22 @@
 /**
  * Testes do módulo de workspaces compartilhados (M2-02) contra o Postgres local:
- * criação de workspace family, convites (criar/aceitar/revogar) e regra de
- * sucessão de owner (mudança de papel e remoção/saída de membro).
+ * criação de workspace family, convites (criar/aceitar/revogar), regra de
+ * sucessão de owner (mudança de papel e remoção/saída de membro) e enforcement
+ * de limite de plano free (M2-03).
  */
 import { beforeAll, describe, expect, test } from "bun:test";
 import { eq } from "drizzle-orm";
-import { bankAccounts, banks, categories, createDb, workspaceInvites, workspaces, type Db } from "@finance/db";
+import {
+  bankAccounts,
+  banks,
+  categories,
+  createDb,
+  workspaceInvites,
+  workspaces,
+  type Db,
+} from "@finance/db";
 import type { Actor } from "../../deps";
+import type { Workspace } from "../../../domain/entities/workspace";
 import { createTestDeps } from "../../../test/deps";
 import { deleteAccount, register } from "../auth";
 import {
@@ -42,12 +52,23 @@ async function newOwnerActor(): Promise<{ actor: Actor; email: string; name: str
   };
 }
 
+/** `createWorkspace` retorna Either desde a M2-03 (pode falhar por limite de plano) — testes que só precisam do workspace usam este atalho. */
+async function mustCreateWorkspace(
+  deps: ReturnType<typeof createTestDeps>,
+  userId: string,
+  name: string,
+): Promise<Workspace> {
+  const result = await createWorkspace(deps, userId, { name });
+  if (!result.ok) throw new Error(`falha ao criar workspace: ${result.error}`);
+  return result.value;
+}
+
 describe("workspace: criação", () => {
   test("cria workspace family e o criador vira owner", async () => {
     const deps = createTestDeps(db);
     const { actor } = await newOwnerActor();
 
-    const workspace = await createWorkspace(deps, actor.userId, { name: "Família Teste" });
+    const workspace = await mustCreateWorkspace(deps, actor.userId, "Família Teste");
     expect(workspace.type).toBe("family");
 
     const mine = await listMyWorkspaces(deps, actor.userId);
@@ -57,7 +78,7 @@ describe("workspace: criação", () => {
   test("já nasce com categorias padrão, banco e conta zerada (mesmo onboarding do registro)", async () => {
     const deps = createTestDeps(db);
     const { actor } = await newOwnerActor();
-    const workspace = await createWorkspace(deps, actor.userId, { name: "Família com Onboarding" });
+    const workspace = await mustCreateWorkspace(deps, actor.userId, "Família com Onboarding");
 
     const cats = await db.select().from(categories).where(eq(categories.workspaceId, workspace.id));
     expect(cats.length).toBeGreaterThanOrEqual(9);
@@ -80,7 +101,7 @@ describe("workspace: convites", () => {
   test("convida por e-mail, o convidado aceita e vira membro", async () => {
     const deps = createTestDeps(db);
     const { actor: ownerActor } = await newOwnerActor();
-    const family = await createWorkspace(deps, ownerActor.userId, { name: "Família A" });
+    const family = await mustCreateWorkspace(deps, ownerActor.userId, "Família A");
     const familyOwner: Actor = { userId: ownerActor.userId, workspaceId: family.id, role: "owner" };
 
     const { actor: memberActor, email: memberEmail } = await newOwnerActor();
@@ -102,7 +123,7 @@ describe("workspace: convites", () => {
   test("convite pra e-mail que já é membro falha com already_member", async () => {
     const deps = createTestDeps(db);
     const { actor: ownerActor, email: ownerEmail } = await newOwnerActor();
-    const family = await createWorkspace(deps, ownerActor.userId, { name: "Família B" });
+    const family = await mustCreateWorkspace(deps, ownerActor.userId, "Família B");
     const familyOwner: Actor = { userId: ownerActor.userId, workspaceId: family.id, role: "owner" };
 
     const invite = await createInvite(deps, familyOwner, { emailOrPhone: ownerEmail, role: "member" });
@@ -114,7 +135,7 @@ describe("workspace: convites", () => {
   test("aceitar convite de outro usuário falha com invite_forbidden", async () => {
     const deps = createTestDeps(db);
     const { actor: ownerActor } = await newOwnerActor();
-    const family = await createWorkspace(deps, ownerActor.userId, { name: "Família C" });
+    const family = await mustCreateWorkspace(deps, ownerActor.userId, "Família C");
     const familyOwner: Actor = { userId: ownerActor.userId, workspaceId: family.id, role: "owner" };
 
     const { email: invitedEmail } = await newOwnerActor();
@@ -133,7 +154,7 @@ describe("workspace: convites", () => {
   test("revogar convite pendente impede aceite depois", async () => {
     const deps = createTestDeps(db);
     const { actor: ownerActor } = await newOwnerActor();
-    const family = await createWorkspace(deps, ownerActor.userId, { name: "Família D" });
+    const family = await mustCreateWorkspace(deps, ownerActor.userId, "Família D");
     const familyOwner: Actor = { userId: ownerActor.userId, workspaceId: family.id, role: "owner" };
 
     const { actor: memberActor, email: memberEmail } = await newOwnerActor();
@@ -155,7 +176,7 @@ describe("workspace: regra de sucessão de owner", () => {
   test("único owner não pode ser rebaixado nem sair", async () => {
     const deps = createTestDeps(db);
     const { actor: ownerActor } = await newOwnerActor();
-    const family = await createWorkspace(deps, ownerActor.userId, { name: "Família E" });
+    const family = await mustCreateWorkspace(deps, ownerActor.userId, "Família E");
     const familyOwner: Actor = { userId: ownerActor.userId, workspaceId: family.id, role: "owner" };
 
     const demoted = await updateMemberRole(deps, familyOwner, { userId: ownerActor.userId, role: "admin" });
@@ -170,7 +191,7 @@ describe("workspace: regra de sucessão de owner", () => {
   test("com dois owners, um deles pode ser rebaixado ou sair", async () => {
     const deps = createTestDeps(db);
     const { actor: ownerActor } = await newOwnerActor();
-    const family = await createWorkspace(deps, ownerActor.userId, { name: "Família F" });
+    const family = await mustCreateWorkspace(deps, ownerActor.userId, "Família F");
     const familyOwner: Actor = { userId: ownerActor.userId, workspaceId: family.id, role: "owner" };
 
     const { actor: secondActor, email: secondEmail } = await newOwnerActor();
@@ -189,7 +210,7 @@ describe("workspace: regra de sucessão de owner", () => {
   test("member comum pode sair sozinho; admin pode remover outro membro", async () => {
     const deps = createTestDeps(db);
     const { actor: ownerActor } = await newOwnerActor();
-    const family = await createWorkspace(deps, ownerActor.userId, { name: "Família G" });
+    const family = await mustCreateWorkspace(deps, ownerActor.userId, "Família G");
     const familyOwner: Actor = { userId: ownerActor.userId, workspaceId: family.id, role: "owner" };
 
     const { actor: memberActor, email: memberEmail } = await newOwnerActor();
@@ -213,7 +234,7 @@ describe("workspace: regra de sucessão de owner", () => {
   test("member comum não pode remover outro membro", async () => {
     const deps = createTestDeps(db);
     const { actor: ownerActor } = await newOwnerActor();
-    const family = await createWorkspace(deps, ownerActor.userId, { name: "Família H" });
+    const family = await mustCreateWorkspace(deps, ownerActor.userId, "Família H");
     const familyOwner: Actor = { userId: ownerActor.userId, workspaceId: family.id, role: "owner" };
 
     const { actor: memberActor, email: memberEmail } = await newOwnerActor();
@@ -229,11 +250,69 @@ describe("workspace: regra de sucessão de owner", () => {
   });
 });
 
+describe("workspace: enforcement de plano free (M2-03)", () => {
+  test("free: usuário não pode criar um segundo workspace compartilhado", async () => {
+    const deps = createTestDeps(db);
+    const { actor } = await newOwnerActor();
+
+    const first = await createWorkspace(deps, actor.userId, { name: "Primeira Família" });
+    expect(first.ok).toBe(true);
+
+    const second = await createWorkspace(deps, actor.userId, { name: "Segunda Família" });
+    expect(second.ok).toBe(false);
+    if (!second.ok) expect(second.error).toBe("plan_limit_reached");
+  });
+
+  test("free: workspace não passa de 5 membros (convite recusado, aceite defende de novo)", async () => {
+    const deps = createTestDeps(db);
+    const { actor: ownerActor } = await newOwnerActor();
+    const family = await mustCreateWorkspace(deps, ownerActor.userId, "Família Lotada");
+    const familyOwner: Actor = { userId: ownerActor.userId, workspaceId: family.id, role: "owner" };
+
+    // Owner já conta como 1 membro — mais 4 convites aceitos preenche os 5.
+    for (let i = 0; i < 4; i++) {
+      const { actor: memberActor, email } = await newOwnerActor();
+      const invite = await createInvite(deps, familyOwner, { emailOrPhone: email, role: "member" });
+      if (!invite.ok) throw new Error("convite falhou");
+      const accepted = await acceptInvite(deps, memberActor.userId, invite.value.id);
+      expect(accepted.ok).toBe(true);
+    }
+
+    const { email: sixthEmail } = await newOwnerActor();
+    const sixthInvite = await createInvite(deps, familyOwner, { emailOrPhone: sixthEmail, role: "member" });
+    expect(sixthInvite.ok).toBe(false);
+    if (!sixthInvite.ok) expect(sixthInvite.error).toBe("plan_limit_reached");
+  });
+
+  test("premium: sem limite de workspace nem de membros", async () => {
+    const deps = createTestDeps(db);
+    const { actor } = await newOwnerActor();
+
+    const first = await mustCreateWorkspace(deps, actor.userId, "Família Premium 1");
+    await db.update(workspaces).set({ plan: "premium" }).where(eq(workspaces.id, first.id));
+
+    // Mesmo já possuindo um workspace compartilhado, criar outro só é bloqueado
+    // se o EXISTENTE ainda contar como free — depois do upgrade, não conta mais.
+    const second = await createWorkspace(deps, actor.userId, { name: "Família Premium 2" });
+    expect(second.ok).toBe(true);
+
+    const familyOwner: Actor = { userId: actor.userId, workspaceId: first.id, role: "owner" };
+    for (let i = 0; i < 5; i++) {
+      const { actor: memberActor, email } = await newOwnerActor();
+      const invite = await createInvite(deps, familyOwner, { emailOrPhone: email, role: "member" });
+      expect(invite.ok).toBe(true);
+      if (!invite.ok) continue;
+      const accepted = await acceptInvite(deps, memberActor.userId, invite.value.id);
+      expect(accepted.ok).toBe(true);
+    }
+  });
+});
+
 describe("workspace: exclusão de conta (LGPD) com workspaces compartilhados", () => {
   test("único owner: o workspace family é apagado junto com a conta", async () => {
     const deps = createTestDeps(db);
     const { actor } = await newOwnerActor();
-    const family = await createWorkspace(deps, actor.userId, { name: "Família Solo" });
+    const family = await mustCreateWorkspace(deps, actor.userId, "Família Solo");
 
     const result = await deleteAccount(deps, { userId: actor.userId, password: "senha-forte-123" });
     expect(result.ok).toBe(true);
@@ -244,7 +323,7 @@ describe("workspace: exclusão de conta (LGPD) com workspaces compartilhados", (
   test("com outro owner: o workspace continua existindo, só a membership some", async () => {
     const deps = createTestDeps(db);
     const { actor: ownerActor } = await newOwnerActor();
-    const family = await createWorkspace(deps, ownerActor.userId, { name: "Família Compartilhada" });
+    const family = await mustCreateWorkspace(deps, ownerActor.userId, "Família Compartilhada");
     const familyOwner: Actor = { userId: ownerActor.userId, workspaceId: family.id, role: "owner" };
 
     const { actor: secondActor, email: secondEmail } = await newOwnerActor();
@@ -264,7 +343,7 @@ describe("workspace: exclusão de conta (LGPD) com workspaces compartilhados", (
   test("convite enviado por quem excluiu a conta fica com invited_by nulo (sem quebrar a exclusão)", async () => {
     const deps = createTestDeps(db);
     const { actor: ownerActor } = await newOwnerActor();
-    const family = await createWorkspace(deps, ownerActor.userId, { name: "Família com Convite" });
+    const family = await mustCreateWorkspace(deps, ownerActor.userId, "Família com Convite");
     const familyOwner: Actor = { userId: ownerActor.userId, workspaceId: family.id, role: "owner" };
 
     const { actor: secondActor, email: secondEmail } = await newOwnerActor();

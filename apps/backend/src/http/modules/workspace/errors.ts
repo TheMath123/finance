@@ -35,4 +35,9 @@ export const WORKSPACE_ERRORS: Record<WorkspaceError, HttpError> = {
     code: "invite_forbidden",
     message: "Este convite não é seu.",
   },
+  plan_limit_reached: {
+    status: 409,
+    code: "plan_limit_reached",
+    message: "Limite do plano free atingido. Considere fazer upgrade pra premium.",
+  },
 };
