@@ -41,3 +41,12 @@ export type RecurrenceFrequency = (typeof RECURRENCE_FREQUENCIES)[number];
 
 export const AUDIT_ACTIONS = ["create", "update", "delete", "restore"] as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
+
+/** Extensível — todo tipo novo precisa de um rótulo em `NOTIFICATION_TYPE_LABELS` (mobile). */
+export const NOTIFICATION_TYPES = [
+  "workspace_invite",
+  "invoice_closed",
+  "invoice_due",
+  "recurring_pending",
+] as const;
+export type NotificationType = (typeof NOTIFICATION_TYPES)[number];

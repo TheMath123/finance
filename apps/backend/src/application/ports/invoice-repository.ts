@@ -18,4 +18,8 @@ export interface InvoiceRepository {
     workspaceId: string,
   ): Promise<{ id: string; month: number; year: number; dueDay: number }[]>;
   deleteByCard(cardId: string): Promise<void>;
+  /** Sweep de notificação (sistema inteiro, não por workspace) — fatura ainda `open` cujo cartão já tem `closingDay`. */
+  listAllOpen(): Promise<{ invoice: CardInvoice; closingDay: number; cardName: string }[]>;
+  /** Sweep de notificação — fatura `closed` (não paga) cujo cartão já tem `dueDay`. */
+  listAllClosedUnpaid(): Promise<{ invoice: CardInvoice; dueDay: number; cardName: string }[]>;
 }

@@ -20,6 +20,8 @@ export interface RecurringRepository {
   findInWorkspace(workspaceId: string, id: string): Promise<RecurringTransaction | undefined>;
   listByWorkspace(workspaceId: string): Promise<RecurringTransaction[]>;
   listActive(workspaceId: string): Promise<RecurringTransaction[]>;
+  /** Sweep de notificação (sistema inteiro, não por workspace). */
+  listAllActive(): Promise<RecurringTransaction[]>;
   update(id: string, patch: Partial<CreateRecurringData>): Promise<RecurringTransaction>;
   delete(id: string): Promise<void>;
 }

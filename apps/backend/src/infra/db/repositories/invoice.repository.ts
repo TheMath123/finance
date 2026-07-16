@@ -95,5 +95,21 @@ export function createInvoiceRepository(db: DbHandle): InvoiceRepository {
     async deleteByCard(cardId) {
       await db.delete(cardInvoices).where(eq(cardInvoices.cardId, cardId));
     },
+    async listAllOpen() {
+      const rows = await db
+        .select({ invoice: cardInvoices, closingDay: cards.closingDay, cardName: cards.name })
+        .from(cardInvoices)
+        .innerJoin(cards, eq(cardInvoices.cardId, cards.id))
+        .where(eq(cardInvoices.status, "open"));
+      return rows;
+    },
+    async listAllClosedUnpaid() {
+      const rows = await db
+        .select({ invoice: cardInvoices, dueDay: cards.dueDay, cardName: cards.name })
+        .from(cardInvoices)
+        .innerJoin(cards, eq(cardInvoices.cardId, cards.id))
+        .where(eq(cardInvoices.status, "closed"));
+      return rows;
+    },
   };
 }

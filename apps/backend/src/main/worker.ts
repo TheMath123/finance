@@ -1,4 +1,7 @@
-import { createBullMqWorker, QUEUE_NAME } from "@finance/queues";
+import { createDb } from "@finance/db";
+import { createBullMqDispatcher, createBullMqWorker, QUEUE_NAME } from "@finance/queues";
+import { runNotificationSweep } from "../application/use-cases/notification";
+import { createRepositories } from "../infra/db/repositories";
 import { createLogger } from "../infra/observability/logger";
 import { jobHandlers } from "./job-handlers";
 import { loadEnv } from "./env";
@@ -18,8 +21,34 @@ const worker = createBullMqWorker(env.REDIS_URL, jobHandlers, (job, error) =>
 
 logger.info({ scope: "queues", queue: QUEUE_NAME }, "worker iniciado");
 
+/**
+ * Sweep diário de notificações (fatura fechou/vence, recorrência pendente —
+ * M2-09/M2-10 adiantadas junto do sistema de notificações). `setInterval` em
+ * vez de job repetível do BullMQ: mais simples, e o dedup por `entityKey`
+ * (ver notification/sweep.ts) já torna reexecuções seguras (ex.: toda vez que
+ * `bun run --watch worker` reinicia em dev).
+ */
+const db = createDb();
+const sweepDispatcher = createBullMqDispatcher(env.REDIS_URL, (job, error) =>
+  logger.error({ scope: "queues", job, err: error }, "job_failed"),
+);
+const sweepDeps = { repos: createRepositories(db), dispatch: sweepDispatcher.dispatch };
+
+async function runSweepSafely() {
+  try {
+    await runNotificationSweep(sweepDeps);
+    logger.info({ scope: "notifications" }, "sweep concluído");
+  } catch (error) {
+    logger.error({ scope: "notifications", err: error }, "sweep falhou");
+  }
+}
+
+void runSweepSafely();
+const sweepInterval = setInterval(runSweepSafely, 24 * 60 * 60 * 1000);
+
 async function shutdown() {
   logger.info({ scope: "queues" }, "worker encerrando");
+  clearInterval(sweepInterval);
   await worker.close();
   process.exit(0);
 }

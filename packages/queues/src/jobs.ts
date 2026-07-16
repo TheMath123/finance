@@ -9,6 +9,8 @@ export interface JobPayloads {
   "email.account-locked": { to: string; name: string; minutes: number };
   /** Sem link (mesmo motivo do reset por código: clientes de e-mail removem <a href> com esquema custom) — o convite é aceito na tela "Convites" do app. */
   "email.workspace-invite": { to: string; inviterName: string; workspaceName: string };
+  /** Um ou mais tokens do Expo Push Service (mesmo usuário pode ter vários devices). */
+  "push.send": { tokens: string[]; title: string; body: string; data?: Record<string, unknown> };
 }
 
 export type JobName = keyof JobPayloads;

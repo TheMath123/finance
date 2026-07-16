@@ -3,6 +3,7 @@ import { left, right, type Either } from "@finance/shared";
 import { FREE_PLAN_LIMITS } from "../../../domain/services/plan-limits";
 import type { WorkspaceInvite } from "../../../domain/entities/workspace";
 import type { Actor, UseCaseDeps } from "../../deps";
+import { createNotification } from "../notification";
 import type { WorkspaceError } from "./errors";
 
 /** Spec não fixa TTL numérico pro convite de workspace (diferente do token/OTP) — 7 dias é o padrão escolhido. */
@@ -23,10 +24,11 @@ export async function createInvite(
 
   // Telefone só casa com usuário de verdade quando o vínculo do WhatsApp (M2-05)
   // popular `users.phone` — até lá, convite por telefone só fica pendente no banco.
+  let invitedUser: Awaited<ReturnType<typeof deps.repos.user.findByEmail>> = undefined;
   if (looksLikeEmail) {
-    const user = await deps.repos.user.findByEmail(target.toLowerCase());
-    if (user) {
-      const role = await deps.repos.workspace.getMemberRole(actor.workspaceId, user.id);
+    invitedUser = await deps.repos.user.findByEmail(target.toLowerCase());
+    if (invitedUser) {
+      const role = await deps.repos.workspace.getMemberRole(actor.workspaceId, invitedUser.id);
       if (role) return left("already_member");
     }
   }
@@ -61,6 +63,17 @@ export async function createInvite(
         inviterName: inviter.name,
         workspaceName: workspace.name,
       });
+      // Notificação in-app/push só dá pra criar se o convidado já tem conta (precisa de userId).
+      if (invitedUser) {
+        await createNotification(deps, {
+          userId: invitedUser.id,
+          workspaceId: actor.workspaceId,
+          type: "workspace_invite",
+          title: "Novo convite de workspace",
+          body: `${inviter.name} te convidou pra ${workspace.name}.`,
+          data: { inviteId: invite.id },
+        });
+      }
     }
   }
 

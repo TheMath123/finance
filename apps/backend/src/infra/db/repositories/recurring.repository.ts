@@ -31,6 +31,10 @@ export function createRecurringRepository(db: DbHandle): RecurringRepository {
           eq(recurringTransactions.active, true),
         ),
       }),
+    listAllActive: () =>
+      db.query.recurringTransactions.findMany({
+        where: eq(recurringTransactions.active, true),
+      }),
     async update(id, patch) {
       const [row] = await db
         .update(recurringTransactions)

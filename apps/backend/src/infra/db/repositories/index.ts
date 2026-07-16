@@ -12,6 +12,9 @@ import { createInvoiceRepository } from "./invoice.repository";
 import { createTransactionRepository } from "./transaction.repository";
 import { createRecurringRepository } from "./recurring.repository";
 import { createAuditRecorder } from "./audit.repository";
+import { createNotificationRepository } from "./notification.repository";
+import { createNotificationPreferenceRepository } from "./notification-preference.repository";
+import { createPushTokenRepository } from "./push-token.repository";
 
 /** Fábrica única: mesmo conjunto para o client raiz e para a transação (UoW). */
 export function createRepositories(db: DbHandle): Repositories {
@@ -28,5 +31,8 @@ export function createRepositories(db: DbHandle): Repositories {
     transaction: createTransactionRepository(db),
     recurring: createRecurringRepository(db),
     audit: createAuditRecorder(db),
+    notification: createNotificationRepository(db),
+    notificationPreference: createNotificationPreferenceRepository(db),
+    pushToken: createPushTokenRepository(db),
   };
 }

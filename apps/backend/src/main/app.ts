@@ -10,6 +10,7 @@ import { categoryRoutes } from "../http/modules/category/routes";
 import { transactionRoutes } from "../http/modules/transaction/routes";
 import { recurringRoutes } from "../http/modules/recurring/routes";
 import { summaryRoutes } from "../http/modules/summary/routes";
+import { notificationRoutes } from "../http/modules/notification/routes";
 import type { AppDeps } from "../http/deps";
 
 export function createApp(deps: AppDeps) {
@@ -25,5 +26,6 @@ export function createApp(deps: AppDeps) {
     .use(categoryRoutes(deps))
     .use(transactionRoutes(deps))
     .use(recurringRoutes(deps))
-    .use(summaryRoutes(deps));
+    .use(summaryRoutes(deps))
+    .use(notificationRoutes(deps));
 }

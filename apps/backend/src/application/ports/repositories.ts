@@ -10,6 +10,9 @@ import type { InvoiceRepository } from "./invoice-repository";
 import type { TransactionRepository } from "./transaction-repository";
 import type { RecurringRepository } from "./recurring-repository";
 import type { AuditRecorder } from "./audit-recorder";
+import type { NotificationRepository } from "./notification-repository";
+import type { NotificationPreferenceRepository } from "./notification-preference-repository";
+import type { PushTokenRepository } from "./push-token-repository";
 
 /** Conjunto completo de repositórios — fora e dentro do Unit of Work. */
 export interface Repositories {
@@ -25,4 +28,7 @@ export interface Repositories {
   transaction: TransactionRepository;
   recurring: RecurringRepository;
   audit: AuditRecorder;
+  notification: NotificationRepository;
+  notificationPreference: NotificationPreferenceRepository;
+  pushToken: PushTokenRepository;
 }
