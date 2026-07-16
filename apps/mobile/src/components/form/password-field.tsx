@@ -5,7 +5,7 @@ import { ThemedText } from '@/components/themed-text';
 import { PasswordInput } from '@/components/ui/password-input';
 
 export interface PasswordFieldProps<T extends FieldValues>
-  extends Pick<TextInputProps, 'placeholder' | 'autoComplete'> {
+  extends Pick<TextInputProps, 'placeholder' | 'autoComplete' | 'returnKeyType' | 'onSubmitEditing'> {
   control: Control<T>;
   name: Path<T>;
   label?: string;

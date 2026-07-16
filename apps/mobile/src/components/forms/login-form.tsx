@@ -25,6 +25,8 @@ export function LoginForm() {
     onSuccess: signIn,
   });
 
+  const onSubmit = handleSubmit((input) => mutation.mutate(input));
+
   return (
     <View className="gap-4">
       <TextField
@@ -35,6 +37,7 @@ export function LoginForm() {
         autoCapitalize="none"
         autoComplete="email"
         keyboardType="email-address"
+        returnKeyType="next"
       />
       <PasswordField
         control={control}
@@ -42,6 +45,8 @@ export function LoginForm() {
         label="Senha"
         placeholder="••••••••"
         autoComplete="password"
+        returnKeyType="done"
+        onSubmitEditing={onSubmit}
       />
 
       {mutation.isError && (
@@ -50,7 +55,7 @@ export function LoginForm() {
         </ThemedText>
       )}
 
-      <Button loading={mutation.isPending} onPress={handleSubmit((input) => mutation.mutate(input))}>
+      <Button loading={mutation.isPending} onPress={onSubmit}>
         Entrar
       </Button>
 
