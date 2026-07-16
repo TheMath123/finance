@@ -14,7 +14,7 @@ export default function ForgotPasswordScreen() {
         </View>
         <ThemedText type="subtitle">Esqueci minha senha</ThemedText>
         <ThemedText type="small" themeColor="textSecondary">
-          Informe seu e-mail para receber o link de redefinição
+          Informe seu e-mail para receber o código de redefinição
         </ThemedText>
       </View>
       <ForgotPasswordForm />

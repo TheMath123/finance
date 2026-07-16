@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { ArrowLeftIcon, SignOutIcon, TrashIcon, UserIcon, WarningIcon } from 'phosphor-react-native';
+import { ArrowLeftIcon, EnvelopeIcon, SignOutIcon, TrashIcon, UserIcon, WarningIcon } from 'phosphor-react-native';
 import { useState } from 'react';
 import { Alert, Pressable, View } from 'react-native';
 
@@ -81,6 +81,23 @@ export default function ProfileScreen() {
           </ThemedText>
         </View>
       </Card>
+
+      {!user?.emailVerifiedAt && (
+        <Card className="flex-row items-center gap-3">
+          <View className="h-9 w-9 items-center justify-center rounded-full bg-amber-500/15">
+            <EnvelopeIcon size={18} color="#B45309" />
+          </View>
+          <View className="flex-1">
+            <ThemedText type="smallBold">E-mail não verificado</ThemedText>
+            <ThemedText type="small" themeColor="textSecondary">
+              Verifique seu e-mail para poder recuperar sua senha depois.
+            </ThemedText>
+          </View>
+          <Button variant="ghost" onPress={() => router.push('/verify-email')}>
+            Verificar
+          </Button>
+        </Card>
+      )}
 
       <Button
         variant="destructive"

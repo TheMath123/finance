@@ -9,6 +9,8 @@ interface SessionContextValue {
   isLoading: boolean;
   signIn: (session: AuthSession) => Promise<void>;
   signOut: () => Promise<void>;
+  /** Rebusca `/auth/me` e atualiza o usuário em memória (ex.: após verificar e-mail). */
+  refreshUser: () => Promise<void>;
 }
 
 const SessionContext = createContext<SessionContextValue | null>(null);
@@ -47,8 +49,14 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     if (refreshToken) await authApi.logout(refreshToken).catch(() => {});
   };
 
+  const refreshUser = async () => {
+    const me = await authApi.me();
+    setUser(me.user);
+    setWorkspaceId(me.defaultWorkspaceId);
+  };
+
   return (
-    <SessionContext.Provider value={{ user, workspaceId, isLoading, signIn, signOut }}>
+    <SessionContext.Provider value={{ user, workspaceId, isLoading, signIn, signOut, refreshUser }}>
       {children}
     </SessionContext.Provider>
   );

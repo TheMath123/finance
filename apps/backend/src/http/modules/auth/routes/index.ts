@@ -12,28 +12,28 @@ import { verifyEmailRoute } from "./verify-email";
 import { meRoute } from "./me";
 import { deleteAccountRoute } from "./delete-account";
 
-/** Limites por IP e por rota, janela de 1 minuto (spec: Rate limiting, camada 1). */
-const RATE_LIMITS: Record<string, number> = {
-  "/auth/register": 5,
-  "/auth/login": 10,
-  "/auth/refresh": 30,
-  "/auth/forgot-password": 5,
-  "/auth/verify-reset-code": 10,
-  "/auth/reset-password": 10,
-  "/auth/verify-email": 10,
+/** Limites por IP e por rota (spec: Rate limiting, camada 1) — janela em ms varia por rota. */
+const RATE_LIMITS: Record<string, { max: number; windowMs: number }> = {
+  "/auth/register": { max: 5, windowMs: 3_600_000 },
+  "/auth/login": { max: 10, windowMs: 60_000 },
+  "/auth/refresh": { max: 30, windowMs: 60_000 },
+  "/auth/forgot-password": { max: 5, windowMs: 3_600_000 },
+  "/auth/verify-reset-code": { max: 10, windowMs: 60_000 },
+  "/auth/reset-password": { max: 10, windowMs: 60_000 },
+  "/auth/verify-email": { max: 10, windowMs: 60_000 },
 };
 
 export function authRoutes(deps: AppDeps) {
   return new Elysia({ prefix: "/auth" })
     .onBeforeHandle(({ request, set, server }) => {
       const path = new URL(request.url).pathname;
-      const max = RATE_LIMITS[path];
-      if (!max) return;
+      const limit = RATE_LIMITS[path];
+      if (!limit) return;
       const ip = getClientIp(request, server, deps.trustProxy);
-      if (deps.rateLimiter.isLimited(`ip:${ip}:${path}`, max, 60_000)) {
+      if (deps.rateLimiter.isLimited(`ip:${ip}:${path}`, limit.max, limit.windowMs)) {
         deps.logger.log("rate_limited", { scopeKey: "ip", path });
         set.status = 429;
-        set.headers["retry-after"] = "60";
+        set.headers["retry-after"] = String(Math.ceil(limit.windowMs / 1000));
         return { error: { code: "rate_limited", message: "Muitas tentativas. Aguarde." } };
       }
     })

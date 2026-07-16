@@ -38,7 +38,6 @@ export function createAppDeps(env: Env): AppDeps {
     dispatch: dispatcher.dispatch,
     logger: createSecurityLogger(logger),
     rateLimiter: createInMemoryRateLimiter(),
-    appUrl: env.APP_URL,
     termsVersion: env.TERMS_VERSION,
     trustProxy: env.TRUST_PROXY,
     httpLogger: logger,

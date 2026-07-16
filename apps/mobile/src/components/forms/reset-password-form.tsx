@@ -16,7 +16,7 @@ import { verifyResetCodeSchema, type VerifyResetCodeInput } from '@/lib/schemas/
 interface ResetPasswordFormProps {
   /** Pré-preenchido quando a tela anterior (esqueci minha senha) já capturou o e-mail. */
   defaultEmail?: string;
-  /** Fallback pra deep link antigo (`mobile://reset-password?token=...`), se algum dia chegar. */
+  /** Pré-preenchido quando o usuário volta pra esta tela após reenviar o código. */
   defaultCode?: string;
 }
 

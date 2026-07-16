@@ -13,6 +13,6 @@ retomar sem reabrir a auditoria original.
 | 04 | [Exclusão de conta (LGPD)](04-exclusao-conta-lgpd.md) | 🟢 Concluída |
 | 05 | [Enforcement de limite de plano](05-enforcement-plano.md) | ⚪ Bloqueada (depende do M2) |
 | 06 | [Destino do módulo bank órfão](06-modulo-bank-destino.md) | 🟢 Decidida (manter) |
-| 07 | [Deep link pros e-mails de auth](07-deep-link-emails-auth.md) | 🟡 Implementado, não testado em device |
+| 07 | [Recuperação de senha e verificação de e-mail](07-deep-link-emails-auth.md) | 🟢 Concluída |
 
 **Legenda:** 🔵 Backlog (não iniciada) · 🟡 Em andamento · 🟢 Concluída/decidida · ⚪ Bloqueada

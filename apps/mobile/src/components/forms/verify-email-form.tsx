@@ -1,45 +1,37 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
-import { Link } from 'expo-router';
+import { router } from 'expo-router';
 import { useForm } from 'react-hook-form';
 import { View } from 'react-native';
 
 import { TextField } from '@/components/form/text-field';
 import { ThemedText } from '@/components/themed-text';
 import { Button } from '@/components/ui/button';
+import { useSession } from '@/context/session';
 import { ApiError } from '@/lib/api-client';
 import { authApi } from '@/lib/auth-api';
 import { verifyEmailSchema, type VerifyEmailInput } from '@/lib/schemas/auth';
 
-interface VerifyEmailFormProps {
-  /**
-   * Pré-preenchido caso o campo chegue via deep link (`mobile://verify-email?token=...`).
-   * O e-mail hoje mostra o código como texto pra copiar/colar — clientes de e-mail removem
-   * links com esquema customizado — então isso normalmente fica vazio na prática.
-   */
-  defaultToken?: string;
-}
-
-export function VerifyEmailForm({ defaultToken }: VerifyEmailFormProps) {
+export function VerifyEmailForm() {
+  const { refreshUser } = useSession();
   const { control, handleSubmit } = useForm<VerifyEmailInput>({
     resolver: zodResolver(verifyEmailSchema),
-    defaultValues: { token: defaultToken ?? '' },
+    defaultValues: { token: '' },
   });
 
   const mutation = useMutation({
     mutationFn: authApi.verifyEmail,
+    onSuccess: () => refreshUser(),
   });
 
   if (mutation.isSuccess) {
     return (
       <View className="gap-4">
         <ThemedText type="small" themeColor="textSecondary">
-          E-mail verificado. Você já pode fazer login normalmente.
+          E-mail verificado com sucesso.
         </ThemedText>
 
-        <Link href="/login" className="pt-2 text-center">
-          <ThemedText type="linkPrimary">Ir para o login</ThemedText>
-        </Link>
+        <Button onPress={() => router.back()}>Voltar</Button>
       </View>
     );
   }
@@ -63,10 +55,6 @@ export function VerifyEmailForm({ defaultToken }: VerifyEmailFormProps) {
       <Button loading={mutation.isPending} onPress={handleSubmit((input) => mutation.mutate(input))}>
         Verificar e-mail
       </Button>
-
-      <Link href="/login" className="pt-2 text-center">
-        <ThemedText type="linkPrimary">Voltar para o login</ThemedText>
-      </Link>
     </View>
   );
 }

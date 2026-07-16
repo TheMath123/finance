@@ -5,7 +5,8 @@
 ## Contexto
 
 A spec (seção Funcionalidades > App) promete busca por "texto, período, categoria,
-conta/cartão e membro do workspace". `apps/mobile/src/app/(app)/explore.tsx` hoje só
+conta/cartão e membro do workspace". `apps/mobile/src/app/(app)/(tabs)/explore.tsx`
+(caminho atualizado após a reorganização de rotas em grupo `(tabs)`) hoje só
 expõe 2 dos 5 filtros (texto + categoria). O backend e os índices já suportam tudo
 (`from`, `to`, `accountId`, `cardId`, `createdBy` em `listTransactionsSchema` e no
 repositório) — é trabalho só de UI.
@@ -35,7 +36,7 @@ quando não usados, com indicador visual (ícone preenchido) quando algum filtro
 avançado está ativo, e um "Limpar" que reseta só esses 4 campos.
 
 Arquivos alterados:
-- `apps/mobile/src/app/(app)/explore.tsx` — estado dos novos filtros, painel de UI,
+- `apps/mobile/src/app/(app)/(tabs)/explore.tsx` — estado dos novos filtros, painel de UI,
   `queryKey`/`queryFn` do `useQuery` de transações passando a incluir `accountId`,
   `cardId`, `from`, `to`.
 - `apps/mobile/src/components/form/date-field.tsx` — `formatIsoDate` exportado

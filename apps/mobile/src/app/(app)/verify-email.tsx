@@ -1,4 +1,3 @@
-import { useLocalSearchParams } from 'expo-router';
 import { CheckCircleIcon } from 'phosphor-react-native';
 import { View } from 'react-native';
 
@@ -7,8 +6,6 @@ import { ThemedText } from '@/components/themed-text';
 import { Screen } from '@/components/ui/screen';
 
 export default function VerifyEmailScreen() {
-  const { token } = useLocalSearchParams<{ token?: string }>();
-
   return (
     <Screen center>
       <View className="items-center gap-3 pb-4">
@@ -20,7 +17,7 @@ export default function VerifyEmailScreen() {
           Cole o código recebido por e-mail para confirmar sua conta
         </ThemedText>
       </View>
-      <VerifyEmailForm defaultToken={token} />
+      <VerifyEmailForm />
     </Screen>
   );
 }

@@ -3,7 +3,7 @@ import type { UseCaseDeps } from "../../deps";
 import { REFRESH_TOKEN_TTL_MS } from "../../../infra/security/jose-token-service";
 
 export interface AuthSession {
-  user: { id: string; name: string; email: string };
+  user: { id: string; name: string; email: string; emailVerifiedAt: string | null };
   defaultWorkspaceId: string;
   accessToken: string;
   refreshToken: string;
@@ -22,7 +22,12 @@ export async function issueSession(
     expiresAt: new Date(Date.now() + REFRESH_TOKEN_TTL_MS),
   });
   return {
-    user: { id: user.id, name: user.name, email: user.email },
+    user: {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      emailVerifiedAt: user.emailVerifiedAt ? user.emailVerifiedAt.toISOString() : null,
+    },
     defaultWorkspaceId: workspaceId,
     accessToken: await deps.tokens.signAccess(user.id),
     refreshToken: refresh.raw,

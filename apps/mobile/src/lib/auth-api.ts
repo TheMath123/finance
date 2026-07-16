@@ -9,7 +9,7 @@ import type {
 } from "@/lib/schemas/auth";
 
 export interface AuthSession {
-  user: { id: string; name: string; email: string };
+  user: { id: string; name: string; email: string; emailVerifiedAt: string | null };
   defaultWorkspaceId: string;
   accessToken: string;
   refreshToken: string;

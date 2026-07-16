@@ -3,7 +3,7 @@ import type { UseCaseDeps } from "../../deps";
 import type { AuthError } from "./errors";
 
 export interface MeOutput {
-  user: { id: string; name: string; email: string };
+  user: { id: string; name: string; email: string; emailVerifiedAt: string | null };
   defaultWorkspaceId: string;
 }
 
@@ -15,7 +15,12 @@ export async function me(
   if (!user || !user.defaultWorkspaceId) return left("invalid_token");
 
   return right({
-    user: { id: user.id, name: user.name, email: user.email },
+    user: {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      emailVerifiedAt: user.emailVerifiedAt ? user.emailVerifiedAt.toISOString() : null,
+    },
     defaultWorkspaceId: user.defaultWorkspaceId,
   });
 }

@@ -21,7 +21,6 @@ export function createTestDeps(db: Db, jobs: DispatchedJob[] = []): UseCaseDeps 
     },
     logger: { log: () => {} },
     rateLimiter: createInMemoryRateLimiter(),
-    appUrl: "http://localhost:3000",
     termsVersion: "test",
   };
 }

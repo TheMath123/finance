@@ -15,7 +15,6 @@ export interface UseCaseDeps {
   dispatch: QueueDispatcher["dispatch"];
   logger: SecurityLogger;
   rateLimiter: RateLimiter;
-  appUrl: string;
   termsVersion: string;
 }
 
