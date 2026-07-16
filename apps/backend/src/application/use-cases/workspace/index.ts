@@ -1,1 +1,11 @@
 export { listMyWorkspaces, type WorkspaceSummary } from "./list-my-workspaces";
+export { createWorkspace, type CreateWorkspaceInput } from "./create-workspace";
+export { listMembers } from "./list-members";
+export { updateMemberRole, type UpdateMemberRoleInput } from "./update-member-role";
+export { removeMember } from "./remove-member";
+export { createInvite, type CreateInviteInput } from "./create-invite";
+export { acceptInvite } from "./accept-invite";
+export { revokeInvite } from "./revoke-invite";
+export { listMyInvites, type MyInviteView } from "./list-my-invites";
+export { listWorkspaceInvites } from "./list-workspace-invites";
+export type { WorkspaceError } from "./errors";

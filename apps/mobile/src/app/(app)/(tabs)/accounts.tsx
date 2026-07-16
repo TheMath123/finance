@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { getBank } from '@finance/shared';
 import { router } from 'expo-router';
-import { CaretRightIcon, CreditCardIcon, PlusIcon, TagIcon, UserIcon } from 'phosphor-react-native';
+import { CaretRightIcon, CreditCardIcon, PlusIcon, TagIcon, UserIcon, UsersIcon } from 'phosphor-react-native';
 import type { ReactNode } from 'react';
 import { ActivityIndicator, Pressable, View } from 'react-native';
 
@@ -132,6 +132,11 @@ export default function AccountsScreen() {
           label="Categorias"
           count={categories?.length ?? 0}
           onPress={() => router.push('/categories')}
+        />
+        <NavRow
+          icon={<UsersIcon size={18} color="#2563EB" />}
+          label="Workspaces"
+          onPress={() => router.push('/workspaces')}
         />
         <NavRow
           icon={<UserIcon size={18} color="#2563EB" />}

@@ -1,6 +1,7 @@
 import type { UserRepository } from "./user-repository";
 import type { TokenRepository } from "./token-repository";
 import type { WorkspaceRepository } from "./workspace-repository";
+import type { WorkspaceInviteRepository } from "./workspace-invite-repository";
 import type { CategoryRepository } from "./category-repository";
 import type { BankRepository } from "./bank-repository";
 import type { AccountRepository } from "./account-repository";
@@ -15,6 +16,7 @@ export interface Repositories {
   user: UserRepository;
   token: TokenRepository;
   workspace: WorkspaceRepository;
+  invite: WorkspaceInviteRepository;
   category: CategoryRepository;
   bank: BankRepository;
   account: AccountRepository;

@@ -17,6 +17,10 @@ export type WorkspaceRole = (typeof WORKSPACE_ROLES)[number];
 export const INVITE_STATUSES = ["pending", "accepted", "expired", "revoked"] as const;
 export type InviteStatus = (typeof INVITE_STATUSES)[number];
 
+/** Convite nunca concede `owner` — posse só por transferência explícita (regra de sucessão). */
+export const INVITE_ROLES = ["admin", "member", "viewer"] as const;
+export type InviteRole = (typeof INVITE_ROLES)[number];
+
 export const ACCOUNT_TYPES = ["checking", "savings", "payment"] as const;
 export type AccountType = (typeof ACCOUNT_TYPES)[number];
 

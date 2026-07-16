@@ -1,0 +1,81 @@
+import type { InviteRole, WorkspacePlan, WorkspaceRole, WorkspaceType } from "@finance/shared";
+
+import { apiRequest } from "@/lib/api-client";
+
+export interface WorkspaceSummary {
+  id: string;
+  name: string;
+  type: WorkspaceType;
+  plan: WorkspacePlan;
+  role: WorkspaceRole;
+}
+
+export interface WorkspaceMemberView {
+  userId: string;
+  role: WorkspaceRole;
+  name: string;
+  email: string;
+}
+
+export interface WorkspaceInviteView {
+  id: string;
+  workspaceId: string;
+  emailOrPhone: string;
+  role: InviteRole;
+  status: string;
+  expiresAt: string;
+}
+
+export interface MyInviteView {
+  id: string;
+  workspaceId: string;
+  workspaceName: string;
+  inviterName: string;
+  role: InviteRole;
+  expiresAt: string;
+}
+
+export interface CreateWorkspaceInput {
+  name: string;
+}
+
+export interface CreateInviteInput {
+  emailOrPhone: string;
+  role: InviteRole;
+}
+
+export const workspaceApi = {
+  listMine: () => apiRequest<WorkspaceSummary[]>("/workspaces"),
+
+  create: (input: CreateWorkspaceInput) =>
+    apiRequest<WorkspaceSummary>("/workspaces", { method: "POST", body: input }),
+
+  listMembers: (workspaceId: string) =>
+    apiRequest<WorkspaceMemberView[]>(`/workspaces/${workspaceId}/members`),
+
+  updateMemberRole: (workspaceId: string, userId: string, role: WorkspaceRole) =>
+    apiRequest<void>(`/workspaces/${workspaceId}/members/${userId}`, {
+      method: "PATCH",
+      body: { role },
+    }),
+
+  removeMember: (workspaceId: string, userId: string) =>
+    apiRequest<void>(`/workspaces/${workspaceId}/members/${userId}`, { method: "DELETE" }),
+
+  createInvite: (workspaceId: string, input: CreateInviteInput) =>
+    apiRequest<WorkspaceInviteView>(`/workspaces/${workspaceId}/invites`, {
+      method: "POST",
+      body: input,
+    }),
+
+  listWorkspaceInvites: (workspaceId: string) =>
+    apiRequest<WorkspaceInviteView[]>(`/workspaces/${workspaceId}/invites`),
+
+  listMyInvites: () => apiRequest<MyInviteView[]>("/invites"),
+
+  acceptInvite: (inviteId: string) =>
+    apiRequest<void>(`/invites/${inviteId}/accept`, { method: "POST" }),
+
+  revokeInvite: (inviteId: string) =>
+    apiRequest<void>(`/invites/${inviteId}/revoke`, { method: "POST" }),
+};

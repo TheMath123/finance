@@ -1,4 +1,10 @@
-import type { WorkspacePlan, WorkspaceRole, WorkspaceType } from "@finance/shared";
+import type {
+  InviteRole,
+  InviteStatus,
+  WorkspacePlan,
+  WorkspaceRole,
+  WorkspaceType,
+} from "@finance/shared";
 
 export interface Workspace {
   id: string;
@@ -14,6 +20,19 @@ export interface WorkspaceMember {
   workspaceId: string;
   userId: string;
   role: WorkspaceRole;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface WorkspaceInvite {
+  id: string;
+  workspaceId: string;
+  /** Nullable: fica sem dono se quem convidou excluir a conta (LGPD). */
+  invitedBy: string | null;
+  emailOrPhone: string;
+  role: InviteRole;
+  status: InviteStatus;
+  expiresAt: Date;
   createdAt: Date;
   updatedAt: Date;
 }

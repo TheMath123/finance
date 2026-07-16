@@ -23,17 +23,6 @@ export function EmailLayout({ title, children }: { title: string; children: Reac
   );
 }
 
-export const buttonStyle = {
-  backgroundColor: "#18181b",
-  borderRadius: 8,
-  color: "#ffffff",
-  display: "inline-block",
-  fontSize: 14,
-  fontWeight: 600,
-  padding: "12px 24px",
-  textDecoration: "none",
-} as const;
-
 /**
  * Código exibido como texto puro (não um link): esquemas customizados
  * (mobile://...) são removidos por Gmail/Outlook/etc. em botões de e-mail,

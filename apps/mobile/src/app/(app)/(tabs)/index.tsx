@@ -1,6 +1,7 @@
 import { useQueries, useQuery } from '@tanstack/react-query';
-import { TrendUpIcon, TrendDownIcon } from 'phosphor-react-native';
-import { ActivityIndicator, View } from 'react-native';
+import { router } from 'expo-router';
+import { CaretDownIcon, TrendUpIcon, TrendDownIcon } from 'phosphor-react-native';
+import { ActivityIndicator, Pressable, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { Card } from '@/components/ui/card';
@@ -9,6 +10,7 @@ import { useSession } from '@/context/session';
 import { cardsApi } from '@/lib/cards-api';
 import { formatCents } from '@/lib/money';
 import { summaryApi } from '@/lib/summary-api';
+import { workspaceApi } from '@/lib/workspace-api';
 
 interface NextInvoice {
   cardName: string;
@@ -61,8 +63,20 @@ export default function HomeScreen() {
 
   const nextInvoice = useNextInvoice(workspaceId);
 
+  const { data: workspaces } = useQuery({ queryKey: ['workspaces'], queryFn: workspaceApi.listMine });
+  const activeWorkspace = workspaces?.find((w) => w.id === workspaceId);
+
   return (
     <Screen className="gap-6 pb-28">
+      {activeWorkspace && (
+        <Pressable
+          onPress={() => router.push('/workspaces')}
+          className="flex-row items-center gap-1.5 self-start active:opacity-70">
+          <ThemedText type="smallBold">{activeWorkspace.name}</ThemedText>
+          <CaretDownIcon size={14} color="#71717a" />
+        </Pressable>
+      )}
+
       <View>
         <ThemedText type="small" themeColor="textSecondary">
           Saldo disponível

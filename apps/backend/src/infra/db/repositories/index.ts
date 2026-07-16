@@ -3,6 +3,7 @@ import type { DbHandle } from "../handle";
 import { createUserRepository } from "./user.repository";
 import { createTokenRepository } from "./token.repository";
 import { createWorkspaceRepository } from "./workspace.repository";
+import { createWorkspaceInviteRepository } from "./workspace-invite.repository";
 import { createCategoryRepository } from "./category.repository";
 import { createBankRepository } from "./bank.repository";
 import { createAccountRepository } from "./account.repository";
@@ -18,6 +19,7 @@ export function createRepositories(db: DbHandle): Repositories {
     user: createUserRepository(db),
     token: createTokenRepository(db),
     workspace: createWorkspaceRepository(db),
+    invite: createWorkspaceInviteRepository(db),
     category: createCategoryRepository(db),
     bank: createBankRepository(db),
     account: createAccountRepository(db),

@@ -22,12 +22,7 @@ export interface Mailer {
   sendEmailVerification(input: { to: string; name: string; code: string }): Promise<void>;
   sendPasswordChanged(input: { to: string; name: string }): Promise<void>;
   sendAccountLocked(input: { to: string; name: string; minutes: number }): Promise<void>;
-  sendWorkspaceInvite(input: {
-    to: string;
-    inviterName: string;
-    workspaceName: string;
-    acceptUrl: string;
-  }): Promise<void>;
+  sendWorkspaceInvite(input: { to: string; inviterName: string; workspaceName: string }): Promise<void>;
 }
 
 export const mailer: Mailer = {
@@ -39,10 +34,10 @@ export const mailer: Mailer = {
     send(to, "Sua senha foi alterada", PasswordChangedEmail({ name })),
   sendAccountLocked: ({ to, name, minutes }) =>
     send(to, "Atividade suspeita na sua conta", AccountLockedEmail({ name, minutes })),
-  sendWorkspaceInvite: ({ to, inviterName, workspaceName, acceptUrl }) =>
+  sendWorkspaceInvite: ({ to, inviterName, workspaceName }) =>
     send(
       to,
       `Convite para o workspace ${workspaceName}`,
-      WorkspaceInviteEmail({ inviterName, workspaceName, acceptUrl }),
+      WorkspaceInviteEmail({ inviterName, workspaceName }),
     ),
 };

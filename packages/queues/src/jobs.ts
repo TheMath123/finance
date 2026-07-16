@@ -7,7 +7,8 @@ export interface JobPayloads {
   "email.verify-email": { to: string; name: string; code: string };
   "email.password-changed": { to: string; name: string };
   "email.account-locked": { to: string; name: string; minutes: number };
-  "email.workspace-invite": { to: string; inviterName: string; workspaceName: string; acceptUrl: string };
+  /** Sem link (mesmo motivo do reset por código: clientes de e-mail removem <a href> com esquema custom) — o convite é aceito na tela "Convites" do app. */
+  "email.workspace-invite": { to: string; inviterName: string; workspaceName: string };
 }
 
 export type JobName = keyof JobPayloads;

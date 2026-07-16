@@ -20,9 +20,8 @@ export const workspaceInvites = pgTable(
     workspaceId: uuid("workspace_id")
       .notNull()
       .references(() => workspaces.id, { onDelete: "cascade" }),
-    invitedBy: uuid("invited_by")
-      .notNull()
-      .references(() => users.id),
+    /** Nullable: se quem convidou excluir a conta (LGPD), o convite continua existindo anonimizado. */
+    invitedBy: uuid("invited_by").references(() => users.id, { onDelete: "set null" }),
     emailOrPhone: text("email_or_phone").notNull(),
     role: inviteRoleEnum("role").notNull(),
     status: inviteStatusEnum("status").notNull().default("pending"),

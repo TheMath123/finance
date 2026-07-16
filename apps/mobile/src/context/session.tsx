@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 
 import { authApi, type AuthSession } from '@/lib/auth-api';
-import { tokenStore } from '@/lib/secure-store';
+import { tokenStore, workspaceStore } from '@/lib/secure-store';
 
 interface SessionContextValue {
   user: AuthSession['user'] | null;
@@ -9,8 +9,10 @@ interface SessionContextValue {
   isLoading: boolean;
   signIn: (session: AuthSession) => Promise<void>;
   signOut: () => Promise<void>;
-  /** Rebusca `/auth/me` e atualiza o usuário em memória (ex.: após verificar e-mail). */
+  /** Rebusca `/auth/me` e atualiza o usuário em memória (ex.: após verificar e-mail). Não mexe no workspace ativo. */
   refreshUser: () => Promise<void>;
+  /** Troca o workspace ativo (seletor) e persiste a escolha entre reaberturas do app. */
+  switchWorkspace: (workspaceId: string) => Promise<void>;
 }
 
 const SessionContext = createContext<SessionContextValue | null>(null);
@@ -21,22 +23,29 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    tokenStore
-      .getAccessToken()
-      .then((token) => (token ? authApi.me() : null))
-      .then((me) => {
-        setUser(me?.user ?? null);
-        setWorkspaceId(me?.defaultWorkspaceId ?? null);
-      })
-      .catch(() => {
+    (async () => {
+      const token = await tokenStore.getAccessToken();
+      if (!token) {
+        setIsLoading(false);
+        return;
+      }
+      try {
+        const me = await authApi.me();
+        setUser(me.user);
+        const stored = await workspaceStore.getActiveWorkspaceId();
+        setWorkspaceId(stored ?? me.defaultWorkspaceId);
+      } catch {
         setUser(null);
         setWorkspaceId(null);
-      })
-      .finally(() => setIsLoading(false));
+      } finally {
+        setIsLoading(false);
+      }
+    })();
   }, []);
 
   const signIn = async (session: AuthSession) => {
     await tokenStore.setTokens(session.accessToken, session.refreshToken);
+    await workspaceStore.setActiveWorkspaceId(session.defaultWorkspaceId);
     setUser(session.user);
     setWorkspaceId(session.defaultWorkspaceId);
   };
@@ -44,6 +53,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const signOut = async () => {
     const refreshToken = await tokenStore.getRefreshToken();
     await tokenStore.clearTokens();
+    await workspaceStore.clearActiveWorkspaceId();
     setUser(null);
     setWorkspaceId(null);
     if (refreshToken) await authApi.logout(refreshToken).catch(() => {});
@@ -52,11 +62,16 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const refreshUser = async () => {
     const me = await authApi.me();
     setUser(me.user);
-    setWorkspaceId(me.defaultWorkspaceId);
+  };
+
+  const switchWorkspace = async (id: string) => {
+    await workspaceStore.setActiveWorkspaceId(id);
+    setWorkspaceId(id);
   };
 
   return (
-    <SessionContext.Provider value={{ user, workspaceId, isLoading, signIn, signOut, refreshUser }}>
+    <SessionContext.Provider
+      value={{ user, workspaceId, isLoading, signIn, signOut, refreshUser, switchWorkspace }}>
       {children}
     </SessionContext.Provider>
   );
