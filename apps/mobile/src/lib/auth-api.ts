@@ -5,6 +5,7 @@ import type {
   RegisterInput,
   ResetPasswordInput,
   VerifyEmailInput,
+  VerifyResetCodeInput,
 } from "@/lib/schemas/auth";
 
 export interface AuthSession {
@@ -33,6 +34,9 @@ export const authApi = {
 
   forgotPassword: (input: ForgotPasswordInput) =>
     apiRequest<{ message: string }>("/auth/forgot-password", { method: "POST", body: input, skipAuth: true }),
+
+  verifyResetCode: (input: VerifyResetCodeInput) =>
+    apiRequest<{ message: string }>("/auth/verify-reset-code", { method: "POST", body: input, skipAuth: true }),
 
   resetPassword: (input: ResetPasswordInput) =>
     apiRequest<{ message: string }>("/auth/reset-password", { method: "POST", body: input, skipAuth: true }),

@@ -31,6 +31,13 @@ export function createTokenService(jwtSecret: string): TokenService {
       const raw = Buffer.from(bytes).toString("base64url");
       return { raw, hash: hashOpaque(raw) };
     },
+    generateCode() {
+      const bytes = new Uint32Array(1);
+      crypto.getRandomValues(bytes);
+      const value = bytes[0] ?? 0;
+      const raw = String(value % 1_000_000).padStart(6, "0");
+      return { raw, hash: hashOpaque(raw) };
+    },
     hashOpaque,
   };
 }

@@ -6,6 +6,7 @@ import { loginRoute } from "./login";
 import { refreshRoute } from "./refresh";
 import { logoutRoute } from "./logout";
 import { forgotPasswordRoute } from "./forgot-password";
+import { verifyResetCodeRoute } from "./verify-reset-code";
 import { resetPasswordRoute } from "./reset-password";
 import { verifyEmailRoute } from "./verify-email";
 import { meRoute } from "./me";
@@ -17,6 +18,7 @@ const RATE_LIMITS: Record<string, number> = {
   "/auth/login": 10,
   "/auth/refresh": 30,
   "/auth/forgot-password": 5,
+  "/auth/verify-reset-code": 10,
   "/auth/reset-password": 10,
   "/auth/verify-email": 10,
 };
@@ -40,6 +42,7 @@ export function authRoutes(deps: AppDeps) {
     .use(refreshRoute(deps))
     .use(logoutRoute(deps))
     .use(forgotPasswordRoute(deps))
+    .use(verifyResetCodeRoute(deps))
     .use(resetPasswordRoute(deps))
     .use(verifyEmailRoute(deps))
     .use(meRoute(deps))

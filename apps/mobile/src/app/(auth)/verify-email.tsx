@@ -17,7 +17,7 @@ export default function VerifyEmailScreen() {
         </View>
         <ThemedText type="subtitle">Verificar e-mail</ThemedText>
         <ThemedText type="small" themeColor="textSecondary">
-          Cole o token recebido por e-mail para confirmar sua conta
+          Cole o código recebido por e-mail para confirmar sua conta
         </ThemedText>
       </View>
       <VerifyEmailForm defaultToken={token} />

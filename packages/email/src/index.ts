@@ -18,8 +18,8 @@ async function send(to: string, subject: string, element: ReactElement): Promise
 }
 
 export interface Mailer {
-  sendPasswordReset(input: { to: string; name: string; resetUrl: string }): Promise<void>;
-  sendEmailVerification(input: { to: string; name: string; verifyUrl: string }): Promise<void>;
+  sendPasswordReset(input: { to: string; name: string; code: string }): Promise<void>;
+  sendEmailVerification(input: { to: string; name: string; code: string }): Promise<void>;
   sendPasswordChanged(input: { to: string; name: string }): Promise<void>;
   sendAccountLocked(input: { to: string; name: string; minutes: number }): Promise<void>;
   sendWorkspaceInvite(input: {
@@ -31,10 +31,10 @@ export interface Mailer {
 }
 
 export const mailer: Mailer = {
-  sendPasswordReset: ({ to, name, resetUrl }) =>
-    send(to, "Redefinição de senha", PasswordResetEmail({ name, resetUrl })),
-  sendEmailVerification: ({ to, name, verifyUrl }) =>
-    send(to, "Confirme seu e-mail", VerifyEmailEmail({ name, verifyUrl })),
+  sendPasswordReset: ({ to, name, code }) =>
+    send(to, "Redefinição de senha", PasswordResetEmail({ name, code })),
+  sendEmailVerification: ({ to, name, code }) =>
+    send(to, "Confirme seu e-mail", VerifyEmailEmail({ name, code })),
   sendPasswordChanged: ({ to, name }) =>
     send(to, "Sua senha foi alterada", PasswordChangedEmail({ name })),
   sendAccountLocked: ({ to, name, minutes }) =>

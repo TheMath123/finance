@@ -3,7 +3,8 @@ import type { UseCaseDeps } from "../../deps";
 import type { AuthError } from "./errors";
 
 export interface ResetPasswordInput {
-  token: string;
+  email: string;
+  code: string;
   password: string;
 }
 
@@ -11,11 +12,20 @@ export async function resetPassword(
   deps: UseCaseDeps,
   input: ResetPasswordInput,
 ): Promise<Either<AuthError, null>> {
-  const stored = await deps.repos.token.findValidAuthToken(
+  // Mesmo limite do verify-reset-code — é a mesma superfície de força bruta do código
+  if (deps.rateLimiter.isLimited(`reset-code:${input.email}`, 5, 15 * 60_000)) {
+    return left("invalid_code");
+  }
+
+  const user = await deps.repos.user.findByEmail(input.email);
+  if (!user) return left("invalid_code");
+
+  const stored = await deps.repos.token.findValidAuthTokenForUser(
+    user.id,
     "password_reset",
-    deps.tokens.hashOpaque(input.token),
+    deps.tokens.hashOpaque(input.code),
   );
-  if (!stored) return left("invalid_token");
+  if (!stored) return left("invalid_code");
 
   const passwordHash = await deps.hasher.hash(input.password);
   await deps.uow.run(async (repos) => {
@@ -26,9 +36,6 @@ export async function resetPassword(
     await repos.token.deleteAllRefreshByUser(stored.userId);
   });
 
-  const user = await deps.repos.user.findById(stored.userId);
-  if (user) {
-    await deps.dispatch("email.password-changed", { to: user.email, name: user.name });
-  }
+  await deps.dispatch("email.password-changed", { to: user.email, name: user.name });
   return right(null);
 }

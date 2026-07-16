@@ -7,7 +7,7 @@ import { ThemedText } from '@/components/themed-text';
 import { Screen } from '@/components/ui/screen';
 
 export default function ResetPasswordScreen() {
-  const { token } = useLocalSearchParams<{ token?: string }>();
+  const { email, token } = useLocalSearchParams<{ email?: string; token?: string }>();
 
   return (
     <Screen center>
@@ -17,10 +17,10 @@ export default function ResetPasswordScreen() {
         </View>
         <ThemedText type="subtitle">Redefinir senha</ThemedText>
         <ThemedText type="small" themeColor="textSecondary">
-          Cole o token recebido por e-mail e escolha uma nova senha
+          Confirme seu e-mail e informe o código de 6 dígitos recebido
         </ThemedText>
       </View>
-      <ResetPasswordForm defaultToken={token} />
+      <ResetPasswordForm defaultEmail={email} defaultCode={token} />
     </Screen>
   );
 }

@@ -17,12 +17,18 @@ export const authTokens = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
     purpose: authTokenPurposeEnum("purpose").notNull(),
-    tokenHash: text("token_hash").notNull().unique(),
+    // Sem unique(): password_reset agora usa código curto (6 dígitos), então o hash
+    // sozinho não é globalmente único (colisão entre usuários é esperada). A busca
+    // sempre escopa por userId também (findValidAuthTokenForUser).
+    tokenHash: text("token_hash").notNull(),
     expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
     usedAt: timestamp("used_at", { withTimezone: true }),
     createdAt: createdAt(),
   },
-  (t) => [index("auth_tokens_user_purpose_idx").on(t.userId, t.purpose)],
+  (t) => [
+    index("auth_tokens_user_purpose_idx").on(t.userId, t.purpose),
+    index("auth_tokens_user_purpose_hash_idx").on(t.userId, t.purpose, t.tokenHash),
+  ],
 );
 
 export const authTokensRelations = relations(authTokens, ({ one }) => ({

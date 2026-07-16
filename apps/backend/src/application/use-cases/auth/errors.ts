@@ -1,1 +1,1 @@
-export type AuthError = "email_taken" | "invalid_credentials" | "invalid_token";
+export type AuthError = "email_taken" | "invalid_credentials" | "invalid_token" | "invalid_code";

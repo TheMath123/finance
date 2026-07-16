@@ -21,8 +21,19 @@ export const forgotPasswordSchema = z.object({
   email: z.string().email().toLowerCase(),
 });
 
+const resetCodeSchema = z
+  .string()
+  .length(6, "Código deve ter 6 dígitos")
+  .regex(/^\d{6}$/, "Código deve conter apenas números");
+
+export const verifyResetCodeSchema = z.object({
+  email: z.string().email().toLowerCase(),
+  code: resetCodeSchema,
+});
+
 export const resetPasswordSchema = z.object({
-  token: z.string().min(1),
+  email: z.string().email().toLowerCase(),
+  code: resetCodeSchema,
   password: z.string().min(8).max(128),
 });
 

@@ -1,0 +1,2 @@
+ALTER TABLE "auth_tokens" DROP CONSTRAINT "auth_tokens_token_hash_unique";--> statement-breakpoint
+CREATE INDEX "auth_tokens_user_purpose_hash_idx" ON "auth_tokens" USING btree ("user_id","purpose","token_hash");

@@ -26,11 +26,8 @@ import {
   register,
   resetPassword,
   verifyEmail,
+  verifyResetCode,
 } from ".";
-
-function extractToken(url: string): string {
-  return new URL(url).searchParams.get("token") ?? "";
-}
 
 const uniqueEmail = () => `test-${crypto.randomUUID()}@test.local`;
 
@@ -176,7 +173,7 @@ describe("auth: verificação de e-mail e reset de senha", () => {
     // verifica o e-mail com o token capturado do job
     const verifyJob = jobs.find((j) => j.name === "email.verify-email");
     if (!verifyJob) throw new Error("job de verificação não disparado");
-    const verifyToken = extractToken((verifyJob.payload as { verifyUrl: string }).verifyUrl);
+    const verifyToken = (verifyJob.payload as { code: string }).code;
     expect((await verifyEmail(deps, { token: verifyToken })).ok).toBe(true);
     // token de verificação é single-use
     expect((await verifyEmail(deps, { token: verifyToken })).ok).toBe(false);
@@ -185,15 +182,19 @@ describe("auth: verificação de e-mail e reset de senha", () => {
     await forgotPassword(deps, { email });
     const resetJob = jobs.find((j) => j.name === "email.password-reset");
     if (!resetJob) throw new Error("job de reset não disparado");
-    const resetToken = extractToken((resetJob.payload as { resetUrl: string }).resetUrl);
+    const resetCode = (resetJob.payload as { code: string }).code;
 
-    const reset = await resetPassword(deps, { token: resetToken, password: "senha-nova-456" });
+    // verify-reset-code não consome o código (é só uma checagem)
+    expect((await verifyResetCode(deps, { email, code: resetCode })).ok).toBe(true);
+    expect((await verifyResetCode(deps, { email, code: resetCode })).ok).toBe(true);
+
+    const reset = await resetPassword(deps, { email, code: resetCode, password: "senha-nova-456" });
     expect(reset.ok).toBe(true);
 
     // reset é single-use
-    expect((await resetPassword(deps, { token: resetToken, password: "outra-789xx" })).ok).toBe(
-      false,
-    );
+    expect(
+      (await resetPassword(deps, { email, code: resetCode, password: "outra-789xx" })).ok,
+    ).toBe(false);
 
     // todas as sessões foram revogadas
     const remaining = await db
@@ -210,9 +211,13 @@ describe("auth: verificação de e-mail e reset de senha", () => {
     expect(jobs.some((j) => j.name === "email.password-changed")).toBe(true);
   });
 
-  test("token de reset inválido falha", async () => {
+  test("código de reset inválido falha", async () => {
     const deps = createTestDeps(db);
-    const result = await resetPassword(deps, { token: "token-inexistente", password: "12345678" });
+    const result = await resetPassword(deps, {
+      email: uniqueEmail(),
+      code: "000000",
+      password: "12345678",
+    });
     expect(result.ok).toBe(false);
   });
 });
@@ -239,15 +244,15 @@ describe("auth: lockout progressivo", () => {
     // reset de senha zera o lockout: verifica e-mail, pede reset e redefine
     const verifyJob = jobs.find((j) => j.name === "email.verify-email");
     if (!verifyJob) throw new Error("job de verificação não disparado");
-    const verifyToken = extractToken((verifyJob.payload as { verifyUrl: string }).verifyUrl);
+    const verifyToken = (verifyJob.payload as { code: string }).code;
     expect((await verifyEmail(deps, { token: verifyToken })).ok).toBe(true);
     await forgotPassword(deps, { email });
     const resetJob = jobs.find((j) => j.name === "email.password-reset");
     if (!resetJob) throw new Error("job de reset não disparado");
-    const resetToken = extractToken((resetJob.payload as { resetUrl: string }).resetUrl);
-    expect((await resetPassword(deps, { token: resetToken, password: "senha-nova-456" })).ok).toBe(
-      true,
-    );
+    const resetCode = (resetJob.payload as { code: string }).code;
+    expect(
+      (await resetPassword(deps, { email, code: resetCode, password: "senha-nova-456" })).ok,
+    ).toBe(true);
 
     // destravada: login com a nova senha funciona imediatamente
     expect((await login(deps, { email, password: "senha-nova-456" })).ok).toBe(true);

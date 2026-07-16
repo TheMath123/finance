@@ -31,6 +31,16 @@ export function createTokenRepository(db: DbHandle): TokenRepository {
           gt(authTokens.expiresAt, new Date()),
         ),
       }),
+    findValidAuthTokenForUser: (userId, purpose, tokenHash) =>
+      db.query.authTokens.findFirst({
+        where: and(
+          eq(authTokens.userId, userId),
+          eq(authTokens.purpose, purpose),
+          eq(authTokens.tokenHash, tokenHash),
+          isNull(authTokens.usedAt),
+          gt(authTokens.expiresAt, new Date()),
+        ),
+      }),
     async markAuthTokenUsed(id) {
       await db.update(authTokens).set({ usedAt: new Date() }).where(eq(authTokens.id, id));
     },

@@ -24,7 +24,7 @@ export async function forgotPassword(
   // Gerar novo token invalida os anteriores não usados
   await deps.repos.token.deleteUnusedAuthTokens(user.id, "password_reset");
 
-  const reset = deps.tokens.generateOpaque();
+  const reset = deps.tokens.generateCode();
   await deps.repos.token.createAuthToken({
     userId: user.id,
     purpose: "password_reset",
@@ -34,7 +34,7 @@ export async function forgotPassword(
   await deps.dispatch("email.password-reset", {
     to: user.email,
     name: user.name,
-    resetUrl: `mobile://reset-password?token=${reset.raw}`,
+    code: reset.raw,
   });
   return right(null);
 }

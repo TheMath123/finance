@@ -12,7 +12,11 @@ import { authApi } from '@/lib/auth-api';
 import { verifyEmailSchema, type VerifyEmailInput } from '@/lib/schemas/auth';
 
 interface VerifyEmailFormProps {
-  /** Token pré-preenchido vindo do deep link do e-mail (`mobile://verify-email?token=...`). */
+  /**
+   * Pré-preenchido caso o campo chegue via deep link (`mobile://verify-email?token=...`).
+   * O e-mail hoje mostra o código como texto pra copiar/colar — clientes de e-mail removem
+   * links com esquema customizado — então isso normalmente fica vazio na prática.
+   */
   defaultToken?: string;
 }
 
@@ -45,8 +49,8 @@ export function VerifyEmailForm({ defaultToken }: VerifyEmailFormProps) {
       <TextField
         control={control}
         name="token"
-        label="Token"
-        placeholder="Cole aqui o token recebido por e-mail"
+        label="Código"
+        placeholder="Cole aqui o código recebido por e-mail"
         autoCapitalize="none"
       />
 

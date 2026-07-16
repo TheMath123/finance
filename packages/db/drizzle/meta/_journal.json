@@ -36,6 +36,13 @@
       "when": 1784147183436,
       "tag": "0004_safe_vulcan",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1784165536247,
+      "tag": "0005_mature_sentinels",
+      "breakpoints": true
     }
   ]
 }
