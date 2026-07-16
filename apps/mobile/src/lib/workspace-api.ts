@@ -1,4 +1,4 @@
-import type { InviteRole, WorkspacePlan, WorkspaceRole, WorkspaceType } from "@finance/shared";
+import type { AuditAction, InviteRole, WorkspacePlan, WorkspaceRole, WorkspaceType } from "@finance/shared";
 
 import { apiRequest } from "@/lib/api-client";
 
@@ -44,6 +44,17 @@ export interface CreateInviteInput {
   role: InviteRole;
 }
 
+export interface AuditLogView {
+  id: string;
+  action: AuditAction;
+  entity: string;
+  entityId: string;
+  createdAt: string;
+  userId: string | null;
+  /** Null quando o usuário foi excluído (LGPD). */
+  userName: string | null;
+}
+
 export const workspaceApi = {
   listMine: () => apiRequest<WorkspaceSummary[]>("/workspaces"),
 
@@ -78,4 +89,7 @@ export const workspaceApi = {
 
   revokeInvite: (inviteId: string) =>
     apiRequest<void>(`/invites/${inviteId}/revoke`, { method: "POST" }),
+
+  listActivity: (workspaceId: string) =>
+    apiRequest<AuditLogView[]>(`/workspaces/${workspaceId}/activity`),
 };

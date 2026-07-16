@@ -1,6 +1,13 @@
 import { useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import { ArrowLeftIcon, CaretRightIcon, CheckCircleIcon, PlusIcon, UsersIcon } from 'phosphor-react-native';
+import {
+  ArrowLeftIcon,
+  CaretRightIcon,
+  CheckCircleIcon,
+  ClockCounterClockwiseIcon,
+  PlusIcon,
+  UsersIcon,
+} from 'phosphor-react-native';
 import { ActivityIndicator, Pressable, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
@@ -68,6 +75,17 @@ export default function WorkspacesScreen() {
                     <UsersIcon size={16} color="#71717a" />
                     <ThemedText type="small" themeColor="textSecondary">
                       Membros
+                    </ThemedText>
+                  </View>
+                  <CaretRightIcon size={14} color="#71717a" />
+                </Pressable>
+                <Pressable
+                  onPress={() => router.push(`/workspaces/${workspace.id}/activity`)}
+                  className="flex-row items-center justify-between border-t border-border pt-3">
+                  <View className="flex-row items-center gap-2">
+                    <ClockCounterClockwiseIcon size={16} color="#71717a" />
+                    <ThemedText type="small" themeColor="textSecondary">
+                      Atividade
                     </ThemedText>
                   </View>
                   <CaretRightIcon size={14} color="#71717a" />

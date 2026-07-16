@@ -13,7 +13,7 @@ onde sobrar capacidade.
 | M2-01 | [Infra Redis + BullMQ](m2-01-infra-redis-bullmq.md) | 🟢 Concluída | — |
 | M2-02 | [Workspaces compartilhados (convites, papéis, seletor)](m2-02-workspaces-compartilhamento.md) | 🟢 Concluída | — |
 | M2-03 | [Enforcement de limite de plano](m2-03-enforcement-plano.md) | 🟢 Concluída | M2-02 |
-| M2-04 | [Atividade do workspace (leitura do AuditLog)](m2-04-atividade-audit-log.md) | 🔵 Backlog | M2-02 (recomendado) |
+| M2-04 | [Atividade do workspace (leitura do AuditLog)](m2-04-atividade-audit-log.md) | 🟢 Concluída | M2-02 |
 | M2-05 | [Vínculo do WhatsApp por OTP](m2-05-whatsapp-vinculo-otp.md) | 🔵 Backlog | — |
 | M2-06 | [Chatbot WhatsApp: webhook Meta Cloud API](m2-06-whatsapp-webhook-chatbot.md) | 🔵 Backlog | M2-01, M2-05 |
 | M2-07 | [Pipeline de IA: interpretar/categorizar transações](m2-07-ia-pipeline-transacoes.md) | 🔵 Backlog | — (valor pleno com M2-06) |

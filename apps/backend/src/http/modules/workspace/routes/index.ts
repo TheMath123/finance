@@ -10,6 +10,7 @@ import { listWorkspaceInvitesRoute } from "./list-workspace-invites";
 import { listMyInvitesRoute } from "./list-my-invites";
 import { acceptInviteRoute } from "./accept-invite";
 import { revokeInviteRoute } from "./revoke-invite";
+import { listActivityRoute } from "./list-activity";
 
 export function workspaceRoutes(deps: AppDeps) {
   return new Elysia()
@@ -22,5 +23,6 @@ export function workspaceRoutes(deps: AppDeps) {
     .use(listWorkspaceInvitesRoute(deps))
     .use(listMyInvitesRoute(deps))
     .use(acceptInviteRoute(deps))
-    .use(revokeInviteRoute(deps));
+    .use(revokeInviteRoute(deps))
+    .use(listActivityRoute(deps));
 }

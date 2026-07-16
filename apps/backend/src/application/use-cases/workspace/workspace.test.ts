@@ -23,6 +23,7 @@ import {
   acceptInvite,
   createInvite,
   createWorkspace,
+  listActivity,
   listMyInvites,
   listMyWorkspaces,
   removeMember,
@@ -305,6 +306,43 @@ describe("workspace: enforcement de plano free (M2-03)", () => {
       const accepted = await acceptInvite(deps, memberActor.userId, invite.value.id);
       expect(accepted.ok).toBe(true);
     }
+  });
+});
+
+describe("workspace: atividade (leitura do AuditLog, M2-04)", () => {
+  test("lista as mutações do workspace com o nome de quem fez", async () => {
+    const deps = createTestDeps(db);
+    const { actor, name: ownerName } = await newOwnerActor();
+    const family = await mustCreateWorkspace(deps, actor.userId, "Família com Atividade");
+    const familyOwner: Actor = { userId: actor.userId, workspaceId: family.id, role: "owner" };
+
+    const activity = await listActivity(deps, familyOwner, {});
+    expect(activity.some((a) => a.entity === "workspace" && a.action === "create" && a.userName === ownerName)).toBe(
+      true,
+    );
+  });
+
+  test("ação de usuário depois excluído aparece como usuário removido (anonimizado)", async () => {
+    const deps = createTestDeps(db);
+    const { actor: ownerActor } = await newOwnerActor();
+    const family = await mustCreateWorkspace(deps, ownerActor.userId, "Família Anonimizada");
+    const familyOwner: Actor = { userId: ownerActor.userId, workspaceId: family.id, role: "owner" };
+
+    const { actor: secondActor, email: secondEmail } = await newOwnerActor();
+    const invite = await createInvite(deps, familyOwner, { emailOrPhone: secondEmail, role: "member" });
+    if (!invite.ok) throw new Error("convite falhou");
+    await acceptInvite(deps, secondActor.userId, invite.value.id);
+    await updateMemberRole(deps, familyOwner, { userId: secondActor.userId, role: "owner" });
+
+    // Owner original excluído — workspace sobrevive (segundo owner assumiu).
+    await deleteAccount(deps, { userId: ownerActor.userId, password: "senha-forte-123" });
+
+    const secondAsOwner: Actor = { userId: secondActor.userId, workspaceId: family.id, role: "owner" };
+    const activity = await listActivity(deps, secondAsOwner, {});
+    const createEntry = activity.find((a) => a.entity === "workspace" && a.action === "create");
+    expect(createEntry).toBeDefined();
+    expect(createEntry?.userId).toBeNull();
+    expect(createEntry?.userName).toBeNull();
   });
 });
 
