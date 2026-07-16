@@ -76,7 +76,7 @@ export async function register(
   await deps.dispatch("email.verify-email", {
     to: user.email,
     name: user.name,
-    verifyUrl: `${deps.appUrl}/verify-email?token=${verify.raw}`,
+    verifyUrl: `mobile://verify-email?token=${verify.raw}`,
   });
 
   return right(await issueSession(deps, user, workspaceId));

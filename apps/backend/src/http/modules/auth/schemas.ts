@@ -29,3 +29,7 @@ export const resetPasswordSchema = z.object({
 export const verifyEmailSchema = z.object({
   token: z.string().min(1),
 });
+
+export const deleteAccountSchema = z.object({
+  password: z.string().min(1),
+});

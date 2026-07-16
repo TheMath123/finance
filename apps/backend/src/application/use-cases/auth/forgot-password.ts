@@ -34,7 +34,7 @@ export async function forgotPassword(
   await deps.dispatch("email.password-reset", {
     to: user.email,
     name: user.name,
-    resetUrl: `${deps.appUrl}/reset-password?token=${reset.raw}`,
+    resetUrl: `mobile://reset-password?token=${reset.raw}`,
   });
   return right(null);
 }

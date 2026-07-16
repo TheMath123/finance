@@ -2,6 +2,7 @@ export { register, type RegisterInput } from "./register";
 export { login, type LoginInput } from "./login";
 export { refresh, type RefreshInput } from "./refresh";
 export { logout } from "./logout";
+export { deleteAccount, type DeleteAccountInput } from "./delete-account";
 export { forgotPassword, type ForgotPasswordInput } from "./forgot-password";
 export { resetPassword, type ResetPasswordInput } from "./reset-password";
 export { verifyEmail, type VerifyEmailInput } from "./verify-email";

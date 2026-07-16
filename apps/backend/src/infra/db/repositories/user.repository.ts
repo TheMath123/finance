@@ -36,5 +36,8 @@ export function createUserRepository(db: DbHandle): UserRepository {
     async markEmailVerified(userId) {
       await db.update(users).set({ emailVerifiedAt: new Date() }).where(eq(users.id, userId));
     },
+    async delete(userId) {
+      await db.delete(users).where(eq(users.id, userId));
+    },
   };
 }

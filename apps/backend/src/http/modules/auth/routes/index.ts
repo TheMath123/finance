@@ -9,6 +9,7 @@ import { forgotPasswordRoute } from "./forgot-password";
 import { resetPasswordRoute } from "./reset-password";
 import { verifyEmailRoute } from "./verify-email";
 import { meRoute } from "./me";
+import { deleteAccountRoute } from "./delete-account";
 
 /** Limites por IP e por rota, janela de 1 minuto (spec: Rate limiting, camada 1). */
 const RATE_LIMITS: Record<string, number> = {
@@ -41,5 +42,6 @@ export function authRoutes(deps: AppDeps) {
     .use(forgotPasswordRoute(deps))
     .use(resetPasswordRoute(deps))
     .use(verifyEmailRoute(deps))
-    .use(meRoute(deps));
+    .use(meRoute(deps))
+    .use(deleteAccountRoute(deps));
 }

@@ -4,9 +4,20 @@
  */
 import { beforeAll, describe, expect, test } from "bun:test";
 import { eq } from "drizzle-orm";
-import { createDb, categories, refreshTokens, workspaceMembers, banks, bankAccounts, type Db } from "@finance/db";
+import {
+  createDb,
+  categories,
+  refreshTokens,
+  workspaceMembers,
+  banks,
+  bankAccounts,
+  users,
+  workspaces,
+  type Db,
+} from "@finance/db";
 import { createTestDeps, type DispatchedJob } from "../../../test/deps";
 import {
+  deleteAccount,
   forgotPassword,
   login,
   refresh,
@@ -240,5 +251,30 @@ describe("auth: lockout progressivo", () => {
 
     // destravada: login com a nova senha funciona imediatamente
     expect((await login(deps, { email, password: "senha-nova-456" })).ok).toBe(true);
+  });
+});
+
+describe("auth: exclusão de conta (LGPD)", () => {
+  test("senha errada falha; senha certa apaga usuário e workspace pessoal", async () => {
+    const deps = createTestDeps(db);
+    const email = uniqueEmail();
+    const session = await register(deps, { name: "F", email, password: "senha-forte-123" });
+    if (!session.ok) throw new Error("registro falhou");
+    const { user, defaultWorkspaceId } = session.value;
+
+    const wrongPassword = await deleteAccount(deps, { userId: user.id, password: "senha-errada-000" });
+    expect(wrongPassword.ok).toBe(false);
+    if (!wrongPassword.ok) expect(wrongPassword.error).toBe("invalid_credentials");
+
+    // ainda existe após a tentativa com senha errada
+    expect(await db.query.users.findFirst({ where: eq(users.id, user.id) })).toBeDefined();
+
+    const ok = await deleteAccount(deps, { userId: user.id, password: "senha-forte-123" });
+    expect(ok.ok).toBe(true);
+
+    expect(await db.query.users.findFirst({ where: eq(users.id, user.id) })).toBeUndefined();
+    expect(
+      await db.query.workspaces.findFirst({ where: eq(workspaces.id, defaultWorkspaceId) }),
+    ).toBeUndefined();
   });
 });

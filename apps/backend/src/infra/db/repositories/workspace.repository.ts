@@ -29,5 +29,8 @@ export function createWorkspaceRepository(db: DbHandle): WorkspaceRepository {
       });
       return memberships.map((m) => ({ workspace: m.workspace, role: m.role }));
     },
+    async delete(workspaceId) {
+      await db.delete(workspaces).where(eq(workspaces.id, workspaceId));
+    },
   };
 }

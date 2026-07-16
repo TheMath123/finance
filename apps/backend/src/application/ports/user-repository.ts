@@ -18,4 +18,6 @@ export interface UserRepository {
   /** Também zera o lockout (regra do spec). */
   updatePassword(userId: string, passwordHash: string): Promise<void>;
   markEmailVerified(userId: string): Promise<void>;
+  /** Exclusão de conta (LGPD). Cascata via FK cuida de refresh_tokens e workspace_members. */
+  delete(userId: string): Promise<void>;
 }
