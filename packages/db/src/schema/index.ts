@@ -17,3 +17,5 @@ export * from "./audit-log";
 export * from "./notification";
 export * from "./notification-preference";
 export * from "./push-token";
+export * from "./whatsapp-link-code";
+export * from "./whatsapp-link";

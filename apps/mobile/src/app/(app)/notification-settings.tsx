@@ -26,6 +26,10 @@ const TYPE_LABELS: Record<NotificationType, { title: string; description: string
     title: 'Recorrência pendente',
     description: 'Quando uma recorrência prevista pro dia ainda não foi confirmada.',
   },
+  whatsapp_linked: {
+    title: 'WhatsApp vinculado',
+    description: 'Quando um número de WhatsApp é vinculado à sua conta.',
+  },
 };
 
 export default function NotificationSettingsScreen() {

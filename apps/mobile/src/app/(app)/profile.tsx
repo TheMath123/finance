@@ -1,5 +1,13 @@
 import { router } from 'expo-router';
-import { ArrowLeftIcon, EnvelopeIcon, SignOutIcon, TrashIcon, UserIcon, WarningIcon } from 'phosphor-react-native';
+import {
+  ArrowLeftIcon,
+  EnvelopeIcon,
+  SignOutIcon,
+  TrashIcon,
+  UserIcon,
+  WarningIcon,
+  WhatsappLogoIcon,
+} from 'phosphor-react-native';
 import { useState } from 'react';
 import { Alert, Pressable, View } from 'react-native';
 
@@ -98,6 +106,21 @@ export default function ProfileScreen() {
           </Button>
         </Card>
       )}
+
+      <Card className="flex-row items-center gap-3">
+        <View className="h-9 w-9 items-center justify-center rounded-full bg-emerald-500/15">
+          <WhatsappLogoIcon size={18} color="#059669" weight="fill" />
+        </View>
+        <View className="flex-1">
+          <ThemedText type="smallBold">WhatsApp</ThemedText>
+          <ThemedText type="small" themeColor="textSecondary">
+            {user?.phone ? user.phone : 'Não vinculado'}
+          </ThemedText>
+        </View>
+        <Button variant="ghost" onPress={() => router.push('/whatsapp-link')}>
+          {user?.phone ? 'Gerenciar' : 'Vincular'}
+        </Button>
+      </Card>
 
       <Button
         variant="destructive"

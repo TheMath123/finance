@@ -3,7 +3,7 @@ import type { UseCaseDeps } from "../../deps";
 import type { AuthError } from "./errors";
 
 export interface MeOutput {
-  user: { id: string; name: string; email: string; emailVerifiedAt: string | null };
+  user: { id: string; name: string; email: string; phone: string | null; emailVerifiedAt: string | null };
   defaultWorkspaceId: string;
 }
 
@@ -19,6 +19,7 @@ export async function me(
       id: user.id,
       name: user.name,
       email: user.email,
+      phone: user.phone,
       emailVerifiedAt: user.emailVerifiedAt ? user.emailVerifiedAt.toISOString() : null,
     },
     defaultWorkspaceId: user.defaultWorkspaceId,

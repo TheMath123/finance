@@ -48,5 +48,6 @@ export const NOTIFICATION_TYPES = [
   "invoice_closed",
   "invoice_due",
   "recurring_pending",
+  "whatsapp_linked",
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];

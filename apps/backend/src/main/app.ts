@@ -11,6 +11,7 @@ import { transactionRoutes } from "../http/modules/transaction/routes";
 import { recurringRoutes } from "../http/modules/recurring/routes";
 import { summaryRoutes } from "../http/modules/summary/routes";
 import { notificationRoutes } from "../http/modules/notification/routes";
+import { whatsappRoutes } from "../http/modules/whatsapp/routes";
 import type { AppDeps } from "../http/deps";
 
 export function createApp(deps: AppDeps) {
@@ -27,5 +28,6 @@ export function createApp(deps: AppDeps) {
     .use(transactionRoutes(deps))
     .use(recurringRoutes(deps))
     .use(summaryRoutes(deps))
-    .use(notificationRoutes(deps));
+    .use(notificationRoutes(deps))
+    .use(whatsappRoutes(deps));
 }

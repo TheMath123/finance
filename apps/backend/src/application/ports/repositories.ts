@@ -13,6 +13,7 @@ import type { AuditRecorder } from "./audit-recorder";
 import type { NotificationRepository } from "./notification-repository";
 import type { NotificationPreferenceRepository } from "./notification-preference-repository";
 import type { PushTokenRepository } from "./push-token-repository";
+import type { WhatsAppLinkCodeRepository } from "./whatsapp-link-code-repository";
 
 /** Conjunto completo de repositórios — fora e dentro do Unit of Work. */
 export interface Repositories {
@@ -31,4 +32,5 @@ export interface Repositories {
   notification: NotificationRepository;
   notificationPreference: NotificationPreferenceRepository;
   pushToken: PushTokenRepository;
+  whatsappLinkCode: WhatsAppLinkCodeRepository;
 }

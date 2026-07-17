@@ -7,6 +7,7 @@ import {
   CreditCardIcon,
   GearIcon,
   UsersIcon,
+  WhatsappLogoIcon,
 } from 'phosphor-react-native';
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, View } from 'react-native';
@@ -23,6 +24,7 @@ const TYPE_ICONS: Record<string, typeof BellIcon> = {
   invoice_closed: CreditCardIcon,
   invoice_due: CreditCardIcon,
   recurring_pending: CalendarCheckIcon,
+  whatsapp_linked: WhatsappLogoIcon,
 };
 
 function timeAgo(iso: string): string {

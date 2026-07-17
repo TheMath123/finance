@@ -8,3 +8,4 @@ export * from "./category";
 export * from "./transaction";
 export * from "./recurring-transaction";
 export * from "./notification";
+export * from "./whatsapp-link-code";

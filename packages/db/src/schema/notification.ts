@@ -13,6 +13,7 @@ export const notificationTypeEnum = pgEnum("notification_type", [
   "invoice_closed",
   "invoice_due",
   "recurring_pending",
+  "whatsapp_linked",
 ]);
 
 export const notifications = pgTable(

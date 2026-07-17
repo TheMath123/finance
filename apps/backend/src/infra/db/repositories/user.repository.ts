@@ -7,6 +7,7 @@ export function createUserRepository(db: DbHandle): UserRepository {
   return {
     findByEmail: (email) => db.query.users.findFirst({ where: eq(users.email, email) }),
     findById: (id) => db.query.users.findFirst({ where: eq(users.id, id) }),
+    findByPhone: (phone) => db.query.users.findFirst({ where: eq(users.phone, phone) }),
     async create(data: CreateUserData) {
       const [row] = await db.insert(users).values(data).returning();
       if (!row) throw new Error("falha ao criar usuário");
@@ -35,6 +36,9 @@ export function createUserRepository(db: DbHandle): UserRepository {
     },
     async markEmailVerified(userId) {
       await db.update(users).set({ emailVerifiedAt: new Date() }).where(eq(users.id, userId));
+    },
+    async updatePhone(userId, phone) {
+      await db.update(users).set({ phone }).where(eq(users.id, userId));
     },
     async delete(userId) {
       await db.delete(users).where(eq(users.id, userId));
