@@ -11,6 +11,8 @@ export interface JobPayloads {
   "email.workspace-invite": { to: string; inviterName: string; workspaceName: string };
   /** Um ou mais tokens do Expo Push Service (mesmo usuário pode ter vários devices). */
   "push.send": { tokens: string[]; title: string; body: string; data?: Record<string, unknown> };
+  /** Mensagem de texto recebida no webhook do WhatsApp (M2-06) — processamento tirado do handler síncrono. */
+  "whatsapp.inbound-message": { from: string; text: string };
 }
 
 export type JobName = keyof JobPayloads;

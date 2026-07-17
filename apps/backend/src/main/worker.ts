@@ -3,8 +3,10 @@ import { createBullMqDispatcher, createBullMqWorker, QUEUE_NAME } from "@finance
 import { runNotificationSweep } from "../application/use-cases/notification";
 import { createRepositories } from "../infra/db/repositories";
 import { createUnitOfWork } from "../infra/db/unit-of-work";
+import { createTokenService } from "../infra/security/jose-token-service";
+import { createRedisRateLimiter } from "../infra/security/redis-rate-limiter";
 import { createLogger } from "../infra/observability/logger";
-import { jobHandlers } from "./job-handlers";
+import { createJobHandlers } from "./job-handlers";
 import { loadEnv } from "./env";
 
 /**
@@ -16,7 +18,25 @@ import { loadEnv } from "./env";
 const env = loadEnv();
 const logger = createLogger(env.LOG_LEVEL);
 
-const worker = createBullMqWorker(env.REDIS_URL, jobHandlers, (job, error) =>
+const db = createDb();
+const dispatcher = createBullMqDispatcher(env.REDIS_URL, (job, error) =>
+  logger.error({ scope: "queues", job, err: error }, "job_failed"),
+);
+
+/**
+ * Deps completas do worker: além do sweep diário, o handler do job
+ * `whatsapp.inbound-message` (M2-06) precisa confirmar vínculo
+ * (`confirmWhatsAppLink` usa `repos`/`uow`/`rateLimiter`/`tokens`).
+ */
+const deps = {
+  repos: createRepositories(db),
+  uow: createUnitOfWork(db),
+  rateLimiter: createRedisRateLimiter(env.REDIS_URL),
+  tokens: createTokenService(env.JWT_SECRET),
+  dispatch: dispatcher.dispatch,
+};
+
+const worker = createBullMqWorker(env.REDIS_URL, createJobHandlers(deps), (job, error) =>
   logger.error({ scope: "queues", job, err: error }, "job_failed"),
 );
 
@@ -29,19 +49,9 @@ logger.info({ scope: "queues", queue: QUEUE_NAME }, "worker iniciado");
  * torna reexecuções seguras (ex.: toda vez que `bun run --watch worker`
  * reinicia em dev).
  */
-const db = createDb();
-const sweepDispatcher = createBullMqDispatcher(env.REDIS_URL, (job, error) =>
-  logger.error({ scope: "queues", job, err: error }, "job_failed"),
-);
-const sweepDeps = {
-  repos: createRepositories(db),
-  uow: createUnitOfWork(db),
-  dispatch: sweepDispatcher.dispatch,
-};
-
 async function runSweepSafely() {
   try {
-    await runNotificationSweep(sweepDeps);
+    await runNotificationSweep(deps);
     logger.info({ scope: "notifications" }, "sweep concluído");
   } catch (error) {
     logger.error({ scope: "notifications", err: error }, "sweep falhou");
