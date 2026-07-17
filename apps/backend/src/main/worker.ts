@@ -16,7 +16,7 @@ import { loadEnv } from "./env";
  * processo HTTP (`main/index.ts`).
  */
 const env = loadEnv();
-const logger = createLogger(env.LOG_LEVEL);
+const logger = createLogger(env.LOG_LEVEL, "worker");
 
 const db = createDb();
 const dispatcher = createBullMqDispatcher(env.REDIS_URL, (job, error) =>

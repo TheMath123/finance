@@ -5,6 +5,7 @@ import type { AppDeps } from "../../../deps";
 interface MetaWebhookPayload {
   entry?: {
     changes?: {
+      field?: string;
       value?: {
         messages?: { from: string; type: string; text?: { body: string } }[];
       };
@@ -12,13 +13,19 @@ interface MetaWebhookPayload {
   }[];
 }
 
+/** Meta às vezes manda o número com "+" na frente — normaliza pro mesmo formato salvo em `users.phone`. */
+function normalizePhone(from: string): string {
+  return from.startsWith("+") ? from.slice(1) : from;
+}
+
 function extractTextMessages(payload: MetaWebhookPayload): { from: string; text: string }[] {
   const messages: { from: string; text: string }[] = [];
   for (const entry of payload.entry ?? []) {
     for (const change of entry.changes ?? []) {
+      if (change.field !== "messages") continue;
       for (const message of change.value?.messages ?? []) {
         if (message.type === "text" && message.text?.body) {
-          messages.push({ from: message.from, text: message.text.body });
+          messages.push({ from: normalizePhone(message.from), text: message.text.body });
         }
       }
     }
@@ -50,7 +57,14 @@ export const whatsappWebhookRoute = (deps: AppDeps) =>
     .post("/whatsapp/webhook", async ({ request, set }) => {
       const raw = await request.text();
       const signature = request.headers.get("x-hub-signature-256");
-      if (!verifyWebhookSignature(raw, signature)) {
+      deps.httpLogger.info(
+        { scope: "whatsapp", bodyLength: raw.length, hasSignature: !!signature },
+        "webhook_post_received",
+      );
+
+      const sigCheck = verifyWebhookSignature(raw, signature);
+      if (!sigCheck.valid) {
+        deps.httpLogger.warn({ scope: "whatsapp", reason: sigCheck.reason }, "webhook_signature_rejected");
         set.status = 401;
         return;
       }
@@ -59,11 +73,14 @@ export const whatsappWebhookRoute = (deps: AppDeps) =>
       let payload: MetaWebhookPayload;
       try {
         payload = JSON.parse(raw);
-      } catch {
+      } catch (error) {
+        deps.httpLogger.warn({ scope: "whatsapp", err: error }, "webhook_payload_invalid_json");
         return;
       }
 
-      for (const message of extractTextMessages(payload)) {
+      const messages = extractTextMessages(payload);
+      deps.httpLogger.info({ scope: "whatsapp", count: messages.length }, "webhook_received");
+      for (const message of messages) {
         void deps
           .dispatch("whatsapp.inbound-message", message)
           .catch((error) => deps.httpLogger.error({ scope: "whatsapp", err: error }, "dispatch_failed"));

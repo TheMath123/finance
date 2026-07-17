@@ -33,18 +33,22 @@ describe("whatsapp: verificação do webhook (GET)", () => {
 describe("whatsapp: assinatura do webhook (POST)", () => {
   test("aceita assinatura válida do corpo", () => {
     const body = JSON.stringify({ hello: "world" });
-    expect(verifyWebhookSignature(body, signaturePara(body))).toBe(true);
+    expect(verifyWebhookSignature(body, signaturePara(body))).toEqual({ valid: true });
   });
 
-  test("rejeita assinatura de outro corpo (payload adulterado)", () => {
+  test("rejeita assinatura de outro corpo (payload adulterado) com motivo mismatch", () => {
     const body = JSON.stringify({ hello: "world" });
     const outraAssinatura = signaturePara(JSON.stringify({ hello: "mundo" }));
-    expect(verifyWebhookSignature(body, outraAssinatura)).toBe(false);
+    expect(verifyWebhookSignature(body, outraAssinatura)).toEqual({ valid: false, reason: "mismatch" });
   });
 
-  test("rejeita header ausente ou em formato errado", () => {
+  test("rejeita header ausente com motivo missing_header", () => {
     const body = JSON.stringify({ hello: "world" });
-    expect(verifyWebhookSignature(body, null)).toBe(false);
-    expect(verifyWebhookSignature(body, "md5=abc123")).toBe(false);
+    expect(verifyWebhookSignature(body, null)).toEqual({ valid: false, reason: "missing_header" });
+  });
+
+  test("rejeita header em formato errado com motivo invalid_format", () => {
+    const body = JSON.stringify({ hello: "world" });
+    expect(verifyWebhookSignature(body, "md5=abc123")).toEqual({ valid: false, reason: "invalid_format" });
   });
 });

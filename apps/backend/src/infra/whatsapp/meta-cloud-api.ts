@@ -29,7 +29,8 @@ export async function sendWhatsAppText(to: string, body: string): Promise<void> 
     },
   );
   if (!response.ok) {
-    throw new Error(`falha ao enviar mensagem no WhatsApp (status ${response.status})`);
+    const errorBody = await response.text().catch(() => "");
+    throw new Error(`falha ao enviar mensagem no WhatsApp (status ${response.status}): ${errorBody}`);
   }
 }
 
@@ -38,16 +39,26 @@ export function verifyWebhookChallenge(mode: string | null, token: string | null
   return mode === "subscribe" && token === env().WHATSAPP_VERIFY_TOKEN;
 }
 
+export type SignatureCheckResult =
+  | { valid: true }
+  | { valid: false; reason: "missing_header" | "invalid_format" | "mismatch" };
+
 /**
  * Valida o header `X-Hub-Signature-256` do POST do webhook contra o corpo cru
  * (precisa do texto original, não do JSON já parseado — HMAC quebra com
- * qualquer diferença de espaçamento/ordem de chaves).
+ * qualquer diferença de espaçamento/ordem de chaves). Devolve o motivo da
+ * rejeição (não só um booleano) pra quem chama poder logar de forma
+ * acionável — depurar um "nada aparece no log" é bem pior que depurar um
+ * motivo específico.
  */
-export function verifyWebhookSignature(rawBody: string, signatureHeader: string | null): boolean {
-  if (!signatureHeader?.startsWith("sha256=")) return false;
+export function verifyWebhookSignature(rawBody: string, signatureHeader: string | null): SignatureCheckResult {
+  if (!signatureHeader) return { valid: false, reason: "missing_header" };
+  if (!signatureHeader.startsWith("sha256=")) return { valid: false, reason: "invalid_format" };
+
   const expectedHex = new Bun.CryptoHasher("sha256", env().WHATSAPP_APP_SECRET).update(rawBody).digest("hex");
   const receivedHex = signatureHeader.slice("sha256=".length);
   const expected = Buffer.from(expectedHex, "hex");
   const received = Buffer.from(receivedHex, "hex");
-  return expected.length === received.length && timingSafeEqual(expected, received);
+  const valid = expected.length === received.length && timingSafeEqual(expected, received);
+  return valid ? { valid: true } : { valid: false, reason: "mismatch" };
 }
