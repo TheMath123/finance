@@ -4,7 +4,7 @@
  * forma de falsificar requisições do webhook.
  */
 import { describe, expect, test } from "bun:test";
-import { verifyWebhookChallenge, verifyWebhookSignature } from "./meta-cloud-api";
+import { brazilianAltVariant, verifyWebhookChallenge, verifyWebhookSignature } from "./meta-cloud-api";
 
 process.env.WHATSAPP_PHONE_NUMBER_ID = "test-phone-id";
 process.env.WHATSAPP_ACCESS_TOKEN = "test-token";
@@ -50,5 +50,19 @@ describe("whatsapp: assinatura do webhook (POST)", () => {
   test("rejeita header em formato errado com motivo invalid_format", () => {
     const body = JSON.stringify({ hello: "world" });
     expect(verifyWebhookSignature(body, "md5=abc123")).toEqual({ valid: false, reason: "invalid_format" });
+  });
+});
+
+describe("whatsapp: variante do nono dígito (BR)", () => {
+  test("remove o 9 quando o número tem 9 dígitos após o DDD", () => {
+    expect(brazilianAltVariant("5511987654321")).toBe("551187654321");
+  });
+
+  test("adiciona o 9 quando o número tem 8 dígitos após o DDD", () => {
+    expect(brazilianAltVariant("551187654321")).toBe("5511987654321");
+  });
+
+  test("retorna null pra número que não é do Brasil", () => {
+    expect(brazilianAltVariant("12025550123")).toBeNull();
   });
 });
