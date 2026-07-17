@@ -57,7 +57,10 @@ describe("whatsapp: confirmação do vínculo", () => {
 
     const confirmed = await confirmWhatsAppLink(deps, phone, started.value.code);
     expect(confirmed.ok).toBe(true);
-    if (confirmed.ok) expect(confirmed.value.userId).toBe(user.id);
+    if (confirmed.ok) {
+      expect(confirmed.value.userId).toBe(user.id);
+      expect(confirmed.value.workspaceName).toBe("Pessoal");
+    }
 
     const stored = await deps.repos.user.findByPhone(phone);
     expect(stored?.id).toBe(user.id);

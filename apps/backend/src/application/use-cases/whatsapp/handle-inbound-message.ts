@@ -35,7 +35,7 @@ export async function handleInboundWhatsAppMessage(
       return {
         to: message.from,
         body: result.ok
-          ? `Vínculo confirmado, ${result.value.userName}! Agora você já pode registrar transações por aqui.`
+          ? `Vínculo confirmado, ${result.value.userName}! Suas transações por aqui vão pro workspace "${result.value.workspaceName}".`
           : "Código inválido ou expirado. Gere um novo no app (Perfil > WhatsApp) e tente de novo.",
       };
     }

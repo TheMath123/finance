@@ -6,6 +6,8 @@ import type { WhatsAppLinkError } from "./errors";
 export interface ConfirmWhatsAppLinkOutput {
   userId: string;
   userName: string;
+  /** Workspace padrão do usuário — onde as transações da conversa privada caem (spec). */
+  workspaceName: string;
 }
 
 /**
@@ -38,6 +40,10 @@ export async function confirmWhatsAppLink(
   });
   if (!user) throw new Error("usuário do código de vínculo do WhatsApp não encontrado");
 
+  const workspace = user.defaultWorkspaceId
+    ? await deps.repos.workspace.findById(user.defaultWorkspaceId)
+    : undefined;
+
   await createNotification(deps, {
     userId: user.id,
     type: "whatsapp_linked",
@@ -46,5 +52,5 @@ export async function confirmWhatsAppLink(
     data: { phone },
   });
 
-  return right({ userId: user.id, userName: user.name });
+  return right({ userId: user.id, userName: user.name, workspaceName: workspace?.name ?? "seu workspace" });
 }
