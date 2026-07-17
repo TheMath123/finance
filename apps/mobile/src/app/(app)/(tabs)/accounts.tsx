@@ -1,7 +1,15 @@
 import { useQuery } from '@tanstack/react-query';
 import { getBank } from '@finance/shared';
 import { router } from 'expo-router';
-import { CaretRightIcon, CreditCardIcon, PlusIcon, TagIcon, UserIcon, UsersIcon } from 'phosphor-react-native';
+import {
+  CaretRightIcon,
+  CreditCardIcon,
+  PlusIcon,
+  TagIcon,
+  UserIcon,
+  UsersIcon,
+  WhatsappLogoIcon,
+} from 'phosphor-react-native';
 import type { ReactNode } from 'react';
 import { ActivityIndicator, Pressable, View } from 'react-native';
 
@@ -82,7 +90,7 @@ export default function AccountsScreen() {
 
   return (
     <Screen className="gap-6 pb-28">
-      <ThemedText type="subtitle">Contas</ThemedText>
+      <ThemedText type="subtitle">Mais</ThemedText>
 
       <View className="gap-3">
         <SectionHeader title="Contas" onAdd={() => router.push('/accounts/new')} />
@@ -120,7 +128,6 @@ export default function AccountsScreen() {
       </View>
 
       <View className="gap-3">
-        <ThemedText type="smallBold">Mais</ThemedText>
         <NavRow
           icon={<CreditCardIcon size={18} color="#2563EB" />}
           label="Cartões"
@@ -137,6 +144,11 @@ export default function AccountsScreen() {
           icon={<UsersIcon size={18} color="#2563EB" />}
           label="Workspaces"
           onPress={() => router.push('/workspaces')}
+        />
+        <NavRow
+          icon={<WhatsappLogoIcon size={18} color="#2563EB" />}
+          label="WhatsApp"
+          onPress={() => router.push('/whatsapp-link')}
         />
         <NavRow
           icon={<UserIcon size={18} color="#2563EB" />}

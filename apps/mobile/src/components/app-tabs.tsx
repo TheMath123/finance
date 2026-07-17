@@ -1,6 +1,6 @@
 import type { Href } from 'expo-router';
 import { Tabs, TabList, TabTrigger, TabSlot, TabTriggerSlotProps, TabListProps } from 'expo-router/ui';
-import { BellIcon, HouseIcon, ReceiptIcon, WalletIcon, type IconProps } from 'phosphor-react-native';
+import { BellIcon, HouseIcon, ReceiptIcon, SquaresFourIcon, type IconProps } from 'phosphor-react-native';
 import { type ComponentType } from 'react';
 import { Pressable, View } from 'react-native';
 
@@ -15,9 +15,9 @@ import { cn } from '@/lib/cn';
 // tipos do expo-router não expõe esse literal (só "/index", que resolve para
 // +not-found) — daqui o cast explícito.
 const TABS = [
-  { name: 'home', href: '/' as Href, label: 'Resumo', Icon: HouseIcon },
+  { name: 'home', href: '/' as Href, label: 'Inicio', Icon: HouseIcon },
   { name: 'explore', href: '/explore' as Href, label: 'Transações', Icon: ReceiptIcon },
-  { name: 'accounts', href: '/accounts' as Href, label: 'Contas', Icon: WalletIcon },
+  { name: 'accounts', href: '/accounts' as Href, label: 'Mais', Icon: SquaresFourIcon },
   { name: 'notifications', href: '/notifications' as Href, label: 'Avisos', Icon: BellIcon },
 ] satisfies { name: string; href: Href; label: string; Icon: ComponentType<IconProps> }[];
 

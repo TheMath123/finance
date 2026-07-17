@@ -45,6 +45,9 @@ export default function NotificationsScreen() {
   const { data: notifications, isLoading } = useQuery({
     queryKey: ['notifications', showArchived],
     queryFn: () => notificationApi.list(showArchived),
+    // Sempre busca de novo ao abrir a aba — o padrão global (60s) deixava a lista
+    // de notificações parecer travada logo depois de uma nova chegar.
+    staleTime: 0,
   });
 
   const refresh = () => queryClient.invalidateQueries({ queryKey: ['notifications'] });
