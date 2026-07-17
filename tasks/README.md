@@ -15,7 +15,7 @@ onde sobrar capacidade.
 | M2-03 | [Enforcement de limite de plano](m2-03-enforcement-plano.md) | 🟢 Concluída | M2-02 |
 | M2-04 | [Atividade do workspace (leitura do AuditLog)](m2-04-atividade-audit-log.md) | 🟢 Concluída | M2-02 |
 | M2-05 | [Vínculo do WhatsApp por OTP](m2-05-whatsapp-vinculo-otp.md) | 🟢 Concluída | — |
-| M2-06 | [Chatbot WhatsApp: webhook Meta Cloud API](m2-06-whatsapp-webhook-chatbot.md) | 🟡 Em andamento | M2-01, M2-05 |
+| M2-06 | [Chatbot WhatsApp: webhook Meta Cloud API](m2-06-whatsapp-webhook-chatbot.md) | 🟢 Concluída (1:1; grupo pausado) | M2-01, M2-05 |
 | M2-07 | [Pipeline de IA: interpretar/categorizar transações](m2-07-ia-pipeline-transacoes.md) | 🔵 Backlog | — (valor pleno com M2-06) |
 | M2-08 | [IA de previsão de gastos variáveis](m2-08-ia-previsao-gastos.md) | 🔵 Backlog | M2-07 (recomendado) |
 | M2-09 | [Auto-lançamento de recorrências (job)](m2-09-auto-lancamento-recorrencias.md) | 🟢 Concluída | M2-01 |

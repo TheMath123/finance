@@ -1,6 +1,7 @@
 # M2-06 — Chatbot WhatsApp: webhook Meta Cloud API + grupos↔workspace
 
-**Status:** 🟡 Em andamento — conversa privada (1:1) concluída; grupos pausados (ver abaixo).
+**Status:** 🟢 Conversa privada (1:1) concluída e validada ponta-a-ponta com
+mensagem real. Grupos pausados (ver abaixo).
 
 ## Contexto
 
@@ -58,10 +59,37 @@ ganhar OBA. Esta task cobre só conversa privada por enquanto.
   recebida; `meta-cloud-api.test.ts` (novo) cobre verificação/assinatura do
   webhook isoladamente. Suíte completa: 70/70.
 
-### Pendente (fora desta etapa)
-- Registrar o webhook de verdade no painel do Meta (precisa do túnel
-  cloudflared do usuário + envs reais no `.env`) e validar ponta-a-ponta com
-  uma mensagem real.
+## Descoberta (2026-07-17): WABA vem pré-inscrita no app interno da Meta
+
+Depois de configurar a Callback URL/verify token (verificação passou) e
+marcar "messages" como subscribed, mensagens reais continuavam sem chegar
+no webhook — sem nenhuma tentativa de entrega registrada. Causa raiz: a
+WhatsApp Business Account de teste vem, por padrão, inscrita só no app
+interno da própria Meta ("WA DevX Webhook Events 1P App", visível no painel
+"Verifique webhooks de teste" — por isso a mensagem aparecia lá, mas nunca
+era encaminhada pro app do usuário). Configurar o webhook no App Dashboard
+**não** inscreve automaticamente o app na WABA — são dois passos
+independentes da Graph API.
+
+Correção (confirmada funcionando):
+1. `GET /{WABA_ID}/subscribed_apps` — lista quem está inscrito (exige token
+   com escopo `whatsapp_business_management`; o token temporário do "Início
+   rápido" só tem `whatsapp_business_messaging` e dá erro de permissão #200
+   nessa chamada específica).
+2. Gerar um token de **System User** (Business Settings > Usuários do
+   sistema > Admin, ativos atribuídos: app + WABA) com escopos
+   `whatsapp_business_management` + `whatsapp_business_messaging` — também
+   resolve de quebra o problema do token de 24h expirar.
+3. `POST /{WABA_ID}/subscribed_apps` com esse token — inscreve o app. Depois
+   disso, `GET` no mesmo endpoint mostra o app do usuário ao lado do app
+   interno da Meta, e mensagens reais passam a chegar no webhook.
+
+Validado com mensagem real via WhatsApp: código de vínculo confirmado
+(`whatsapp_link_codes.used_at` preenchido), telefone gravado em `users.phone`,
+notificação `whatsapp_linked` criada e resposta de confirmação enviada de
+volta pelo WhatsApp.
+
+## Pendente (fora desta etapa)
 - Interpretação de linguagem natural (M2-07) — hoje número vinculado só
   recebe uma resposta de placeholder.
 - Vínculo de grupo (pausado, ver acima).
