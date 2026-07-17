@@ -15,10 +15,10 @@ import { cn } from '@/lib/cn';
 // tipos do expo-router não expõe esse literal (só "/index", que resolve para
 // +not-found) — daqui o cast explícito.
 const TABS = [
-  { name: 'home', href: '/' as Href, label: 'Inicio', Icon: HouseIcon },
+  { name: 'home', href: '/' as Href, label: 'Início', Icon: HouseIcon },
   { name: 'explore', href: '/explore' as Href, label: 'Transações', Icon: ReceiptIcon },
   { name: 'accounts', href: '/accounts' as Href, label: 'Mais', Icon: SquaresFourIcon },
-  { name: 'notifications', href: '/notifications' as Href, label: 'Avisos', Icon: BellIcon },
+  { name: 'notifications', href: '/notifications' as Href, label: 'Notificações', Icon: BellIcon },
 ] satisfies { name: string; href: Href; label: string; Icon: ComponentType<IconProps> }[];
 
 export default function AppTabs() {
