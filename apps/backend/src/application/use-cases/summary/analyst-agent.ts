@@ -1,68 +1,80 @@
-import type Anthropic from "@anthropic-ai/sdk";
+import type OpenAI from "openai";
 import { normalizeDescription } from "../../../domain/services/occurrence-rules";
-import { getClaudeClient, ANALYST_MODEL } from "../../../infra/ai/claude-client";
+import { getAiClient, getAnalystModel } from "../../../infra/ai/ai-client";
 import type { Actor, UseCaseDeps } from "../../deps";
 import { monthlySummary } from "./monthly-summary";
 
 /** Trava contra loop infinito de tool use — nenhuma pergunta financeira precisa de mais que isso. */
 const MAX_TURNS = 4;
 
-const TOOLS: Anthropic.Tool[] = [
+const TOOLS: OpenAI.Chat.ChatCompletionTool[] = [
   {
-    name: "get_monthly_summary",
-    description:
-      "Receita total, despesa total, saldo total das contas e disponível projetado pro mês. Use pra perguntas de visão geral (quanto entrou, quanto saiu, quanto sobra no mês).",
-    input_schema: {
-      type: "object",
-      properties: {
-        year: { type: "integer", description: "Ano, ex.: 2026" },
-        month: { type: "integer", description: "Mês, 1-12" },
+    type: "function",
+    function: {
+      name: "get_monthly_summary",
+      description:
+        "Receita total, despesa total, saldo total das contas e disponível projetado pro mês. Use pra perguntas de visão geral (quanto entrou, quanto saiu, quanto sobra no mês).",
+      parameters: {
+        type: "object",
+        properties: {
+          year: { type: "integer", description: "Ano, ex.: 2026" },
+          month: { type: "integer", description: "Mês, 1-12" },
+        },
+        required: ["year", "month"],
       },
-      required: ["year", "month"],
     },
   },
   {
-    name: "sum_by_category",
-    description:
-      "Soma de despesas por categoria num período. Use pra perguntas do tipo 'quanto gastei em X' ou 'onde gastei mais'.",
-    input_schema: {
-      type: "object",
-      properties: {
-        from: { type: "string", description: "Data inicial, YYYY-MM-DD" },
-        to: { type: "string", description: "Data final, YYYY-MM-DD" },
+    type: "function",
+    function: {
+      name: "sum_by_category",
+      description:
+        "Soma de despesas por categoria num período. Use pra perguntas do tipo 'quanto gastei em X' ou 'onde gastei mais'.",
+      parameters: {
+        type: "object",
+        properties: {
+          from: { type: "string", description: "Data inicial, YYYY-MM-DD" },
+          to: { type: "string", description: "Data final, YYYY-MM-DD" },
+        },
+        required: ["from", "to"],
       },
-      required: ["from", "to"],
     },
   },
   {
-    name: "get_invoice_total",
-    description: "Total da fatura de um cartão específico num mês/ano. Use pra perguntas sobre fatura de crédito.",
-    input_schema: {
-      type: "object",
-      properties: {
-        cardName: { type: "string", description: "Nome ou apelido do cartão, como o usuário escreveu" },
-        year: { type: "integer" },
-        month: { type: "integer" },
+    type: "function",
+    function: {
+      name: "get_invoice_total",
+      description: "Total da fatura de um cartão específico num mês/ano. Use pra perguntas sobre fatura de crédito.",
+      parameters: {
+        type: "object",
+        properties: {
+          cardName: { type: "string", description: "Nome ou apelido do cartão, como o usuário escreveu" },
+          year: { type: "integer" },
+          month: { type: "integer" },
+        },
+        required: ["cardName", "year", "month"],
       },
-      required: ["cardName", "year", "month"],
     },
   },
   {
-    name: "get_available_projection",
-    description:
-      "Só o disponível projetado pro mês (saldo + recorrências futuras − faturas não pagas). Use pra 'quanto vou ter disponível' / 'quanto sobra'.",
-    input_schema: {
-      type: "object",
-      properties: {
-        year: { type: "integer" },
-        month: { type: "integer" },
+    type: "function",
+    function: {
+      name: "get_available_projection",
+      description:
+        "Só o disponível projetado pro mês (saldo + recorrências futuras − faturas não pagas). Use pra 'quanto vou ter disponível' / 'quanto sobra'.",
+      parameters: {
+        type: "object",
+        properties: {
+          year: { type: "integer" },
+          month: { type: "integer" },
+        },
+        required: ["year", "month"],
       },
-      required: ["year", "month"],
     },
   },
 ];
 
-const SYSTEM_PROMPT = `Você é o agente analítico de um assistente financeiro por WhatsApp (Camada 2 do pipeline — Opus, só perguntas complexas chegam até você).
+const SYSTEM_PROMPT = `Você é o agente analítico de um assistente financeiro por WhatsApp (Camada 2 do pipeline, só perguntas complexas chegam até você).
 
 Responda perguntas sobre os dados financeiros do usuário usando as tools disponíveis. As tools devolvem números já agregados via SQL — nunca invente números, nunca peça pra listar transações individuais.
 
@@ -129,49 +141,51 @@ export interface AnalystReply {
 }
 
 /**
- * Camada 2 do pipeline de IA (M2-07): agente com tool use (Opus) — só
- * perguntas analíticas complexas chegam aqui (roteadas pela Camada 1).
- * Tools devolvem números agregados via SQL, nunca listas de transações
- * (spec: custo de token escala com o tamanho do resultado da tool).
+ * Camada 2 do pipeline de IA (M2-07): agente com tool use — só perguntas
+ * analíticas complexas chegam aqui (roteadas pela Camada 1). Tools devolvem
+ * números agregados via SQL, nunca listas de transações (spec: custo de
+ * token escala com o tamanho do resultado da tool). Modelo vem do env
+ * (`getAnalystModel`, gateway OpenRouter) — mais capaz que o da Camada 1,
+ * mas ainda trocável sem lock-in num provedor.
  */
 export async function answerAnalyticalQuestion(
   deps: Pick<UseCaseDeps, "repos">,
   actor: Actor,
   question: string,
 ): Promise<AnalystReply> {
-  const client = getClaudeClient();
-  const messages: Anthropic.MessageParam[] = [
+  const client = getAiClient();
+  const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
+    { role: "system", content: SYSTEM_PROMPT },
     { role: "user", content: `[Hoje é ${todayIso()}]\n\n${question}` },
   ];
   let inputTokens = 0;
   let outputTokens = 0;
 
   for (let turn = 0; turn < MAX_TURNS; turn++) {
-    const response = await client.messages.create({
-      model: ANALYST_MODEL,
+    const response = await client.chat.completions.create({
+      model: getAnalystModel(),
       max_tokens: 1024,
-      system: [{ type: "text", text: SYSTEM_PROMPT, cache_control: { type: "ephemeral" } }],
       tools: TOOLS,
       messages,
     });
-    inputTokens += response.usage.input_tokens;
-    outputTokens += response.usage.output_tokens;
+    inputTokens += response.usage?.prompt_tokens ?? 0;
+    outputTokens += response.usage?.completion_tokens ?? 0;
 
-    if (response.stop_reason !== "tool_use") {
-      const textBlock = response.content.find((block) => block.type === "text");
-      const body = textBlock?.type === "text" ? textBlock.text : "Não consegui responder isso agora.";
+    const choice = response.choices[0];
+    const toolCalls = choice?.message.tool_calls;
+    if (!toolCalls || toolCalls.length === 0) {
+      const body = choice?.message.content ?? "Não consegui responder isso agora.";
       return { body, usage: { inputTokens, outputTokens } };
     }
 
-    messages.push({ role: "assistant", content: response.content });
+    messages.push(choice.message);
 
-    const toolResults: Anthropic.ToolResultBlockParam[] = [];
-    for (const block of response.content) {
-      if (block.type !== "tool_use") continue;
-      const result = await executeTool(deps, actor, block.name, block.input as Record<string, unknown>);
-      toolResults.push({ type: "tool_result", tool_use_id: block.id, content: JSON.stringify(result) });
+    for (const call of toolCalls) {
+      if (call.type !== "function") continue;
+      const args = JSON.parse(call.function.arguments) as Record<string, unknown>;
+      const result = await executeTool(deps, actor, call.function.name, args);
+      messages.push({ role: "tool", tool_call_id: call.id, content: JSON.stringify(result) });
     }
-    messages.push({ role: "user", content: toolResults });
   }
 
   return {

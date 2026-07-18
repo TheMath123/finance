@@ -1,6 +1,6 @@
 /**
  * Testes do fallback determinístico do pipeline de IA (M2-07) — sem
- * ANTHROPIC_API_KEY configurada neste ambiente, toda chamada de IA falha,
+ * OPENROUTER_API_KEY configurada neste ambiente, toda chamada de IA falha,
  * então esses testes exercitam exatamente o caminho de guardrail que roda
  * quando a IA está fora do ar (ou o orçamento de tokens estourou).
  */

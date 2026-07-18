@@ -1,7 +1,7 @@
 import { z } from "zod";
-import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
+import { zodResponseFormat } from "openai/helpers/zod";
 import { normalizeDescription } from "../../../domain/services/occurrence-rules";
-import { getClaudeClient, ROUTER_MODEL } from "../../../infra/ai/claude-client";
+import { getAiClient, getRouterModel } from "../../../infra/ai/ai-client";
 import type { UseCaseDeps } from "../../deps";
 import { answerAnalyticalQuestion } from "../summary/analyst-agent";
 import { createTransaction } from "./create-transaction";
@@ -26,12 +26,15 @@ const RouterOutputSchema = z.object({
 
 /**
  * System prompt congelado (spec: nada volátil aqui — data/hora e nome do
- * usuário ficam de fora — pra não invalidar o cache). Categorias/contas do
- * workspace também ficam de fora de propósito: são resolvidas depois, no
- * código, contra os dados reais — assim o schema de saída e o prompt são
- * idênticos pra todo mundo, o que maximiza o cache entre requisições.
+ * usuário ficam de fora) pra maximizar o reaproveitamento de cache de
+ * prompt automático que a maioria dos provedores faz por prefixo idêntico
+ * (não dá mais pra controlar isso explicitamente por parâmetro — como no
+ * `cache_control` da Anthropic — já que o modelo é escolhido por env, sem
+ * lock-in num provedor). Categorias/contas do workspace também ficam de
+ * fora de propósito: são resolvidas depois, no código, contra os dados
+ * reais — assim o schema de saída e o prompt são idênticos pra todo mundo.
  */
-const SYSTEM_PROMPT = `Você é o roteador de mensagens de um assistente financeiro por WhatsApp (camada barata do pipeline — Haiku).
+const SYSTEM_PROMPT = `Você é o roteador de mensagens de um assistente financeiro por WhatsApp (camada barata do pipeline).
 
 Classifique a intenção da mensagem:
 - "register_transaction": o usuário quer registrar uma transação financeira (gasto, receita).
@@ -105,9 +108,11 @@ export async function resolveAccountOrCard(
 }
 
 /**
- * Camada 1 do pipeline de IA (M2-07): roteador barato (Haiku) — classifica a
+ * Camada 1 do pipeline de IA (M2-07): roteador barato — classifica a
  * intenção e, se for registro de transação, extrai os campos via structured
  * output. Chamado só quando a Camada 0 (determinística) não resolveu.
+ * Modelo vem do env (`getRouterModel`, gateway OpenRouter) — trocável sem
+ * mudar código, sem lock-in num provedor de IA específico.
  */
 export async function routeChatbotMessage(
   deps: Pick<UseCaseDeps, "repos" | "uow">,
@@ -115,21 +120,23 @@ export async function routeChatbotMessage(
   userId: string,
   text: string,
 ): Promise<ChatbotReply> {
-  const client = getClaudeClient();
-  const response = await client.messages.parse({
-    model: ROUTER_MODEL,
+  const client = getAiClient();
+  const response = await client.chat.completions.parse({
+    model: getRouterModel(),
     max_tokens: 1024,
-    system: [{ type: "text", text: SYSTEM_PROMPT, cache_control: { type: "ephemeral" } }],
-    messages: [{ role: "user", content: text }],
-    output_config: { format: zodOutputFormat(RouterOutputSchema) },
+    messages: [
+      { role: "system", content: SYSTEM_PROMPT },
+      { role: "user", content: text },
+    ],
+    response_format: zodResponseFormat(RouterOutputSchema, "router_output"),
   });
 
   const usage = {
-    inputTokens: response.usage.input_tokens,
-    outputTokens: response.usage.output_tokens,
+    inputTokens: response.usage?.prompt_tokens ?? 0,
+    outputTokens: response.usage?.completion_tokens ?? 0,
   };
 
-  const parsed = response.parsed_output;
+  const parsed = response.choices[0]?.message.parsed;
   if (!parsed) {
     return { body: "Não consegui entender essa mensagem. Pode reformular?", usage };
   }

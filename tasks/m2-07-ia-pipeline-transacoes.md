@@ -1,6 +1,23 @@
 # M2-07 — Pipeline de IA: interpretar/categorizar transações
 
-**Status:** 🟢 Concluída (código completo e testado; validação ponta-a-ponta com a API real da Anthropic ainda pendente — `ANTHROPIC_API_KEY` não configurada).
+**Status:** 🟢 Concluída (código completo e testado; validação ponta-a-ponta com a API real ainda pendente — `OPENROUTER_API_KEY` não configurada).
+
+**Atualização (2026-07-18):** trocado o acesso direto à Anthropic por um
+gateway multi-provedor — [OpenRouter](https://openrouter.ai), acessado via
+SDK oficial da OpenAI (`openai` no npm) apontando `baseURL` pro OpenRouter.
+Motivo: evitar lock-in numa única empresa de IA — o modelo de cada camada
+agora é uma string de env (`AI_ROUTER_MODEL`/`AI_ANALYST_MODEL`,
+`infra/ai/env.ts`), trocável por qualquer modelo do catálogo (Gemini, Kimi,
+DeepSeek, Llama, a própria Anthropic via OpenRouter, etc.) sem mudar
+código. Defaults escolhidos por custo/eficiência (Gemini 2.5 Flash
+Lite/Flash) — nenhum modelo do Kimi ou Gemini tinha variante genuinamente
+gratuita (`:free`) disponível no catálogo em 2026-07-18, mas ambos são
+muito baratos (frações de centavo por mensagem, dado o `max_tokens: 1024` e
+o volume curto de mensagens de WhatsApp) e há modelos `:free` de outros
+provedores no catálogo caso o custo zero seja prioridade sobre a
+qualidade. `infra/ai/claude-client.ts` virou `infra/ai/ai-client.ts`
+(`getAiClient`, `getRouterModel`, `getAnalystModel` — todos lazy, mesmo
+padrão de antes).
 
 ## Contexto
 
@@ -24,7 +41,7 @@ fechada em 2026-07-13") — seguido à risca, sem improvisar RAG.
 - `createTransaction` ganhou `source?: TransactionSource` (era hardcoded
   `"app"`) — agora é de fato canal-agnóstica (spec).
 
-### Camada 1 — roteador barato (Haiku 4.5)
+### Camada 1 — roteador barato (modelo via `AI_ROUTER_MODEL`, default Gemini 2.5 Flash Lite)
 - `apps/backend/src/application/use-cases/transaction/route-chatbot-message.ts` —
   classifica intenção (`register_transaction` | `analytical_question` |
   `out_of_scope`) e extrai campos da transação via **structured output**
@@ -38,7 +55,7 @@ fechada em 2026-07-13") — seguido à risca, sem improvisar RAG.
 - Resolução de conta/cartão: match exato por nome normalizado; ambíguo (mais
   de um) ou nenhum → pergunta de esclarecimento em vez de arriscar.
 
-### Camada 2 — agente com tool use (Opus 4.8)
+### Camada 2 — agente com tool use (modelo via `AI_ANALYST_MODEL`, default Gemini 2.5 Flash)
 - `apps/backend/src/application/use-cases/summary/analyst-agent.ts` — loop
   manual de tool use (não o Tool Runner beta — controle total, sem
   dependência beta) com 4 tools de agregação via SQL, reaproveitando
@@ -77,9 +94,10 @@ typecheck limpo.
 
 ## Pendências
 
-- Validar de verdade contra a API da Anthropic (precisa de
-  `ANTHROPIC_API_KEY` no `.env`) — hoje só o caminho de fallback foi
-  exercitado nos testes (a chave não está configurada neste ambiente).
+- Validar de verdade contra a API real via OpenRouter (precisa de
+  `OPENROUTER_API_KEY` no `.env`, gerada em openrouter.ai/keys) — hoje só o
+  caminho de fallback foi exercitado nos testes (a chave não está
+  configurada neste ambiente).
 - Reaproveitar a categorização automática no app (o cache já existe no
   banco; falta expor no formulário de criar transação do app — não pedido
   ainda).
