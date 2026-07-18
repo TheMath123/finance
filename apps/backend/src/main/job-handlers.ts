@@ -9,10 +9,11 @@ import { sendWhatsAppText } from "../infra/whatsapp/meta-cloud-api";
  * Handlers dos jobs — compartilhados entre o composition root (enfileira) e
  * o worker (consome). Fábrica (não objeto estático) porque o handler do
  * WhatsApp precisa de `repos`/`uow`/`rateLimiter`/`tokens` pra confirmar
- * vínculo (`confirmWhatsAppLink`); os demais handlers ignoram `deps`.
+ * vínculo (`confirmWhatsAppLink`) e `tokenBudget` pro pipeline de IA
+ * (M2-07); os demais handlers ignoram `deps`.
  */
 export function createJobHandlers(
-  deps: Pick<UseCaseDeps, "repos" | "rateLimiter" | "tokens" | "uow" | "dispatch">,
+  deps: Pick<UseCaseDeps, "repos" | "rateLimiter" | "tokenBudget" | "tokens" | "uow" | "dispatch">,
 ): JobHandlers {
   return {
     "email.password-reset": (p) => mailer.sendPasswordReset(p),

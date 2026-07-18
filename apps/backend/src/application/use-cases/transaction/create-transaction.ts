@@ -1,5 +1,5 @@
 import { left, right, type Either } from "@finance/shared";
-import type { TransactionMethod, TransactionType } from "@finance/shared";
+import type { TransactionMethod, TransactionSource, TransactionType } from "@finance/shared";
 import type { Transaction } from "../../../domain/entities/transaction";
 import {
   addMonths,
@@ -24,6 +24,8 @@ export interface CreateTransactionInput {
   installments?: number;
   /** Preenchido quando a transação materializa uma recorrência confirmada. */
   recurringId?: string;
+  /** Canal de origem (spec: camada de service canal-agnóstica) — default "app". */
+  source?: TransactionSource;
 }
 
 export async function createTransaction(
@@ -44,7 +46,7 @@ export async function createTransaction(
     date: input.date,
     categoryId: input.categoryId,
     recurringId: input.recurringId ?? null,
-    source: "app" as const,
+    source: input.source ?? "app",
   };
 
   // Transferência: conta origem + destino, neutra (convenção: type=expense)

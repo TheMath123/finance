@@ -22,7 +22,7 @@ export interface PendingOccurrence {
  * (excluir o lançamento não faz a sugestão voltar).
  */
 export async function listPendingOccurrences(
-  deps: UseCaseDeps,
+  deps: Pick<UseCaseDeps, "repos">,
   actor: Actor,
   year: number,
   month: number,

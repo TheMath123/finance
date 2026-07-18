@@ -5,6 +5,7 @@ import { createUnitOfWork } from "../infra/db/unit-of-work";
 import { bunPasswordHasher } from "../infra/security/bun-password-hasher";
 import { createTokenService } from "../infra/security/jose-token-service";
 import { createRedisRateLimiter } from "../infra/security/redis-rate-limiter";
+import { createRedisTokenBudget } from "../infra/ai/redis-token-budget";
 import { createLogger } from "../infra/observability/logger";
 import { createSecurityLogger } from "../infra/observability/pino-security-logger";
 import type { AppDeps } from "../http/deps";
@@ -30,6 +31,7 @@ export function createAppDeps(env: Env): AppDeps {
     dispatch: dispatcher.dispatch,
     logger: createSecurityLogger(logger),
     rateLimiter: createRedisRateLimiter(env.REDIS_URL),
+    tokenBudget: createRedisTokenBudget(env.REDIS_URL),
     termsVersion: env.TERMS_VERSION,
     trustProxy: env.TRUST_PROXY,
     httpLogger: logger,

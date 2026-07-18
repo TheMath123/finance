@@ -130,6 +130,22 @@ export function createTransactionRepository(db: DbHandle): TransactionRepository
         );
       return { income: Number(row?.income ?? 0), expense: Number(row?.expense ?? 0) };
     },
+    async findMostUsedCategory(workspaceId, descriptionNormalized) {
+      const [row] = await db
+        .select({ categoryId: transactions.categoryId, count: sql<string>`COUNT(*)` })
+        .from(transactions)
+        .where(
+          and(
+            eq(transactions.workspaceId, workspaceId),
+            eq(transactions.descriptionNormalized, descriptionNormalized),
+            isNull(transactions.deletedAt),
+          ),
+        )
+        .groupBy(transactions.categoryId)
+        .orderBy(desc(sql`COUNT(*)`))
+        .limit(1);
+      return row?.categoryId;
+    },
     async expenseByCategory(workspaceId, from, to) {
       const rows = await db
         .select({

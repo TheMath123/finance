@@ -61,6 +61,8 @@ export interface TransactionRepository {
   /** Σ efeitos na conta (sem o initial_balance) — saldo derivado (spec). */
   balanceDelta(accountId: string): Promise<number>;
   reassignCategory(fromCategoryId: string, toCategoryId: string): Promise<void>;
+  /** Cache de categorização (M2-07): categoria mais usada pra essa descrição normalizada, se houver. */
+  findMostUsedCategory(workspaceId: string, descriptionNormalized: string): Promise<string | undefined>;
   monthlyTotals(
     workspaceId: string,
     from: string,

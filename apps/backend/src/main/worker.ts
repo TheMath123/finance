@@ -5,6 +5,7 @@ import { createRepositories } from "../infra/db/repositories";
 import { createUnitOfWork } from "../infra/db/unit-of-work";
 import { createTokenService } from "../infra/security/jose-token-service";
 import { createRedisRateLimiter } from "../infra/security/redis-rate-limiter";
+import { createRedisTokenBudget } from "../infra/ai/redis-token-budget";
 import { createLogger } from "../infra/observability/logger";
 import { createJobHandlers } from "./job-handlers";
 import { loadEnv } from "./env";
@@ -25,13 +26,15 @@ const dispatcher = createBullMqDispatcher(env.REDIS_URL, (job, error) =>
 
 /**
  * Deps completas do worker: além do sweep diário, o handler do job
- * `whatsapp.inbound-message` (M2-06) precisa confirmar vínculo
- * (`confirmWhatsAppLink` usa `repos`/`uow`/`rateLimiter`/`tokens`).
+ * `whatsapp.inbound-message` (M2-06/M2-07) precisa confirmar vínculo
+ * (`confirmWhatsAppLink` usa `repos`/`uow`/`rateLimiter`/`tokens`) e rodar o
+ * pipeline de IA (`tokenBudget` — guardrail de custo por usuário).
  */
 const deps = {
   repos: createRepositories(db),
   uow: createUnitOfWork(db),
   rateLimiter: createRedisRateLimiter(env.REDIS_URL),
+  tokenBudget: createRedisTokenBudget(env.REDIS_URL),
   tokens: createTokenService(env.JWT_SECRET),
   dispatch: dispatcher.dispatch,
 };

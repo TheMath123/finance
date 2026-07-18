@@ -38,7 +38,7 @@ function todayIso(): string {
 }
 
 export async function monthlySummary(
-  deps: UseCaseDeps,
+  deps: Pick<UseCaseDeps, "repos">,
   actor: Actor,
   year: number,
   month: number,
