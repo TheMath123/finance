@@ -1,7 +1,9 @@
 import type { WorkspaceRole } from '@finance/shared';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocalSearchParams, router } from 'expo-router';
-import { ArrowLeftIcon, PlusIcon, TrashIcon } from 'phosphor-react-native';
+import { File, Paths } from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
+import { ArrowLeftIcon, DownloadSimpleIcon, PlusIcon, TrashIcon } from 'phosphor-react-native';
 import { useState } from 'react';
 import { Alert, ActivityIndicator, Pressable, View } from 'react-native';
 
@@ -37,6 +39,7 @@ export default function WorkspaceMembersScreen() {
   const [pendingRole, setPendingRole] = useState<string | undefined>();
   const [savingRole, setSavingRole] = useState(false);
   const [removingUserId, setRemovingUserId] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
 
   const { data: members, isLoading } = useQuery({
     queryKey: ['workspace-members', workspaceId],
@@ -47,6 +50,27 @@ export default function WorkspaceMembersScreen() {
   const canManage = myRole === 'owner' || myRole === 'admin';
 
   const refresh = () => queryClient.invalidateQueries({ queryKey: ['workspace-members', workspaceId] });
+
+  /** Export CSV (M2-11, LGPD): baixa o CSV, salva num arquivo temporário e abre o compartilhamento nativo. */
+  const exportData = async () => {
+    setExporting(true);
+    try {
+      const csv = await workspaceApi.exportTransactionsCsv(workspaceId);
+      const file = new File(Paths.cache, `transacoes-${Date.now()}.csv`);
+      file.create({ overwrite: true });
+      file.write(csv);
+
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(file.uri, { mimeType: 'text/csv', dialogTitle: 'Exportar transações' });
+      } else {
+        Alert.alert('Exportado', `Arquivo salvo em: ${file.uri}`);
+      }
+    } catch (error) {
+      Alert.alert('Erro ao exportar', error instanceof ApiError ? error.message : 'Não foi possível exportar os dados.');
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const openRoleEditor = (member: WorkspaceMemberView) => {
     setEditingMember(member);
@@ -139,6 +163,16 @@ export default function WorkspaceMembersScreen() {
           icon={<PlusIcon size={18} color="#fafafa" />}
           onPress={() => router.push(`/workspaces/${workspaceId}/invite`)}>
           Convidar
+        </Button>
+      )}
+
+      {canManage && (
+        <Button
+          variant="outline"
+          icon={<DownloadSimpleIcon size={18} color="#2563EB" />}
+          loading={exporting}
+          onPress={exportData}>
+          Exportar dados (CSV)
         </Button>
       )}
 

@@ -1,6 +1,6 @@
 import type { AuditAction, InviteRole, WorkspacePlan, WorkspaceRole, WorkspaceType } from "@finance/shared";
 
-import { apiRequest } from "@/lib/api-client";
+import { apiRequest, apiRequestText } from "@/lib/api-client";
 
 /** Resposta crua de create/update (sem `role` — não é vínculo de membership). */
 export interface WorkspaceInfo {
@@ -103,4 +103,8 @@ export const workspaceApi = {
 
   listActivity: (workspaceId: string) =>
     apiRequest<AuditLogView[]>(`/workspaces/${workspaceId}/activity`),
+
+  /** CSV de transações do workspace (M2-11, portabilidade LGPD) — exige papel admin/owner. */
+  exportTransactionsCsv: (workspaceId: string) =>
+    apiRequestText(`/workspaces/${workspaceId}/export.csv`),
 };

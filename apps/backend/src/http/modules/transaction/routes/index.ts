@@ -5,6 +5,7 @@ import { listTransactionsRoute } from "./list-transactions";
 import { updateTransactionRoute } from "./update-transaction";
 import { deleteTransactionRoute } from "./delete-transaction";
 import { restoreTransactionRoute } from "./restore-transaction";
+import { exportTransactionsRoute } from "./export-transactions";
 
 export function transactionRoutes(deps: AppDeps) {
   return new Elysia()
@@ -12,5 +13,6 @@ export function transactionRoutes(deps: AppDeps) {
     .use(createTransactionRoute(deps))
     .use(updateTransactionRoute(deps))
     .use(deleteTransactionRoute(deps))
-    .use(restoreTransactionRoute(deps));
+    .use(restoreTransactionRoute(deps))
+    .use(exportTransactionsRoute(deps));
 }

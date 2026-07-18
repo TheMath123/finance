@@ -66,3 +66,49 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
     return rawRequest<T>(path, options);
   }
 }
+
+async function rawTextRequest(path: string, { skipAuth, headers, ...init }: Omit<RequestOptions, "body">) {
+  const accessToken = skipAuth ? null : await tokenStore.getAccessToken();
+
+  const response = await fetch(`${env.EXPO_PUBLIC_API_URL}${path}`, {
+    ...init,
+    headers: {
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+      ...headers,
+    },
+  });
+
+  if (!response.ok) {
+    const data = await response.json().catch(() => undefined);
+    const error = data?.error ?? { code: "unknown_error", message: "Erro inesperado" };
+    throw new ApiError(response.status, error.code, error.message, error.issues);
+  }
+
+  return response.text();
+}
+
+/** Igual a `apiRequest`, mas devolve o corpo cru como texto (ex.: export CSV) em vez de fazer parse de JSON. */
+export async function apiRequestText(path: string, options: Omit<RequestOptions, "body"> = {}): Promise<string> {
+  try {
+    return await rawTextRequest(path, options);
+  } catch (error) {
+    if (!(error instanceof ApiError) || error.status !== 401 || options.skipAuth) throw error;
+
+    const refreshToken = await tokenStore.getRefreshToken();
+    if (!refreshToken) throw error;
+
+    const session = await rawRequest<{ accessToken: string; refreshToken: string }>("/auth/refresh", {
+      method: "POST",
+      body: { refreshToken },
+      skipAuth: true,
+    }).catch(() => null);
+
+    if (!session) {
+      await tokenStore.clearTokens();
+      throw error;
+    }
+
+    await tokenStore.setTokens(session.accessToken, session.refreshToken);
+    return rawTextRequest(path, options);
+  }
+}

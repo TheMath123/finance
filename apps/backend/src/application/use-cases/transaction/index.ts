@@ -3,4 +3,5 @@ export { updateTransaction, type UpdateTransactionInput } from "./update-transac
 export { deleteTransaction } from "./delete-transaction";
 export { restoreTransaction } from "./restore-transaction";
 export { listTransactions, type ListTransactionsFilters } from "./list-transactions";
+export { exportTransactionsCsv } from "./export-transactions-csv";
 export type { TransactionError } from "./errors";
