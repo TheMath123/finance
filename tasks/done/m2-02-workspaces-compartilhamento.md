@@ -146,6 +146,17 @@ Também corrigido durante a re-verificação: um `pendingRole as never` em
 `members.tsx` (cast pra escapar do type checker em vez de tipar certo) virou
 `pendingRole as WorkspaceRole`.
 
+## Gap encontrado na revisão final do M2 (2026-07-19)
+
+Auditoria de integração mobile (verificar não só que a tela existe, mas que
+é *alcançável*) achou: `/invites` (convites recebidos) só era alcançável
+tocando numa notificação `workspace_invite` — sem nenhuma entrada fixa de
+navegação. Quem perdesse/dispensasse a notificação (ou não tivesse push
+configurado — risco já documentado em [[m2-10-notificacoes-push]]) ficava
+sem nenhum jeito de ver convites pendentes no app. Corrigido: NavRow
+"Convites recebidos" na aba "Mais" (`(tabs)/accounts.tsx`), com contador,
+só aparece quando há convite pendente de verdade (`workspaceApi.listMyInvites`).
+
 **Lição operacional**: `bun run <script>` neste ambiente (Windows/Git Bash)
 spawna um processo filho que faz o trabalho de verdade — matar o PID que o
 bash reporta (`$!`/nohup) só derruba o processo-pai, o filho continua

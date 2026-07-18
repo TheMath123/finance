@@ -1,7 +1,10 @@
-# M2-06 — Chatbot WhatsApp: webhook Meta Cloud API + grupos↔workspace
+# M2-06 — Chatbot WhatsApp: webhook Meta Cloud API
 
-**Status:** 🟢 Conversa privada (1:1) concluída e validada ponta-a-ponta com
-mensagem real. Grupos pausados (ver abaixo).
+**Status:** 🟢 Concluída — conversa privada (1:1), validada ponta-a-ponta
+com mensagem real. Vínculo de **grupo** virou task própria —
+[[m2-06b-whatsapp-grupo-workspace]] — bloqueada por status OBA no número
+(ver aquele arquivo pro contexto completo; resumo abaixo mantido por
+histórico).
 
 ## Contexto
 

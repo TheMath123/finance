@@ -787,3 +787,28 @@ acima); todo evento de limite/lockout gera **log estruturado** sem dados sensív
 - Deve seguir as boas práticas de desenvolvimento e padrões de código.
 - Deve usar os conceitos de KISS, YAGNI e do menor custo possível.
 - Usar clean code, com inspiração em conceitos de clean architecture (repositories, services, controllers, use cases).
+
+## Processo de tasks (definido em 2026-07-19, no fechamento do M2)
+
+Cada milestone é quebrado em tasks individuais (um `.md` por task) dentro
+de `tasks/`, organizadas em quatro pastas conforme o estado:
+
+- `tasks/` (raiz) — tasks do milestone em planejamento, ainda não
+  iniciadas.
+- `tasks/in-progress/` — sendo implementada agora (idealmente 1 por vez).
+- `tasks/done/` — concluída **e validada**: código, testes, e — quando a
+  task tem parte de app — integração mobile de verdade (tela existe,
+  está alcançável por navegação, chama a API real). Não basta o código
+  existir; auditoria de fechamento de milestone confere isso antes de
+  mover pra cá (foi assim que se achou, por exemplo, um gap real no M2:
+  a tela de convites de workspace só era alcançável por notificação, sem
+  entrada fixa no menu).
+- `tasks/backlog/` — não é pra agora: bloqueada por algo fora do
+  controle do time (ex.: aprovação externa de uma plataforma terceira) ou
+  adiada por decisão de produto. Task bloqueada ganha arquivo próprio
+  (não fica só como nota dentro de outra task), pra ficar rastreável.
+
+Task nasce na raiz → `in-progress/` quando começa → `done/` quando termina
+e é validada, ou `backlog/` se travar antes disso. `tasks/README.md` é o
+índice, com uma tabela por milestone linkando pro arquivo real (no
+subdiretório onde ele estiver).

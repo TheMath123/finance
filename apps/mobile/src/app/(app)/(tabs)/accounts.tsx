@@ -5,6 +5,7 @@ import {
   CaretRightIcon,
   ChartLineUpIcon,
   CreditCardIcon,
+  EnvelopeSimpleIcon,
   PlusIcon,
   TagIcon,
   UserIcon,
@@ -23,6 +24,7 @@ import { cardsApi } from '@/lib/cards-api';
 import { categoriesApi } from '@/lib/categories-api';
 import { cn } from '@/lib/cn';
 import { formatCents } from '@/lib/money';
+import { workspaceApi } from '@/lib/workspace-api';
 
 function SectionHeader({ title, onAdd }: { title: string; onAdd: () => void }) {
   return (
@@ -85,6 +87,10 @@ export default function AccountsScreen() {
     queryKey: ['categories', workspaceId],
     queryFn: () => categoriesApi.list(workspaceId!),
     enabled: Boolean(workspaceId),
+  });
+  const { data: myInvites } = useQuery({
+    queryKey: ['my-invites'],
+    queryFn: workspaceApi.listMyInvites,
   });
 
   const bankName = (bankCode: string) => getBank(bankCode)?.name ?? bankCode;
@@ -151,6 +157,14 @@ export default function AccountsScreen() {
           label="Workspaces"
           onPress={() => router.push('/workspaces')}
         />
+        {myInvites && myInvites.length > 0 && (
+          <NavRow
+            icon={<EnvelopeSimpleIcon size={18} color="#2563EB" />}
+            label="Convites recebidos"
+            count={myInvites.length}
+            onPress={() => router.push('/invites')}
+          />
+        )}
         <NavRow
           icon={<WhatsappLogoIcon size={18} color="#2563EB" />}
           label="WhatsApp"
