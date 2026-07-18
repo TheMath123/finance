@@ -1,5 +1,5 @@
-import { and, desc, eq, gte, ilike, inArray, isNotNull, isNull, lte, or, sql } from "drizzle-orm";
-import { categories, transactions } from "@finance/db";
+import { and, asc, desc, eq, gte, ilike, inArray, isNotNull, isNull, lte, or, sql } from "drizzle-orm";
+import { bankAccounts, cards, categories, transactions } from "@finance/db";
 import type { TransactionRepository } from "../../../application/ports/transaction-repository";
 import type { DbHandle } from "../handle";
 
@@ -168,6 +168,54 @@ export function createTransactionRepository(db: DbHandle): TransactionRepository
         )
         .groupBy(transactions.categoryId, categories.name, categories.color);
       return rows.map((r) => ({ ...r, total: Number(r.total) }));
+    },
+    async variableExpenseByCategory(workspaceId, from, to) {
+      const rows = await db
+        .select({
+          categoryId: transactions.categoryId,
+          name: categories.name,
+          color: categories.color,
+          total: sql<string>`SUM(${transactions.amount})`,
+        })
+        .from(transactions)
+        .innerJoin(categories, eq(transactions.categoryId, categories.id))
+        .where(
+          and(
+            eq(transactions.workspaceId, workspaceId),
+            isNull(transactions.deletedAt),
+            eq(transactions.type, "expense"),
+            sql`${transactions.method} <> 'transfer'`,
+            isNull(transactions.installmentGroupId),
+            isNull(transactions.recurringId),
+            gte(transactions.date, from),
+            lte(transactions.date, to),
+          ),
+        )
+        .groupBy(transactions.categoryId, categories.name, categories.color);
+      return rows.map((r) => ({ ...r, total: Number(r.total) }));
+    },
+    async listForExport(workspaceId) {
+      const rows = await db
+        .select({
+          date: transactions.date,
+          description: transactions.description,
+          amount: transactions.amount,
+          type: transactions.type,
+          method: transactions.method,
+          categoryName: categories.name,
+          accountName: bankAccounts.name,
+          cardName: cards.name,
+          installmentNumber: transactions.installmentNumber,
+          installmentTotal: transactions.installmentTotal,
+          source: transactions.source,
+        })
+        .from(transactions)
+        .innerJoin(categories, eq(transactions.categoryId, categories.id))
+        .leftJoin(bankAccounts, eq(transactions.accountId, bankAccounts.id))
+        .leftJoin(cards, eq(transactions.cardId, cards.id))
+        .where(and(eq(transactions.workspaceId, workspaceId), isNull(transactions.deletedAt)))
+        .orderBy(asc(transactions.date));
+      return rows;
     },
   };
 }

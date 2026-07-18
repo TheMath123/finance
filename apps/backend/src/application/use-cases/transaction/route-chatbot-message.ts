@@ -115,7 +115,7 @@ export async function resolveAccountOrCard(
  * mudar código, sem lock-in num provedor de IA específico.
  */
 export async function routeChatbotMessage(
-  deps: Pick<UseCaseDeps, "repos" | "uow">,
+  deps: Pick<UseCaseDeps, "repos" | "uow" | "cache">,
   workspaceId: string,
   userId: string,
   text: string,

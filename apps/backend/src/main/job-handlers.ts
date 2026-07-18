@@ -13,7 +13,10 @@ import { sendWhatsAppText } from "../infra/whatsapp/meta-cloud-api";
  * (M2-07); os demais handlers ignoram `deps`.
  */
 export function createJobHandlers(
-  deps: Pick<UseCaseDeps, "repos" | "rateLimiter" | "tokenBudget" | "tokens" | "uow" | "dispatch">,
+  deps: Pick<
+    UseCaseDeps,
+    "repos" | "rateLimiter" | "tokenBudget" | "tokens" | "uow" | "dispatch" | "cache"
+  >,
 ): JobHandlers {
   return {
     "email.password-reset": (p) => mailer.sendPasswordReset(p),

@@ -3,6 +3,7 @@ import { getBank } from '@finance/shared';
 import { router } from 'expo-router';
 import {
   CaretRightIcon,
+  ChartLineUpIcon,
   CreditCardIcon,
   PlusIcon,
   TagIcon,
@@ -139,6 +140,11 @@ export default function AccountsScreen() {
           label="Categorias"
           count={categories?.length ?? 0}
           onPress={() => router.push('/categories')}
+        />
+        <NavRow
+          icon={<ChartLineUpIcon size={18} color="#2563EB" />}
+          label="Gasto variável"
+          onPress={() => router.push('/variable-expense')}
         />
         <NavRow
           icon={<UsersIcon size={18} color="#2563EB" />}

@@ -85,7 +85,10 @@ async function deterministicFallback(
  * em vez de travar o usuário.
  */
 export async function handleInboundWhatsAppMessage(
-  deps: Pick<UseCaseDeps, "repos" | "rateLimiter" | "tokenBudget" | "tokens" | "uow" | "dispatch">,
+  deps: Pick<
+    UseCaseDeps,
+    "repos" | "rateLimiter" | "tokenBudget" | "tokens" | "uow" | "dispatch" | "cache"
+  >,
   message: InboundWhatsAppMessage,
 ): Promise<WhatsAppReply> {
   const user = await deps.repos.user.findByPhone(message.from);

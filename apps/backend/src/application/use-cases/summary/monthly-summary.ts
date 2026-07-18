@@ -1,4 +1,5 @@
 import type { Actor, UseCaseDeps } from "../../deps";
+import { estimateVariableExpense } from "./estimate-variable-expense";
 import { listPendingOccurrences } from "../recurring/list-pending-occurrences";
 
 export interface CategorySummary {
@@ -21,7 +22,8 @@ export interface MonthlySummary {
   /**
    * Disponível projetado até o fim do mês (fórmula do spec):
    * saldos + receitas recorrentes previstas − despesas recorrentes previstas
-   * − faturas não pagas com vencimento até o fim do mês. Null para meses encerrados.
+   * − faturas não pagas com vencimento até o fim do mês − estimativa de
+   * gasto variável pros dias que restam (M2-08). Null para meses encerrados.
    */
   projectedAvailable: number | null;
 }
@@ -38,7 +40,7 @@ function todayIso(): string {
 }
 
 export async function monthlySummary(
-  deps: Pick<UseCaseDeps, "repos">,
+  deps: Pick<UseCaseDeps, "repos" | "cache">,
   actor: Actor,
   year: number,
   month: number,
@@ -62,7 +64,13 @@ export async function monthlySummary(
     // Recorrências previstas (não confirmadas) de hoje até o fim do mês pedido
     let pendingIncome = 0;
     let pendingExpense = 0;
+    // Estimativa de gasto variável (M2-08) — só a fração de dias que ainda
+    // não aconteceram entra na conta (o que já foi gasto no mês corrente já
+    // está refletido em `totalBalance`; contar o mês inteiro dobraria).
+    let variableExpenseTotal = 0;
+    const variableEstimate = await estimateVariableExpense(deps, actor);
     const [ty, tm] = today.split("-").map(Number) as [number, number];
+    const todayDay = Number(today.slice(8, 10));
     let y = ty;
     let m = tm;
     while (y < year || (y === year && m <= month)) {
@@ -72,6 +80,12 @@ export async function monthlySummary(
         if (p.type === "income") pendingIncome += p.amount;
         else pendingExpense += p.amount;
       }
+
+      const daysInMonth = new Date(y, m, 0).getDate();
+      const isCurrentMonth = y === ty && m === tm;
+      const fraction = isCurrentMonth ? (daysInMonth - todayDay + 1) / daysInMonth : 1;
+      variableExpenseTotal += variableEstimate.total * fraction;
+
       m += 1;
       if (m > 12) {
         m = 1;
@@ -88,7 +102,9 @@ export async function monthlySummary(
       if (due <= to) unpaidDue += await deps.repos.invoice.total(invoice.id);
     }
 
-    projectedAvailable = totalBalance + pendingIncome - pendingExpense - unpaidDue;
+    projectedAvailable = Math.round(
+      totalBalance + pendingIncome - pendingExpense - unpaidDue - variableExpenseTotal,
+    );
   }
 
   return {

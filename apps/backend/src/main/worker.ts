@@ -6,6 +6,7 @@ import { createUnitOfWork } from "../infra/db/unit-of-work";
 import { createTokenService } from "../infra/security/jose-token-service";
 import { createRedisRateLimiter } from "../infra/security/redis-rate-limiter";
 import { createRedisTokenBudget } from "../infra/ai/redis-token-budget";
+import { createRedisCache } from "../infra/cache/redis-cache";
 import { createLogger } from "../infra/observability/logger";
 import { createJobHandlers } from "./job-handlers";
 import { loadEnv } from "./env";
@@ -35,6 +36,7 @@ const deps = {
   uow: createUnitOfWork(db),
   rateLimiter: createRedisRateLimiter(env.REDIS_URL),
   tokenBudget: createRedisTokenBudget(env.REDIS_URL),
+  cache: createRedisCache(env.REDIS_URL),
   tokens: createTokenService(env.JWT_SECRET),
   dispatch: dispatcher.dispatch,
 };

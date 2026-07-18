@@ -6,6 +6,7 @@ import type { TokenService } from "./ports/token-service";
 import type { SecurityLogger } from "./ports/logger";
 import type { RateLimiter } from "./ports/rate-limiter";
 import type { TokenBudget } from "./ports/token-budget";
+import type { Cache } from "./ports/cache";
 
 /** Dependências dos use cases — apenas ports (nunca Drizzle/Elysia). */
 export interface UseCaseDeps {
@@ -18,6 +19,8 @@ export interface UseCaseDeps {
   rateLimiter: RateLimiter;
   /** Guardrail de custo de IA (M2-07) — orçamento diário de tokens por usuário. */
   tokenBudget: TokenBudget;
+  /** Cache genérico com TTL (M2-08) — evita recalcular a estimativa de gasto variável a cada request. */
+  cache: Cache;
   termsVersion: string;
 }
 

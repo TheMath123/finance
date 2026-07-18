@@ -1,5 +1,6 @@
 import type { TransactionMethod, TransactionSource, TransactionType } from "@finance/shared";
 import type { Transaction } from "../../domain/entities/transaction";
+import type { TransactionExportRow } from "../../domain/services/transactions-csv";
 
 /** Dados para inserção (id/timestamps são da infra). */
 export interface TransactionDraft {
@@ -73,4 +74,16 @@ export interface TransactionRepository {
     from: string,
     to: string,
   ): Promise<{ categoryId: string; name: string; color: string; total: number }[]>;
+  /**
+   * Igual a `expenseByCategory`, mas só o que é "variável" de verdade —
+   * exclui parcelas (`installmentGroupId`) e recorrências (`recurringId`),
+   * que já entram no disponível projetado por outro caminho (M2-08).
+   */
+  variableExpenseByCategory(
+    workspaceId: string,
+    from: string,
+    to: string,
+  ): Promise<{ categoryId: string; name: string; color: string; total: number }[]>;
+  /** Export CSV (M2-11, LGPD) — todas as transações do workspace, nomes já resolvidos, sem limite de página. */
+  listForExport(workspaceId: string): Promise<TransactionExportRow[]>;
 }

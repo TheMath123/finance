@@ -90,7 +90,7 @@ function todayIso(): string {
 }
 
 async function executeTool(
-  deps: Pick<UseCaseDeps, "repos">,
+  deps: Pick<UseCaseDeps, "repos" | "cache">,
   actor: Actor,
   name: string,
   input: Record<string, unknown>,
@@ -149,7 +149,7 @@ export interface AnalystReply {
  * mas ainda trocável sem lock-in num provedor.
  */
 export async function answerAnalyticalQuestion(
-  deps: Pick<UseCaseDeps, "repos">,
+  deps: Pick<UseCaseDeps, "repos" | "cache">,
   actor: Actor,
   question: string,
 ): Promise<AnalystReply> {
