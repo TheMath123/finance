@@ -54,11 +54,31 @@ as independentes (M2-09/10/11/12) encaixaram onde sobrou capacidade.
 - [03 — Onboarding guiado](backlog/03-onboarding-guiado.md): decidido manter o
   comportamento silencioso atual por enquanto.
 
-## Próximo milestone
+## M3 — camada social + anexo de comprovante
 
-M3 (camada social — transferências entre usuários, split de despesas,
-anexo de comprovante) ainda não foi quebrado em tasks individuais. Ver
-`spec.md`, seção Milestones.
+Planejado em 2026-07-19, logo após o fechamento do M2. Modelos de dados
+(`InterUserTransfer`, `TrustedContact`, `ExpenseSplit`, `SplitShare`) já
+vinham fechados desde o spec original — faltava só quebrar em tasks.
+Ordem sugerida: M3-01 (storage) primeiro só por ser pré-requisito do
+anexo de comprovante; M3-02 e M3-03 são independentes entre si e do
+storage, dá pra fazer em paralelo ou em qualquer ordem; M3-04 depende do
+M3-01; M3-05 depende do M3-01 e do M3-04.
+
+| # | Tarefa | Status | Depende de |
+|---|---|---|---|
+| M3-01 | [Infra de storage de arquivos (S3/R2)](in-progress/m3-01-infra-storage-arquivos.md) | 🟡 Em andamento | — |
+| M3-02 | [Transferência entre usuários + contato confiável](m3-02-transferencia-entre-usuarios.md) | 🔵 Backlog | M2-10, M2-01 |
+| M3-03 | [Split de despesas](m3-03-split-despesas.md) | 🔵 Backlog | M2-10 |
+| M3-04 | [Anexo de comprovante nas transações (app)](m3-04-anexo-comprovante-app.md) | 🔵 Backlog | M3-01 |
+| M3-05 | [Anexo de comprovante via WhatsApp (foto no chatbot)](m3-05-anexo-comprovante-whatsapp.md) | 🔵 Backlog | M3-01, M3-04, M2-06 |
+
+Cada task tem uma seção "Próximo passo" com decisões de produto em
+aberto — vale ler antes de começar a implementar (prazo de expiração de
+transferência, se split pode ser editado depois de criado, limite de
+tamanho de arquivo, janela de associação foto→transação no WhatsApp).
+M3-01 já decidiu S3 vs R2: **AWS S3 agora**, migração pra Cloudflare R2
+prevista — client genérico (S3-compatible), nomes de env sem "AWS" pra
+não precisar renomear nada na troca.
 
 ## Histórico do M1
 
