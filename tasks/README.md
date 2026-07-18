@@ -21,7 +21,7 @@ onde sobrar capacidade.
 | M2-09 | [Auto-lançamento de recorrências (job)](m2-09-auto-lancamento-recorrencias.md) | 🟢 Concluída | M2-01 |
 | M2-10 | [Sistema de notificações + push](m2-10-notificacoes-push.md) | 🟢 Concluída | M2-01 |
 | M2-11 | [Export CSV (LGPD)](m2-11-export-csv-lgpd.md) | 🟢 Concluída | — |
-| M2-12 | [Biometria para abrir o app](m2-12-biometria-app.md) | 🔵 Backlog | — |
+| M2-12 | [Biometria para abrir o app](m2-12-biometria-app.md) | 🟢 Concluída | — |
 
 **Legenda:** 🔵 Backlog (não iniciada) · 🟡 Em andamento · 🟢 Concluída/decidida · ⚪ Bloqueada
 

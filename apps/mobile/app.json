@@ -42,7 +42,13 @@
           "color": "#208AEF"
         }
       ],
-      "expo-sharing"
+      "expo-sharing",
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Usamos Face ID pra travar o app com biometria."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

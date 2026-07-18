@@ -1,5 +1,7 @@
 import { Redirect, Stack } from 'expo-router';
 
+import { BiometricLockScreen } from '@/components/biometric-lock-screen';
+import { BiometricLockProvider, useBiometricLock } from '@/context/biometric-lock';
 import { useSession } from '@/context/session';
 
 /**
@@ -10,11 +12,21 @@ import { useSession } from '@/context/session';
  * isso, o Tabs headless (expo-router/ui) só conhece as 3 rotas registradas
  * como TabTrigger e ignora silenciosamente qualquer push pra rota irmã.
  */
+function AppStack() {
+  const { ready, locked } = useBiometricLock();
+  if (ready && locked) return <BiometricLockScreen />;
+  return <Stack screenOptions={{ headerShown: false }} />;
+}
+
 export default function AppLayout() {
   const { user, isLoading } = useSession();
 
   if (isLoading) return null;
   if (!user) return <Redirect href="/login" />;
 
-  return <Stack screenOptions={{ headerShown: false }} />;
+  return (
+    <BiometricLockProvider>
+      <AppStack />
+    </BiometricLockProvider>
+  );
 }

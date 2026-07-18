@@ -23,3 +23,11 @@ export const workspaceStore = {
   setActiveWorkspaceId: (workspaceId: string) => SecureStore.setItemAsync(ACTIVE_WORKSPACE_KEY, workspaceId),
   clearActiveWorkspaceId: () => SecureStore.deleteItemAsync(ACTIVE_WORKSPACE_KEY),
 };
+
+const BIOMETRIC_ENABLED_KEY = 'auth.biometricEnabled';
+
+/** Preferência de trava por biometria (M2-12) — não é segredo, mas reaproveita o mesmo storage por simplicidade. */
+export const biometricStore = {
+  getEnabled: async () => (await SecureStore.getItemAsync(BIOMETRIC_ENABLED_KEY)) === '1',
+  setEnabled: (enabled: boolean) => SecureStore.setItemAsync(BIOMETRIC_ENABLED_KEY, enabled ? '1' : '0'),
+};

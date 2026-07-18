@@ -1,19 +1,22 @@
 import { router } from 'expo-router';
-import { ArrowLeftIcon, EnvelopeIcon, SignOutIcon, TrashIcon, UserIcon, WarningIcon } from 'phosphor-react-native';
+import { ArrowLeftIcon, EnvelopeIcon, FingerprintIcon, SignOutIcon, TrashIcon, UserIcon, WarningIcon } from 'phosphor-react-native';
 import { useState } from 'react';
-import { Alert, Pressable, View } from 'react-native';
+import { Alert, Pressable, Switch, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { PasswordInput } from '@/components/ui/password-input';
 import { Screen } from '@/components/ui/screen';
+import { useBiometricLock } from '@/context/biometric-lock';
 import { useSession } from '@/context/session';
 import { ApiError } from '@/lib/api-client';
 import { authApi } from '@/lib/auth-api';
 
 export default function ProfileScreen() {
   const { user, signOut } = useSession();
+  const { available: biometricsAvailable, enabled: biometricsEnabled, setEnabled: setBiometricsEnabled } =
+    useBiometricLock();
   const [signingOut, setSigningOut] = useState(false);
   const [deletePassword, setDeletePassword] = useState('');
   const [deletingAccount, setDeletingAccount] = useState(false);
@@ -96,6 +99,25 @@ export default function ProfileScreen() {
           <Button variant="ghost" onPress={() => router.push('/verify-email')}>
             Verificar
           </Button>
+        </Card>
+      )}
+
+      {biometricsAvailable && (
+        <Card className="flex-row items-center gap-3">
+          <View className="h-9 w-9 items-center justify-center rounded-full bg-primary/10">
+            <FingerprintIcon size={18} color="#2563EB" />
+          </View>
+          <View className="flex-1">
+            <ThemedText type="smallBold">Travar com biometria</ThemedText>
+            <ThemedText type="small" themeColor="textSecondary">
+              Pede biometria ao abrir o app ou voltar do segundo plano.
+            </ThemedText>
+          </View>
+          <Switch
+            value={biometricsEnabled}
+            onValueChange={setBiometricsEnabled}
+            trackColor={{ false: '#d4d4d8', true: '#2563EB' }}
+          />
         </Card>
       )}
 

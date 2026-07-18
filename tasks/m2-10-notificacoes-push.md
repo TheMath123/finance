@@ -37,8 +37,11 @@ dentro desse sistema (antes era um card em `/workspaces`).
     `closed` (igual à leitura lazy já fazia) + notifica `invoice_closed`.
   - Fatura `closed` (não paga) cujo `due_day` é hoje → notifica `invoice_due`.
   - Recorrência ativa com ocorrência prevista pra hoje e ainda não confirmada
-    → notifica `recurring_pending`. **Não confirma sozinha** (isso é o
-    M2-09, auto-lançamento, que continua não implementado — aqui só avisa).
+    → notifica `recurring_pending`. Na época em que essa nota foi escrita o
+    M2-09 (auto-lançamento) ainda não existia — hoje ele já roda antes
+    desse aviso no mesmo sweep (ver [[m2-09-auto-lancamento-recorrencias]]),
+    então na prática esse caminho só dispara pra recorrências que o
+    auto-lançamento não conseguiu confirmar sozinho.
   - Dedup por `entityKey` (`data->>'entityKey'`) — rodar de novo não duplica.
 - Convite de workspace (`create-invite.ts`) agora notifica o convidado (se ele
   já tem conta) — mesma lógica de "só quando é e-mail e o usuário existe" que
