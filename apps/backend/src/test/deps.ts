@@ -7,6 +7,7 @@ import { createTokenService } from "../infra/security/jose-token-service";
 import { createInMemoryRateLimiter } from "../infra/security/in-memory-rate-limiter";
 import { createInMemoryTokenBudget } from "../infra/ai/in-memory-token-budget";
 import { createInMemoryCache } from "../infra/cache/in-memory-cache";
+import { createInMemoryStorage } from "../infra/storage/in-memory-storage";
 import type { UseCaseDeps } from "../application/deps";
 
 export type DispatchedJob = { name: JobName; payload: JobPayloads[JobName] };
@@ -25,6 +26,7 @@ export function createTestDeps(db: Db, jobs: DispatchedJob[] = []): UseCaseDeps 
     rateLimiter: createInMemoryRateLimiter(),
     tokenBudget: createInMemoryTokenBudget(),
     cache: createInMemoryCache(),
+    storage: createInMemoryStorage(),
     termsVersion: "test",
   };
 }

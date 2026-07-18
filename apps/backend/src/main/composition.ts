@@ -7,6 +7,7 @@ import { createTokenService } from "../infra/security/jose-token-service";
 import { createRedisRateLimiter } from "../infra/security/redis-rate-limiter";
 import { createRedisTokenBudget } from "../infra/ai/redis-token-budget";
 import { createRedisCache } from "../infra/cache/redis-cache";
+import { createS3CompatibleStorage } from "../infra/storage/s3-compatible-storage";
 import { createLogger } from "../infra/observability/logger";
 import { createSecurityLogger } from "../infra/observability/pino-security-logger";
 import type { AppDeps } from "../http/deps";
@@ -34,6 +35,7 @@ export function createAppDeps(env: Env): AppDeps {
     rateLimiter: createRedisRateLimiter(env.REDIS_URL),
     tokenBudget: createRedisTokenBudget(env.REDIS_URL),
     cache: createRedisCache(env.REDIS_URL),
+    storage: createS3CompatibleStorage(),
     termsVersion: env.TERMS_VERSION,
     trustProxy: env.TRUST_PROXY,
     httpLogger: logger,

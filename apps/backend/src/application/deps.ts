@@ -7,6 +7,7 @@ import type { SecurityLogger } from "./ports/logger";
 import type { RateLimiter } from "./ports/rate-limiter";
 import type { TokenBudget } from "./ports/token-budget";
 import type { Cache } from "./ports/cache";
+import type { Storage } from "./ports/storage";
 
 /** Dependências dos use cases — apenas ports (nunca Drizzle/Elysia). */
 export interface UseCaseDeps {
@@ -21,6 +22,8 @@ export interface UseCaseDeps {
   tokenBudget: TokenBudget;
   /** Cache genérico com TTL (M2-08) — evita recalcular a estimativa de gasto variável a cada request. */
   cache: Cache;
+  /** Storage de arquivos S3-compatible (M3-01) — anexo de comprovante (M3-04/M3-05) plugam aqui. */
+  storage: Storage;
   termsVersion: string;
 }
 

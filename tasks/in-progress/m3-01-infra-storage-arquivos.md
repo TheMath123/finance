@@ -41,10 +41,47 @@ pras URLs assinadas. Nomes de env **genéricos** (`STORAGE_*`, nunca
 Nenhuma técnica — mas é pré-requisito de
 [[m3-04-anexo-comprovante-app]]/[[m3-05-anexo-comprovante-whatsapp]].
 
+## Implementação
+
+- `application/ports/storage.ts` — port `Storage`: `upload(key, body,
+  contentType)`, `getSignedReadUrl(key, ttlSeconds)`, `delete(key)`. A
+  regra de nomeação de `key` (ex.: `{workspaceId}/{transactionId}/{uuid}.
+  {ext}`) é responsabilidade de quem chama (M3-04/M3-05) — o port em si é
+  genérico, não sabe de transação/workspace.
+- `infra/storage/env.ts` — env lazy (só valida no primeiro uso real, não
+  no boot): `STORAGE_BUCKET`, `STORAGE_REGION`,
+  `STORAGE_ACCESS_KEY_ID`/`STORAGE_SECRET_ACCESS_KEY`, e dois campos só
+  relevantes na troca futura pra R2 — `STORAGE_ENDPOINT` (opcional, vazio
+  = endpoint padrão da AWS) e `STORAGE_FORCE_PATH_STYLE` (default
+  `false`, R2 geralmente precisa `true`).
+- `infra/storage/s3-compatible-storage.ts` — `createS3CompatibleStorage()`,
+  via `@aws-sdk/client-s3` (`PutObjectCommand`/`GetObjectCommand`/
+  `DeleteObjectCommand`) + `@aws-sdk/s3-request-presigner`
+  (`getSignedUrl`) pra `getSignedReadUrl`. Client S3 e nome do bucket
+  cacheados no primeiro uso (mesmo padrão de `getClaudeClient`/
+  `getAiClient` de sessões anteriores).
+- `infra/storage/in-memory-storage.ts` — test double (`Map`), pro mesmo
+  padrão de `infra/cache`/`infra/ai`.
+- `storage: Storage` somado em `UseCaseDeps` (nasce pronto pra
+  [[m3-04-anexo-comprovante-app]] plugar sem refatoração, mesma filosofia
+  do M1 pro pipeline de IA) — `composition.ts` usa
+  `createS3CompatibleStorage()`, `test/deps.ts` usa
+  `createInMemoryStorage()`. Limite de tamanho/tipo de arquivo fica pra
+  [[m3-04-anexo-comprovante-app]] (é regra de validação na borda da rota
+  de upload, não do client de storage em si).
+
+## Testes
+
+`in-memory-storage.test.ts` (3 casos): upload + leitura, leitura de chave
+inexistente falha, delete remove a chave. 109/109 testes da suíte do
+backend passando, typecheck limpo. **Não validado contra a AWS real** —
+bucket/credenciais ainda não configurados neste ambiente (mesmo padrão de
+toda integração externa deste projeto: sobe sem a chave, só falha no
+primeiro uso real).
+
 ## Próximo passo
 
-Resolvido — ver decisão acima. Falta só o usuário criar o bucket S3 na AWS
-e gerar as credenciais (`STORAGE_ACCESS_KEY_ID`/`STORAGE_SECRET_ACCESS_KEY`)
-antes de dar pra testar contra a conta real (mesmo padrão de toda env
-externa neste projeto: o código sobe sem a chave configurada, só falha no
-primeiro uso real).
+Pra validar de verdade: criar o bucket S3 na AWS, gerar um usuário
+IAM com permissão restrita a esse bucket (`s3:PutObject`/`GetObject`/
+`DeleteObject`), preencher as envs. [[m3-04-anexo-comprovante-app]] pode
+começar assim que isso acontecer — o client já está pronto.
