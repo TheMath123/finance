@@ -13,6 +13,7 @@ import { summaryRoutes } from "../http/modules/summary/routes";
 import { notificationRoutes } from "../http/modules/notification/routes";
 import { whatsappRoutes } from "../http/modules/whatsapp/routes";
 import { transferRoutes } from "../http/modules/transfer/routes";
+import { splitRoutes } from "../http/modules/split/routes";
 import type { AppDeps } from "../http/deps";
 
 export function createApp(deps: AppDeps) {
@@ -31,5 +32,6 @@ export function createApp(deps: AppDeps) {
     .use(summaryRoutes(deps))
     .use(notificationRoutes(deps))
     .use(whatsappRoutes(deps))
-    .use(transferRoutes(deps));
+    .use(transferRoutes(deps))
+    .use(splitRoutes(deps));
 }

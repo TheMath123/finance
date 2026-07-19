@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { getBank } from '@finance/shared';
 import { router } from 'expo-router';
 import {
+  ArrowsSplitIcon,
   CaretRightIcon,
   ChartLineUpIcon,
   CreditCardIcon,
@@ -27,6 +28,7 @@ import { cardsApi } from '@/lib/cards-api';
 import { categoriesApi } from '@/lib/categories-api';
 import { cn } from '@/lib/cn';
 import { formatCents } from '@/lib/money';
+import { splitApi } from '@/lib/split-api';
 import { transferApi } from '@/lib/transfer-api';
 import { workspaceApi } from '@/lib/workspace-api';
 
@@ -100,6 +102,15 @@ export default function AccountsScreen() {
     queryKey: ['transfers-pending'],
     queryFn: transferApi.listPending,
   });
+  const { data: owedByMe } = useQuery({
+    queryKey: ['splits-owed-by-me'],
+    queryFn: splitApi.listOwedByMe,
+  });
+  const { data: owedToMe } = useQuery({
+    queryKey: ['splits-owed-to-me'],
+    queryFn: splitApi.listOwedToMe,
+  });
+  const pendingSplitsCount = (owedByMe?.length ?? 0) + (owedToMe?.length ?? 0);
 
   const bankName = (bankCode: string) => getBank(bankCode)?.name ?? bankCode;
 
@@ -191,6 +202,14 @@ export default function AccountsScreen() {
           label="Contatos confiáveis"
           onPress={() => router.push('/trusted-contacts')}
         />
+        {pendingSplitsCount > 0 && (
+          <NavRow
+            icon={<ArrowsSplitIcon size={18} color="#2563EB" />}
+            label="Splits pendentes"
+            count={pendingSplitsCount}
+            onPress={() => router.push('/splits')}
+          />
+        )}
         <NavRow
           icon={<WhatsappLogoIcon size={18} color="#2563EB" />}
           label="WhatsApp"

@@ -38,6 +38,14 @@ const TYPE_LABELS: Record<NotificationType, { title: string; description: string
     title: 'Transferência aceita',
     description: 'Quando uma transferência que você enviou é aceita.',
   },
+  split_payment_pending: {
+    title: 'Parte de split pendente',
+    description: 'Quando alguém divide uma despesa com você.',
+  },
+  split_reimbursement_confirmed: {
+    title: 'Reembolso de split confirmado',
+    description: 'Quando seu pagamento de uma parte é confirmado.',
+  },
 };
 
 export default function NotificationSettingsScreen() {

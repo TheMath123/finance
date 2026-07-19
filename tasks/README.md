@@ -68,7 +68,7 @@ M3-01; M3-05 depende do M3-01 e do M3-04.
 |---|---|---|---|
 | M3-01 | [Infra de storage de arquivos (S3/R2)](in-progress/m3-01-infra-storage-arquivos.md) | 🟡 Em andamento (falta criar os buckets no R2 e validar) | — |
 | M3-02 | [Transferência entre usuários + contato confiável](done/m3-02-transferencia-entre-usuarios.md) | 🟢 Concluída | M2-10 |
-| M3-03 | [Split de despesas](m3-03-split-despesas.md) | 🔵 Backlog | M2-10 |
+| M3-03 | [Split de despesas](done/m3-03-split-despesas.md) | 🟢 Concluída | M2-10 |
 | M3-04 | [Anexo de comprovante nas transações (app)](m3-04-anexo-comprovante-app.md) | 🔵 Backlog | M3-01 |
 | M3-05 | [Anexo de comprovante via WhatsApp (foto no chatbot)](m3-05-anexo-comprovante-whatsapp.md) | 🔵 Backlog | M3-01, M3-04, M2-06 |
 
@@ -79,7 +79,9 @@ associação foto→transação no WhatsApp). M3-01 decidiu usar **Cloudflare
 R2** direto (client S3-compatible genérico, extraído pro pacote
 `@finance/storage` — nomes de env sem "AWS"/"R2" pra não precisar
 renomear numa troca futura de provedor); M3-02 já fechou o prazo de
-expiração da transferência em 30 dias (spec).
+expiração da transferência em 30 dias (spec); M3-03 decidiu que split
+criado só pode ser cancelado (nunca editado), e só enquanto nenhuma parte
+foi paga/confirmada.
 
 ## Histórico do M1
 

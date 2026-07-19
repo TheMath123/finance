@@ -1,0 +1,16 @@
+export type SplitError =
+  | "transaction_not_found"
+  | "not_an_expense"
+  | "unsupported_method"
+  | "already_split"
+  | "no_participants"
+  | "participant_not_found"
+  | "self_participant"
+  | "invalid_amount"
+  | "amounts_exceed_total"
+  | "split_not_found"
+  | "not_creator"
+  | "shares_already_settled"
+  | "share_not_found"
+  | "not_participant"
+  | "invalid_transition";

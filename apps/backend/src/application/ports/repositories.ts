@@ -16,6 +16,8 @@ import type { PushTokenRepository } from "./push-token-repository";
 import type { WhatsAppLinkCodeRepository } from "./whatsapp-link-code-repository";
 import type { InterUserTransferRepository } from "./inter-user-transfer-repository";
 import type { TrustedContactRepository } from "./trusted-contact-repository";
+import type { ExpenseSplitRepository } from "./expense-split-repository";
+import type { SplitShareRepository } from "./split-share-repository";
 
 /** Conjunto completo de repositórios — fora e dentro do Unit of Work. */
 export interface Repositories {
@@ -37,4 +39,6 @@ export interface Repositories {
   whatsappLinkCode: WhatsAppLinkCodeRepository;
   interUserTransfer: InterUserTransferRepository;
   trustedContact: TrustedContactRepository;
+  expenseSplit: ExpenseSplitRepository;
+  splitShare: SplitShareRepository;
 }

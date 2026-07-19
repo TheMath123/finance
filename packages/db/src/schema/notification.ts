@@ -16,6 +16,8 @@ export const notificationTypeEnum = pgEnum("notification_type", [
   "whatsapp_linked",
   "transfer_pending",
   "transfer_accepted",
+  "split_payment_pending",
+  "split_reimbursement_confirmed",
 ]);
 
 export const notifications = pgTable(

@@ -18,6 +18,8 @@ import { createPushTokenRepository } from "./push-token.repository";
 import { createWhatsAppLinkCodeRepository } from "./whatsapp-link-code.repository";
 import { createInterUserTransferRepository } from "./inter-user-transfer.repository";
 import { createTrustedContactRepository } from "./trusted-contact.repository";
+import { createExpenseSplitRepository } from "./expense-split.repository";
+import { createSplitShareRepository } from "./split-share.repository";
 
 /** Fábrica única: mesmo conjunto para o client raiz e para a transação (UoW). */
 export function createRepositories(db: DbHandle): Repositories {
@@ -40,5 +42,7 @@ export function createRepositories(db: DbHandle): Repositories {
     whatsappLinkCode: createWhatsAppLinkCodeRepository(db),
     interUserTransfer: createInterUserTransferRepository(db),
     trustedContact: createTrustedContactRepository(db),
+    expenseSplit: createExpenseSplitRepository(db),
+    splitShare: createSplitShareRepository(db),
   };
 }

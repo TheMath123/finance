@@ -1,5 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { View } from 'react-native';
 
@@ -14,6 +15,7 @@ import { ApiError } from '@/lib/api-client';
 import { useCategories } from '@/lib/hooks/use-categories';
 import { editTransactionSchema, type EditTransactionInput } from '@/lib/schemas/finance';
 import { transactionsApi, type Transaction } from '@/lib/transactions-api';
+import { CreateSplitForm } from './create-split-form';
 
 /**
  * Só descrição, valor, categoria e data são editáveis (tipo/método/conta
@@ -30,6 +32,7 @@ export function EditTransactionForm({
 }) {
   const { workspaceId } = useSession();
   const queryClient = useQueryClient();
+  const [splitting, setSplitting] = useState(false);
 
   const { data: categories } = useCategories(workspaceId);
 
@@ -54,6 +57,11 @@ export function EditTransactionForm({
   });
 
   const categoryOptions = (categories ?? []).map((c) => ({ label: c.name, value: c.id }));
+  const canSplit = transaction.type === 'expense' && Boolean(transaction.accountId);
+
+  if (splitting) {
+    return <CreateSplitForm transaction={transaction} onDone={onDone} />;
+  }
 
   return (
     <View className="gap-4">
@@ -75,6 +83,11 @@ export function EditTransactionForm({
       <Button loading={mutation.isPending} onPress={handleSubmit((input) => mutation.mutate(input))}>
         Salvar alterações
       </Button>
+      {canSplit && (
+        <Button variant="outline" onPress={() => setSplitting(true)}>
+          Dividir com outras pessoas
+        </Button>
+      )}
       {onDelete && (
         <Button variant="ghost" textClassName="text-destructive" onPress={onDelete}>
           Excluir transação

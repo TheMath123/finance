@@ -14,6 +14,7 @@ export function createTransactionRepository(db: DbHandle): TransactionRepository
       db.query.transactions.findFirst({
         where: and(eq(transactions.id, id), eq(transactions.workspaceId, workspaceId)),
       }),
+    findById: (id) => db.query.transactions.findFirst({ where: eq(transactions.id, id) }),
     listByGroup: (installmentGroupId) =>
       db.query.transactions.findMany({
         where: eq(transactions.installmentGroupId, installmentGroupId),

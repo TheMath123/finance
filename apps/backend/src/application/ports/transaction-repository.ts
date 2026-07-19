@@ -49,6 +49,8 @@ export interface TransactionFilters {
 export interface TransactionRepository {
   create(draft: TransactionDraft): Promise<Transaction>;
   findInWorkspace(workspaceId: string, id: string): Promise<Transaction | undefined>;
+  /** Sem escopo de workspace — só pra uso interno quando a propriedade já foi validada por outro caminho (ex.: criador de um split, M3-03). */
+  findById(id: string): Promise<Transaction | undefined>;
   listByGroup(installmentGroupId: string): Promise<Transaction[]>;
   update(id: string, patch: TransactionPatch): Promise<Transaction>;
   softDelete(id: string): Promise<void>;

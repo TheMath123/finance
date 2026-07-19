@@ -12,6 +12,8 @@ export interface Transaction {
   /** Competência local (YYYY-MM-DD). */
   date: string;
   categoryId: string;
+  /** Presente quando o método não é credit — split (M3-03) só é possível com conta de origem. */
+  accountId: string | null;
 }
 
 export interface ListTransactionsFilters {

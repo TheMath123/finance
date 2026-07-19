@@ -21,3 +21,4 @@ export * from "./whatsapp-link-code";
 export * from "./whatsapp-link";
 export * from "./inter-user-transfer";
 export * from "./trusted-contact";
+export * from "./expense-split";

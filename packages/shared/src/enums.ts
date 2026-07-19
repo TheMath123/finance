@@ -51,8 +51,13 @@ export const NOTIFICATION_TYPES = [
   "whatsapp_linked",
   "transfer_pending",
   "transfer_accepted",
+  "split_payment_pending",
+  "split_reimbursement_confirmed",
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 
 export const INTER_USER_TRANSFER_STATUSES = ["pending", "accepted", "rejected", "expired"] as const;
 export type InterUserTransferStatus = (typeof INTER_USER_TRANSFER_STATUSES)[number];
+
+export const SPLIT_SHARE_STATUSES = ["pending", "paid", "confirmed"] as const;
+export type SplitShareStatus = (typeof SPLIT_SHARE_STATUSES)[number];

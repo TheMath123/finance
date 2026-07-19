@@ -2,6 +2,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import {
   ArchiveIcon,
+  ArrowsSplitIcon,
   BellIcon,
   CalendarCheckIcon,
   CreditCardIcon,
@@ -29,6 +30,8 @@ const TYPE_ICONS: Record<string, typeof BellIcon> = {
   whatsapp_linked: WhatsappLogoIcon,
   transfer_pending: HandCoinsIcon,
   transfer_accepted: PaperPlaneTiltIcon,
+  split_payment_pending: ArrowsSplitIcon,
+  split_reimbursement_confirmed: ArrowsSplitIcon,
 };
 
 function timeAgo(iso: string): string {
