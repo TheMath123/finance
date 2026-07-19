@@ -19,8 +19,12 @@ interface ParticipantRow {
   amount: string;
 }
 
+let rowKeySeq = 0;
+
+/** Chave só pra lista local do form (key do React) — não precisa de aleatoriedade criptográfica. */
 function newRow(type: ParticipantRow['type']): ParticipantRow {
-  return { key: crypto.randomUUID(), type, value: '', amount: '' };
+  rowKeySeq += 1;
+  return { key: `row-${Date.now()}-${rowKeySeq}`, type, value: '', amount: '' };
 }
 
 export function CreateSplitForm({ transaction, onDone }: { transaction: Transaction; onDone: () => void }) {
