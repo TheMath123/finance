@@ -1,3 +1,4 @@
+import { alias } from "drizzle-orm/pg-core";
 import { and, asc, desc, eq, gte, ilike, inArray, isNotNull, isNull, lte, or, sql } from "drizzle-orm";
 import { bankAccounts, cards, categories, transactions } from "@finance/db";
 import type { TransactionRepository } from "../../../application/ports/transaction-repository";
@@ -206,6 +207,10 @@ export function createTransactionRepository(db: DbHandle): TransactionRepository
       return rows.map((r) => ({ ...r, total: Number(r.total) }));
     },
     async listForExport(workspaceId) {
+      // Auditoria de segurança (2026-07-19): junta toAccountId (destino, method=transfer)
+      // via alias — sem isso, o CSV de portabilidade LGPD perdia a conta de destino em
+      // transferências entre contas.
+      const toAccounts = alias(bankAccounts, "to_accounts");
       const rows = await db
         .select({
           date: transactions.date,
@@ -215,6 +220,7 @@ export function createTransactionRepository(db: DbHandle): TransactionRepository
           method: transactions.method,
           categoryName: categories.name,
           accountName: bankAccounts.name,
+          toAccountName: toAccounts.name,
           cardName: cards.name,
           installmentNumber: transactions.installmentNumber,
           installmentTotal: transactions.installmentTotal,
@@ -223,6 +229,7 @@ export function createTransactionRepository(db: DbHandle): TransactionRepository
         .from(transactions)
         .innerJoin(categories, eq(transactions.categoryId, categories.id))
         .leftJoin(bankAccounts, eq(transactions.accountId, bankAccounts.id))
+        .leftJoin(toAccounts, eq(transactions.toAccountId, toAccounts.id))
         .leftJoin(cards, eq(transactions.cardId, cards.id))
         .where(and(eq(transactions.workspaceId, workspaceId), isNull(transactions.deletedAt)))
         .orderBy(asc(transactions.date));

@@ -1,4 +1,5 @@
 import { left, right, type Either } from "@finance/shared";
+import { isLocked, nextLockoutState } from "../../../domain/services/lockout-rules";
 import type { UseCaseDeps } from "../../deps";
 import type { AuthError } from "./errors";
 
@@ -33,8 +34,20 @@ export async function deleteAccount(
   const user = await deps.repos.user.findById(input.userId);
   if (!user) return left("invalid_credentials");
 
+  // Reaproveita o lockout progressivo do login (auditoria 2026-07-19): reautenticação
+  // pra uma ação irreversível merece a mesma proteção contra força bruta de senha.
+  const now = new Date();
+  if (isLocked(user.lockedUntil, now)) return left("invalid_credentials");
+
   const valid = await deps.hasher.verify(input.password, user.passwordHash);
-  if (!valid) return left("invalid_credentials");
+  if (!valid) {
+    const { attempts, lockedUntil } = nextLockoutState(user.failedLoginAttempts, now);
+    await deps.repos.user.recordLoginFailure(user.id, attempts, lockedUntil);
+    return left("invalid_credentials");
+  }
+  if (user.failedLoginAttempts > 0 || user.lockedUntil) {
+    await deps.repos.user.resetLock(user.id);
+  }
 
   const memberships = await deps.repos.workspace.listByUser(user.id);
   const ownedWorkspaceIds = memberships.filter((m) => m.role === "owner").map((m) => m.workspace.id);

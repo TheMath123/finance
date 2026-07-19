@@ -48,12 +48,14 @@ export function createInvoiceRepository(db: DbHandle): InvoiceRepository {
       await db.update(cardInvoices).set({ status }).where(eq(cardInvoices.id, invoiceId));
     },
     async markPaid(invoiceId, paymentTransactionId) {
+      // Condicional (WHERE status <> 'paid') — fecha a corrida de duas chamadas
+      // paralelas de pagamento gerarem dois pagamentos reais (auditoria 2026-07-19).
+      // undefined = outra chamada já marcou paga primeiro.
       const [row] = await db
         .update(cardInvoices)
         .set({ status: "paid", paymentTransactionId })
-        .where(eq(cardInvoices.id, invoiceId))
+        .where(and(eq(cardInvoices.id, invoiceId), ne(cardInvoices.status, "paid")))
         .returning();
-      if (!row) throw new Error("falha ao marcar fatura como paga");
       return row;
     },
     async total(invoiceId) {

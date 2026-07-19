@@ -156,6 +156,41 @@ describe("recorrências: previstas e confirmação", () => {
     if (!again.ok) expect(again.error).toBe("occurrence_already_confirmed");
   });
 
+  test("duas confirmações paralelas da mesma ocorrência: só uma vence, nunca duas transações", async () => {
+    const created = await createRecurring(deps, actor, {
+      description: "Assinatura",
+      amount: 5_000,
+      type: "expense",
+      method: "pix",
+      categoryId: housingCategoryId,
+      accountId,
+      frequency: "monthly",
+      dayOfReference: 12,
+    });
+    if (!created.ok) throw new Error("setup falhou");
+
+    const pending = await listPendingOccurrences(deps, actor, YEAR, MONTH);
+    const occurrence = pending.find((p) => p.recurringId === created.value.id);
+    if (!occurrence) throw new Error("ocorrência não encontrada na lista de previstas");
+
+    const [first, second] = await Promise.all([
+      confirmOccurrence(deps, actor, created.value.id, occurrence.date),
+      confirmOccurrence(deps, actor, created.value.id, occurrence.date),
+    ]);
+
+    const results = [first, second];
+    expect(results.filter((r) => r.ok)).toHaveLength(1);
+    const failed = results.find((r) => !r.ok);
+    expect(failed && !failed.ok ? failed.error : null).toBe("occurrence_already_confirmed");
+
+    const materialized = await deps.repos.transaction.findByRecurringAndDate(created.value.id, occurrence.date);
+    expect(materialized).toBeDefined();
+
+    // Limpa o efeito colateral (soft delete) — outros testes deste arquivo dependem
+    // do saldo/projeção acumulados na conta compartilhada, sem interferência deste teste.
+    if (materialized) await deps.repos.transaction.softDelete(materialized.id);
+  });
+
   test("regra inválida é rejeitada (yearly sem mês; weekly com dia 8)", async () => {
     const noMonth = await createRecurring(deps, actor, {
       description: "Anual",

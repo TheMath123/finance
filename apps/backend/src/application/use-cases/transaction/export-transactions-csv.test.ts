@@ -59,13 +59,16 @@ async function newWorkspace() {
     .insert(banks)
     .values({ workspaceId: workspace.id, name: "Inter", bankCode: "inter" })
     .returning();
-  const [account] = await db
+  const [account, secondAccount] = await db
     .insert(bankAccounts)
-    .values({ workspaceId: workspace.id, bankId: bank!.id, name: "Conta", type: "checking", initialBalance: 0 })
+    .values([
+      { workspaceId: workspace.id, bankId: bank!.id, name: "Conta", type: "checking", initialBalance: 0 },
+      { workspaceId: workspace.id, bankId: bank!.id, name: "Poupança", type: "savings", initialBalance: 0 },
+    ])
     .returning();
 
   const actor: Actor = { userId: user.id, workspaceId: workspace.id, role: "owner" };
-  return { deps, actor, marketCategoryId, accountId: account!.id };
+  return { deps, actor, marketCategoryId, accountId: account!.id, secondAccountId: secondAccount!.id };
 }
 
 describe("exportTransactionsCsv", () => {
@@ -73,7 +76,7 @@ describe("exportTransactionsCsv", () => {
     const { deps, actor } = await newWorkspace();
     const csv = await exportTransactionsCsv(deps, actor);
     expect(csv.split("\r\n")).toHaveLength(1);
-    expect(csv).toContain("Data,Descrição,Valor,Tipo,Método,Categoria,Conta,Cartão,Parcela,Origem");
+    expect(csv).toContain("Data,Descrição,Valor,Tipo,Método,Categoria,Conta,Conta destino,Cartão,Parcela,Origem");
   });
 
   test("inclui transação lançada, com nome de categoria e conta resolvidos", async () => {
@@ -92,7 +95,26 @@ describe("exportTransactionsCsv", () => {
     const csv = await exportTransactionsCsv(deps, actor);
     const lines = csv.split("\r\n");
     expect(lines).toHaveLength(2);
-    expect(lines[1]).toBe("2026-07-10,compra no mercado,50.00,Despesa,Pix,Mercado,Conta,,,App");
+    expect(lines[1]).toBe("2026-07-10,compra no mercado,50.00,Despesa,Pix,Mercado,Conta,,,,App");
+  });
+
+  test("transferência: conta de destino aparece na coluna própria (auditoria 2026-07-19)", async () => {
+    const { deps, actor, marketCategoryId, accountId, secondAccountId } = await newWorkspace();
+    const result = await createTransaction(deps, actor, {
+      description: "transferência entre contas",
+      amount: 2_000,
+      type: "expense",
+      method: "transfer",
+      date: "2026-07-11",
+      categoryId: marketCategoryId,
+      accountId,
+      toAccountId: secondAccountId,
+    });
+    expect(result.ok).toBe(true);
+
+    const csv = await exportTransactionsCsv(deps, actor);
+    const lines = csv.split("\r\n");
+    expect(lines[1]).toBe("2026-07-11,transferência entre contas,20.00,Despesa,Transferência,Mercado,Conta,Poupança,,,App");
   });
 
   test("transação excluída (soft delete) não aparece no export", async () => {

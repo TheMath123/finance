@@ -10,14 +10,18 @@ export async function revokeInvite(
   inviteId: string,
 ): Promise<Either<WorkspaceError, null>> {
   const invite = await deps.repos.invite.findById(inviteId);
-  if (!invite) return left("invite_not_found");
-
-  const role = await deps.repos.workspace.getMemberRole(invite.workspaceId, userId);
-  if (!role || !roleAtLeast(role, "admin")) return left("forbidden");
+  const role = invite ? await deps.repos.workspace.getMemberRole(invite.workspaceId, userId) : null;
+  // Auditoria de segurança (2026-07-19): mesmo 404 genérico pra "não existe" e "existe mas
+  // não é do workspace do ator" — não revela a um usuário qualquer que um inviteId
+  // corresponde a um convite de um workspace que ele não administra.
+  if (!invite || !role || !roleAtLeast(role, "admin")) return left("invite_not_found");
 
   if (invite.status !== "pending") return left("invite_not_pending");
 
-  await deps.repos.invite.updateStatus(invite.id, "revoked");
+  // Condicional (WHERE status='pending') — undefined se accept/expire concorrente já decidiu primeiro.
+  const revoked = await deps.repos.invite.updateStatus(invite.id, "pending", "revoked");
+  if (!revoked) return left("invite_not_pending");
+
   await deps.repos.audit.record({
     workspaceId: invite.workspaceId,
     userId,

@@ -35,8 +35,15 @@ export function createWorkspaceInviteRepository(db: DbHandle): WorkspaceInviteRe
       db.query.workspaceInvites.findMany({
         where: and(eq(workspaceInvites.workspaceId, workspaceId), eq(workspaceInvites.status, "pending")),
       }),
-    async updateStatus(id, status) {
-      await db.update(workspaceInvites).set({ status }).where(eq(workspaceInvites.id, id));
+    async updateStatus(id, fromStatus, toStatus) {
+      // Condicional (WHERE status=fromStatus) — fecha a corrida entre accept/revoke/expire
+      // decidindo o mesmo convite ao mesmo tempo (auditoria 2026-07-19).
+      const [row] = await db
+        .update(workspaceInvites)
+        .set({ status: toStatus })
+        .where(and(eq(workspaceInvites.id, id), eq(workspaceInvites.status, fromStatus)))
+        .returning();
+      return row;
     },
   };
 }

@@ -17,5 +17,6 @@ export interface WorkspaceInviteRepository {
   /** Convite pendente já existente pro mesmo alvo no mesmo workspace (evita duplicar). */
   findPendingForTarget(workspaceId: string, emailOrPhone: string): Promise<WorkspaceInvite | undefined>;
   listPendingForWorkspace(workspaceId: string): Promise<WorkspaceInvite[]>;
-  updateStatus(id: string, status: InviteStatus): Promise<void>;
+  /** Condicional (`WHERE status=fromStatus`) — `undefined` se o convite já mudou de estado por outra chamada (corrida entre accept/revoke/expire). */
+  updateStatus(id: string, fromStatus: InviteStatus, toStatus: InviteStatus): Promise<WorkspaceInvite | undefined>;
 }

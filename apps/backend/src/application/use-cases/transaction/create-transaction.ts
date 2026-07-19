@@ -10,6 +10,14 @@ import { normalizeDescription } from "../../../domain/services/occurrence-rules"
 import type { Actor, UseCaseDeps } from "../../deps";
 import type { TransactionError } from "./errors";
 
+/**
+ * Auditoria de segurança (2026-07-19): sinaliza dentro do `uow.run` que uma
+ * fatura futura já está paga — precisa ser `throw` (não `return`), porque um
+ * retorno normal de dentro de `db.transaction()` **comita** o que já foi
+ * inserido no loop (parcelas 0..i-1), mesmo a use-case reportando erro.
+ */
+class InvoicePaidError extends Error {}
+
 export interface CreateTransactionInput {
   description: string;
   amount: number;
@@ -93,37 +101,41 @@ export async function createTransaction(
     const firstPeriod = competencePeriod(input.date, card.closingDay);
     const groupId = count > 1 ? crypto.randomUUID() : null;
 
-    const result = await deps.uow.run(async (repos) => {
-      const rows: Transaction[] = [];
-      for (let i = 0; i < count; i++) {
-        const invoice = await repos.invoice.getOrCreate(
-          actor.workspaceId,
-          card.id,
-          addMonths(firstPeriod, i),
-        );
-        if (invoice.status === "paid") return "invoice_paid" as const;
-        const row = await repos.transaction.create({
-          ...base,
-          amount: amounts[i]!,
-          cardId: card.id,
-          invoiceId: invoice.id,
-          installmentNumber: count > 1 ? i + 1 : null,
-          installmentTotal: count > 1 ? count : null,
-          installmentGroupId: groupId,
-        });
-        await repos.audit.record({
-          workspaceId: actor.workspaceId,
-          userId: actor.userId,
-          action: "create",
-          entity: "transaction",
-          entityId: row.id,
-        });
-        rows.push(row);
-      }
-      return rows;
-    });
-    if (result === "invoice_paid") return left("invoice_paid");
-    return right(result);
+    try {
+      const rows = await deps.uow.run(async (repos) => {
+        const created: Transaction[] = [];
+        for (let i = 0; i < count; i++) {
+          const invoice = await repos.invoice.getOrCreate(
+            actor.workspaceId,
+            card.id,
+            addMonths(firstPeriod, i),
+          );
+          if (invoice.status === "paid") throw new InvoicePaidError();
+          const row = await repos.transaction.create({
+            ...base,
+            amount: amounts[i]!,
+            cardId: card.id,
+            invoiceId: invoice.id,
+            installmentNumber: count > 1 ? i + 1 : null,
+            installmentTotal: count > 1 ? count : null,
+            installmentGroupId: groupId,
+          });
+          await repos.audit.record({
+            workspaceId: actor.workspaceId,
+            userId: actor.userId,
+            action: "create",
+            entity: "transaction",
+            entityId: row.id,
+          });
+          created.push(row);
+        }
+        return created;
+      });
+      return right(rows);
+    } catch (error) {
+      if (error instanceof InvoicePaidError) return left("invoice_paid");
+      throw error;
+    }
   }
 
   // Demais métodos (pix/debit/cash): conta obrigatória

@@ -9,6 +9,8 @@ export interface TransactionExportRow {
   method: TransactionMethod;
   categoryName: string;
   accountName: string | null;
+  /** Conta de destino — só preenchida em transferências (method=transfer). */
+  toAccountName: string | null;
   cardName: string | null;
   installmentNumber: number | null;
   installmentTotal: number | null;
@@ -33,7 +35,19 @@ const SOURCE_LABELS: Record<TransactionSource, string> = {
   chatbot: "WhatsApp",
 };
 
-const HEADER = ["Data", "Descrição", "Valor", "Tipo", "Método", "Categoria", "Conta", "Cartão", "Parcela", "Origem"];
+const HEADER = [
+  "Data",
+  "Descrição",
+  "Valor",
+  "Tipo",
+  "Método",
+  "Categoria",
+  "Conta",
+  "Conta destino",
+  "Cartão",
+  "Parcela",
+  "Origem",
+];
 
 /** Escapa um campo pro formato CSV (RFC 4180): aspas ao redor se tiver vírgula, aspas ou quebra de linha. */
 function csvField(value: string): string {
@@ -64,6 +78,7 @@ export function buildTransactionsCsv(rows: TransactionExportRow[]): string {
         METHOD_LABELS[row.method],
         row.categoryName,
         row.accountName ?? "",
+        row.toAccountName ?? "",
         row.cardName ?? "",
         installment,
         SOURCE_LABELS[row.source],

@@ -1,4 +1,4 @@
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 import {
   bigint,
   date,
@@ -8,6 +8,7 @@ import {
   pgTable,
   text,
   timestamp,
+  uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
 import { createdAt, id, updatedAt } from "./helpers";
@@ -72,6 +73,15 @@ export const transactions = pgTable(
     index("transactions_invoice_idx").on(t.invoiceId),
     index("transactions_category_idx").on(t.categoryId),
     index("transactions_desc_norm_idx").on(t.workspaceId, t.descriptionNormalized),
+    /**
+     * Auditoria de segurança (2026-07-19): sem isso, duas confirmações concorrentes
+     * da mesma ocorrência (confirmação manual vs. sweep automático, ou dois sweeps
+     * de réplicas diferentes do worker) geravam duas transações reais pra mesma
+     * recorrência+data — a checagem de leitura antes de criar não é atômica sozinha.
+     */
+    uniqueIndex("transactions_recurring_date_unique_idx")
+      .on(t.recurringId, t.date)
+      .where(sql`${t.recurringId} IS NOT NULL`),
   ],
 );
 

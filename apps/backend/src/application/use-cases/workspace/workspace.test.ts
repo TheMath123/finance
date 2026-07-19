@@ -40,13 +40,19 @@ beforeAll(() => {
   db = createDb();
 });
 
-/** Registra um usuário novo e devolve o Actor dele no próprio workspace pessoal (sempre owner). */
+/**
+ * Registra um usuário novo e devolve o Actor dele no próprio workspace pessoal
+ * (sempre owner). E-mail já sai verificado (auditoria 2026-07-19: aceitar
+ * convite por e-mail agora exige `emailVerifiedAt` — a maioria dos testes
+ * deste arquivo quer testar o fluxo de convite em si, não o de verificação).
+ */
 async function newOwnerActor(): Promise<{ actor: Actor; email: string; name: string }> {
   const deps = createTestDeps(db);
   const email = uniqueEmail();
   const name = `Dono ${crypto.randomUUID().slice(0, 8)}`;
   const result = await register(deps, { name, email, password: "senha-forte-123" });
   if (!result.ok) throw new Error("falha ao registrar usuário de teste");
+  await deps.repos.user.markEmailVerified(result.value.user.id);
   return {
     actor: { userId: result.value.user.id, workspaceId: result.value.defaultWorkspaceId, role: "owner" },
     email,
@@ -145,7 +151,7 @@ describe("workspace: convites", () => {
     expect(invite.error).toBe("already_member");
   });
 
-  test("aceitar convite de outro usuário falha com invite_forbidden", async () => {
+  test("aceitar convite de outro usuário falha com invite_not_found (404 genérico, não revela o convite alheio)", async () => {
     const deps = createTestDeps(db);
     const { actor: ownerActor } = await newOwnerActor();
     const family = await mustCreateWorkspace(deps, ownerActor.userId, "Família C");
@@ -161,7 +167,35 @@ describe("workspace: convites", () => {
     const result = await acceptInvite(deps, strangerActor.userId, invite.value.id);
     expect(result.ok).toBe(false);
     if (result.ok) return;
-    expect(result.error).toBe("invite_forbidden");
+    // Auditoria de segurança (2026-07-19): mesmo código de "não encontrado" que um
+    // inviteId inexistente devolveria — não revela que o convite existe pra outra pessoa.
+    expect(result.error).toBe("invite_not_found");
+  });
+
+  test("aceitar convite com e-mail não verificado falha (spec: convite exige e-mail verificado)", async () => {
+    const deps = createTestDeps(db);
+    const { actor: ownerActor } = await newOwnerActor();
+    const family = await mustCreateWorkspace(deps, ownerActor.userId, "Família D");
+    const familyOwner: Actor = { userId: ownerActor.userId, workspaceId: family.id, role: "owner" };
+
+    // Registro direto (sem passar por newOwnerActor) — e-mail fica sem verificar de propósito.
+    const email = uniqueEmail();
+    const registered = await register(deps, { name: "Convidado Não Verificado", email, password: "senha-forte-123" });
+    if (!registered.ok) throw new Error("setup falhou");
+
+    const invite = await createInvite(deps, familyOwner, { emailOrPhone: email, role: "member" });
+    expect(invite.ok).toBe(true);
+    if (!invite.ok) return;
+
+    const result = await acceptInvite(deps, registered.value.user.id, invite.value.id);
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error).toBe("invite_not_found");
+
+    // Depois de verificar o e-mail, o mesmo convite pode ser aceito normalmente.
+    await deps.repos.user.markEmailVerified(registered.value.user.id);
+    const secondAttempt = await acceptInvite(deps, registered.value.user.id, invite.value.id);
+    expect(secondAttempt.ok).toBe(true);
   });
 
   test("revogar convite pendente impede aceite depois", async () => {

@@ -293,6 +293,81 @@ describe("crédito, fatura e pagamento", () => {
     expect(del.ok).toBe(false);
   });
 
+  test("compra parcelada cuja parcela futura cai em fatura já paga: reverte TODAS as parcelas, não deixa lixo parcial", async () => {
+    // Fatura de março/2027 já paga antecipadamente (isolada — nenhum outro teste toca esse período).
+    const preTx = await createTransaction(deps, actor, {
+      description: "Assinatura pré-paga",
+      amount: 1_000,
+      type: "expense",
+      method: "credit",
+      date: "2027-03-05", // dia ≤ 10 → competência março/2027
+      categoryId,
+      cardId,
+    });
+    if (!preTx.ok) throw new Error("setup falhou");
+    const marchInvoiceId = preTx.value[0]!.invoiceId!;
+    const paidMarch = await payInvoice(deps, actor, marchInvoiceId, {
+      accountId,
+      date: "2027-03-06",
+      method: "pix",
+    });
+    expect(paidMarch.ok).toBe(true);
+
+    // Compra parcelada em 2x a partir de 2027-01-15 (dia > 10 → 1ª parcela cai em
+    // fevereiro/2027, 2ª cai em março/2027 — a fatura que acabou de ser paga acima).
+    const result = await createTransaction(deps, actor, {
+      description: "Compra que deveria reverter inteira",
+      amount: 2_000,
+      type: "expense",
+      method: "credit",
+      date: "2027-01-15",
+      categoryId,
+      cardId,
+      installments: 2,
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toBe("invoice_paid");
+
+    // A parcela de fevereiro (que teria sido inserida ANTES de bater na de março,
+    // já paga) não pode ter ficado no banco — prova que o throw reverteu tudo,
+    // não só a parcela que efetivamente falhou.
+    const leaked = await db.query.transactions.findMany({
+      where: eq(transactions.description, "Compra que deveria reverter inteira"),
+    });
+    expect(leaked).toHaveLength(0);
+  });
+
+  test("duas chamadas paralelas de payInvoice: só uma vence a corrida, nunca dois pagamentos", async () => {
+    // Fatura isolada (dezembro/2026) — nenhum outro teste deste arquivo toca esse período.
+    const created = await createTransaction(deps, actor, {
+      description: "Compra isolada pra teste de corrida",
+      amount: 5_000,
+      type: "expense",
+      method: "credit",
+      date: "2026-12-05",
+      categoryId,
+      cardId,
+    });
+    if (!created.ok) throw new Error("setup falhou");
+    const invoiceId = created.value[0]!.invoiceId!;
+
+    const [first, second] = await Promise.all([
+      payInvoice(deps, actor, invoiceId, { accountId, date: "2026-12-17", method: "pix" }),
+      payInvoice(deps, actor, invoiceId, { accountId, date: "2026-12-17", method: "pix" }),
+    ]);
+
+    const results = [first, second];
+    expect(results.filter((r) => r.ok)).toHaveLength(1);
+    const failed = results.find((r) => !r.ok);
+    expect(failed && !failed.ok ? failed.error : null).toBe("invoice_already_paid");
+
+    // Só uma transação de pagamento foi criada de verdade pra essa fatura (nunca duas).
+    const invoicePayments = (await db.query.transactions.findMany()).filter(
+      (t) => t.method === "pix" && t.date === "2026-12-17" && t.accountId === accountId,
+    );
+    expect(invoicePayments).toHaveLength(1);
+  });
+
   test("excluir parcelada remove só as parcelas de faturas não pagas", async () => {
     // parcela 2 (fatura 08, não paga) — excluir a partir dela
     const all = await db.query.transactions.findMany();

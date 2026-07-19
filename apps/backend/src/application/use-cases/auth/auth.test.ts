@@ -282,4 +282,27 @@ describe("auth: exclusão de conta (LGPD)", () => {
       await db.query.workspaces.findFirst({ where: eq(workspaces.id, defaultWorkspaceId) }),
     ).toBeUndefined();
   });
+
+  test("5 reautenticações erradas travam a conta pro mesmo lockout do login (auditoria 2026-07-19)", async () => {
+    const deps = createTestDeps(db);
+    const email = uniqueEmail();
+    const session = await register(deps, { name: "L2", email, password: "senha-forte-123" });
+    if (!session.ok) throw new Error("registro falhou");
+    const { user } = session.value;
+
+    for (let i = 0; i < 5; i++) {
+      const attempt = await deleteAccount(deps, { userId: user.id, password: "senha-errada-000" });
+      expect(attempt.ok).toBe(false);
+    }
+
+    // conta travada: mesmo a senha CERTA falha agora, tanto na reautenticação...
+    const lockedDelete = await deleteAccount(deps, { userId: user.id, password: "senha-forte-123" });
+    expect(lockedDelete.ok).toBe(false);
+    // ...quanto no login normal — o lockout é compartilhado (mesma proteção contra força bruta).
+    const lockedLogin = await login(deps, { email, password: "senha-forte-123" });
+    expect(lockedLogin.ok).toBe(false);
+
+    // usuário não foi excluído
+    expect(await db.query.users.findFirst({ where: eq(users.id, user.id) })).toBeDefined();
+  });
 });

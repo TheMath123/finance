@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "transactions_recurring_date_unique_idx" ON "transactions" USING btree ("recurring_id","date") WHERE "transactions"."recurring_id" IS NOT NULL;

@@ -56,16 +56,26 @@ export async function updateTransaction(
     patch.invoiceId = invoice.id;
   }
 
-  const updated = await deps.uow.run(async (repos) => {
-    const row = await repos.transaction.update(existing.id, patch);
-    await repos.audit.record({
-      workspaceId: actor.workspaceId,
-      userId: actor.userId,
-      action: "update",
-      entity: "transaction",
-      entityId: row.id,
+  try {
+    const updated = await deps.uow.run(async (repos) => {
+      // Auditoria (2026-07-19): re-checa dentro da transação — a fatura pode ter
+      // sido paga entre o check acima e este ponto.
+      if (await isInPaidInvoice(repos, existing)) throw new InvoiceNowPaidError();
+      const row = await repos.transaction.update(existing.id, patch);
+      await repos.audit.record({
+        workspaceId: actor.workspaceId,
+        userId: actor.userId,
+        action: "update",
+        entity: "transaction",
+        entityId: row.id,
+      });
+      return row;
     });
-    return row;
-  });
-  return right(updated);
+    return right(updated);
+  } catch (error) {
+    if (error instanceof InvoiceNowPaidError) return left("invoice_paid");
+    throw error;
+  }
 }
+
+class InvoiceNowPaidError extends Error {}

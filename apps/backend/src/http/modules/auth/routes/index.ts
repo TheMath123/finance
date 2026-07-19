@@ -12,26 +12,33 @@ import { verifyEmailRoute } from "./verify-email";
 import { meRoute } from "./me";
 import { deleteAccountRoute } from "./delete-account";
 
-/** Limites por IP e por rota (spec: Rate limiting, camada 1) — janela em ms varia por rota. */
+/**
+ * Limites por IP e por rota (spec: Rate limiting, camada 1) — janela em ms varia por rota.
+ * Chave inclui o método porque GET/DELETE /auth/me compartilham o mesmo path
+ * (auditoria 2026-07-19: sem isso, o limite da exclusão de conta vazaria pro
+ * fetch de perfil, ou vice-versa).
+ */
 const RATE_LIMITS: Record<string, { max: number; windowMs: number }> = {
-  "/auth/register": { max: 5, windowMs: 3_600_000 },
-  "/auth/login": { max: 10, windowMs: 60_000 },
-  "/auth/refresh": { max: 30, windowMs: 60_000 },
-  "/auth/forgot-password": { max: 5, windowMs: 3_600_000 },
-  "/auth/verify-reset-code": { max: 10, windowMs: 60_000 },
-  "/auth/reset-password": { max: 10, windowMs: 60_000 },
-  "/auth/verify-email": { max: 10, windowMs: 60_000 },
+  "POST /auth/register": { max: 5, windowMs: 3_600_000 },
+  "POST /auth/login": { max: 10, windowMs: 60_000 },
+  "POST /auth/refresh": { max: 30, windowMs: 60_000 },
+  "POST /auth/forgot-password": { max: 5, windowMs: 3_600_000 },
+  "POST /auth/verify-reset-code": { max: 10, windowMs: 60_000 },
+  "POST /auth/reset-password": { max: 10, windowMs: 60_000 },
+  "POST /auth/verify-email": { max: 10, windowMs: 60_000 },
+  "DELETE /auth/me": { max: 5, windowMs: 3_600_000 },
 };
 
 export function authRoutes(deps: AppDeps) {
   return new Elysia({ prefix: "/auth" })
     .onBeforeHandle(async ({ request, set, server }) => {
       const path = new URL(request.url).pathname;
-      const limit = RATE_LIMITS[path];
+      const key = `${request.method} ${path}`;
+      const limit = RATE_LIMITS[key];
       if (!limit) return;
       const ip = getClientIp(request, server, deps.trustProxy);
-      if (await deps.rateLimiter.isLimited(`ip:${ip}:${path}`, limit.max, limit.windowMs)) {
-        deps.logger.log("rate_limited", { scopeKey: "ip", path });
+      if (await deps.rateLimiter.isLimited(`ip:${ip}:${key}`, limit.max, limit.windowMs)) {
+        deps.logger.log("rate_limited", { scopeKey: "ip", path: key });
         set.status = 429;
         set.headers["retry-after"] = String(Math.ceil(limit.windowMs / 1000));
         return { error: { code: "rate_limited", message: "Muitas tentativas. Aguarde." } };

@@ -45,7 +45,7 @@ export async function createInvite(
   }
 
   const existing = await deps.repos.invite.findPendingForTarget(actor.workspaceId, target);
-  if (existing) await deps.repos.invite.updateStatus(existing.id, "revoked");
+  if (existing) await deps.repos.invite.updateStatus(existing.id, "pending", "revoked");
 
   const invite = await deps.repos.invite.create({
     workspaceId: actor.workspaceId,

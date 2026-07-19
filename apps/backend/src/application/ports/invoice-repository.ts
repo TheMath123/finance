@@ -9,7 +9,8 @@ export interface InvoiceRepository {
   getOrCreate(workspaceId: string, cardId: string, period: InvoicePeriod): Promise<CardInvoice>;
   listByCard(cardId: string): Promise<CardInvoice[]>;
   setStatus(invoiceId: string, status: InvoiceStatus): Promise<void>;
-  markPaid(invoiceId: string, paymentTransactionId: string): Promise<CardInvoice>;
+  /** Condicional (`WHERE status <> 'paid'`) — `undefined` se outra chamada já marcou paga primeiro (corrida). */
+  markPaid(invoiceId: string, paymentTransactionId: string): Promise<CardInvoice | undefined>;
   /** Total derivado: Σ despesas − Σ receitas das transações não deletadas. */
   total(invoiceId: string): Promise<number>;
   /** Σ dos totais das faturas não pagas (limite disponível derivado). */

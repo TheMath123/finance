@@ -10,6 +10,7 @@ function row(overrides: Partial<TransactionExportRow> = {}): TransactionExportRo
     method: "pix",
     categoryName: "Mercado",
     accountName: "Conta principal",
+    toAccountName: null,
     cardName: null,
     installmentNumber: null,
     installmentTotal: null,
@@ -22,8 +23,18 @@ describe("buildTransactionsCsv", () => {
   test("cabeçalho + uma linha, valores convertidos de centavos e rótulos em PT-BR", () => {
     const csv = buildTransactionsCsv([row()]);
     const lines = csv.split("\r\n");
-    expect(lines[0]).toBe("Data,Descrição,Valor,Tipo,Método,Categoria,Conta,Cartão,Parcela,Origem");
-    expect(lines[1]).toBe("2026-07-10,mercado,150.00,Despesa,Pix,Mercado,Conta principal,,,App");
+    expect(lines[0]).toBe(
+      "Data,Descrição,Valor,Tipo,Método,Categoria,Conta,Conta destino,Cartão,Parcela,Origem",
+    );
+    expect(lines[1]).toBe("2026-07-10,mercado,150.00,Despesa,Pix,Mercado,Conta principal,,,,App");
+  });
+
+  test("transferência: conta de destino aparece na coluna própria (auditoria 2026-07-19)", () => {
+    const csv = buildTransactionsCsv([
+      row({ method: "transfer", accountName: "Conta origem", toAccountName: "Conta destino" }),
+    ]);
+    const line = csv.split("\r\n")[1]!;
+    expect(line).toContain(",Conta origem,Conta destino,");
   });
 
   test("escapa descrição com vírgula e aspas (RFC 4180)", () => {

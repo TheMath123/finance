@@ -10,6 +10,9 @@ export interface PayInvoiceInput {
   method: "pix" | "debit";
 }
 
+/** Sinaliza dentro do `uow.run` que a fatura já foi paga por outra chamada entre a leitura e o commit (corrida) — reverte o pagamento já criado. */
+class AlreadyPaidError extends Error {}
+
 /**
  * Pagamento de fatura (regra do spec): cria transação de despesa na conta escolhida,
  * vincula via payment_transaction_id e marca como paid.
@@ -38,38 +41,47 @@ export async function payInvoice(
 
   const description = `Pagamento fatura ${card.name} ${String(invoice.monthReference).padStart(2, "0")}/${invoice.yearReference}`;
 
-  const paid = await deps.uow.run(async (repos) => {
-    const payment = await repos.transaction.create({
-      workspaceId: actor.workspaceId,
-      createdBy: actor.userId,
-      description,
-      descriptionNormalized: normalizeDescription(description),
-      amount: total,
-      type: "expense",
-      method: input.method,
-      date: input.date,
-      categoryId: fallback.id,
-      accountId: input.accountId,
+  try {
+    const paid = await deps.uow.run(async (repos) => {
+      const payment = await repos.transaction.create({
+        workspaceId: actor.workspaceId,
+        createdBy: actor.userId,
+        description,
+        descriptionNormalized: normalizeDescription(description),
+        amount: total,
+        type: "expense",
+        method: input.method,
+        date: input.date,
+        categoryId: fallback.id,
+        accountId: input.accountId,
+      });
+
+      // Auditoria de segurança (2026-07-19): condicional (WHERE status <> 'paid') — se
+      // outra chamada paralela já marcou a fatura paga primeiro, reverte a transação de
+      // despesa acima em vez de deixar um pagamento duplicado registrado.
+      const updated = await repos.invoice.markPaid(invoiceId, payment.id);
+      if (!updated) throw new AlreadyPaidError();
+
+      await repos.audit.record({
+        workspaceId: actor.workspaceId,
+        userId: actor.userId,
+        action: "create",
+        entity: "transaction",
+        entityId: payment.id,
+      });
+      await repos.audit.record({
+        workspaceId: actor.workspaceId,
+        userId: actor.userId,
+        action: "update",
+        entity: "card_invoice",
+        entityId: updated.id,
+      });
+      return updated;
     });
 
-    const updated = await repos.invoice.markPaid(invoiceId, payment.id);
-
-    await repos.audit.record({
-      workspaceId: actor.workspaceId,
-      userId: actor.userId,
-      action: "create",
-      entity: "transaction",
-      entityId: payment.id,
-    });
-    await repos.audit.record({
-      workspaceId: actor.workspaceId,
-      userId: actor.userId,
-      action: "update",
-      entity: "card_invoice",
-      entityId: updated.id,
-    });
-    return updated;
-  });
-
-  return right({ ...paid, total, effectiveStatus: "paid" });
+    return right({ ...paid, total, effectiveStatus: "paid" });
+  } catch (error) {
+    if (error instanceof AlreadyPaidError) return left("invoice_already_paid");
+    throw error;
+  }
 }
