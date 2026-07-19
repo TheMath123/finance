@@ -1,4 +1,5 @@
 import type { QueueDispatcher } from "@finance/queues";
+import type { Storage } from "@finance/storage";
 import type { Repositories } from "./ports/repositories";
 import type { UnitOfWork } from "./ports/unit-of-work";
 import type { PasswordHasher } from "./ports/password-hasher";
@@ -7,7 +8,6 @@ import type { SecurityLogger } from "./ports/logger";
 import type { RateLimiter } from "./ports/rate-limiter";
 import type { TokenBudget } from "./ports/token-budget";
 import type { Cache } from "./ports/cache";
-import type { Storage } from "./ports/storage";
 
 /** Dependências dos use cases — apenas ports (nunca Drizzle/Elysia). */
 export interface UseCaseDeps {

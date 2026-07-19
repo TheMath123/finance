@@ -1,7 +1,16 @@
+import { storageEnvSchema } from "@finance/storage";
 import { z } from "zod";
 
-/** Envs do backend, validadas no boot (regra: toda env nova entra aqui E no .env.example). */
+/**
+ * Envs do backend, validadas no boot (regra: toda env nova entra aqui E no
+ * .env.example). `storageEnvSchema` vem de `@finance/storage` — composição
+ * do fragmento do pacote aqui, mesmo padrão do eco-system-sales (o processo
+ * não sobe sem STORAGE_* configurado; diferente do restante das integrações
+ * deste backend, que validam a própria env só no primeiro uso — decisão
+ * explícita de 2026-07-19 pra alinhar com o padrão do outro monorepo).
+ */
 const envSchema = z.object({
+  ...storageEnvSchema.shape,
   PORT: z.coerce.number().int().positive().default(3000),
   JWT_SECRET: z.string().min(32, "JWT_SECRET precisa ter ao menos 32 caracteres"),
   /** Fila (BullMQ) e rate limiter — M2 (spec: Redis entra no M2). */

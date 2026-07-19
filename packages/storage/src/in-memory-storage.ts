@@ -1,4 +1,4 @@
-import type { Storage } from "../../application/ports/storage";
+import type { Storage } from "./storage";
 
 /** Test double do Storage (S3/R2) — mesmo padrão de infra/cache/infra/ai. */
 export function createInMemoryStorage(): Storage {

@@ -1,5 +1,6 @@
 import { createDb } from "@finance/db";
 import { createBullMqDispatcher } from "@finance/queues";
+import { createS3Storage } from "@finance/storage";
 import { createRepositories } from "../infra/db/repositories";
 import { createUnitOfWork } from "../infra/db/unit-of-work";
 import { bunPasswordHasher } from "../infra/security/bun-password-hasher";
@@ -7,7 +8,6 @@ import { createTokenService } from "../infra/security/jose-token-service";
 import { createRedisRateLimiter } from "../infra/security/redis-rate-limiter";
 import { createRedisTokenBudget } from "../infra/ai/redis-token-budget";
 import { createRedisCache } from "../infra/cache/redis-cache";
-import { createS3CompatibleStorage } from "../infra/storage/s3-compatible-storage";
 import { createLogger } from "../infra/observability/logger";
 import { createSecurityLogger } from "../infra/observability/pino-security-logger";
 import type { AppDeps } from "../http/deps";
@@ -35,7 +35,14 @@ export function createAppDeps(env: Env): AppDeps {
     rateLimiter: createRedisRateLimiter(env.REDIS_URL),
     tokenBudget: createRedisTokenBudget(env.REDIS_URL),
     cache: createRedisCache(env.REDIS_URL),
-    storage: createS3CompatibleStorage(),
+    storage: createS3Storage({
+      bucket: env.STORAGE_BUCKET,
+      region: env.STORAGE_REGION,
+      accessKeyId: env.STORAGE_ACCESS_KEY_ID,
+      secretAccessKey: env.STORAGE_SECRET_ACCESS_KEY,
+      endpoint: env.STORAGE_ENDPOINT,
+      forcePathStyle: env.STORAGE_FORCE_PATH_STYLE,
+    }),
     termsVersion: env.TERMS_VERSION,
     trustProxy: env.TRUST_PROXY,
     httpLogger: logger,
