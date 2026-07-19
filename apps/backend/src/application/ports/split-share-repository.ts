@@ -30,7 +30,13 @@ export interface SplitShareRepository {
   createMany(shares: CreateSplitShareData[]): Promise<SplitShare[]>;
   findById(id: string): Promise<SplitShare | undefined>;
   listBySplit(splitId: string): Promise<SplitShare[]>;
-  updateStatus(id: string, status: SplitShareStatus, reimbursementTransactionId?: string): Promise<SplitShare>;
+  /** Condicional (`WHERE status=fromStatus`) — `undefined` se o share já mudou de estado por outra chamada (corrida). */
+  updateStatus(
+    id: string,
+    fromStatus: SplitShareStatus,
+    toStatus: SplitShareStatus,
+    reimbursementTransactionId?: string,
+  ): Promise<SplitShare | undefined>;
   /** O que o usuário deve — participante (platform user) em shares ainda não confirmadas. */
   listOwedByUser(userId: string): Promise<OwedByMeView[]>;
   /** O que devem ao usuário — shares de splits criados por ele, ainda não confirmadas. */

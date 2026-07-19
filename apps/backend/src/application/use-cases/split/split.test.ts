@@ -263,6 +263,32 @@ describe("fluxo de confirmação (dois lados) + reembolso", () => {
     expect(confirmed.ok).toBe(true);
     if (confirmed.ok) expect(confirmed.value.status).toBe("confirmed");
   });
+
+  test("duas chamadas paralelas de confirm: só uma vence a corrida, nunca dois reembolsos", async () => {
+    const deps = createTestDeps(db);
+    const creator = await newUser("Criador Corrida");
+    const tx = await newExpense(deps, creator, 1000);
+
+    const split = await createSplit(deps, actorFor(creator), tx.id, {
+      participants: [{ type: "external", name: "Amigo Corrida" }],
+    });
+    if (!split.ok) throw new Error("setup falhou");
+    const share = (await deps.repos.splitShare.listBySplit(split.value.id))[0]!;
+
+    const [first, second] = await Promise.all([
+      confirmShareReimbursement(deps, { userId: creator.userId }, share.id),
+      confirmShareReimbursement(deps, { userId: creator.userId }, share.id),
+    ]);
+
+    const results = [first, second];
+    expect(results.filter((r) => r.ok)).toHaveLength(1);
+    const failed = results.find((r) => !r.ok);
+    expect(failed && !failed.ok ? failed.error : null).toBe("invalid_transition");
+
+    const finalShare = await deps.repos.splitShare.findById(share.id);
+    expect(finalShare?.status).toBe("confirmed");
+    expect(finalShare?.reimbursementTransactionId).not.toBeNull();
+  });
 });
 
 describe("cancelSplit", () => {

@@ -16,12 +16,13 @@ export function createExpenseSplitRepository(db: DbHandle): ExpenseSplitReposito
         where: and(eq(expenseSplits.transactionId, transactionId), isNull(expenseSplits.cancelledAt)),
       }),
     async cancel(id) {
+      // Condicional (WHERE cancelled_at IS NULL) — idempotente contra dois cancels
+      // paralelos (auditoria 2026-07-19). undefined = já estava cancelado.
       const [row] = await db
         .update(expenseSplits)
         .set({ cancelledAt: new Date() })
-        .where(eq(expenseSplits.id, id))
+        .where(and(eq(expenseSplits.id, id), isNull(expenseSplits.cancelledAt)))
         .returning();
-      if (!row) throw new Error("falha ao cancelar split");
       return row;
     },
   };

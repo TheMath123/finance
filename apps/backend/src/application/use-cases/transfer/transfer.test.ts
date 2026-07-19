@@ -234,6 +234,40 @@ describe("acceptTransfer / rejectTransfer", () => {
     expect(secondAttempt.ok).toBe(false);
     if (!secondAttempt.ok) expect(secondAttempt.error).toBe("already_finalized");
   });
+
+  test("duas chamadas paralelas de accept: só uma vence a corrida, nunca duas transações de entrada", async () => {
+    const deps = createTestDeps(db);
+    const sender = await newUser("Remetente Corrida");
+    const recipient = await newUser("Destinatário Corrida");
+
+    const created = await createTransfer(deps, actorFor(sender), {
+      recipient: recipient.email,
+      amount: 1000,
+      description: "corrida",
+      accountId: sender.accountId,
+    });
+    if (!created.ok) throw new Error("setup falhou");
+
+    const [first, second] = await Promise.all([
+      acceptTransfer(deps, { userId: recipient.userId }, {
+        transferId: created.value.id,
+        accountId: recipient.accountId,
+      }),
+      acceptTransfer(deps, { userId: recipient.userId }, {
+        transferId: created.value.id,
+        accountId: recipient.accountId,
+      }),
+    ]);
+
+    const results = [first, second];
+    expect(results.filter((r) => r.ok)).toHaveLength(1);
+    const failed = results.find((r) => !r.ok);
+    expect(failed && !failed.ok ? failed.error : null).toBe("already_finalized");
+
+    const final = await deps.repos.interUserTransfer.findById(created.value.id);
+    expect(final?.status).toBe("accepted");
+    expect(final?.toTransactionId).not.toBeNull();
+  });
 });
 
 describe("contato confiável", () => {

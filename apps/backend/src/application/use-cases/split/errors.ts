@@ -1,4 +1,5 @@
 export type SplitError =
+  | "rate_limited"
   | "transaction_not_found"
   | "not_an_expense"
   | "unsupported_method"

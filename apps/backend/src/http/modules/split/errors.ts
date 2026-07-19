@@ -2,6 +2,11 @@ import type { SplitError } from "../../../application/use-cases/split";
 import type { HttpError } from "../../http-error";
 
 export const SPLIT_ERRORS: Record<SplitError, HttpError> = {
+  rate_limited: {
+    status: 429,
+    code: "rate_limited",
+    message: "Muitas tentativas em pouco tempo. Aguarde um instante.",
+  },
   transaction_not_found: { status: 404, code: "transaction_not_found", message: "Transação não encontrada." },
   not_an_expense: { status: 400, code: "not_an_expense", message: "Só é possível dividir uma despesa." },
   unsupported_method: {

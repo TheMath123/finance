@@ -39,6 +39,12 @@ export async function createTransfer(
   if (!recipient) return left("recipient_not_found");
   if (recipient.id === actor.userId) return left("self_transfer");
 
+  // Auditoria de segurança (2026-07-19): o limite acima é só por remetente — alguém com
+  // várias contas conseguiria inundar UM destinatário específico. Chave separada por destino.
+  if (await deps.rateLimiter.isLimited(`transfer-create:to:${recipient.id}`, 30, 60 * 60_000)) {
+    return left("rate_limited");
+  }
+
   const [sender, account, category] = await Promise.all([
     deps.repos.user.findById(actor.userId),
     deps.repos.account.findActiveInWorkspace(actor.workspaceId, input.accountId),

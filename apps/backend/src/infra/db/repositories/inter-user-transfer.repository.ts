@@ -16,21 +16,22 @@ export function createInterUserTransferRepository(db: DbHandle): InterUserTransf
         where: and(eq(interUserTransfers.toUserId, userId), eq(interUserTransfers.status, "pending")),
       }),
     async accept(id, toTransactionId) {
+      // Condicional (WHERE status='pending') — fecha a corrida de duas chamadas
+      // paralelas de accept/reject decidirem o mesmo transfer (auditoria 2026-07-19).
+      // undefined = já foi finalizado por outra chamada; quem chama trata o rollback.
       const [row] = await db
         .update(interUserTransfers)
         .set({ status: "accepted", toTransactionId })
-        .where(eq(interUserTransfers.id, id))
+        .where(and(eq(interUserTransfers.id, id), eq(interUserTransfers.status, "pending")))
         .returning();
-      if (!row) throw new Error("falha ao aceitar transferência");
       return row;
     },
     async reject(id) {
       const [row] = await db
         .update(interUserTransfers)
         .set({ status: "rejected" })
-        .where(eq(interUserTransfers.id, id))
+        .where(and(eq(interUserTransfers.id, id), eq(interUserTransfers.status, "pending")))
         .returning();
-      if (!row) throw new Error("falha ao recusar transferência");
       return row;
     },
     listExpired: (now) =>

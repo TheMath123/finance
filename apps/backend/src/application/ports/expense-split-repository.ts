@@ -10,5 +10,6 @@ export interface ExpenseSplitRepository {
   findById(id: string): Promise<ExpenseSplit | undefined>;
   /** No máximo um split ativo (não cancelado) por transação. */
   findActiveByTransaction(transactionId: string): Promise<ExpenseSplit | undefined>;
-  cancel(id: string): Promise<ExpenseSplit>;
+  /** Condicional (`WHERE cancelled_at IS NULL`) — `undefined` se já estava cancelado (idempotência). */
+  cancel(id: string): Promise<ExpenseSplit | undefined>;
 }

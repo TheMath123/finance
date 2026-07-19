@@ -9,6 +9,9 @@ function todayCompetence(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
+/** Sinaliza dentro do `uow.run` que o status mudou entre a leitura e o commit (corrida) — reverte o reembolso já criado. */
+class AlreadyFinalizedError extends Error {}
+
 /**
  * Criador confirma "recebi": participante-usuário precisa ter marcado
  * `paid` antes (dois lados); participante externo pula direto de `pending`
@@ -17,10 +20,15 @@ function todayCompetence(): string {
  * nunca mexe na transação original.
  */
 export async function confirmShareReimbursement(
-  deps: Pick<UseCaseDeps, "repos" | "uow" | "dispatch">,
+  deps: Pick<UseCaseDeps, "repos" | "uow" | "dispatch" | "rateLimiter">,
   actor: { userId: string },
   shareId: string,
 ): Promise<Either<SplitError, SplitShare>> {
+  // Auditoria de segurança (2026-07-19): nenhuma rota monetária tinha rate limit própria.
+  if (await deps.rateLimiter.isLimited(`split-confirm:${actor.userId}`, 30, 60 * 60_000)) {
+    return left("rate_limited");
+  }
+
   const share = await deps.repos.splitShare.findById(shareId);
   if (!share) return left("share_not_found");
 
@@ -42,23 +50,33 @@ export async function confirmShareReimbursement(
     (share.participantUserId ? (await deps.repos.user.findById(share.participantUserId))?.name : undefined) ??
     "participante";
 
-  const updated = await deps.uow.run(async (repos) => {
-    const description = `Reembolso de ${participantName} — ${transaction.description}`;
-    const reimbursement = await repos.transaction.create({
-      workspaceId: transaction.workspaceId,
-      createdBy: actor.userId,
-      description,
-      descriptionNormalized: normalizeDescription(description),
-      amount: share.amount,
-      type: "income",
-      method: "pix",
-      date: todayCompetence(),
-      categoryId: category.id,
-      accountId: transaction.accountId!,
-      source: "app",
+  let updated: SplitShare;
+  try {
+    updated = await deps.uow.run(async (repos) => {
+      const description = `Reembolso de ${participantName} — ${transaction.description}`;
+      const reimbursement = await repos.transaction.create({
+        workspaceId: transaction.workspaceId,
+        createdBy: actor.userId,
+        description,
+        descriptionNormalized: normalizeDescription(description),
+        amount: share.amount,
+        type: "income",
+        method: "pix",
+        date: todayCompetence(),
+        categoryId: category.id,
+        accountId: transaction.accountId!,
+        source: "app",
+      });
+      // Condicional (WHERE status=requiredStatus) — undefined se outra chamada
+      // paralela (duplo toque/retry) já confirmou primeiro; reverte o reembolso acima.
+      const result = await repos.splitShare.updateStatus(shareId, requiredStatus, "confirmed", reimbursement.id);
+      if (!result) throw new AlreadyFinalizedError();
+      return result;
     });
-    return repos.splitShare.updateStatus(shareId, "confirmed", reimbursement.id);
-  });
+  } catch (error) {
+    if (error instanceof AlreadyFinalizedError) return left("invalid_transition");
+    throw error;
+  }
 
   if (share.participantUserId) {
     await createNotification(deps, {

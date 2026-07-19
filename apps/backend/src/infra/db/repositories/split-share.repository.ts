@@ -11,13 +11,15 @@ export function createSplitShareRepository(db: DbHandle): SplitShareRepository {
     },
     findById: (id) => db.query.splitShares.findFirst({ where: eq(splitShares.id, id) }),
     listBySplit: (splitId) => db.query.splitShares.findMany({ where: eq(splitShares.splitId, splitId) }),
-    async updateStatus(id, status, reimbursementTransactionId) {
+    async updateStatus(id, fromStatus, toStatus, reimbursementTransactionId) {
+      // Condicional (WHERE status=fromStatus) — fecha a corrida de duas chamadas
+      // paralelas (duplo toque/retry) confirmarem/marcarem pago o mesmo share
+      // duas vezes (auditoria 2026-07-19). undefined = já mudou de estado.
       const [row] = await db
         .update(splitShares)
-        .set({ status, ...(reimbursementTransactionId ? { reimbursementTransactionId } : {}) })
-        .where(eq(splitShares.id, id))
+        .set({ status: toStatus, ...(reimbursementTransactionId ? { reimbursementTransactionId } : {}) })
+        .where(and(eq(splitShares.id, id), eq(splitShares.status, fromStatus)))
         .returning();
-      if (!row) throw new Error("falha ao atualizar parte do split");
       return row;
     },
     async listOwedByUser(userId) {

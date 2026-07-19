@@ -50,8 +50,29 @@ export async function fetchMediaUrl(mediaId: string): Promise<{ url: string; mim
   return { url: data.url, mimeType: data.mime_type };
 }
 
-/** A URL de download também exige o Bearer token — não é pública (M3-05). */
+/** Hosts que a Meta usa pra servir mídia — defesa em profundidade (auditoria 2026-07-19). */
+const ALLOWED_MEDIA_HOST_SUFFIXES = [".facebook.com", ".fbcdn.net", ".whatsapp.net"];
+
+function isAllowedMediaHost(url: string): boolean {
+  try {
+    const { hostname } = new URL(url);
+    return ALLOWED_MEDIA_HOST_SUFFIXES.some((suffix) => hostname.endsWith(suffix));
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * A URL de download também exige o Bearer token — não é pública (M3-05).
+ * Confere o host antes de mandar o token nela: `url` vem da resposta da
+ * própria Meta (não é input direto de usuário), então isso é defesa em
+ * profundidade, não proteção contra um caminho de exploração conhecido —
+ * só reduz o raio de explosão se essa suposição de confiança um dia falhar.
+ */
 export async function downloadMedia(url: string): Promise<Uint8Array> {
+  if (!isAllowedMediaHost(url)) {
+    throw new Error("URL de mídia do WhatsApp fora dos hosts esperados — download recusado");
+  }
   const { WHATSAPP_ACCESS_TOKEN } = env();
   const response = await fetch(url, { headers: { Authorization: `Bearer ${WHATSAPP_ACCESS_TOKEN}` } });
   if (!response.ok) {
