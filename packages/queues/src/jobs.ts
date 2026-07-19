@@ -13,6 +13,8 @@ export interface JobPayloads {
   "push.send": { tokens: string[]; title: string; body: string; data?: Record<string, unknown> };
   /** Mensagem de texto recebida no webhook do WhatsApp (M2-06) — processamento tirado do handler síncrono. */
   "whatsapp.inbound-message": { from: string; text: string };
+  /** Foto recebida no webhook do WhatsApp (M3-05) — vira comprovante da última transação do remetente. */
+  "whatsapp.inbound-image": { from: string; mediaId: string; mimeType: string };
 }
 
 export type JobName = keyof JobPayloads;

@@ -78,6 +78,16 @@ export function createTransactionRepository(db: DbHandle): TransactionRepository
       db.query.transactions.findFirst({
         where: and(eq(transactions.recurringId, recurringId), eq(transactions.date, date)),
       }),
+    findMostRecentByCreator: (workspaceId, createdBy, since) =>
+      db.query.transactions.findFirst({
+        where: and(
+          eq(transactions.workspaceId, workspaceId),
+          eq(transactions.createdBy, createdBy),
+          isNull(transactions.deletedAt),
+          gte(transactions.createdAt, since),
+        ),
+        orderBy: desc(transactions.createdAt),
+      }),
     async confirmedOccurrenceKeys(recurringIds) {
       if (recurringIds.length === 0) return [];
       const rows = await db

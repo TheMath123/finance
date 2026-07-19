@@ -6,4 +6,5 @@ export {
   type InboundWhatsAppMessage,
   type WhatsAppReply,
 } from "./handle-inbound-message";
+export { handleInboundWhatsAppImage, type InboundWhatsAppImage } from "./handle-inbound-image";
 export type { WhatsAppLinkError } from "./errors";

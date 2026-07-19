@@ -1,5 +1,6 @@
 import { createDb } from "@finance/db";
 import { createBullMqDispatcher, createBullMqWorker, QUEUE_NAME } from "@finance/queues";
+import { createS3Storage } from "@finance/storage";
 import { runNotificationSweep } from "../application/use-cases/notification";
 import { createRepositories } from "../infra/db/repositories";
 import { createUnitOfWork } from "../infra/db/unit-of-work";
@@ -29,7 +30,9 @@ const dispatcher = createBullMqDispatcher(env.REDIS_URL, (job, error) =>
  * Deps completas do worker: além do sweep diário, o handler do job
  * `whatsapp.inbound-message` (M2-06/M2-07) precisa confirmar vínculo
  * (`confirmWhatsAppLink` usa `repos`/`uow`/`rateLimiter`/`tokens`) e rodar o
- * pipeline de IA (`tokenBudget` — guardrail de custo por usuário).
+ * pipeline de IA (`tokenBudget` — guardrail de custo por usuário); o handler
+ * de `whatsapp.inbound-image` (M3-05) precisa de `storage` pra gravar o
+ * comprovante recebido por foto.
  */
 const deps = {
   repos: createRepositories(db),
@@ -39,6 +42,14 @@ const deps = {
   cache: createRedisCache(env.REDIS_URL),
   tokens: createTokenService(env.JWT_SECRET),
   dispatch: dispatcher.dispatch,
+  storage: createS3Storage({
+    bucket: env.STORAGE_BUCKET,
+    region: env.STORAGE_REGION,
+    accessKeyId: env.STORAGE_ACCESS_KEY_ID,
+    secretAccessKey: env.STORAGE_SECRET_ACCESS_KEY,
+    endpoint: env.STORAGE_ENDPOINT,
+    forcePathStyle: env.STORAGE_FORCE_PATH_STYLE,
+  }),
 };
 
 const worker = createBullMqWorker(env.REDIS_URL, createJobHandlers(deps), (job, error) =>

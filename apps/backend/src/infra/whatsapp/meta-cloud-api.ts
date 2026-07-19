@@ -34,6 +34,33 @@ async function sendOnce(to: string, body: string): Promise<void> {
 }
 
 /**
+ * A Meta manda só o `media_id` no webhook — esse endpoint resolve pra uma
+ * URL de download temporária (expira rápido, por isso baixa na hora e nunca
+ * guarda essa URL). M3-05.
+ */
+export async function fetchMediaUrl(mediaId: string): Promise<{ url: string; mimeType: string }> {
+  const { WHATSAPP_ACCESS_TOKEN } = env();
+  const response = await fetch(`https://graph.facebook.com/${GRAPH_API_VERSION}/${mediaId}`, {
+    headers: { Authorization: `Bearer ${WHATSAPP_ACCESS_TOKEN}` },
+  });
+  if (!response.ok) {
+    throw new Error(`falha ao resolver media_id do WhatsApp (status ${response.status})`);
+  }
+  const data = (await response.json()) as { url: string; mime_type: string };
+  return { url: data.url, mimeType: data.mime_type };
+}
+
+/** A URL de download também exige o Bearer token — não é pública (M3-05). */
+export async function downloadMedia(url: string): Promise<Uint8Array> {
+  const { WHATSAPP_ACCESS_TOKEN } = env();
+  const response = await fetch(url, { headers: { Authorization: `Bearer ${WHATSAPP_ACCESS_TOKEN}` } });
+  if (!response.ok) {
+    throw new Error(`falha ao baixar mídia do WhatsApp (status ${response.status})`);
+  }
+  return new Uint8Array(await response.arrayBuffer());
+}
+
+/**
  * BR: celular tem um "nono dígito" cuja presença varia entre o número que a
  * Meta manda no webhook (`from`) e o que ela de fato entrega no envio —
  * quirk documentado da própria Meta ("comportamento padrão, não é bug") pra

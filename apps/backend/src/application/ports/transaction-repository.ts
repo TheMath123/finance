@@ -60,6 +60,8 @@ export interface TransactionRepository {
   existsByAccount(accountId: string): Promise<boolean>;
   existsByCard(cardId: string): Promise<boolean>;
   findByRecurringAndDate(recurringId: string, date: string): Promise<Transaction | undefined>;
+  /** Última transação lançada por esse usuário desde `since` (não-deletada) — associação foto→transação no WhatsApp (M3-05). */
+  findMostRecentByCreator(workspaceId: string, createdBy: string, since: Date): Promise<Transaction | undefined>;
   /** Pares (recurringId, date) já materializados — inclui soft-deletadas (spec). */
   confirmedOccurrenceKeys(recurringIds: string[]): Promise<{ recurringId: string; date: string }[]>;
   /** Σ efeitos na conta (sem o initial_balance) — saldo derivado (spec). */

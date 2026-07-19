@@ -7,7 +7,12 @@ interface MetaWebhookPayload {
     changes?: {
       field?: string;
       value?: {
-        messages?: { from: string; type: string; text?: { body: string } }[];
+        messages?: {
+          from: string;
+          type: string;
+          text?: { body: string };
+          image?: { id: string; mime_type: string };
+        }[];
       };
     }[];
   }[];
@@ -26,6 +31,26 @@ function extractTextMessages(payload: MetaWebhookPayload): { from: string; text:
       for (const message of change.value?.messages ?? []) {
         if (message.type === "text" && message.text?.body) {
           messages.push({ from: normalizePhone(message.from), text: message.text.body });
+        }
+      }
+    }
+  }
+  return messages;
+}
+
+/** M3-05: a Meta manda só o `media_id` — o download acontece no job (nunca aqui, síncrono). */
+function extractImageMessages(payload: MetaWebhookPayload): { from: string; mediaId: string; mimeType: string }[] {
+  const messages: { from: string; mediaId: string; mimeType: string }[] = [];
+  for (const entry of payload.entry ?? []) {
+    for (const change of entry.changes ?? []) {
+      if (change.field !== "messages") continue;
+      for (const message of change.value?.messages ?? []) {
+        if (message.type === "image" && message.image?.id) {
+          messages.push({
+            from: normalizePhone(message.from),
+            mediaId: message.image.id,
+            mimeType: message.image.mime_type ?? "image/jpeg",
+          });
         }
       }
     }
@@ -83,6 +108,14 @@ export const whatsappWebhookRoute = (deps: AppDeps) =>
       for (const message of messages) {
         void deps
           .dispatch("whatsapp.inbound-message", message)
+          .catch((error) => deps.httpLogger.error({ scope: "whatsapp", err: error }, "dispatch_failed"));
+      }
+
+      const images = extractImageMessages(payload);
+      deps.httpLogger.info({ scope: "whatsapp", count: images.length }, "webhook_image_received");
+      for (const image of images) {
+        void deps
+          .dispatch("whatsapp.inbound-image", image)
           .catch((error) => deps.httpLogger.error({ scope: "whatsapp", err: error }, "dispatch_failed"));
       }
     });
