@@ -134,12 +134,28 @@ async function sweepRecurringAutoLaunch(deps: SweepDeps): Promise<void> {
 }
 
 /**
- * Sweep diário (job repetível do BullMQ, `main/worker.ts`) — sistema inteiro,
- * não escopado a um workspace. Fecha faturas vencidas, notifica vencimento e
- * auto-lança recorrências do dia (M2-09/M2-10).
+ * Transferência `pending` cujo `expires_at` já passou — marca `expired` sem
+ * mexer no lado do remetente (a transação de saída já existe e fica, spec:
+ * M3-02). Sem notificação de expiração (só `transfer_pending`/
+ * `transfer_accepted` existem hoje) — decisão de escopo mínimo.
+ */
+async function sweepExpiredTransfers(deps: SweepDeps): Promise<void> {
+  const expired = await deps.repos.interUserTransfer.listExpired(new Date());
+  for (const transfer of expired) {
+    await deps.repos.interUserTransfer.markExpired(transfer.id);
+  }
+}
+
+/**
+ * Sweep diário (`setInterval` em `main/worker.ts`, não um job repetível do
+ * BullMQ — ver comentário lá) — sistema inteiro, não escopado a um
+ * workspace. Fecha faturas vencidas, notifica vencimento, auto-lança
+ * recorrências do dia (M2-09/M2-10) e expira transferências pendentes
+ * vencidas (M3-02).
  */
 export async function runNotificationSweep(deps: SweepDeps): Promise<void> {
   await sweepInvoiceClosed(deps);
   await sweepInvoiceDue(deps);
   await sweepRecurringAutoLaunch(deps);
+  await sweepExpiredTransfers(deps);
 }

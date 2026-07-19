@@ -1,5 +1,5 @@
-import { and, eq, isNull, or } from "drizzle-orm";
-import { bankAccounts, transactions } from "@finance/db";
+import { and, eq, inArray, isNull, or } from "drizzle-orm";
+import { bankAccounts, transactions, workspaceMembers } from "@finance/db";
 import type { AccountRepository } from "../../../application/ports/account-repository";
 import type { DbHandle } from "../handle";
 
@@ -17,6 +17,7 @@ export function createAccountRepository(db: DbHandle): AccountRepository {
       db.query.bankAccounts.findFirst({
         where: and(eq(bankAccounts.id, accountId), eq(bankAccounts.workspaceId, workspaceId)),
       }),
+    findById: (accountId) => db.query.bankAccounts.findFirst({ where: eq(bankAccounts.id, accountId) }),
     findActiveInWorkspace: (workspaceId, accountId) =>
       db.query.bankAccounts.findFirst({
         where: and(
@@ -27,6 +28,23 @@ export function createAccountRepository(db: DbHandle): AccountRepository {
       }),
     listByWorkspace: (workspaceId) =>
       db.query.bankAccounts.findMany({ where: eq(bankAccounts.workspaceId, workspaceId) }),
+    async listActiveForUser(userId) {
+      const memberships = await db.query.workspaceMembers.findMany({
+        where: eq(workspaceMembers.userId, userId),
+      });
+      const workspaceIds = memberships.map((m) => m.workspaceId);
+      if (workspaceIds.length === 0) return [];
+
+      const rows = await db.query.bankAccounts.findMany({
+        where: and(inArray(bankAccounts.workspaceId, workspaceIds), isNull(bankAccounts.archivedAt)),
+        with: { workspace: true },
+      });
+      return rows.map((row) => ({
+        account: row,
+        workspaceId: row.workspaceId,
+        workspaceName: row.workspace.name,
+      }));
+    },
     async update(accountId, patch) {
       const [row] = await db
         .update(bankAccounts)

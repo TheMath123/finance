@@ -14,6 +14,8 @@ import type { NotificationRepository } from "./notification-repository";
 import type { NotificationPreferenceRepository } from "./notification-preference-repository";
 import type { PushTokenRepository } from "./push-token-repository";
 import type { WhatsAppLinkCodeRepository } from "./whatsapp-link-code-repository";
+import type { InterUserTransferRepository } from "./inter-user-transfer-repository";
+import type { TrustedContactRepository } from "./trusted-contact-repository";
 
 /** Conjunto completo de repositórios — fora e dentro do Unit of Work. */
 export interface Repositories {
@@ -33,4 +35,6 @@ export interface Repositories {
   notificationPreference: NotificationPreferenceRepository;
   pushToken: PushTokenRepository;
   whatsappLinkCode: WhatsAppLinkCodeRepository;
+  interUserTransfer: InterUserTransferRepository;
+  trustedContact: TrustedContactRepository;
 }

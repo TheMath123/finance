@@ -100,3 +100,19 @@ export const recurringSchema = z
     path: ["accountId"],
   });
 export type RecurringInput = z.infer<typeof recurringSchema>;
+
+export const createTransferSchema = z.object({
+  /** Telefone ou e-mail de um usuário existente na plataforma. */
+  recipient: z.string().min(3, "Informe telefone ou e-mail"),
+  /** Centavos (integer) — mesmo formato da API, nunca reais/float. */
+  amount: z.number().int().positive("Informe um valor maior que zero"),
+  description: z.string().min(1, "Informe uma descrição").max(200),
+  accountId: z.string().uuid("Selecione a conta de origem"),
+});
+export type CreateTransferInput = z.infer<typeof createTransferSchema>;
+
+export const acceptTransferSchema = z.object({
+  accountId: z.string().uuid("Selecione a conta de destino"),
+  markTrusted: z.boolean().optional(),
+});
+export type AcceptTransferInput = z.infer<typeof acceptTransferSchema>;

@@ -9,3 +9,4 @@ export * from "./transaction";
 export * from "./recurring-transaction";
 export * from "./notification";
 export * from "./whatsapp-link-code";
+export * from "./inter-user-transfer";

@@ -6,6 +6,8 @@ import {
   CalendarCheckIcon,
   CreditCardIcon,
   GearIcon,
+  HandCoinsIcon,
+  PaperPlaneTiltIcon,
   UsersIcon,
   WhatsappLogoIcon,
 } from 'phosphor-react-native';
@@ -25,6 +27,8 @@ const TYPE_ICONS: Record<string, typeof BellIcon> = {
   invoice_due: CreditCardIcon,
   recurring_pending: CalendarCheckIcon,
   whatsapp_linked: WhatsappLogoIcon,
+  transfer_pending: HandCoinsIcon,
+  transfer_accepted: PaperPlaneTiltIcon,
 };
 
 function timeAgo(iso: string): string {

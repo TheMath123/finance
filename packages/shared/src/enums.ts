@@ -49,5 +49,10 @@ export const NOTIFICATION_TYPES = [
   "invoice_due",
   "recurring_pending",
   "whatsapp_linked",
+  "transfer_pending",
+  "transfer_accepted",
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
+
+export const INTER_USER_TRANSFER_STATUSES = ["pending", "accepted", "rejected", "expired"] as const;
+export type InterUserTransferStatus = (typeof INTER_USER_TRANSFER_STATUSES)[number];

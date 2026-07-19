@@ -30,6 +30,14 @@ const TYPE_LABELS: Record<NotificationType, { title: string; description: string
     title: 'WhatsApp vinculado',
     description: 'Quando um número de WhatsApp é vinculado à sua conta.',
   },
+  transfer_pending: {
+    title: 'Transferência recebida',
+    description: 'Quando alguém te envia uma transferência pendente de aceite.',
+  },
+  transfer_accepted: {
+    title: 'Transferência aceita',
+    description: 'Quando uma transferência que você enviou é aceita.',
+  },
 };
 
 export default function NotificationSettingsScreen() {

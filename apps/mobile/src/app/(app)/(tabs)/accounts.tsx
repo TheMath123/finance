@@ -6,6 +6,9 @@ import {
   ChartLineUpIcon,
   CreditCardIcon,
   EnvelopeSimpleIcon,
+  HandCoinsIcon,
+  HandshakeIcon,
+  PaperPlaneTiltIcon,
   PlusIcon,
   TagIcon,
   UserIcon,
@@ -24,6 +27,7 @@ import { cardsApi } from '@/lib/cards-api';
 import { categoriesApi } from '@/lib/categories-api';
 import { cn } from '@/lib/cn';
 import { formatCents } from '@/lib/money';
+import { transferApi } from '@/lib/transfer-api';
 import { workspaceApi } from '@/lib/workspace-api';
 
 function SectionHeader({ title, onAdd }: { title: string; onAdd: () => void }) {
@@ -91,6 +95,10 @@ export default function AccountsScreen() {
   const { data: myInvites } = useQuery({
     queryKey: ['my-invites'],
     queryFn: workspaceApi.listMyInvites,
+  });
+  const { data: pendingTransfers } = useQuery({
+    queryKey: ['transfers-pending'],
+    queryFn: transferApi.listPending,
   });
 
   const bankName = (bankCode: string) => getBank(bankCode)?.name ?? bankCode;
@@ -165,6 +173,24 @@ export default function AccountsScreen() {
             onPress={() => router.push('/invites')}
           />
         )}
+        <NavRow
+          icon={<PaperPlaneTiltIcon size={18} color="#2563EB" />}
+          label="Enviar transferência"
+          onPress={() => router.push('/transfers/new')}
+        />
+        {pendingTransfers && pendingTransfers.length > 0 && (
+          <NavRow
+            icon={<HandCoinsIcon size={18} color="#2563EB" />}
+            label="Transferências pendentes"
+            count={pendingTransfers.length}
+            onPress={() => router.push('/transfers')}
+          />
+        )}
+        <NavRow
+          icon={<HandshakeIcon size={18} color="#2563EB" />}
+          label="Contatos confiáveis"
+          onPress={() => router.push('/trusted-contacts')}
+        />
         <NavRow
           icon={<WhatsappLogoIcon size={18} color="#2563EB" />}
           label="WhatsApp"

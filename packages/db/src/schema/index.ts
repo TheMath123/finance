@@ -19,3 +19,5 @@ export * from "./notification-preference";
 export * from "./push-token";
 export * from "./whatsapp-link-code";
 export * from "./whatsapp-link";
+export * from "./inter-user-transfer";
+export * from "./trusted-contact";

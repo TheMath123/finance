@@ -99,5 +99,6 @@ export function notificationTargetRoute(data: Record<string, unknown> | undefine
   if (data.inviteId) return '/invites';
   if (data.cardId) return `/cards/${data.cardId}`;
   if (data.recurringId) return '/explore';
+  if (data.transferId) return '/transfers';
   return null;
 }

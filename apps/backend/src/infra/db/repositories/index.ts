@@ -16,6 +16,8 @@ import { createNotificationRepository } from "./notification.repository";
 import { createNotificationPreferenceRepository } from "./notification-preference.repository";
 import { createPushTokenRepository } from "./push-token.repository";
 import { createWhatsAppLinkCodeRepository } from "./whatsapp-link-code.repository";
+import { createInterUserTransferRepository } from "./inter-user-transfer.repository";
+import { createTrustedContactRepository } from "./trusted-contact.repository";
 
 /** Fábrica única: mesmo conjunto para o client raiz e para a transação (UoW). */
 export function createRepositories(db: DbHandle): Repositories {
@@ -36,5 +38,7 @@ export function createRepositories(db: DbHandle): Repositories {
     notificationPreference: createNotificationPreferenceRepository(db),
     pushToken: createPushTokenRepository(db),
     whatsappLinkCode: createWhatsAppLinkCodeRepository(db),
+    interUserTransfer: createInterUserTransferRepository(db),
+    trustedContact: createTrustedContactRepository(db),
   };
 }

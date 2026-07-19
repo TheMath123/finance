@@ -66,19 +66,20 @@ M3-01; M3-05 depende do M3-01 e do M3-04.
 
 | # | Tarefa | Status | Depende de |
 |---|---|---|---|
-| M3-01 | [Infra de storage de arquivos (S3/R2)](in-progress/m3-01-infra-storage-arquivos.md) | 🟡 Em andamento | — |
-| M3-02 | [Transferência entre usuários + contato confiável](m3-02-transferencia-entre-usuarios.md) | 🔵 Backlog | M2-10, M2-01 |
+| M3-01 | [Infra de storage de arquivos (S3/R2)](in-progress/m3-01-infra-storage-arquivos.md) | 🟡 Em andamento (falta criar os buckets no R2 e validar) | — |
+| M3-02 | [Transferência entre usuários + contato confiável](done/m3-02-transferencia-entre-usuarios.md) | 🟢 Concluída | M2-10 |
 | M3-03 | [Split de despesas](m3-03-split-despesas.md) | 🔵 Backlog | M2-10 |
 | M3-04 | [Anexo de comprovante nas transações (app)](m3-04-anexo-comprovante-app.md) | 🔵 Backlog | M3-01 |
 | M3-05 | [Anexo de comprovante via WhatsApp (foto no chatbot)](m3-05-anexo-comprovante-whatsapp.md) | 🔵 Backlog | M3-01, M3-04, M2-06 |
 
 Cada task tem uma seção "Próximo passo" com decisões de produto em
-aberto — vale ler antes de começar a implementar (prazo de expiração de
-transferência, se split pode ser editado depois de criado, limite de
-tamanho de arquivo, janela de associação foto→transação no WhatsApp).
-M3-01 já decidiu S3 vs R2: **AWS S3 agora**, migração pra Cloudflare R2
-prevista — client genérico (S3-compatible), nomes de env sem "AWS" pra
-não precisar renomear nada na troca.
+aberto — vale ler antes de começar a implementar (se split pode ser
+editado depois de criado, limite de tamanho de arquivo, janela de
+associação foto→transação no WhatsApp). M3-01 decidiu usar **Cloudflare
+R2** direto (client S3-compatible genérico, extraído pro pacote
+`@finance/storage` — nomes de env sem "AWS"/"R2" pra não precisar
+renomear numa troca futura de provedor); M3-02 já fechou o prazo de
+expiração da transferência em 30 dias (spec).
 
 ## Histórico do M1
 
