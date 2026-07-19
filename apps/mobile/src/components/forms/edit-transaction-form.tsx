@@ -15,6 +15,7 @@ import { ApiError } from '@/lib/api-client';
 import { useCategories } from '@/lib/hooks/use-categories';
 import { editTransactionSchema, type EditTransactionInput } from '@/lib/schemas/finance';
 import { transactionsApi, type Transaction } from '@/lib/transactions-api';
+import { AttachmentField } from './attachment-field';
 import { CreateSplitForm } from './create-split-form';
 
 /**
@@ -75,6 +76,7 @@ export function EditTransactionForm({
         options={categoryOptions}
       />
       <DateField control={control} name="date" label="Data" />
+      <AttachmentField workspaceId={workspaceId!} transaction={transaction} />
       {mutation.isError && (
         <ThemedText type="small" style={{ color: '#DC2626' }}>
           {mutation.error instanceof ApiError ? mutation.error.message : 'Erro inesperado'}

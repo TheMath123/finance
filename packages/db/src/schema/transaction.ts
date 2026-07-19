@@ -59,6 +59,8 @@ export const transactions = pgTable(
       onDelete: "set null",
     }),
     source: transactionSourceEnum("source").notNull().default("app"),
+    /** Chave no bucket S3-compatible (M3-04) — nunca a URL; leitura sempre via URL assinada temporária. */
+    attachmentKey: text("attachment_key"),
     /** Soft delete — cálculos e listagens filtram `deleted_at IS NULL`. */
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
     createdAt: createdAt(),

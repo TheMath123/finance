@@ -112,3 +112,49 @@ export async function apiRequestText(path: string, options: Omit<RequestOptions,
     return rawTextRequest(path, options);
   }
 }
+
+async function rawUploadRequest<T>(path: string, formData: FormData): Promise<T> {
+  const accessToken = await tokenStore.getAccessToken();
+
+  // Sem Content-Type manual — o fetch define multipart/form-data com o boundary certo sozinho.
+  const response = await fetch(`${env.EXPO_PUBLIC_API_URL}${path}`, {
+    method: "POST",
+    headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+    body: formData,
+  });
+
+  const data = response.status === 204 ? undefined : await response.json().catch(() => undefined);
+
+  if (!response.ok) {
+    const error = data?.error ?? { code: "unknown_error", message: "Erro inesperado" };
+    throw new ApiError(response.status, error.code, error.message, error.issues);
+  }
+
+  return data as T;
+}
+
+/** Upload multipart (ex.: anexo de comprovante, M3-04) — nunca JSON.stringify no body. */
+export async function apiRequestUpload<T>(path: string, formData: FormData): Promise<T> {
+  try {
+    return await rawUploadRequest<T>(path, formData);
+  } catch (error) {
+    if (!(error instanceof ApiError) || error.status !== 401) throw error;
+
+    const refreshToken = await tokenStore.getRefreshToken();
+    if (!refreshToken) throw error;
+
+    const session = await rawRequest<{ accessToken: string; refreshToken: string }>("/auth/refresh", {
+      method: "POST",
+      body: { refreshToken },
+      skipAuth: true,
+    }).catch(() => null);
+
+    if (!session) {
+      await tokenStore.clearTokens();
+      throw error;
+    }
+
+    await tokenStore.setTokens(session.accessToken, session.refreshToken);
+    return rawUploadRequest<T>(path, formData);
+  }
+}

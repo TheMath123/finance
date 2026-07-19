@@ -48,6 +48,13 @@
         {
           "faceIDPermission": "Usamos Face ID pra travar o app com biometria."
         }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Usamos sua galeria pra anexar comprovantes às transações.",
+          "cameraPermission": "Usamos a câmera pra fotografar comprovantes das transações."
+        }
       ]
     ],
     "experiments": {

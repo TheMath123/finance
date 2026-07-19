@@ -69,7 +69,7 @@ M3-01; M3-05 depende do M3-01 e do M3-04.
 | M3-01 | [Infra de storage de arquivos (S3/R2)](in-progress/m3-01-infra-storage-arquivos.md) | 🟡 Em andamento (falta criar os buckets no R2 e validar) | — |
 | M3-02 | [Transferência entre usuários + contato confiável](done/m3-02-transferencia-entre-usuarios.md) | 🟢 Concluída | M2-10 |
 | M3-03 | [Split de despesas](done/m3-03-split-despesas.md) | 🟢 Concluída | M2-10 |
-| M3-04 | [Anexo de comprovante nas transações (app)](m3-04-anexo-comprovante-app.md) | 🔵 Backlog | M3-01 |
+| M3-04 | [Anexo de comprovante nas transações (app)](in-progress/m3-04-anexo-comprovante-app.md) | 🟡 Em andamento (código pronto, falta validar contra R2 real) | M3-01 |
 | M3-05 | [Anexo de comprovante via WhatsApp (foto no chatbot)](m3-05-anexo-comprovante-whatsapp.md) | 🔵 Backlog | M3-01, M3-04, M2-06 |
 
 Cada task tem uma seção "Próximo passo" com decisões de produto em
@@ -81,7 +81,12 @@ R2** direto (client S3-compatible genérico, extraído pro pacote
 renomear numa troca futura de provedor); M3-02 já fechou o prazo de
 expiração da transferência em 30 dias (spec); M3-03 decidiu que split
 criado só pode ser cancelado (nunca editado), e só enquanto nenhuma parte
-foi paga/confirmada.
+foi paga/confirmada; M3-04 decidiu só aceitar imagem (sem PDF) até virar
+necessidade real, limite de 5MB.
+
+M3-01 e M3-04 ficam os dois em `in-progress/` ao mesmo tempo por exceção
+— M3-04 já está com o código pronto, só falta o bucket do M3-01 existir
+de verdade no R2 pra validar as duas.
 
 ## Histórico do M1
 

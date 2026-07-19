@@ -22,6 +22,8 @@ export interface Transaction {
   installmentGroupId: string | null;
   recurringId: string | null;
   source: TransactionSource;
+  /** Chave no bucket S3-compatible (M3-04) — nunca a URL final. */
+  attachmentKey: string | null;
   deletedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;

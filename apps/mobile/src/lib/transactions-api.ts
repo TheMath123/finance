@@ -14,6 +14,8 @@ export interface Transaction {
   categoryId: string;
   /** Presente quando o método não é credit — split (M3-03) só é possível com conta de origem. */
   accountId: string | null;
+  /** Não é a key em si, só indica se tem comprovante anexado (M3-04) — a key nunca é exposta direto. */
+  attachmentKey: string | null;
 }
 
 export interface ListTransactionsFilters {

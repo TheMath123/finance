@@ -85,6 +85,13 @@
       "when": 1784483480563,
       "tag": "0011_shallow_nick_fury",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1784490018531,
+      "tag": "0012_sticky_klaw",
+      "breakpoints": true
     }
   ]
 }

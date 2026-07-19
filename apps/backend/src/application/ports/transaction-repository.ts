@@ -31,6 +31,7 @@ export interface TransactionPatch {
   categoryId?: string;
   date?: string;
   invoiceId?: string;
+  attachmentKey?: string | null;
 }
 
 export interface TransactionFilters {
