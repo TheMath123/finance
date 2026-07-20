@@ -36,12 +36,19 @@ export function BiometricLockProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     (async () => {
-      const [hasHardware, storedEnabled] = await Promise.all([
+      const [hasHardware, isEnrolled, storedEnabled] = await Promise.all([
         LocalAuthentication.hasHardwareAsync(),
+        LocalAuthentication.isEnrolledAsync(),
         biometricStore.getEnabled(),
       ]);
-      const effectiveEnabled = hasHardware && storedEnabled;
-      setAvailable(hasHardware);
+      // hasHardwareAsync sozinho não basta: vários emuladores relatam sensor
+      // presente mesmo sem nenhuma biometria cadastrada — isEnrolledAsync é o
+      // que garante que authenticateAsync() tem algo pra checar depois. Sem
+      // isso, o usuário conseguia ligar a trava e ficava sem forma de
+      // desbloquear (a tela de lock não tem fallback de logout).
+      const canUseBiometrics = hasHardware && isEnrolled;
+      const effectiveEnabled = canUseBiometrics && storedEnabled;
+      setAvailable(canUseBiometrics);
       setEnabledState(effectiveEnabled);
       setLocked(effectiveEnabled);
       setReady(true);
