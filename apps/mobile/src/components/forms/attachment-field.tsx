@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
+import { useEffect, useState } from 'react';
 import { Alert, Image, Pressable, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
@@ -17,11 +18,21 @@ function inferMimeType(uri: string): string {
 
 export function AttachmentField({ workspaceId, transaction }: { workspaceId: string; transaction: Transaction }) {
   const queryClient = useQueryClient();
+  const [editing, setEditing] = useState(false);
+  // Espelha o attachmentKey localmente: quem abre esse form (ex. explore.tsx)
+  // guarda a transação num useState congelado no momento em que o modal abriu,
+  // então invalidar a query da lista não atualiza esse prop — sem isso, a
+  // prévia só aparecia depois de fechar e reabrir o modal.
+  const [attachmentKey, setAttachmentKey] = useState(transaction.attachmentKey);
+  useEffect(() => {
+    setAttachmentKey(transaction.attachmentKey);
+  }, [transaction.attachmentKey]);
+  const hasAttachment = Boolean(attachmentKey);
 
   const { data: preview } = useQuery({
     queryKey: ['attachment-url', transaction.id],
     queryFn: () => attachmentApi.getUrl(workspaceId, transaction.id),
-    enabled: Boolean(transaction.attachmentKey),
+    enabled: hasAttachment,
   });
 
   const invalidate = () => {
@@ -36,7 +47,11 @@ export function AttachmentField({ workspaceId, transaction }: { workspaceId: str
         name: asset.fileName ?? `comprovante.${(asset.mimeType ?? 'image/jpeg').split('/')[1]}`,
         type: asset.mimeType ?? inferMimeType(asset.uri),
       }),
-    onSuccess: invalidate,
+    onSuccess: (result) => {
+      setAttachmentKey(result.attachmentKey);
+      invalidate();
+      setEditing(false);
+    },
     onError: (err) => {
       if (!(err instanceof ApiError)) console.error('[attachment upload]', err);
       Alert.alert('Erro', err instanceof ApiError ? err.message : 'Não foi possível anexar o comprovante.');
@@ -45,7 +60,10 @@ export function AttachmentField({ workspaceId, transaction }: { workspaceId: str
 
   const remove = useMutation({
     mutationFn: () => attachmentApi.delete(workspaceId, transaction.id),
-    onSuccess: invalidate,
+    onSuccess: () => {
+      setAttachmentKey(null);
+      invalidate();
+    },
     onError: (err) =>
       Alert.alert('Erro', err instanceof ApiError ? err.message : 'Não foi possível remover o comprovante.'),
   });
@@ -73,27 +91,14 @@ export function AttachmentField({ workspaceId, transaction }: { workspaceId: str
   return (
     <View className="gap-2">
       <ThemedText type="smallBold">Comprovante</ThemedText>
-      {transaction.attachmentKey && preview?.url && (
+      {hasAttachment && preview?.url && (
         <Image source={{ uri: preview.url }} className="h-40 w-full rounded-md" resizeMode="cover" />
       )}
-      <View className="flex-row gap-2">
-        <Button
-          className="flex-1"
-          variant="outline"
-          size="sm"
-          loading={upload.isPending}
-          onPress={pickFromCamera}>
-          Câmera
-        </Button>
-        <Button
-          className="flex-1"
-          variant="outline"
-          size="sm"
-          loading={upload.isPending}
-          onPress={pickFromLibrary}>
-          Galeria
-        </Button>
-        {transaction.attachmentKey && (
+      {hasAttachment && !editing ? (
+        <View className="flex-row gap-2">
+          <Button className="flex-1" variant="outline" size="sm" onPress={() => setEditing(true)}>
+            Editar
+          </Button>
           <Pressable
             onPress={() => remove.mutate()}
             hitSlop={8}
@@ -102,8 +107,37 @@ export function AttachmentField({ workspaceId, transaction }: { workspaceId: str
               Remover
             </ThemedText>
           </Pressable>
-        )}
-      </View>
+        </View>
+      ) : (
+        <View className="flex-row gap-2">
+          <Button
+            className="flex-1"
+            variant="outline"
+            size="sm"
+            loading={upload.isPending}
+            onPress={pickFromCamera}>
+            Câmera
+          </Button>
+          <Button
+            className="flex-1"
+            variant="outline"
+            size="sm"
+            loading={upload.isPending}
+            onPress={pickFromLibrary}>
+            Galeria
+          </Button>
+          {hasAttachment && (
+            <Pressable
+              onPress={() => setEditing(false)}
+              hitSlop={8}
+              className="items-center justify-center px-2 active:opacity-60">
+              <ThemedText type="small" themeColor="textSecondary">
+                Cancelar
+              </ThemedText>
+            </Pressable>
+          )}
+        </View>
+      )}
     </View>
   );
 }
