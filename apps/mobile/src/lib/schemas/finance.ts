@@ -50,10 +50,10 @@ export const transactionSchema = z
 export type TransactionInput = z.infer<typeof transactionSchema>;
 
 /**
- * Edição de transação — só descrição, valor, categoria e data são
- * editáveis via PATCH (tipo/método/conta não mudam depois de criada).
- * Campos ficam obrigatórios aqui (form sempre reenvia os 4), mas a API
- * aceita parcial.
+ * Edição de transação — descrição, valor, categoria e data são sempre
+ * editáveis via PATCH; conta (não-crédito) e cartão (crédito avulsa, não
+ * parcela) entram condicionalmente conforme o método da transação (ver
+ * `EditTransactionForm`). Tipo/método nunca mudam depois de criada.
  */
 export const editTransactionSchema = z.object({
   description: z.string().min(1, "Informe a descrição").max(200),
@@ -61,6 +61,8 @@ export const editTransactionSchema = z.object({
   amount: z.number().int().positive("Informe um valor maior que zero"),
   categoryId: z.string().uuid("Selecione a categoria"),
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data inválida"),
+  accountId: z.string().uuid().optional(),
+  cardId: z.string().uuid().optional(),
 });
 export type EditTransactionInput = z.infer<typeof editTransactionSchema>;
 

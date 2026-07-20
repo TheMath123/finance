@@ -9,6 +9,7 @@ import {
   PlusIcon,
   ReceiptIcon,
   TrashIcon,
+  UsersIcon,
   XIcon,
 } from 'phosphor-react-native';
 import { useEffect, useState } from 'react';
@@ -47,6 +48,7 @@ const FREQUENCY_LABELS: Record<RecurringTransaction['frequency'], string> = {
 
 function TransactionRow({ transaction, onPress }: { transaction: Transaction; onPress: () => void }) {
   const isExpense = transaction.type === 'expense';
+  const isInstallment = transaction.installmentTotal !== null;
 
   return (
     <Pressable onPress={onPress} className="active:opacity-70">
@@ -55,9 +57,20 @@ function TransactionRow({ transaction, onPress }: { transaction: Transaction; on
           <ThemedText type="smallBold" numberOfLines={1}>
             {transaction.description}
           </ThemedText>
-          <ThemedText type="small" themeColor="textSecondary">
-            {transaction.date.split('-').reverse().join('/')}
-          </ThemedText>
+          <View className="flex-row items-center gap-2">
+            <ThemedText type="small" themeColor="textSecondary">
+              {transaction.date.split('-').reverse().join('/')}
+              {isInstallment ? ` · ${transaction.installmentNumber}/${transaction.installmentTotal}` : ''}
+            </ThemedText>
+            {transaction.hasActiveSplit && (
+              <View className="flex-row items-center gap-1">
+                <UsersIcon size={12} weight="bold" />
+                <ThemedText type="small" themeColor="textSecondary">
+                  Dividido
+                </ThemedText>
+              </View>
+            )}
+          </View>
         </View>
         <ThemedText type="smallBold" style={{ color: isExpense ? '#DC2626' : '#16A34A' }}>
           {isExpense ? '-' : '+'}

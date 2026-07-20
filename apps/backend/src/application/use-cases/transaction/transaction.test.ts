@@ -36,6 +36,7 @@ let actor: Actor;
 let accountId: string;
 let secondAccountId: string;
 let cardId: string;
+let secondCardId: string;
 let categoryId: string;
 let fallbackCategoryId: string;
 
@@ -108,21 +109,18 @@ beforeAll(async () => {
       initialBalance: 0,
     })
     .returning();
-  const [card] = await db
+  const [card, secondCard] = await db
     .insert(cards)
-    .values({
-      workspaceId: workspace.id,
-      bankId: bank!.id,
-      name: "Ultravioleta",
-      limit: 500_000,
-      closingDay: 10,
-      dueDay: 17,
-    })
+    .values([
+      { workspaceId: workspace.id, bankId: bank!.id, name: "Ultravioleta", limit: 500_000, closingDay: 10, dueDay: 17 },
+      { workspaceId: workspace.id, bankId: bank!.id, name: "Inter Gold", limit: 300_000, closingDay: 10, dueDay: 17 },
+    ])
     .returning();
 
   accountId = account!.id;
   secondAccountId = second!.id;
   cardId = card!.id;
+  secondCardId = secondCard!.id;
   actor = { userId: user.id, workspaceId: workspace.id, role: "owner" };
 });
 
@@ -385,6 +383,143 @@ describe("crédito, fatura e pagamento", () => {
     const after = await db.query.transactions.findMany();
     const parcel1 = after.find((t) => t.installmentNumber === 1 && t.description === "Notebook");
     expect(parcel1?.deletedAt).toBeNull();
+  });
+});
+
+describe("editar conta/cartão da transação (auditoria 2026-07-20)", () => {
+  test("troca de conta (pix/debit/cash): sai do saldo da conta antiga e entra na nova", async () => {
+    const created = await createTransaction(deps, actor, {
+      description: "Editar conta",
+      amount: 5_000,
+      type: "expense",
+      method: "debit",
+      date: "2028-01-10",
+      categoryId,
+      accountId,
+    });
+    if (!created.ok) throw new Error("setup falhou");
+    const tx = created.value[0]!;
+
+    const beforeOld = await accountBalance(accountId);
+    const beforeNew = await accountBalance(secondAccountId);
+
+    const updated = await updateTransaction(deps, actor, tx.id, { accountId: secondAccountId });
+    expect(updated.ok).toBe(true);
+    if (!updated.ok) return;
+    expect(updated.value.accountId).toBe(secondAccountId);
+
+    // saldo é derivado (soma de deltas) — mover a transação já recalcula as duas contas sozinho
+    expect(await accountBalance(accountId)).toBe(beforeOld + 5_000);
+    expect(await accountBalance(secondAccountId)).toBe(beforeNew - 5_000);
+  });
+
+  test("trocar accountId numa transação credit é rejeitado", async () => {
+    const created = await createTransaction(deps, actor, {
+      description: "Compra crédito p/ teste conta",
+      amount: 1_000,
+      type: "expense",
+      method: "credit",
+      date: "2028-02-05",
+      categoryId,
+      cardId,
+    });
+    if (!created.ok) throw new Error("setup falhou");
+    const result = await updateTransaction(deps, actor, created.value[0]!.id, { accountId });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toBe("invalid_method_fields");
+  });
+
+  test("trocar cardId numa transação não-crédito é rejeitado", async () => {
+    const created = await createTransaction(deps, actor, {
+      description: "Pix p/ teste cartão",
+      amount: 1_000,
+      type: "expense",
+      method: "pix",
+      date: "2028-02-06",
+      categoryId,
+      accountId,
+    });
+    if (!created.ok) throw new Error("setup falhou");
+    const result = await updateTransaction(deps, actor, created.value[0]!.id, { cardId });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toBe("invalid_method_fields");
+  });
+
+  test("trocar cartão de compra avulsa move a transação pra fatura do cartão novo", async () => {
+    const created = await createTransaction(deps, actor, {
+      description: "Compra avulsa p/ trocar de cartão",
+      amount: 8_000,
+      type: "expense",
+      method: "credit",
+      date: "2028-03-05", // dia 5 ≤ closing 10 → fatura 03/2028 no cartão original
+      categoryId,
+      cardId,
+    });
+    if (!created.ok) throw new Error("setup falhou");
+    const tx = created.value[0]!;
+    const oldInvoiceId = tx.invoiceId!;
+
+    const updated = await updateTransaction(deps, actor, tx.id, { cardId: secondCardId });
+    expect(updated.ok).toBe(true);
+    if (!updated.ok) return;
+    expect(updated.value.cardId).toBe(secondCardId);
+    expect(updated.value.invoiceId).not.toBe(oldInvoiceId);
+
+    const newInvoices = await listInvoices(deps, actor, secondCardId);
+    if (!newInvoices.ok) throw new Error("listagem falhou");
+    expect(newInvoices.value.some((i) => i.id === updated.value.invoiceId)).toBe(true);
+  });
+
+  test("trocar cartão de uma parcela é bloqueado (installment_field_locked)", async () => {
+    const created = await createTransaction(deps, actor, {
+      description: "Parcelada p/ bloquear troca de cartão",
+      amount: 6_000,
+      type: "expense",
+      method: "credit",
+      date: "2028-04-05",
+      categoryId,
+      cardId,
+      installments: 2,
+    });
+    if (!created.ok) throw new Error("setup falhou");
+    const result = await updateTransaction(deps, actor, created.value[0]!.id, { cardId: secondCardId });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toBe("installment_field_locked");
+  });
+
+  test("trocar cartão pra um destino com fatura já paga é bloqueado", async () => {
+    // Fatura de maio/2028 no cartão novo, paga antecipadamente
+    const preTx = await createTransaction(deps, actor, {
+      description: "Pré-paga no cartão novo",
+      amount: 1_000,
+      type: "expense",
+      method: "credit",
+      date: "2028-05-05",
+      categoryId,
+      cardId: secondCardId,
+    });
+    if (!preTx.ok) throw new Error("setup falhou");
+    const paid = await payInvoice(deps, actor, preTx.value[0]!.invoiceId!, {
+      accountId,
+      date: "2028-05-06",
+      method: "pix",
+    });
+    expect(paid.ok).toBe(true);
+
+    const created = await createTransaction(deps, actor, {
+      description: "Compra no cartão original, mesma competência",
+      amount: 2_000,
+      type: "expense",
+      method: "credit",
+      date: "2028-05-05",
+      categoryId,
+      cardId,
+    });
+    if (!created.ok) throw new Error("setup falhou");
+
+    const result = await updateTransaction(deps, actor, created.value[0]!.id, { cardId: secondCardId });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toBe("invoice_paid");
   });
 });
 

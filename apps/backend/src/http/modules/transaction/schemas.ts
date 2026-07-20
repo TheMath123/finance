@@ -26,6 +26,8 @@ export const updateTransactionSchema = z.object({
   amount: z.number().int().positive().optional(),
   categoryId: z.string().uuid().optional(),
   date: dateSchema.optional(),
+  accountId: z.string().uuid().optional(),
+  cardId: z.string().uuid().optional(),
 });
 
 export const listTransactionsSchema = z.object({

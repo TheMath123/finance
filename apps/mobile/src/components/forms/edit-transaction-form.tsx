@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { View } from 'react-native';
@@ -11,7 +11,9 @@ import { TextField } from '@/components/form/text-field';
 import { ThemedText } from '@/components/themed-text';
 import { Button } from '@/components/ui/button';
 import { useSession } from '@/context/session';
+import { accountsApi } from '@/lib/accounts-api';
 import { ApiError } from '@/lib/api-client';
+import { cardsApi } from '@/lib/cards-api';
 import { useCategories } from '@/lib/hooks/use-categories';
 import { editTransactionSchema, type EditTransactionInput } from '@/lib/schemas/finance';
 import { transactionsApi, type Transaction } from '@/lib/transactions-api';
@@ -19,8 +21,10 @@ import { AttachmentField } from './attachment-field';
 import { CreateSplitForm } from './create-split-form';
 
 /**
- * Só descrição, valor, categoria e data são editáveis (tipo/método/conta
- * não mudam depois de criada — regra da API).
+ * Tipo/método nunca mudam depois de criada (regra da API). Conta (métodos
+ * não-crédito, exceto transferência) e cartão (crédito avulsa, não
+ * parcela) já podem — ver `updateTransaction` no backend (auditoria
+ * 2026-07-20).
  */
 export function EditTransactionForm({
   transaction,
@@ -37,6 +41,23 @@ export function EditTransactionForm({
 
   const { data: categories } = useCategories(workspaceId);
 
+  const isCredit = transaction.method === 'credit';
+  const isTransfer = transaction.method === 'transfer';
+  const isParceled = transaction.installmentGroupId !== null;
+  const canEditAccount = !isCredit && !isTransfer;
+  const canEditCard = isCredit && !isParceled;
+
+  const { data: accounts } = useQuery({
+    queryKey: ['accounts', workspaceId],
+    queryFn: () => accountsApi.list(workspaceId!),
+    enabled: Boolean(workspaceId) && canEditAccount,
+  });
+  const { data: cards } = useQuery({
+    queryKey: ['cards', workspaceId],
+    queryFn: () => cardsApi.list(workspaceId!),
+    enabled: Boolean(workspaceId) && canEditCard,
+  });
+
   const { control, handleSubmit } = useForm<EditTransactionInput>({
     resolver: zodResolver(editTransactionSchema),
     defaultValues: {
@@ -44,6 +65,8 @@ export function EditTransactionForm({
       amount: transaction.amount,
       categoryId: transaction.categoryId,
       date: transaction.date,
+      accountId: canEditAccount ? (transaction.accountId ?? undefined) : undefined,
+      cardId: canEditCard ? (transaction.cardId ?? undefined) : undefined,
     },
   });
 
@@ -58,6 +81,8 @@ export function EditTransactionForm({
   });
 
   const categoryOptions = (categories ?? []).map((c) => ({ label: c.name, value: c.id }));
+  const accountOptions = (accounts ?? []).map((a) => ({ label: a.name, value: a.id }));
+  const cardOptions = (cards ?? []).map((c) => ({ label: c.name, value: c.id }));
   const canSplit = transaction.type === 'expense' && Boolean(transaction.accountId);
 
   if (splitting) {
@@ -68,6 +93,12 @@ export function EditTransactionForm({
     <View className="gap-4">
       <TextField control={control} name="description" label="Descrição" placeholder="Ex.: Mercado" />
       <MoneyField control={control} name="amount" label="Valor" />
+      {isParceled && (
+        <ThemedText type="small" themeColor="textSecondary">
+          Parcela {transaction.installmentNumber} de {transaction.installmentTotal} — o valor acima é só
+          desta parcela.
+        </ThemedText>
+      )}
       <SelectField
         control={control}
         name="categoryId"
@@ -76,6 +107,29 @@ export function EditTransactionForm({
         options={categoryOptions}
       />
       <DateField control={control} name="date" label="Data" />
+      {canEditAccount && (
+        <SelectField
+          control={control}
+          name="accountId"
+          label="Conta"
+          placeholder="Selecione a conta"
+          options={accountOptions}
+        />
+      )}
+      {canEditCard && (
+        <SelectField
+          control={control}
+          name="cardId"
+          label="Cartão"
+          placeholder="Selecione o cartão"
+          options={cardOptions}
+        />
+      )}
+      {isCredit && isParceled && (
+        <ThemedText type="small" themeColor="textSecondary">
+          Cartão travado — compra parcelada não pode trocar de cartão.
+        </ThemedText>
+      )}
       <AttachmentField workspaceId={workspaceId!} transaction={transaction} />
       {mutation.isError && (
         <ThemedText type="small" style={{ color: '#DC2626' }}>

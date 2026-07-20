@@ -30,6 +30,8 @@ export interface TransactionPatch {
   amount?: number;
   categoryId?: string;
   date?: string;
+  accountId?: string;
+  cardId?: string;
   invoiceId?: string;
   attachmentKey?: string | null;
 }

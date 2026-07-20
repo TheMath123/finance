@@ -12,6 +12,10 @@ export interface UpdateTransactionInput {
   amount?: number;
   categoryId?: string;
   date?: string;
+  /** Só method pix/debit/cash (não credit, não transfer — duas pernas fica fora de escopo). */
+  accountId?: string;
+  /** Só method credit e transação avulsa (parcela mantém o cartão travado). */
+  cardId?: string;
 }
 
 export async function updateTransaction(
@@ -24,8 +28,11 @@ export async function updateTransaction(
   if (!existing || existing.deletedAt) return left("transaction_not_found");
   if (await isInPaidInvoice(deps.repos, existing)) return left("invoice_paid");
 
-  // Parcelas: valor e data são travados (mudaria a soma do grupo/fatura); descrição/categoria ok
-  if (existing.installmentGroupId && (input.amount !== undefined || input.date !== undefined)) {
+  // Parcelas: valor, data e cartão são travados (mudaria a soma do grupo/fatura); descrição/categoria ok
+  if (
+    existing.installmentGroupId &&
+    (input.amount !== undefined || input.date !== undefined || input.cardId !== undefined)
+  ) {
     return left("installment_field_locked");
   }
 
@@ -33,6 +40,14 @@ export async function updateTransaction(
     const category = await deps.repos.category.findInWorkspace(actor.workspaceId, input.categoryId);
     if (!category) return left("category_not_found");
   }
+
+  if (input.accountId !== undefined) {
+    if (existing.method === "credit" || existing.method === "transfer") return left("invalid_method_fields");
+    const account = await deps.repos.account.findActiveInWorkspace(actor.workspaceId, input.accountId);
+    if (!account) return left("account_not_found");
+  }
+
+  if (input.cardId !== undefined && existing.method !== "credit") return left("invalid_method_fields");
 
   const patch: TransactionPatch = {};
   if (input.description !== undefined) {
@@ -42,17 +57,23 @@ export async function updateTransaction(
   if (input.amount !== undefined) patch.amount = input.amount;
   if (input.categoryId !== undefined) patch.categoryId = input.categoryId;
   if (input.date !== undefined) patch.date = input.date;
+  if (input.accountId !== undefined) patch.accountId = input.accountId;
 
-  // Crédito com mudança de data: recalcula a fatura de competência
-  if (input.date !== undefined && existing.method === "credit" && existing.cardId) {
-    const card = await deps.repos.card.findInWorkspace(actor.workspaceId, existing.cardId);
+  // Crédito com mudança de cartão e/ou data: recalcula a fatura de competência
+  // no cartão de destino (mesmo cartão, se só a data mudou).
+  const cardChanged = input.cardId !== undefined && input.cardId !== existing.cardId;
+  if (existing.method === "credit" && (input.date !== undefined || cardChanged)) {
+    const targetCardId = input.cardId ?? existing.cardId!;
+    const card = await deps.repos.card.findActiveInWorkspace(actor.workspaceId, targetCardId);
     if (!card) return left("card_not_found");
+    const targetDate = input.date ?? existing.date;
     const invoice = await deps.repos.invoice.getOrCreate(
       actor.workspaceId,
       card.id,
-      competencePeriod(input.date, card.closingDay),
+      competencePeriod(targetDate, card.closingDay),
     );
     if (invoice.status === "paid") return left("invoice_paid");
+    patch.cardId = card.id;
     patch.invoiceId = invoice.id;
   }
 

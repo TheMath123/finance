@@ -13,6 +13,7 @@ import { confirmShareReimbursement } from "./confirm-reimbursement";
 import { createSplit } from "./create-split";
 import { listOwedByMe, listOwedToMe } from "./list-owed";
 import { markSharePaid } from "./mark-share-paid";
+import { listTransactions } from "../transaction";
 
 const uniqueEmail = () => `test-${crypto.randomUUID()}@test.local`;
 
@@ -367,5 +368,30 @@ describe("listOwedByMe / listOwedToMe", () => {
 
     const owedByP1After = await listOwedByMe(deps, { userId: p1.userId });
     expect(owedByP1After.some((o) => o.shareId === share.id)).toBe(false);
+  });
+});
+
+describe("listTransactions: indicador hasActiveSplit (auditoria 2026-07-20)", () => {
+  test("true com split ativo, false sem split e depois de cancelado", async () => {
+    const deps = createTestDeps(db);
+    const creator = await newUser("Criador Split Flag");
+    const p1 = await newUser("Participante Split Flag");
+    const withSplit = await newExpense(deps, creator, 4000);
+    const withoutSplit = await newExpense(deps, creator, 1000);
+
+    const split = await createSplit(deps, actorFor(creator), withSplit.id, {
+      participants: [{ type: "user", contact: p1.email }],
+    });
+    if (!split.ok) throw new Error("setup falhou");
+
+    const listed = await listTransactions(deps, actorFor(creator), {});
+    const flagged = listed.find((t) => t.id === withSplit.id);
+    const unflagged = listed.find((t) => t.id === withoutSplit.id);
+    expect(flagged?.hasActiveSplit).toBe(true);
+    expect(unflagged?.hasActiveSplit).toBe(false);
+
+    await cancelSplit(deps, actorFor(creator), split.value.id);
+    const afterCancel = await listTransactions(deps, actorFor(creator), {});
+    expect(afterCancel.find((t) => t.id === withSplit.id)?.hasActiveSplit).toBe(false);
   });
 });
