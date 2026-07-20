@@ -7,7 +7,13 @@ import { Input } from '@/components/ui/input';
 export interface TextFieldProps<T extends FieldValues>
   extends Pick<
     TextInputProps,
-    'placeholder' | 'autoCapitalize' | 'keyboardType' | 'autoComplete' | 'returnKeyType' | 'onSubmitEditing'
+    | 'placeholder'
+    | 'autoCapitalize'
+    | 'keyboardType'
+    | 'autoComplete'
+    | 'returnKeyType'
+    | 'onSubmitEditing'
+    | 'editable'
   > {
   control: Control<T>;
   name: Path<T>;

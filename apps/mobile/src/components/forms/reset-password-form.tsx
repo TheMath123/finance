@@ -55,6 +55,7 @@ export function ResetPasswordForm({ defaultEmail, defaultCode }: ResetPasswordFo
         autoCapitalize="none"
         autoComplete="email"
         keyboardType="email-address"
+        editable={!defaultEmail}
       />
       <CodeField control={control} name="code" label="Código" />
 
