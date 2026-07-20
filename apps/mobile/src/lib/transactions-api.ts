@@ -43,6 +43,8 @@ export interface CreateTransactionInput {
   categoryId: string;
   accountId?: string;
   cardId?: string;
+  /** Só method=credit; 1 = à vista (default no backend se omitido). */
+  installments?: number;
 }
 
 export interface UpdateTransactionInput {

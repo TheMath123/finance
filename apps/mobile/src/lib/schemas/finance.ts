@@ -39,6 +39,9 @@ export const transactionSchema = z
     categoryId: z.string().uuid("Selecione a categoria"),
     accountId: z.string().uuid().optional(),
     cardId: z.string().uuid().optional(),
+    /** Só method=credit; select de 1x a 48x — string na UI (padrão dos demais
+     * selects numéricos, ex. closingDay), convertida pra número ao enviar. */
+    installments: z.string().optional(),
   })
   .refine((data) => data.accountId ?? data.cardId, {
     message: "Selecione uma conta ou cartão",

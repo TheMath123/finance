@@ -36,6 +36,11 @@ const METHOD_OPTIONS = [
   { label: 'Crédito', value: 'credit' },
 ];
 
+const INSTALLMENT_OPTIONS = Array.from({ length: 48 }, (_, index) => {
+  const count = String(index + 1);
+  return { label: index === 0 ? 'À vista' : `${count}x`, value: count };
+});
+
 function todayIso(): string {
   const now = new Date();
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
@@ -68,6 +73,7 @@ export function CreateTransactionForm({ onDone }: { onDone: () => void }) {
       categoryId: '',
       accountId: undefined,
       cardId: undefined,
+      installments: '1',
     },
   });
 
@@ -76,14 +82,21 @@ export function CreateTransactionForm({ onDone }: { onDone: () => void }) {
 
   // Ao trocar de método, limpa o campo do "modo" anterior — crédito manda cardId
   // (nunca accountId), os demais mandam accountId (nunca cardId); a API rejeita
-  // se os dois vierem juntos.
+  // se os dois vierem juntos. Parcelas só fazem sentido no crédito.
   useEffect(() => {
     if (isCredit) setValue('accountId', undefined);
-    else setValue('cardId', undefined);
+    else {
+      setValue('cardId', undefined);
+      setValue('installments', '1');
+    }
   }, [isCredit, setValue]);
 
   const mutation = useMutation({
-    mutationFn: (input: TransactionInput) => transactionsApi.create(workspaceId!, input),
+    mutationFn: (input: TransactionInput) =>
+      transactionsApi.create(workspaceId!, {
+        ...input,
+        installments: input.installments ? Number(input.installments) : undefined,
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['transactions', workspaceId] });
       queryClient.invalidateQueries({ queryKey: ['summary', workspaceId] });
@@ -110,13 +123,22 @@ export function CreateTransactionForm({ onDone }: { onDone: () => void }) {
         options={categoryOptions}
       />
       {isCredit ? (
-        <SelectField
-          control={control}
-          name="cardId"
-          label="Cartão"
-          placeholder="Selecione o cartão"
-          options={cardOptions}
-        />
+        <>
+          <SelectField
+            control={control}
+            name="cardId"
+            label="Cartão"
+            placeholder="Selecione o cartão"
+            options={cardOptions}
+          />
+          <SelectField
+            control={control}
+            name="installments"
+            label="Parcelas"
+            placeholder="Selecione as parcelas"
+            options={INSTALLMENT_OPTIONS}
+          />
+        </>
       ) : (
         <SelectField
           control={control}
