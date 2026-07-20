@@ -3,6 +3,7 @@ import type { TransactionMethod, TransactionSource, TransactionType } from "@fin
 import type { Transaction } from "../../../domain/entities/transaction";
 import {
   addMonths,
+  addMonthsToDate,
   competencePeriod,
   splitInstallments,
 } from "../../../domain/services/invoice-rules";
@@ -113,6 +114,10 @@ export async function createTransaction(
           if (invoice.status === "paid") throw new InvoicePaidError();
           const row = await repos.transaction.create({
             ...base,
+            // Cada parcela é datada na sua própria competência, não na data da
+            // compra original — senão a 2ª/3ª/4ª parcela nunca aparecia no mês
+            // certo (resumo mensal, filtro por período).
+            date: addMonthsToDate(input.date, i),
             amount: amounts[i]!,
             cardId: card.id,
             invoiceId: invoice.id,

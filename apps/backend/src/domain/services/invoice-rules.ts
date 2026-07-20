@@ -24,6 +24,25 @@ export function addMonths(period: InvoicePeriod, n: number): InvoicePeriod {
   return { month: (zeroBased % 12) + 1, year: period.year + Math.floor(zeroBased / 12) };
 }
 
+function daysInMonth(year: number, month: number): number {
+  return new Date(year, month, 0).getDate();
+}
+
+/**
+ * Avança uma data (YYYY-MM-DD) em N meses, mantendo o dia (clampado no fim
+ * do mês curto). Usado pra datar cada parcela na sua própria competência —
+ * sem isso, todas as parcelas ficavam com a mesma data da compra original,
+ * mesmo caindo em faturas de meses diferentes (auditoria 2026-07-20).
+ */
+export function addMonthsToDate(date: string, n: number): string {
+  const [y, m, d] = date.split("-").map(Number) as [number, number, number];
+  const zeroBased = m - 1 + n;
+  const year = y + Math.floor(zeroBased / 12);
+  const month = (zeroBased % 12) + 1;
+  const day = Math.min(d, daysInMonth(year, month));
+  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+
 /** Divisão de parcelas em centavos: resto do arredondamento na primeira (regra do spec). */
 export function splitInstallments(totalCents: number, count: number): number[] {
   const base = Math.floor(totalCents / count);

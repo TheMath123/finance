@@ -20,7 +20,7 @@ import {
 } from "@finance/db";
 import { createDb } from "@finance/db";
 import type { Actor } from "../../deps";
-import { competencePeriod, splitInstallments } from "../../../domain/services/invoice-rules";
+import { addMonthsToDate, competencePeriod, splitInstallments } from "../../../domain/services/invoice-rules";
 import { createTestDeps } from "../../../test/deps";
 import { createTransaction } from "./create-transaction";
 import { updateTransaction } from "./update-transaction";
@@ -135,6 +135,14 @@ describe("competência e parcelas (unidade)", () => {
     expect(splitInstallments(90_000, 3)).toEqual([30_000, 30_000, 30_000]);
     expect(splitInstallments(10_000, 3)).toEqual([3_334, 3_333, 3_333]);
     expect(splitInstallments(10_000, 3).reduce((a, b) => a + b)).toBe(10_000);
+  });
+
+  test("addMonthsToDate mantém o dia, clampando no fim de mês curto (auditoria 2026-07-20)", () => {
+    expect(addMonthsToDate("2026-07-05", 0)).toBe("2026-07-05");
+    expect(addMonthsToDate("2026-07-05", 1)).toBe("2026-08-05");
+    expect(addMonthsToDate("2026-12-15", 2)).toBe("2027-02-15");
+    // dia 31 clampado no mês seguinte (fevereiro/2027 tem 28 dias)
+    expect(addMonthsToDate("2027-01-31", 1)).toBe("2027-02-28");
   });
 });
 
@@ -251,6 +259,12 @@ describe("crédito, fatura e pagamento", () => {
     expect(periods).toContain("7/2026");
     expect(periods).toContain("8/2026");
     expect(periods).toContain("9/2026");
+
+    // Auditoria (2026-07-20): cada parcela é datada no mês em que efetivamente
+    // cai, não todas na data da compra original — senão sumiam do resumo/filtro
+    // por mês das faturas seguintes.
+    const byInstallment = [...result.value].sort((a, b) => a.installmentNumber! - b.installmentNumber!);
+    expect(byInstallment.map((t) => t.date)).toEqual(["2026-07-05", "2026-08-05", "2026-09-05"]);
   });
 
   test("pagar fatura cria transação de despesa na conta e marca paid; transação da fatura fica imutável", async () => {
