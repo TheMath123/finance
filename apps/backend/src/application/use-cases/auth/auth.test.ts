@@ -16,7 +16,10 @@ import {
   type Db,
 } from "@finance/db";
 import { createTestDeps, type DispatchedJob } from "../../../test/deps";
+import { updateNameSchema } from "../../../http/modules/auth/schemas";
 import {
+  changePassword,
+  confirmEmailChange,
   deleteAccount,
   forgotPassword,
   login,
@@ -24,7 +27,9 @@ import {
   logout,
   me,
   register,
+  requestEmailChange,
   resetPassword,
+  updateName,
   verifyEmail,
   verifyResetCode,
 } from ".";
@@ -304,5 +309,256 @@ describe("auth: exclusão de conta (LGPD)", () => {
 
     // usuário não foi excluído
     expect(await db.query.users.findFirst({ where: eq(users.id, user.id) })).toBeDefined();
+  });
+});
+
+describe("auth: edição de perfil — nome", () => {
+  test("altera só o próprio nome; o registro de outro usuário nunca é tocado", async () => {
+    const deps = createTestDeps(db);
+    const a = await register(deps, { name: "Ana", email: uniqueEmail(), password: "senha-forte-123" });
+    const b = await register(deps, { name: "Bruno", email: uniqueEmail(), password: "senha-forte-123" });
+    if (!a.ok || !b.ok) throw new Error("registro falhou");
+
+    // userId sempre vem do JWT (guard) — a use-case nem tem um campo "targetUserId"
+    // pra um cliente malicioso mirar noutro usuário.
+    const result = await updateName(deps, { userId: a.value.user.id, name: "Ana Nova" });
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.value.name).toBe("Ana Nova");
+
+    const freshA = await db.query.users.findFirst({ where: eq(users.id, a.value.user.id) });
+    const freshB = await db.query.users.findFirst({ where: eq(users.id, b.value.user.id) });
+    expect(freshA?.name).toBe("Ana Nova");
+    expect(freshB?.name).toBe("Bruno");
+
+    // Prova estrutural: o schema HTTP do PATCH /auth/me não declara um campo de
+    // usuário-alvo — mesmo que o cliente envie um "userId" no body tentando
+    // mirar outra conta, o Zod descarta silenciosamente (não é um campo do
+    // schema), então o valor nunca chega na use-case.
+    const parsed = updateNameSchema.safeParse({ name: "Invasão", userId: b.value.user.id });
+    expect(parsed.success).toBe(true);
+    expect(parsed.success && "userId" in parsed.data).toBe(false);
+  });
+});
+
+describe("auth: edição de perfil — troca de senha", () => {
+  test("senha atual errada falha genérico (invalid_credentials); senha certa troca e revoga sessões", async () => {
+    const jobs: DispatchedJob[] = [];
+    const deps = createTestDeps(db, jobs);
+    const email = uniqueEmail();
+    const session = await register(deps, { name: "G", email, password: "senha-original-123" });
+    if (!session.ok) throw new Error("registro falhou");
+    const { user } = session.value;
+
+    const wrong = await changePassword(deps, {
+      userId: user.id,
+      currentPassword: "senha-errada-000",
+      newPassword: "senha-nova-456",
+    });
+    expect(wrong.ok).toBe(false);
+    if (!wrong.ok) expect(wrong.error).toBe("invalid_credentials");
+
+    const ok = await changePassword(deps, {
+      userId: user.id,
+      currentPassword: "senha-original-123",
+      newPassword: "senha-nova-456",
+    });
+    expect(ok.ok).toBe(true);
+
+    // todas as sessões foram revogadas (sem currentRefreshToken informado)
+    const remaining = await db.select().from(refreshTokens).where(eq(refreshTokens.userId, user.id));
+    expect(remaining).toHaveLength(0);
+
+    expect((await login(deps, { email, password: "senha-original-123" })).ok).toBe(false);
+    expect((await login(deps, { email, password: "senha-nova-456" })).ok).toBe(true);
+    expect(jobs.some((j) => j.name === "email.password-changed")).toBe(true);
+  });
+
+  test("com currentRefreshToken informado, só as OUTRAS sessões são revogadas", async () => {
+    const deps = createTestDeps(db);
+    const email = uniqueEmail();
+    const session = await register(deps, { name: "H", email, password: "senha-original-123" });
+    if (!session.ok) throw new Error("registro falhou");
+    const { user, refreshToken: currentSession } = session.value;
+
+    // segunda sessão (ex.: outro aparelho) — deve ser revogada
+    const otherLogin = await login(deps, { email, password: "senha-original-123" });
+    if (!otherLogin.ok) throw new Error("login falhou");
+
+    const ok = await changePassword(deps, {
+      userId: user.id,
+      currentPassword: "senha-original-123",
+      newPassword: "senha-nova-456",
+      currentRefreshToken: currentSession,
+    });
+    expect(ok.ok).toBe(true);
+
+    // sessão atual sobrevive
+    expect((await refresh(deps, { refreshToken: currentSession })).ok).toBe(true);
+    // a outra sessão foi revogada
+    expect((await refresh(deps, { refreshToken: otherLogin.value.refreshToken })).ok).toBe(false);
+  });
+
+  test("nunca altera a senha de outro usuário — reautenticação é por conta, não por userId solto", async () => {
+    const deps = createTestDeps(db);
+    const a = await register(deps, { name: "I", email: uniqueEmail(), password: "senha-de-a-123" });
+    const b = await register(deps, { name: "J", email: uniqueEmail(), password: "senha-de-b-123" });
+    if (!a.ok || !b.ok) throw new Error("registro falhou");
+
+    // Mesmo que o userId de B "vazasse" pra cá (ex.: bug hipotético no guard), a
+    // reautenticação por senha ainda barra: A não conhece a senha de B.
+    const attempt = await changePassword(deps, {
+      userId: b.value.user.id,
+      currentPassword: "senha-de-a-123",
+      newPassword: "senha-hackeada-999",
+    });
+    expect(attempt.ok).toBe(false);
+    if (!attempt.ok) expect(attempt.error).toBe("invalid_credentials");
+
+    // senha de B continua a original
+    expect((await login(deps, { email: b.value.user.email, password: "senha-de-b-123" })).ok).toBe(true);
+  });
+});
+
+describe("auth: edição de perfil — troca de e-mail", () => {
+  test("e-mail novo já em uso por outro usuário é rejeitado ANTES de mandar qualquer código", async () => {
+    const jobs: DispatchedJob[] = [];
+    const deps = createTestDeps(db, jobs);
+    const a = await register(deps, { name: "K", email: uniqueEmail(), password: "senha-forte-123" });
+    const b = await register(deps, { name: "L", email: uniqueEmail(), password: "senha-forte-123" });
+    if (!a.ok || !b.ok) throw new Error("registro falhou");
+
+    const result = await requestEmailChange(deps, {
+      userId: a.value.user.id,
+      newEmail: b.value.user.email,
+      currentPassword: "senha-forte-123",
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toBe("email_already_in_use");
+    expect(jobs.filter((j) => j.name === "email.confirm-email-change")).toHaveLength(0);
+  });
+
+  test("fluxo completo: pede troca → código errado falha → código certo confirma, marca emailVerifiedAt e avisa o e-mail antigo", async () => {
+    const jobs: DispatchedJob[] = [];
+    const deps = createTestDeps(db, jobs);
+    const oldEmail = uniqueEmail();
+    const newEmail = uniqueEmail();
+    const session = await register(deps, { name: "M", email: oldEmail, password: "senha-forte-123" });
+    if (!session.ok) throw new Error("registro falhou");
+    const { user } = session.value;
+
+    const requested = await requestEmailChange(deps, {
+      userId: user.id,
+      newEmail,
+      currentPassword: "senha-forte-123",
+    });
+    expect(requested.ok).toBe(true);
+
+    // senha atual errada bloqueia o pedido (auditoria 2026-07-20 — antes só o
+    // access token bastava; agora exige a mesma reautenticação da troca de senha)
+    const wrongPassword = await requestEmailChange(deps, {
+      userId: user.id,
+      newEmail: uniqueEmail(),
+      currentPassword: "senha-errada-000",
+    });
+    expect(wrongPassword.ok).toBe(false);
+    if (!wrongPassword.ok) expect(wrongPassword.error).toBe("invalid_credentials");
+
+    const codeJob = jobs.find((j) => j.name === "email.confirm-email-change");
+    if (!codeJob) throw new Error("job de confirmação não disparado");
+    const code = (codeJob.payload as { code: string }).code;
+    expect(codeJob.payload).toMatchObject({ to: newEmail });
+
+    const wrongCode = code === "000000" ? "111111" : "000000";
+    const wrong = await confirmEmailChange(deps, { userId: user.id, code: wrongCode });
+    expect(wrong.ok).toBe(false);
+    if (!wrong.ok) expect(wrong.error).toBe("invalid_code");
+
+    const confirmed = await confirmEmailChange(deps, { userId: user.id, code });
+    expect(confirmed.ok).toBe(true);
+    if (confirmed.ok) expect(confirmed.value.email).toBe(newEmail);
+
+    const fresh = await db.query.users.findFirst({ where: eq(users.id, user.id) });
+    expect(fresh?.email).toBe(newEmail);
+    expect(fresh?.pendingEmail).toBeNull();
+    expect(fresh?.emailVerifiedAt).toBeTruthy();
+
+    // e-mail ANTIGO recebeu o aviso de segurança
+    const changedNotice = jobs.find((j) => j.name === "email.email-changed");
+    expect(changedNotice).toBeDefined();
+    expect(changedNotice?.payload).toMatchObject({ to: oldEmail, newEmail });
+
+    // código já usado (e sem pendência) não confirma de novo
+    const reuse = await confirmEmailChange(deps, { userId: user.id, code });
+    expect(reuse.ok).toBe(false);
+    if (!reuse.ok) expect(reuse.error).toBe("no_pending_email_change");
+
+    // login com o e-mail novo funciona
+    expect((await login(deps, { email: newEmail, password: "senha-forte-123" })).ok).toBe(true);
+  });
+
+  test("código expirado falha", async () => {
+    const deps = createTestDeps(db);
+    const session = await register(deps, { name: "N", email: uniqueEmail(), password: "senha-forte-123" });
+    if (!session.ok) throw new Error("registro falhou");
+    const { user } = session.value;
+    const newEmail = uniqueEmail();
+
+    await deps.repos.user.setPendingEmail(user.id, newEmail);
+    const generated = deps.tokens.generateCode();
+    await deps.repos.token.createAuthToken({
+      userId: user.id,
+      purpose: "email_change",
+      tokenHash: generated.hash,
+      expiresAt: new Date(Date.now() - 1_000), // já expirado
+    });
+
+    const result = await confirmEmailChange(deps, { userId: user.id, code: generated.raw });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toBe("invalid_code");
+  });
+
+  test("nunca troca o e-mail de outro usuário — cada pedido/confirmação é escopado ao próprio userId", async () => {
+    const deps = createTestDeps(db);
+    const a = await register(deps, { name: "O", email: uniqueEmail(), password: "senha-forte-123" });
+    const b = await register(deps, { name: "P", email: uniqueEmail(), password: "senha-forte-123" });
+    if (!a.ok || !b.ok) throw new Error("registro falhou");
+
+    const requested = await requestEmailChange(deps, {
+      userId: a.value.user.id,
+      newEmail: uniqueEmail(),
+      currentPassword: "senha-forte-123",
+    });
+    expect(requested.ok).toBe(true);
+
+    // B não tem pendência própria — confirmar com o userId de B falha, mesmo que
+    // B de alguma forma soubesse o código gerado pro pedido de A (o código de A
+    // só é válido pra `findValidAuthTokenForUser(a.id, ...)`, nunca pro de B).
+    const freshA = await db.query.users.findFirst({ where: eq(users.id, a.value.user.id) });
+    const bAttempt = await confirmEmailChange(deps, { userId: b.value.user.id, code: "000000" });
+    expect(bAttempt.ok).toBe(false);
+    if (!bAttempt.ok) expect(bAttempt.error).toBe("no_pending_email_change");
+
+    // e-mail de B continua o mesmo
+    const freshB = await db.query.users.findFirst({ where: eq(users.id, b.value.user.id) });
+    expect(freshB?.email).toBe(b.value.user.email);
+    expect(freshA?.pendingEmail).toBeTruthy();
+  });
+
+  test("rate limit: 6º pedido de troca de e-mail na mesma hora é bloqueado", async () => {
+    const deps = createTestDeps(db);
+    const session = await register(deps, { name: "Q", email: uniqueEmail(), password: "senha-forte-123" });
+    if (!session.ok) throw new Error("registro falhou");
+    const { user } = session.value;
+
+    let last;
+    for (let i = 0; i < 6; i++) {
+      last = await requestEmailChange(deps, {
+        userId: user.id,
+        newEmail: uniqueEmail(),
+        currentPassword: "senha-forte-123",
+      });
+    }
+    expect(last?.ok).toBe(false);
+    if (last && !last.ok) expect(last.error).toBe("rate_limited");
   });
 });

@@ -6,6 +6,8 @@ export interface TokenRepository {
   deleteRefreshById(id: string): Promise<void>;
   deleteRefreshByHash(tokenHash: string): Promise<void>;
   deleteAllRefreshByUser(userId: string): Promise<void>;
+  /** Troca de senha no perfil: revoga todas as sessões, exceto a que fez o pedido. */
+  deleteAllRefreshByUserExcept(userId: string, keepTokenHash: string): Promise<void>;
 
   createAuthToken(data: {
     userId: string;

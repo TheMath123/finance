@@ -3,7 +3,15 @@ import type { UseCaseDeps } from "../../deps";
 import type { AuthError } from "./errors";
 
 export interface MeOutput {
-  user: { id: string; name: string; email: string; phone: string | null; emailVerifiedAt: string | null };
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    phone: string | null;
+    emailVerifiedAt: string | null;
+    /** E-mail novo aguardando confirmação por código (troca de e-mail no perfil), se houver. */
+    pendingEmail: string | null;
+  };
   defaultWorkspaceId: string;
 }
 
@@ -21,6 +29,7 @@ export async function me(
       email: user.email,
       phone: user.phone,
       emailVerifiedAt: user.emailVerifiedAt ? user.emailVerifiedAt.toISOString() : null,
+      pendingEmail: user.pendingEmail,
     },
     defaultWorkspaceId: user.defaultWorkspaceId,
   });

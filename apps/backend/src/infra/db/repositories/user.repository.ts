@@ -43,5 +43,17 @@ export function createUserRepository(db: DbHandle): UserRepository {
     async delete(userId) {
       await db.delete(users).where(eq(users.id, userId));
     },
+    async updateName(userId, name) {
+      await db.update(users).set({ name }).where(eq(users.id, userId));
+    },
+    async setPendingEmail(userId, email) {
+      await db.update(users).set({ pendingEmail: email }).where(eq(users.id, userId));
+    },
+    async applyEmailChange(userId, newEmail) {
+      await db
+        .update(users)
+        .set({ email: newEmail, pendingEmail: null, emailVerifiedAt: new Date() })
+        .where(eq(users.id, userId));
+    },
   };
 }

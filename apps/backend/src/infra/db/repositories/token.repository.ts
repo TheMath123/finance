@@ -1,4 +1,4 @@
-import { and, eq, gt, isNull } from "drizzle-orm";
+import { and, eq, gt, isNull, ne } from "drizzle-orm";
 import { authTokens, refreshTokens } from "@finance/db";
 import type { TokenRepository } from "../../../application/ports/token-repository";
 import type { DbHandle } from "../handle";
@@ -18,6 +18,11 @@ export function createTokenRepository(db: DbHandle): TokenRepository {
     },
     async deleteAllRefreshByUser(userId) {
       await db.delete(refreshTokens).where(eq(refreshTokens.userId, userId));
+    },
+    async deleteAllRefreshByUserExcept(userId, keepTokenHash) {
+      await db
+        .delete(refreshTokens)
+        .where(and(eq(refreshTokens.userId, userId), ne(refreshTokens.tokenHash, keepTokenHash)));
     },
     async createAuthToken(data) {
       await db.insert(authTokens).values(data);

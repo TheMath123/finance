@@ -10,6 +10,8 @@ import { VerifyEmailEmail } from "./templates/verify-email";
 import { PasswordChangedEmail } from "./templates/password-changed";
 import { WorkspaceInviteEmail } from "./templates/workspace-invite";
 import { AccountLockedEmail } from "./templates/account-locked";
+import { ConfirmEmailChangeEmail } from "./templates/confirm-email-change";
+import { EmailChangedEmail } from "./templates/email-changed";
 
 async function send(to: string, subject: string, element: ReactElement): Promise<void> {
   const { transporter, env } = getTransport();
@@ -23,6 +25,10 @@ export interface Mailer {
   sendPasswordChanged(input: { to: string; name: string }): Promise<void>;
   sendAccountLocked(input: { to: string; name: string; minutes: number }): Promise<void>;
   sendWorkspaceInvite(input: { to: string; inviterName: string; workspaceName: string }): Promise<void>;
+  /** Enviado para o e-mail NOVO na troca de e-mail do perfil (prova de posse). */
+  sendConfirmEmailChange(input: { to: string; name: string; code: string }): Promise<void>;
+  /** Enviado para o e-mail ANTIGO após a troca ser confirmada (aviso de segurança). */
+  sendEmailChanged(input: { to: string; name: string; newEmail: string }): Promise<void>;
 }
 
 export const mailer: Mailer = {
@@ -40,4 +46,8 @@ export const mailer: Mailer = {
       `Convite para o workspace ${workspaceName}`,
       WorkspaceInviteEmail({ inviterName, workspaceName }),
     ),
+  sendConfirmEmailChange: ({ to, name, code }) =>
+    send(to, "Confirme seu novo e-mail", ConfirmEmailChangeEmail({ name, code })),
+  sendEmailChanged: ({ to, name, newEmail }) =>
+    send(to, "O e-mail da sua conta foi alterado", EmailChangedEmail({ name, newEmail })),
 };

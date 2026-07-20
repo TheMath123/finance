@@ -15,6 +15,8 @@ export const users = pgTable("users", {
   phone: text("phone").unique(),
   passwordHash: text("password_hash").notNull(),
   emailVerifiedAt: timestamp("email_verified_at", { withTimezone: true }),
+  /** E-mail novo aguardando confirmação por código (troca de e-mail no perfil) — null fora do fluxo. */
+  pendingEmail: text("pending_email"),
   termsAcceptedAt: timestamp("terms_accepted_at", { withTimezone: true }).notNull(),
   termsVersion: text("terms_version").notNull(),
   platformRole: platformRoleEnum("platform_role").notNull().default("user"),

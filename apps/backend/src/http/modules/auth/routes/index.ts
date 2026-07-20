@@ -11,6 +11,10 @@ import { resetPasswordRoute } from "./reset-password";
 import { verifyEmailRoute } from "./verify-email";
 import { meRoute } from "./me";
 import { deleteAccountRoute } from "./delete-account";
+import { updateNameRoute } from "./update-name";
+import { requestEmailChangeRoute } from "./request-email-change";
+import { confirmEmailChangeRoute } from "./confirm-email-change";
+import { changePasswordRoute } from "./change-password";
 
 /**
  * Limites por IP e por rota (spec: Rate limiting, camada 1) — janela em ms varia por rota.
@@ -27,6 +31,10 @@ const RATE_LIMITS: Record<string, { max: number; windowMs: number }> = {
   "POST /auth/reset-password": { max: 10, windowMs: 60_000 },
   "POST /auth/verify-email": { max: 10, windowMs: 60_000 },
   "DELETE /auth/me": { max: 5, windowMs: 3_600_000 },
+  "PATCH /auth/me": { max: 10, windowMs: 3_600_000 },
+  "POST /auth/me/email/request-change": { max: 5, windowMs: 3_600_000 },
+  "POST /auth/me/email/confirm-change": { max: 10, windowMs: 15 * 60_000 },
+  "POST /auth/me/password": { max: 5, windowMs: 3_600_000 },
 };
 
 export function authRoutes(deps: AppDeps) {
@@ -53,5 +61,9 @@ export function authRoutes(deps: AppDeps) {
     .use(resetPasswordRoute(deps))
     .use(verifyEmailRoute(deps))
     .use(meRoute(deps))
-    .use(deleteAccountRoute(deps));
+    .use(deleteAccountRoute(deps))
+    .use(updateNameRoute(deps))
+    .use(requestEmailChangeRoute(deps))
+    .use(confirmEmailChangeRoute(deps))
+    .use(changePasswordRoute(deps));
 }

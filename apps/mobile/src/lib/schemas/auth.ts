@@ -51,6 +51,31 @@ export const newPasswordSchema = z
     path: ["confirmPassword"],
   });
 
+/** Edição de perfil (usuário já logado). */
+export const updateNameSchema = z.object({
+  name: z.string().min(1, "Informe seu nome").max(120),
+});
+
+export const requestEmailChangeSchema = z.object({
+  newEmail: z.string().email("E-mail inválido"),
+  currentPassword: z.string().min(1, "Informe sua senha atual"),
+});
+
+export const confirmEmailChangeSchema = z.object({
+  code: resetCodeSchema,
+});
+
+export const changePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1, "Informe sua senha atual"),
+    newPassword: z.string().min(8, "Mínimo de 8 caracteres").max(128),
+    confirmNewPassword: z.string().min(1, "Confirme a nova senha"),
+  })
+  .refine((data) => data.newPassword === data.confirmNewPassword, {
+    message: "As senhas não coincidem",
+    path: ["confirmNewPassword"],
+  });
+
 export type LoginInput = z.infer<typeof loginSchema>;
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
@@ -58,3 +83,7 @@ export type VerifyResetCodeInput = z.infer<typeof verifyResetCodeSchema>;
 export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
 export type VerifyEmailInput = z.infer<typeof verifyEmailSchema>;
 export type NewPasswordInput = z.infer<typeof newPasswordSchema>;
+export type UpdateNameInput = z.infer<typeof updateNameSchema>;
+export type RequestEmailChangeInput = z.infer<typeof requestEmailChangeSchema>;
+export type ConfirmEmailChangeInput = z.infer<typeof confirmEmailChangeSchema>;
+export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;

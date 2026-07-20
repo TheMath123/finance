@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { ArrowLeftIcon, EnvelopeIcon, FingerprintIcon, SignOutIcon, TrashIcon, UserIcon, WarningIcon } from 'phosphor-react-native';
+import { ArrowLeftIcon, EnvelopeIcon, FingerprintIcon, PencilSimpleIcon, SignOutIcon, TrashIcon, UserIcon, WarningIcon } from 'phosphor-react-native';
 import { useState } from 'react';
 import { Alert, Pressable, Switch, View } from 'react-native';
 
@@ -77,12 +77,18 @@ export default function ProfileScreen() {
         <View className="h-12 w-12 items-center justify-center rounded-full bg-primary/10">
           <UserIcon size={22} color="#2563EB" />
         </View>
-        <View>
+        <View className="flex-1">
           <ThemedText type="smallBold">{user?.name}</ThemedText>
           <ThemedText type="small" themeColor="textSecondary">
             {user?.email}
           </ThemedText>
         </View>
+        <Button
+          variant="ghost"
+          icon={<PencilSimpleIcon size={18} />}
+          onPress={() => router.push('/edit-profile')}>
+          Editar
+        </Button>
       </Card>
 
       {!user?.emailVerifiedAt && (

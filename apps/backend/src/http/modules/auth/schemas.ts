@@ -21,7 +21,7 @@ export const forgotPasswordSchema = z.object({
   email: z.string().email().toLowerCase(),
 });
 
-const resetCodeSchema = z
+export const resetCodeSchema = z
   .string()
   .length(6, "Código deve ter 6 dígitos")
   .regex(/^\d{6}$/, "Código deve conter apenas números");
@@ -43,4 +43,25 @@ export const verifyEmailSchema = z.object({
 
 export const deleteAccountSchema = z.object({
   password: z.string().min(1),
+});
+
+/** Edição de perfil (spec: usuário logado edita nome/e-mail/senha). */
+export const updateNameSchema = z.object({
+  name: z.string().min(1).max(120),
+});
+
+export const requestEmailChangeSchema = z.object({
+  newEmail: z.string().email().toLowerCase(),
+  currentPassword: z.string().min(1),
+});
+
+export const confirmEmailChangeSchema = z.object({
+  code: resetCodeSchema,
+});
+
+export const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1),
+  newPassword: z.string().min(8).max(128),
+  /** Se enviado, só esta sessão sobrevive à revogação (ver change-password.ts). */
+  currentRefreshToken: z.string().min(1).optional(),
 });

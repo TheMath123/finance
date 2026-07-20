@@ -1,15 +1,27 @@
 import { apiRequest } from "@/lib/api-client";
+import { tokenStore } from "@/lib/secure-store";
 import type {
+  ChangePasswordInput,
+  ConfirmEmailChangeInput,
   ForgotPasswordInput,
   LoginInput,
   RegisterInput,
+  RequestEmailChangeInput,
   ResetPasswordInput,
+  UpdateNameInput,
   VerifyEmailInput,
   VerifyResetCodeInput,
 } from "@/lib/schemas/auth";
 
 export interface AuthSession {
-  user: { id: string; name: string; email: string; phone: string | null; emailVerifiedAt: string | null };
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    phone: string | null;
+    emailVerifiedAt: string | null;
+    pendingEmail: string | null;
+  };
   defaultWorkspaceId: string;
   accessToken: string;
   refreshToken: string;
@@ -46,4 +58,22 @@ export const authApi = {
 
   deleteAccount: (password: string) =>
     apiRequest<void>("/auth/me", { method: "DELETE", body: { password } }),
+
+  updateName: (input: UpdateNameInput) =>
+    apiRequest<{ name: string }>("/auth/me", { method: "PATCH", body: input }),
+
+  requestEmailChange: (input: RequestEmailChangeInput) =>
+    apiRequest<void>("/auth/me/email/request-change", { method: "POST", body: input }),
+
+  confirmEmailChange: (input: ConfirmEmailChangeInput) =>
+    apiRequest<{ email: string }>("/auth/me/email/confirm-change", { method: "POST", body: input }),
+
+  /** Anexa o refresh token atual — só ele sobrevive à revogação das sessões (ver change-password.ts no backend). */
+  changePassword: async ({ currentPassword, newPassword }: ChangePasswordInput) => {
+    const currentRefreshToken = (await tokenStore.getRefreshToken()) ?? undefined;
+    return apiRequest<void>("/auth/me/password", {
+      method: "POST",
+      body: { currentPassword, newPassword, currentRefreshToken },
+    });
+  },
 };

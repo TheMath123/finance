@@ -3,10 +3,16 @@ import { index, pgEnum, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-co
 import { createdAt, id } from "./helpers";
 import { users } from "./user";
 
-/** Mesmo mecanismo para reset de senha e verificação de e-mail (ver spec: Segurança > Cadastro). */
+/**
+ * Mesmo mecanismo para reset de senha, verificação de e-mail e troca de e-mail no
+ * perfil (ver spec: Segurança > Cadastro). `email_change` reaproveita o código de 6
+ * dígitos (igual ao password_reset) — o e-mail novo fica em `users.pending_email`
+ * até a confirmação (ver schema de `users`).
+ */
 export const authTokenPurposeEnum = pgEnum("auth_token_purpose", [
   "password_reset",
   "email_verification",
+  "email_change",
 ]);
 
 export const authTokens = pgTable(

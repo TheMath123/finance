@@ -24,4 +24,13 @@ export interface UserRepository {
   updatePhone(userId: string, phone: string | null): Promise<void>;
   /** Exclusão de conta (LGPD). Cascata via FK cuida de refresh_tokens e workspace_members. */
   delete(userId: string): Promise<void>;
+  /** Edição de perfil: troca de nome (sem confirmação extra, spec do perfil). */
+  updateName(userId: string, name: string): Promise<void>;
+  /** Marca o e-mail novo aguardando confirmação por código — `null` cancela um pedido pendente. */
+  setPendingEmail(userId: string, email: string | null): Promise<void>;
+  /**
+   * Confirma a troca: vira o `email` de vez, limpa `pendingEmail` e marca
+   * `emailVerifiedAt = now()` (o e-mail novo acabou de ser provado pelo código).
+   */
+  applyEmailChange(userId: string, newEmail: string): Promise<void>;
 }

@@ -23,6 +23,8 @@ export function createJobHandlers(
     "email.password-reset": (p) => mailer.sendPasswordReset(p),
     "email.verify-email": (p) => mailer.sendEmailVerification(p),
     "email.password-changed": (p) => mailer.sendPasswordChanged(p),
+    "email.confirm-email-change": (p) => mailer.sendConfirmEmailChange(p),
+    "email.email-changed": (p) => mailer.sendEmailChanged(p),
     "email.account-locked": (p) => mailer.sendAccountLocked(p),
     "email.workspace-invite": (p) => mailer.sendWorkspaceInvite(p),
     "push.send": (p) => sendExpoPush(p.tokens, p.title, p.body, p.data),

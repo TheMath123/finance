@@ -9,4 +9,8 @@ export { verifyResetCode, type VerifyResetCodeInput } from "./verify-reset-code"
 export { verifyEmail, type VerifyEmailInput } from "./verify-email";
 export { issueSession, type AuthSession } from "./session";
 export { me, type MeOutput } from "./me";
+export { updateName, type UpdateNameInput } from "./update-name";
+export { requestEmailChange, type RequestEmailChangeInput } from "./request-email-change";
+export { confirmEmailChange, type ConfirmEmailChangeInput } from "./confirm-email-change";
+export { changePassword, type ChangePasswordInput } from "./change-password";
 export type { AuthError } from "./errors";

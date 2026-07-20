@@ -8,6 +8,7 @@ export interface User {
   phone: string | null;
   passwordHash: string;
   emailVerifiedAt: Date | null;
+  pendingEmail: string | null;
   termsAcceptedAt: Date;
   termsVersion: string;
   platformRole: PlatformRole;
