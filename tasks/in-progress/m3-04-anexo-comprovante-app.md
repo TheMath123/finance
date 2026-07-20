@@ -80,10 +80,27 @@ deletada do storage), erro quando não há anexo, delete limpa storage e
 transação. 138/138 testes do backend passando (131 + 7 novos), typecheck
 limpo em todos os pacotes (backend, db, shared, storage, mobile).
 
-**Não validado contra o R2 real** — mesmo status do M3-01: sobe sem a
-credencial/bucket, só falha no primeiro uso real.
+**Validado ponta a ponta contra o R2 real em 2026-07-20** (ver
+[[m3-01-infra-storage-arquivos]]): servidor local real (não teste), usuário
+e transação reais, `POST .../attachment` com PNG real via multipart,
+`attachmentKey` salvo, `GET .../attachment` devolveu URL assinada que
+baixa o arquivo de verdade (200, bytes exatos, `image/png`), `DELETE
+.../attachment` confirmado (204 + `attachmentKey` limpo). Isso prova o
+caminho HTTP → use-case → repositório → R2 real funcionando de ponta a
+ponta — só falta a camada mobile (câmera/galeria → upload) ser confirmada
+na prática.
+
+Durante os primeiros testes reais pelo app apareceram dois bugs
+client-side não relacionados ao storage em si, ambos corrigidos: (1) o
+app não tinha timeout em nenhum `fetch` — uma rede instável deixava o
+`SessionProvider` pendurado pra sempre esperando `authApi.me()`, travando
+o app inteiro numa tela preta (corrigido com `AbortController`, 15s pra
+requisições normais e 30s pro upload, em `lib/api-client.ts`); (2) o erro
+de upload não logava a causa real (só mostrava "Não foi possível anexar o
+comprovante" genérico) — adicionado `console.error` no `onError` da
+mutation pra aparecer no Metro da próxima vez que algo falhar.
 
 ## Próximo passo
 
-Assim que o bucket do M3-01 existir de verdade: subir um comprovante pelo
-app e conferir a foto aparecendo no preview. Aí sim mover pra `done/`.
+Com o timeout corrigido, testar de novo pelo app (câmera e galeria) e
+conferir a foto aparecendo no preview. Só então mover pra `done/`.

@@ -66,11 +66,11 @@ M3-01; M3-05 depende do M3-01 e do M3-04.
 
 | # | Tarefa | Status | Depende de |
 |---|---|---|---|
-| M3-01 | [Infra de storage de arquivos (S3/R2)](in-progress/m3-01-infra-storage-arquivos.md) | 🟡 Em andamento (falta criar os buckets no R2 e validar) | — |
+| M3-01 | [Infra de storage de arquivos (S3/R2)](done/m3-01-infra-storage-arquivos.md) | 🟢 Concluída (validada ponta a ponta contra o R2 real em 2026-07-20) | — |
 | M3-02 | [Transferência entre usuários + contato confiável](done/m3-02-transferencia-entre-usuarios.md) | 🟢 Concluída | M2-10 |
 | M3-03 | [Split de despesas](done/m3-03-split-despesas.md) | 🟢 Concluída | M2-10 |
-| M3-04 | [Anexo de comprovante nas transações (app)](in-progress/m3-04-anexo-comprovante-app.md) | 🟡 Em andamento (código pronto, falta validar contra R2 real) | M3-01 |
-| M3-05 | [Anexo de comprovante via WhatsApp (foto no chatbot)](in-progress/m3-05-anexo-comprovante-whatsapp.md) | 🟡 Em andamento (código pronto, falta validar contra R2 + Meta reais) | M3-01, M3-04, M2-06 |
+| M3-04 | [Anexo de comprovante nas transações (app)](in-progress/m3-04-anexo-comprovante-app.md) | 🟡 Em andamento (backend validado ponta a ponta contra R2 real; falta confirmar upload pela câmera/galeria no app) | M3-01 |
+| M3-05 | [Anexo de comprovante via WhatsApp (foto no chatbot)](in-progress/m3-05-anexo-comprovante-whatsapp.md) | 🟡 Em andamento (storage real já provado via M3-04; falta mandar uma foto real pro WhatsApp vinculado) | M3-01, M3-04, M2-06 |
 
 Cada task tem uma seção "Próximo passo" com decisões de produto em
 aberto — vale ler antes de começar a implementar (se split pode ser
