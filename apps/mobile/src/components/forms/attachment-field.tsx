@@ -37,8 +37,10 @@ export function AttachmentField({ workspaceId, transaction }: { workspaceId: str
         type: asset.mimeType ?? inferMimeType(asset.uri),
       }),
     onSuccess: invalidate,
-    onError: (err) =>
-      Alert.alert('Erro', err instanceof ApiError ? err.message : 'Não foi possível anexar o comprovante.'),
+    onError: (err) => {
+      if (!(err instanceof ApiError)) console.error('[attachment upload]', err);
+      Alert.alert('Erro', err instanceof ApiError ? err.message : 'Não foi possível anexar o comprovante.');
+    },
   });
 
   const remove = useMutation({

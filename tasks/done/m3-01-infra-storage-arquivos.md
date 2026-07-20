@@ -1,6 +1,6 @@
 # M3-01 — Infra de storage de arquivos (S3/R2)
 
-**Status:** 🟡 Em andamento.
+**Status:** 🟢 Concluída (validada contra o R2 real em 2026-07-20).
 
 ## Contexto
 
@@ -107,13 +107,23 @@ ambiente, não código: nenhum teste dependente de Postgres foi tocado por
 essa extração. **Não validado contra o R2 real** — bucket/credenciais
 ainda não configurados neste ambiente.
 
-## Próximo passo
+## Validação (2026-07-20)
 
-Pra validar de verdade: criar no Cloudflare R2 os buckets `finance-storage`
-(produção) e `finance-storage-dev` (default automático fora de produção —
-não precisa digitar `STORAGE_BUCKET`), gerar um R2 API Token com permissão
-restrita a esses buckets (Object Read & Write), preencher as envs
-(`STORAGE_ENDPOINT` com o Account ID, `STORAGE_ACCESS_KEY_ID`/
-`STORAGE_SECRET_ACCESS_KEY` do token — `STORAGE_REGION` pode ficar vazio,
-usa o default `"auto"`). [[m3-04-anexo-comprovante-app]] pode começar
-assim que isso acontecer — o client já está pronto.
+Bucket `finance-storage-dev` criado no Cloudflare R2 pelo usuário; envs
+preenchidas em `apps/backend/.env`. Validado de duas formas:
+
+1. Script direto contra `createS3Storage` (bypassando a API): upload +
+   `getSignedReadUrl` + delete — todos OK.
+2. **Ponta a ponta pela API HTTP real** (servidor local rodando, storage
+   real, não in-memory): registrou um usuário de teste, criou uma
+   transação, fez `POST .../attachment` com um PNG real via multipart
+   (`curl -F`), confirmou `attachmentKey` salvo, buscou a URL assinada via
+   `GET .../attachment` e baixou o arquivo dela — voltou HTTP 200, 67 bytes
+   (tamanho exato do PNG de teste), `content-type: image/png`. `DELETE
+   .../attachment` confirmado com 204 e `attachmentKey` limpo. Dados de
+   teste removidos depois.
+
+`bun test` (153/153) e typecheck de `apps/backend` e `packages/storage`
+seguem limpos. Infra 100% funcional — [[m3-04-anexo-comprovante-app]] e
+[[m3-05-anexo-comprovante-whatsapp]] podem ser fechadas assim que a
+validação de UI/WhatsApp (que só o usuário consegue rodar) confirmar.

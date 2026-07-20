@@ -18,18 +18,41 @@ interface RequestOptions extends Omit<RequestInit, "body"> {
   skipAuth?: boolean;
 }
 
+/**
+ * Timeout manual via AbortController (auditoria 2026-07-20): nenhum fetch tinha
+ * limite de tempo — uma rede instável (ex. emulador sem rota até o host) deixava
+ * a promise pendurada pra sempre. Isso travava o boot do app: `SessionProvider`
+ * espera `authApi.me()` antes de soltar `isLoading`, e o layout raiz renderiza
+ * `null` enquanto isso — sem timeout, o app ficava com a tela preta indefinidamente.
+ */
+const DEFAULT_TIMEOUT_MS = 15_000;
+const UPLOAD_TIMEOUT_MS = 30_000;
+
+function withTimeout(ms: number) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), ms);
+  return { signal: controller.signal, cancel: () => clearTimeout(timer) };
+}
+
 async function rawRequest<T>(path: string, { body, skipAuth, headers, ...init }: RequestOptions) {
   const accessToken = skipAuth ? null : await tokenStore.getAccessToken();
+  const { signal, cancel } = withTimeout(DEFAULT_TIMEOUT_MS);
 
-  const response = await fetch(`${env.EXPO_PUBLIC_API_URL}${path}`, {
-    ...init,
-    headers: {
-      "Content-Type": "application/json",
-      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-      ...headers,
-    },
-    body: body !== undefined ? JSON.stringify(body) : undefined,
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${env.EXPO_PUBLIC_API_URL}${path}`, {
+      ...init,
+      signal,
+      headers: {
+        "Content-Type": "application/json",
+        ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        ...headers,
+      },
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+    });
+  } finally {
+    cancel();
+  }
 
   const data = response.status === 204 ? undefined : await response.json().catch(() => undefined);
 
@@ -69,14 +92,21 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
 
 async function rawTextRequest(path: string, { skipAuth, headers, ...init }: Omit<RequestOptions, "body">) {
   const accessToken = skipAuth ? null : await tokenStore.getAccessToken();
+  const { signal, cancel } = withTimeout(DEFAULT_TIMEOUT_MS);
 
-  const response = await fetch(`${env.EXPO_PUBLIC_API_URL}${path}`, {
-    ...init,
-    headers: {
-      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-      ...headers,
-    },
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${env.EXPO_PUBLIC_API_URL}${path}`, {
+      ...init,
+      signal,
+      headers: {
+        ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        ...headers,
+      },
+    });
+  } finally {
+    cancel();
+  }
 
   if (!response.ok) {
     const data = await response.json().catch(() => undefined);
@@ -115,13 +145,20 @@ export async function apiRequestText(path: string, options: Omit<RequestOptions,
 
 async function rawUploadRequest<T>(path: string, formData: FormData): Promise<T> {
   const accessToken = await tokenStore.getAccessToken();
+  const { signal, cancel } = withTimeout(UPLOAD_TIMEOUT_MS);
 
-  // Sem Content-Type manual — o fetch define multipart/form-data com o boundary certo sozinho.
-  const response = await fetch(`${env.EXPO_PUBLIC_API_URL}${path}`, {
-    method: "POST",
-    headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
-    body: formData,
-  });
+  let response: Response;
+  try {
+    // Sem Content-Type manual — o fetch define multipart/form-data com o boundary certo sozinho.
+    response = await fetch(`${env.EXPO_PUBLIC_API_URL}${path}`, {
+      method: "POST",
+      signal,
+      headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+      body: formData,
+    });
+  } finally {
+    cancel();
+  }
 
   const data = response.status === 204 ? undefined : await response.json().catch(() => undefined);
 
