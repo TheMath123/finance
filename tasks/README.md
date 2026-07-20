@@ -12,12 +12,21 @@
 - `tasks/backlog/` — decidido que não é pra agora: bloqueada por algo
   externo (ex.: [[m2-06b-whatsapp-grupo-workspace]], que depende de status
   OBA da Meta), ou adiada por decisão de produto.
+- `tasks/validations/` — código já implementado e testado (diferente de
+  `backlog/`), mas que precisa de **revalidação manual** condicionada a
+  uma liberação de terceiro (ex.: aprovação de App Review da Meta, mudança
+  de política de uma API externa). Sai daqui e vai pra `done/` quando a
+  liberação acontecer **e** a revalidação manual listada no arquivo for
+  feita — não basta o terceiro liberar, precisa confirmar que o
+  comportamento real bate com o testado antes.
 
 Fluxo normal de uma task: nasce em `tasks/` (raiz) durante o planejamento
 do milestone → move pra `in-progress/` quando a implementação começa →
 move pra `done/` quando termina e é validada, **ou** pra `backlog/` se
-travar em algo fora do nosso controle antes de terminar. Essa convenção
-está documentada também no `spec.md` (seção "Processo de tasks").
+travar em algo fora do nosso controle antes de terminar, **ou** pra
+`validations/` se o código já estiver pronto mas precisar de liberação de
+terceiro antes da validação final. Essa convenção está documentada também
+no `spec.md` (seção "Processo de tasks").
 
 ## M2 — compartilhamento + chatbot WhatsApp + IA + infra assíncrona
 
@@ -91,6 +100,13 @@ validar os três de uma vez. M3-05 decidiu a janela de associação
 foto→transação em 5 minutos, e "duas fotos" não precisou de lógica
 especial — reaproveita o "substitui o anexo anterior" que o M3-04 já
 tinha.
+
+Além da validação manual de M3-04/M3-05 (upload real pelo app, foto real
+pelo WhatsApp), [[meta-app-review-whatsapp-business-messaging]] em
+`validations/` cobre a revalidação que falta depois que a Meta aprovar o
+App Review — hoje o número roda em Development Mode, só testadores
+cadastrados conseguem usar o chatbot (M2-06) e o anexo via WhatsApp
+(M3-05).
 
 ## Histórico do M1
 
