@@ -10,7 +10,8 @@ import { verifyResetCodeRoute } from "./verify-reset-code";
 import { resetPasswordRoute } from "./reset-password";
 import { verifyEmailRoute } from "./verify-email";
 import { meRoute } from "./me";
-import { deleteAccountRoute } from "./delete-account";
+import { requestAccountDeletionRoute } from "./request-account-deletion";
+import { confirmAccountDeletionRoute } from "./confirm-account-deletion";
 import { updateNameRoute } from "./update-name";
 import { requestEmailChangeRoute } from "./request-email-change";
 import { confirmEmailChangeRoute } from "./confirm-email-change";
@@ -30,11 +31,12 @@ const RATE_LIMITS: Record<string, { max: number; windowMs: number }> = {
   "POST /auth/verify-reset-code": { max: 10, windowMs: 60_000 },
   "POST /auth/reset-password": { max: 10, windowMs: 60_000 },
   "POST /auth/verify-email": { max: 10, windowMs: 60_000 },
-  "DELETE /auth/me": { max: 5, windowMs: 3_600_000 },
   "PATCH /auth/me": { max: 10, windowMs: 3_600_000 },
   "POST /auth/me/email/request-change": { max: 5, windowMs: 3_600_000 },
   "POST /auth/me/email/confirm-change": { max: 10, windowMs: 15 * 60_000 },
   "POST /auth/me/password": { max: 5, windowMs: 3_600_000 },
+  "POST /auth/me/delete/request": { max: 5, windowMs: 3_600_000 },
+  "POST /auth/me/delete/confirm": { max: 10, windowMs: 15 * 60_000 },
 };
 
 export function authRoutes(deps: AppDeps) {
@@ -61,7 +63,8 @@ export function authRoutes(deps: AppDeps) {
     .use(resetPasswordRoute(deps))
     .use(verifyEmailRoute(deps))
     .use(meRoute(deps))
-    .use(deleteAccountRoute(deps))
+    .use(requestAccountDeletionRoute(deps))
+    .use(confirmAccountDeletionRoute(deps))
     .use(updateNameRoute(deps))
     .use(requestEmailChangeRoute(deps))
     .use(confirmEmailChangeRoute(deps))

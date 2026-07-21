@@ -10,6 +10,8 @@ export interface JobPayloads {
   "email.confirm-email-change": { to: string; name: string; code: string };
   /** Aviso de segurança pro e-mail ANTIGO, depois que a troca é confirmada. */
   "email.email-changed": { to: string; name: string; newEmail: string };
+  /** Código de 6 dígitos pra autorizar a exclusão da conta (perfil), enviado pro próprio e-mail cadastrado. */
+  "email.confirm-account-deletion": { to: string; name: string; code: string };
   "email.account-locked": { to: string; name: string; minutes: number };
   /** Sem link (mesmo motivo do reset por código: clientes de e-mail removem <a href> com esquema custom) — o convite é aceito na tela "Convites" do app. */
   "email.workspace-invite": { to: string; inviterName: string; workspaceName: string };

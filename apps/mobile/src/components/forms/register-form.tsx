@@ -1,6 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
 import { Link } from 'expo-router';
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { View } from 'react-native';
 
@@ -12,14 +13,25 @@ import { Button } from '@/components/ui/button';
 import { useSession } from '@/context/session';
 import { ApiError } from '@/lib/api-client';
 import { authApi } from '@/lib/auth-api';
+import { usePersistEmailField } from '@/lib/hooks/use-persist-email-field';
 import { registerSchema, type RegisterInput } from '@/lib/schemas/auth';
+import { lastEmailStore } from '@/lib/secure-store';
 
 export function RegisterForm() {
   const { signIn } = useSession();
-  const { control, handleSubmit } = useForm<RegisterInput>({
+  const { control, handleSubmit, setValue } = useForm<RegisterInput>({
     resolver: zodResolver(registerSchema),
     defaultValues: { name: '', email: '', password: '', termsAccepted: false },
   });
+
+  // Pré-preenche com o último e-mail usado em login/cadastro/esqueci senha.
+  useEffect(() => {
+    lastEmailStore.getEmail().then((email) => {
+      if (email) setValue('email', email);
+    });
+  }, [setValue]);
+
+  usePersistEmailField(control, 'email');
 
   const mutation = useMutation({
     mutationFn: authApi.register,

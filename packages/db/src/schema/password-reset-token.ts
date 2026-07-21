@@ -4,15 +4,17 @@ import { createdAt, id } from "./helpers";
 import { users } from "./user";
 
 /**
- * Mesmo mecanismo para reset de senha, verificação de e-mail e troca de e-mail no
- * perfil (ver spec: Segurança > Cadastro). `email_change` reaproveita o código de 6
- * dígitos (igual ao password_reset) — o e-mail novo fica em `users.pending_email`
- * até a confirmação (ver schema de `users`).
+ * Mesmo mecanismo para reset de senha, verificação de e-mail, troca de e-mail e
+ * exclusão de conta no perfil (ver spec: Segurança > Cadastro). `email_change` e
+ * `account_deletion` reaproveitam o código de 6 dígitos (igual ao password_reset)
+ * — o e-mail novo fica em `users.pending_email` até a confirmação da troca (ver
+ * schema de `users`); a exclusão não precisa de campo pendente, só do código.
  */
 export const authTokenPurposeEnum = pgEnum("auth_token_purpose", [
   "password_reset",
   "email_verification",
   "email_change",
+  "account_deletion",
 ]);
 
 export const authTokens = pgTable(

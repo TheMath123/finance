@@ -12,6 +12,7 @@ import { WorkspaceInviteEmail } from "./templates/workspace-invite";
 import { AccountLockedEmail } from "./templates/account-locked";
 import { ConfirmEmailChangeEmail } from "./templates/confirm-email-change";
 import { EmailChangedEmail } from "./templates/email-changed";
+import { ConfirmAccountDeletionEmail } from "./templates/confirm-account-deletion";
 
 async function send(to: string, subject: string, element: ReactElement): Promise<void> {
   const { transporter, env } = getTransport();
@@ -29,6 +30,8 @@ export interface Mailer {
   sendConfirmEmailChange(input: { to: string; name: string; code: string }): Promise<void>;
   /** Enviado para o e-mail ANTIGO após a troca ser confirmada (aviso de segurança). */
   sendEmailChanged(input: { to: string; name: string; newEmail: string }): Promise<void>;
+  /** Código pra autorizar a exclusão da conta, enviado pro próprio e-mail cadastrado. */
+  sendConfirmAccountDeletion(input: { to: string; name: string; code: string }): Promise<void>;
 }
 
 export const mailer: Mailer = {
@@ -50,4 +53,6 @@ export const mailer: Mailer = {
     send(to, "Confirme seu novo e-mail", ConfirmEmailChangeEmail({ name, code })),
   sendEmailChanged: ({ to, name, newEmail }) =>
     send(to, "O e-mail da sua conta foi alterado", EmailChangedEmail({ name, newEmail })),
+  sendConfirmAccountDeletion: ({ to, name, code }) =>
+    send(to, "Confirme a exclusão da sua conta", ConfirmAccountDeletionEmail({ name, code })),
 };

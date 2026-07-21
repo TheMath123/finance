@@ -19,14 +19,15 @@ import { createTestDeps, type DispatchedJob } from "../../../test/deps";
 import { updateNameSchema } from "../../../http/modules/auth/schemas";
 import {
   changePassword,
+  confirmAccountDeletion,
   confirmEmailChange,
-  deleteAccount,
   forgotPassword,
   login,
   refresh,
   logout,
   me,
   register,
+  requestAccountDeletion,
   requestEmailChange,
   resetPassword,
   updateName,
@@ -265,21 +266,40 @@ describe("auth: lockout progressivo", () => {
 });
 
 describe("auth: exclusão de conta (LGPD)", () => {
-  test("senha errada falha; senha certa apaga usuário e workspace pessoal", async () => {
-    const deps = createTestDeps(db);
+  test("senha errada no pedido falha; senha certa manda código pro próprio e-mail; código certo apaga usuário e workspace pessoal", async () => {
+    const jobs: DispatchedJob[] = [];
+    const deps = createTestDeps(db, jobs);
     const email = uniqueEmail();
     const session = await register(deps, { name: "F", email, password: "senha-forte-123" });
     if (!session.ok) throw new Error("registro falhou");
     const { user, defaultWorkspaceId } = session.value;
 
-    const wrongPassword = await deleteAccount(deps, { userId: user.id, password: "senha-errada-000" });
+    const wrongPassword = await requestAccountDeletion(deps, {
+      userId: user.id,
+      password: "senha-errada-000",
+    });
     expect(wrongPassword.ok).toBe(false);
     if (!wrongPassword.ok) expect(wrongPassword.error).toBe("invalid_credentials");
+    expect(jobs.filter((j) => j.name === "email.confirm-account-deletion")).toHaveLength(0);
 
-    // ainda existe após a tentativa com senha errada
+    const requested = await requestAccountDeletion(deps, { userId: user.id, password: "senha-forte-123" });
+    expect(requested.ok).toBe(true);
+
+    const codeJob = jobs.find((j) => j.name === "email.confirm-account-deletion");
+    if (!codeJob) throw new Error("job de confirmação não disparado");
+    expect(codeJob.payload).toMatchObject({ to: email });
+    const code = (codeJob.payload as { code: string }).code;
+
+    // ainda existe após o pedido — só o código confirmado apaga de fato
     expect(await db.query.users.findFirst({ where: eq(users.id, user.id) })).toBeDefined();
 
-    const ok = await deleteAccount(deps, { userId: user.id, password: "senha-forte-123" });
+    const wrongCode = code === "000000" ? "111111" : "000000";
+    const wrong = await confirmAccountDeletion(deps, { userId: user.id, code: wrongCode });
+    expect(wrong.ok).toBe(false);
+    if (!wrong.ok) expect(wrong.error).toBe("invalid_code");
+    expect(await db.query.users.findFirst({ where: eq(users.id, user.id) })).toBeDefined();
+
+    const ok = await confirmAccountDeletion(deps, { userId: user.id, code });
     expect(ok.ok).toBe(true);
 
     expect(await db.query.users.findFirst({ where: eq(users.id, user.id) })).toBeUndefined();
@@ -296,19 +316,55 @@ describe("auth: exclusão de conta (LGPD)", () => {
     const { user } = session.value;
 
     for (let i = 0; i < 5; i++) {
-      const attempt = await deleteAccount(deps, { userId: user.id, password: "senha-errada-000" });
+      const attempt = await requestAccountDeletion(deps, { userId: user.id, password: "senha-errada-000" });
       expect(attempt.ok).toBe(false);
     }
 
     // conta travada: mesmo a senha CERTA falha agora, tanto na reautenticação...
-    const lockedDelete = await deleteAccount(deps, { userId: user.id, password: "senha-forte-123" });
-    expect(lockedDelete.ok).toBe(false);
+    const lockedRequest = await requestAccountDeletion(deps, {
+      userId: user.id,
+      password: "senha-forte-123",
+    });
+    expect(lockedRequest.ok).toBe(false);
     // ...quanto no login normal — o lockout é compartilhado (mesma proteção contra força bruta).
     const lockedLogin = await login(deps, { email, password: "senha-forte-123" });
     expect(lockedLogin.ok).toBe(false);
 
     // usuário não foi excluído
     expect(await db.query.users.findFirst({ where: eq(users.id, user.id) })).toBeDefined();
+  });
+
+  test("nunca confirma a exclusão de outro usuário — código de A não vale pro userId de B", async () => {
+    const jobs: DispatchedJob[] = [];
+    const deps = createTestDeps(db, jobs);
+    const a = await register(deps, { name: "S", email: uniqueEmail(), password: "senha-forte-123" });
+    const b = await register(deps, { name: "T", email: uniqueEmail(), password: "senha-forte-123" });
+    if (!a.ok || !b.ok) throw new Error("registro falhou");
+
+    const requested = await requestAccountDeletion(deps, { userId: a.value.user.id, password: "senha-forte-123" });
+    expect(requested.ok).toBe(true);
+
+    const bAttempt = await confirmAccountDeletion(deps, { userId: b.value.user.id, code: "000000" });
+    expect(bAttempt.ok).toBe(false);
+    if (!bAttempt.ok) expect(bAttempt.error).toBe("invalid_code");
+
+    // ambos continuam existindo
+    expect(await db.query.users.findFirst({ where: eq(users.id, a.value.user.id) })).toBeDefined();
+    expect(await db.query.users.findFirst({ where: eq(users.id, b.value.user.id) })).toBeDefined();
+  });
+
+  test("rate limit: 6º pedido de exclusão na mesma hora é bloqueado", async () => {
+    const deps = createTestDeps(db);
+    const session = await register(deps, { name: "U", email: uniqueEmail(), password: "senha-forte-123" });
+    if (!session.ok) throw new Error("registro falhou");
+    const { user } = session.value;
+
+    let last;
+    for (let i = 0; i < 6; i++) {
+      last = await requestAccountDeletion(deps, { userId: user.id, password: "senha-forte-123" });
+    }
+    expect(last?.ok).toBe(false);
+    if (last && !last.ok) expect(last.error).toBe("rate_limited");
   });
 });
 

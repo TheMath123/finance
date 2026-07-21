@@ -40,6 +40,8 @@ export function ResetPasswordForm({ defaultEmail, defaultCode }: ResetPasswordFo
     },
   });
 
+  const onSubmit = handleSubmit((input) => verifyMutation.mutate(input));
+
   const resendMutation = useMutation({
     mutationFn: authApi.forgotPassword,
     onSuccess: () => setResendMessage('Novo código enviado — confira seu e-mail.'),
@@ -57,7 +59,7 @@ export function ResetPasswordForm({ defaultEmail, defaultCode }: ResetPasswordFo
         keyboardType="email-address"
         editable={!defaultEmail}
       />
-      <CodeField control={control} name="code" label="Código" />
+      <CodeField control={control} name="code" label="Código" onComplete={() => onSubmit()} />
 
       {verifyMutation.isError && (
         <ThemedText type="small" style={{ color: '#DC2626' }}>
@@ -65,9 +67,7 @@ export function ResetPasswordForm({ defaultEmail, defaultCode }: ResetPasswordFo
         </ThemedText>
       )}
 
-      <Button
-        loading={verifyMutation.isPending}
-        onPress={handleSubmit((input) => verifyMutation.mutate(input))}>
+      <Button loading={verifyMutation.isPending} onPress={onSubmit}>
         Verificar código
       </Button>
 

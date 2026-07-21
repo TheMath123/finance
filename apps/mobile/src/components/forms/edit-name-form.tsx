@@ -11,8 +11,13 @@ import { ApiError } from '@/lib/api-client';
 import { authApi } from '@/lib/auth-api';
 import { updateNameSchema, type UpdateNameInput } from '@/lib/schemas/auth';
 
+export interface EditNameFormProps {
+  /** Chamado após salvar com sucesso — usado pelo modal do perfil pra se fechar sozinho. */
+  onSuccess?: () => void;
+}
+
 /** Troca de nome: sem confirmação extra (spec do perfil) — salva e já atualiza a sessão. */
-export function EditNameForm() {
+export function EditNameForm({ onSuccess }: EditNameFormProps = {}) {
   const { user, refreshUser } = useSession();
   const { control, handleSubmit, reset } = useForm<UpdateNameInput>({
     resolver: zodResolver(updateNameSchema),
@@ -24,6 +29,7 @@ export function EditNameForm() {
     onSuccess: async (_data, variables) => {
       await refreshUser();
       reset({ name: variables.name });
+      onSuccess?.();
     },
   });
 

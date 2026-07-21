@@ -2,10 +2,12 @@ import { apiRequest } from "@/lib/api-client";
 import { tokenStore } from "@/lib/secure-store";
 import type {
   ChangePasswordInput,
+  ConfirmAccountDeletionInput,
   ConfirmEmailChangeInput,
   ForgotPasswordInput,
   LoginInput,
   RegisterInput,
+  RequestAccountDeletionInput,
   RequestEmailChangeInput,
   ResetPasswordInput,
   UpdateNameInput,
@@ -56,8 +58,11 @@ export const authApi = {
   verifyEmail: (input: VerifyEmailInput) =>
     apiRequest<{ message: string }>("/auth/verify-email", { method: "POST", body: input, skipAuth: true }),
 
-  deleteAccount: (password: string) =>
-    apiRequest<void>("/auth/me", { method: "DELETE", body: { password } }),
+  requestAccountDeletion: (input: RequestAccountDeletionInput) =>
+    apiRequest<void>("/auth/me/delete/request", { method: "POST", body: input }),
+
+  confirmAccountDeletion: (input: ConfirmAccountDeletionInput) =>
+    apiRequest<void>("/auth/me/delete/confirm", { method: "POST", body: input }),
 
   updateName: (input: UpdateNameInput) =>
     apiRequest<{ name: string }>("/auth/me", { method: "PATCH", body: input }),

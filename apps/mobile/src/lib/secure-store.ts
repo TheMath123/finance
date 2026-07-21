@@ -31,3 +31,11 @@ export const biometricStore = {
   getEnabled: async () => (await SecureStore.getItemAsync(BIOMETRIC_ENABLED_KEY)) === '1',
   setEnabled: (enabled: boolean) => SecureStore.setItemAsync(BIOMETRIC_ENABLED_KEY, enabled ? '1' : '0'),
 };
+
+const LAST_EMAIL_KEY = 'auth.lastEmail';
+
+/** Último e-mail digitado em login/cadastro/esqueci senha — só pra pré-preencher, não é segredo. */
+export const lastEmailStore = {
+  getEmail: () => SecureStore.getItemAsync(LAST_EMAIL_KEY),
+  setEmail: (email: string) => SecureStore.setItemAsync(LAST_EMAIL_KEY, email),
+};

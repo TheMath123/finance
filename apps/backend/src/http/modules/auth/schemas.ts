@@ -41,8 +41,12 @@ export const verifyEmailSchema = z.object({
   token: z.string().min(1),
 });
 
-export const deleteAccountSchema = z.object({
+export const requestAccountDeletionSchema = z.object({
   password: z.string().min(1),
+});
+
+export const confirmAccountDeletionSchema = z.object({
+  code: resetCodeSchema,
 });
 
 /** Edição de perfil (spec: usuário logado edita nome/e-mail/senha). */

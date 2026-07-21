@@ -1,22 +1,23 @@
 import { left, right, type Either } from "@finance/shared";
-import { isLocked, nextLockoutState } from "../../../domain/services/lockout-rules";
 import type { UseCaseDeps } from "../../deps";
 import type { AuthError } from "./errors";
 
-export interface DeleteAccountInput {
+export interface ConfirmAccountDeletionInput {
+  /** Sempre o ator autenticado (guard extrai do JWT) — nunca um alvo vindo do cliente. */
   userId: string;
-  password: string;
+  code: string;
 }
 
 /**
- * Exclusão de conta (LGPD). Reautentica via senha (o access token sozinho não é
- * suficiente para uma ação irreversível).
+ * Passo 2 da exclusão de conta (LGPD): consome o código de 6 dígitos enviado
+ * ao próprio e-mail cadastrado (ver `request-account-deletion.ts`) e só então
+ * apaga a conta de vez.
  *
  * Regra (spec > Workspaces e compartilhamento > LGPD e exclusão): workspaces em
  * que o usuário é o ÚNICO owner são excluídos por completo (inclui sempre o
- * pessoal, e agora — M2 — também qualquer family em que ele acabou sendo o
- * único dono); em workspaces compartilhados que continuam existindo (têm outro
- * owner), só a membership dele some — `created_by`/`audit_logs.user_id`/
+ * pessoal, e também qualquer family em que ele acabou sendo o único dono); em
+ * workspaces compartilhados que continuam existindo (têm outro owner), só a
+ * membership dele some — `created_by`/`audit_logs.user_id`/
  * `workspace_invites.invited_by` são anonimizados via `onDelete: "set null"`
  * no schema, não precisa de código aqui.
  *
@@ -27,27 +28,24 @@ export interface DeleteAccountInput {
  * TODOS os workspaces (cascade), então `countOwners` depois do delete já
  * reflete só os owners que sobraram.
  */
-export async function deleteAccount(
+export async function confirmAccountDeletion(
   deps: UseCaseDeps,
-  input: DeleteAccountInput,
+  input: ConfirmAccountDeletionInput,
 ): Promise<Either<AuthError, null>> {
+  // Espaço pequeno (6 dígitos) — mesmo limite de tentativas do reset de senha.
+  if (await deps.rateLimiter.isLimited(`account-deletion-confirm:${input.userId}`, 5, 15 * 60_000)) {
+    return left("rate_limited");
+  }
+
   const user = await deps.repos.user.findById(input.userId);
-  if (!user) return left("invalid_credentials");
+  if (!user) return left("invalid_code");
 
-  // Reaproveita o lockout progressivo do login (auditoria 2026-07-19): reautenticação
-  // pra uma ação irreversível merece a mesma proteção contra força bruta de senha.
-  const now = new Date();
-  if (isLocked(user.lockedUntil, now)) return left("invalid_credentials");
-
-  const valid = await deps.hasher.verify(input.password, user.passwordHash);
-  if (!valid) {
-    const { attempts, lockedUntil } = nextLockoutState(user.failedLoginAttempts, now);
-    await deps.repos.user.recordLoginFailure(user.id, attempts, lockedUntil);
-    return left("invalid_credentials");
-  }
-  if (user.failedLoginAttempts > 0 || user.lockedUntil) {
-    await deps.repos.user.resetLock(user.id);
-  }
+  const stored = await deps.repos.token.findValidAuthTokenForUser(
+    user.id,
+    "account_deletion",
+    deps.tokens.hashOpaque(input.code),
+  );
+  if (!stored) return left("invalid_code");
 
   const memberships = await deps.repos.workspace.listByUser(user.id);
   const ownedWorkspaceIds = memberships.filter((m) => m.role === "owner").map((m) => m.workspace.id);

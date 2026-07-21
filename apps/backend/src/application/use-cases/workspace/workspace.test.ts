@@ -15,10 +15,10 @@ import {
   workspaces,
   type Db,
 } from "@finance/db";
-import type { Actor } from "../../deps";
+import type { Actor, UseCaseDeps } from "../../deps";
 import type { Workspace } from "../../../domain/entities/workspace";
-import { createTestDeps } from "../../../test/deps";
-import { deleteAccount, register } from "../auth";
+import { createTestDeps, type DispatchedJob } from "../../../test/deps";
+import { confirmAccountDeletion, register, requestAccountDeletion } from "../auth";
 import {
   acceptInvite,
   createInvite,
@@ -39,6 +39,21 @@ let db: Db;
 beforeAll(() => {
   db = createDb();
 });
+
+/**
+ * Exclusão de conta agora é em duas etapas (reautentica → código por e-mail →
+ * confirma — ver `request-account-deletion.ts`/`confirm-account-deletion.ts`).
+ * Este helper só existe pra manter os testes de cascata de workspace enxutos;
+ * `deps` precisa ter sido criado com o `jobs` passado aqui pra capturar o código.
+ */
+async function deleteAccountForTest(deps: UseCaseDeps, jobs: DispatchedJob[], userId: string, password: string) {
+  const requested = await requestAccountDeletion(deps, { userId, password });
+  if (!requested.ok) return requested;
+  const job = jobs.find((j) => j.name === "email.confirm-account-deletion");
+  if (!job) throw new Error("job de confirmação de exclusão não disparado");
+  const code = (job.payload as { code: string }).code;
+  return confirmAccountDeletion(deps, { userId, code });
+}
 
 /**
  * Registra um usuário novo e devolve o Actor dele no próprio workspace pessoal
@@ -369,7 +384,8 @@ describe("workspace: atividade (leitura do AuditLog, M2-04)", () => {
   });
 
   test("ação de usuário depois excluído aparece como usuário removido (anonimizado)", async () => {
-    const deps = createTestDeps(db);
+    const jobs: DispatchedJob[] = [];
+    const deps = createTestDeps(db, jobs);
     const { actor: ownerActor } = await newOwnerActor();
     const family = await mustCreateWorkspace(deps, ownerActor.userId, "Família Anonimizada");
     const familyOwner: Actor = { userId: ownerActor.userId, workspaceId: family.id, role: "owner" };
@@ -381,7 +397,7 @@ describe("workspace: atividade (leitura do AuditLog, M2-04)", () => {
     await updateMemberRole(deps, familyOwner, { userId: secondActor.userId, role: "owner" });
 
     // Owner original excluído — workspace sobrevive (segundo owner assumiu).
-    await deleteAccount(deps, { userId: ownerActor.userId, password: "senha-forte-123" });
+    await deleteAccountForTest(deps, jobs, ownerActor.userId, "senha-forte-123");
 
     const secondAsOwner: Actor = { userId: secondActor.userId, workspaceId: family.id, role: "owner" };
     const activity = await listActivity(deps, secondAsOwner, {});
@@ -394,18 +410,20 @@ describe("workspace: atividade (leitura do AuditLog, M2-04)", () => {
 
 describe("workspace: exclusão de conta (LGPD) com workspaces compartilhados", () => {
   test("único owner: o workspace family é apagado junto com a conta", async () => {
-    const deps = createTestDeps(db);
+    const jobs: DispatchedJob[] = [];
+    const deps = createTestDeps(db, jobs);
     const { actor } = await newOwnerActor();
     const family = await mustCreateWorkspace(deps, actor.userId, "Família Solo");
 
-    const result = await deleteAccount(deps, { userId: actor.userId, password: "senha-forte-123" });
+    const result = await deleteAccountForTest(deps, jobs, actor.userId, "senha-forte-123");
     expect(result.ok).toBe(true);
 
     expect(await db.query.workspaces.findFirst({ where: eq(workspaces.id, family.id) })).toBeUndefined();
   });
 
   test("com outro owner: o workspace continua existindo, só a membership some", async () => {
-    const deps = createTestDeps(db);
+    const jobs: DispatchedJob[] = [];
+    const deps = createTestDeps(db, jobs);
     const { actor: ownerActor } = await newOwnerActor();
     const family = await mustCreateWorkspace(deps, ownerActor.userId, "Família Compartilhada");
     const familyOwner: Actor = { userId: ownerActor.userId, workspaceId: family.id, role: "owner" };
@@ -416,7 +434,7 @@ describe("workspace: exclusão de conta (LGPD) com workspaces compartilhados", (
     await acceptInvite(deps, secondActor.userId, invite.value.id);
     await updateMemberRole(deps, familyOwner, { userId: secondActor.userId, role: "owner" });
 
-    const result = await deleteAccount(deps, { userId: ownerActor.userId, password: "senha-forte-123" });
+    const result = await deleteAccountForTest(deps, jobs, ownerActor.userId, "senha-forte-123");
     expect(result.ok).toBe(true);
 
     expect(await db.query.workspaces.findFirst({ where: eq(workspaces.id, family.id) })).toBeDefined();
@@ -425,7 +443,8 @@ describe("workspace: exclusão de conta (LGPD) com workspaces compartilhados", (
   });
 
   test("convite enviado por quem excluiu a conta fica com invited_by nulo (sem quebrar a exclusão)", async () => {
-    const deps = createTestDeps(db);
+    const jobs: DispatchedJob[] = [];
+    const deps = createTestDeps(db, jobs);
     const { actor: ownerActor } = await newOwnerActor();
     const family = await mustCreateWorkspace(deps, ownerActor.userId, "Família com Convite");
     const familyOwner: Actor = { userId: ownerActor.userId, workspaceId: family.id, role: "owner" };
@@ -437,7 +456,7 @@ describe("workspace: exclusão de conta (LGPD) com workspaces compartilhados", (
     // Dois owners agora — o primeiro pode excluir a conta sem apagar o workspace nem travar na FK do convite.
     await updateMemberRole(deps, familyOwner, { userId: secondActor.userId, role: "owner" });
 
-    const result = await deleteAccount(deps, { userId: ownerActor.userId, password: "senha-forte-123" });
+    const result = await deleteAccountForTest(deps, jobs, ownerActor.userId, "senha-forte-123");
     expect(result.ok).toBe(true);
 
     const row = await db.query.workspaceInvites.findFirst({ where: eq(workspaceInvites.id, invite.value.id) });

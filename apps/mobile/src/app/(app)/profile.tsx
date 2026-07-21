@@ -1,25 +1,33 @@
 import { router } from 'expo-router';
-import { ArrowLeftIcon, EnvelopeIcon, FingerprintIcon, PencilSimpleIcon, SignOutIcon, TrashIcon, UserIcon, WarningIcon } from 'phosphor-react-native';
+import {
+  ArrowLeftIcon,
+  EnvelopeIcon,
+  FingerprintIcon,
+  LockKeyIcon,
+  PencilSimpleIcon,
+  SignOutIcon,
+  TrashIcon,
+  UserIcon,
+  XIcon,
+} from 'phosphor-react-native';
 import { useState } from 'react';
 import { Alert, Pressable, Switch, View } from 'react-native';
 
+import { EditNameForm } from '@/components/forms/edit-name-form';
 import { ThemedText } from '@/components/themed-text';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { PasswordInput } from '@/components/ui/password-input';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Screen } from '@/components/ui/screen';
 import { useBiometricLock } from '@/context/biometric-lock';
 import { useSession } from '@/context/session';
-import { ApiError } from '@/lib/api-client';
-import { authApi } from '@/lib/auth-api';
 
 export default function ProfileScreen() {
   const { user, signOut } = useSession();
   const { available: biometricsAvailable, enabled: biometricsEnabled, setEnabled: setBiometricsEnabled } =
     useBiometricLock();
   const [signingOut, setSigningOut] = useState(false);
-  const [deletePassword, setDeletePassword] = useState('');
-  const [deletingAccount, setDeletingAccount] = useState(false);
+  const [editingName, setEditingName] = useState(false);
 
   const handleSignOut = async () => {
     setSigningOut(true);
@@ -35,33 +43,6 @@ export default function ProfileScreen() {
       { text: 'Cancelar', style: 'cancel' },
       { text: 'Sair', style: 'destructive', onPress: handleSignOut },
     ]);
-  };
-
-  const handleDeleteAccount = async () => {
-    setDeletingAccount(true);
-    try {
-      await authApi.deleteAccount(deletePassword);
-      // Conta já foi apagada no backend — só limpa a sessão local; a rota
-      // de logout pode falhar silenciosamente (refresh token já não existe).
-      await signOut();
-    } catch (error) {
-      const message =
-        error instanceof ApiError ? error.message : 'Não foi possível excluir a conta.';
-      Alert.alert('Erro ao excluir conta', message);
-    } finally {
-      setDeletingAccount(false);
-    }
-  };
-
-  const confirmDeleteAccount = () => {
-    Alert.alert(
-      'Excluir sua conta?',
-      'Essa ação é irreversível. Todos os seus dados — transações, contas, cartões, categorias e faturas — serão apagados permanentemente.',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        { text: 'Excluir conta', style: 'destructive', onPress: handleDeleteAccount },
-      ],
-    );
   };
 
   return (
@@ -83,10 +64,7 @@ export default function ProfileScreen() {
             {user?.email}
           </ThemedText>
         </View>
-        <Button
-          variant="ghost"
-          icon={<PencilSimpleIcon size={18} />}
-          onPress={() => router.push('/edit-profile')}>
+        <Button variant="ghost" icon={<PencilSimpleIcon size={18} />} onPress={() => setEditingName(true)}>
           Editar
         </Button>
       </Card>
@@ -128,6 +106,29 @@ export default function ProfileScreen() {
       )}
 
       <Button
+        variant="outline"
+        icon={<EnvelopeIcon size={18} />}
+        onPress={() => router.push('/change-email')}>
+        Alterar e-mail
+      </Button>
+
+      <Button
+        variant="outline"
+        icon={<LockKeyIcon size={18} />}
+        onPress={() => router.push('/change-password')}>
+        Alterar senha
+      </Button>
+
+      <Button
+        variant="outline"
+        className="border-destructive"
+        textClassName="text-destructive"
+        icon={<TrashIcon size={18} color="#DC2626" />}
+        onPress={() => router.push('/delete-account')}>
+        Excluir conta
+      </Button>
+
+      <Button
         variant="destructive"
         icon={<SignOutIcon size={18} color="#fafafa" />}
         loading={signingOut}
@@ -135,32 +136,17 @@ export default function ProfileScreen() {
         Sair da conta
       </Button>
 
-      <Card className="gap-4 border-destructive">
-        <View className="flex-row items-center gap-2">
-          <WarningIcon size={18} color="#DC2626" />
-          <ThemedText type="smallBold" style={{ color: '#DC2626' }}>
-            Zona de perigo
-          </ThemedText>
-        </View>
-        <ThemedText type="small" themeColor="textSecondary">
-          Excluir sua conta é permanente: transações, contas, cartões, categorias e faturas serão
-          apagados e não podem ser recuperados.
-        </ThemedText>
-        <PasswordInput
-          placeholder="Confirme sua senha"
-          autoComplete="current-password"
-          value={deletePassword}
-          onChangeText={setDeletePassword}
-        />
-        <Button
-          variant="destructive"
-          icon={<TrashIcon size={18} color="#fafafa" />}
-          disabled={deletePassword.length === 0}
-          loading={deletingAccount}
-          onPress={confirmDeleteAccount}>
-          Excluir minha conta
-        </Button>
-      </Card>
+      <Dialog open={editingName} onOpenChange={setEditingName}>
+        <DialogContent>
+          <DialogHeader className="flex-row items-center justify-between">
+            <DialogTitle>Editar nome</DialogTitle>
+            <Pressable onPress={() => setEditingName(false)} hitSlop={8} className="active:opacity-60">
+              <XIcon size={20} />
+            </Pressable>
+          </DialogHeader>
+          <EditNameForm onSuccess={() => setEditingName(false)} />
+        </DialogContent>
+      </Dialog>
     </Screen>
   );
 }

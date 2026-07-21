@@ -1,6 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
 import { Link, useRouter } from 'expo-router';
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { View } from 'react-native';
 
@@ -9,14 +10,25 @@ import { ThemedText } from '@/components/themed-text';
 import { Button } from '@/components/ui/button';
 import { ApiError } from '@/lib/api-client';
 import { authApi } from '@/lib/auth-api';
+import { usePersistEmailField } from '@/lib/hooks/use-persist-email-field';
 import { forgotPasswordSchema, type ForgotPasswordInput } from '@/lib/schemas/auth';
+import { lastEmailStore } from '@/lib/secure-store';
 
 export function ForgotPasswordForm() {
   const router = useRouter();
-  const { control, handleSubmit } = useForm<ForgotPasswordInput>({
+  const { control, handleSubmit, setValue } = useForm<ForgotPasswordInput>({
     resolver: zodResolver(forgotPasswordSchema),
     defaultValues: { email: '' },
   });
+
+  // Pré-preenche com o último e-mail usado em login/cadastro/esqueci senha.
+  useEffect(() => {
+    lastEmailStore.getEmail().then((email) => {
+      if (email) setValue('email', email);
+    });
+  }, [setValue]);
+
+  usePersistEmailField(control, 'email');
 
   const mutation = useMutation({
     mutationFn: authApi.forgotPassword,
