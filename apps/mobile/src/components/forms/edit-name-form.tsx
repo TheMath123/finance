@@ -21,6 +21,7 @@ export function EditNameForm({ onSuccess }: EditNameFormProps = {}) {
   const { user, refreshUser } = useSession();
   const { control, handleSubmit, reset } = useForm<UpdateNameInput>({
     resolver: zodResolver(updateNameSchema),
+    mode: 'onTouched',
     defaultValues: { name: user?.name ?? '' },
   });
 

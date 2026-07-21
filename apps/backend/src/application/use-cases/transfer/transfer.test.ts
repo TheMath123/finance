@@ -81,6 +81,20 @@ describe("createTransfer", () => {
     if (!result.ok) expect(result.error).toBe("self_transfer");
   });
 
+  test("encontra o destinatário mesmo com o e-mail digitado em caixa diferente (mesma normalização de create-invite.ts)", async () => {
+    const deps = createTestDeps(db);
+    const sender = await newUser("Remetente C1");
+    const recipient = await newUser("Destinatário C1");
+
+    const result = await createTransfer(deps, actorFor(sender), {
+      recipient: recipient.email.toUpperCase(),
+      amount: 1000,
+      description: "teste",
+      accountId: sender.accountId,
+    });
+    expect(result.ok).toBe(true);
+  });
+
   test("erro de valor inválido (zero ou negativo)", async () => {
     const deps = createTestDeps(db);
     const sender = await newUser("Remetente C");

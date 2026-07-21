@@ -26,6 +26,7 @@ export function CreateInviteForm({ workspaceId, onDone }: CreateInviteFormProps)
   const queryClient = useQueryClient();
   const { control, handleSubmit } = useForm<CreateInviteInput>({
     resolver: zodResolver(createInviteSchema),
+    mode: 'onTouched',
     defaultValues: { emailOrPhone: '', role: 'member' },
   });
 

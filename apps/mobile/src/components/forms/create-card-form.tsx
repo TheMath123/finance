@@ -25,6 +25,7 @@ export function CreateCardForm({ card, onDone }: { card?: Card; onDone: () => vo
   const queryClient = useQueryClient();
   const { control, handleSubmit } = useForm<CardInput>({
     resolver: zodResolver(cardSchema),
+    mode: 'onTouched',
     defaultValues: {
       name: card?.name ?? '',
       bankCode: card?.bankCode ?? '',

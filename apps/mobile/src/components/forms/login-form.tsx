@@ -20,6 +20,7 @@ export function LoginForm() {
   const { signIn } = useSession();
   const { control, handleSubmit, setValue } = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
+    mode: 'onTouched',
     defaultValues: { email: '', password: '' },
   });
 

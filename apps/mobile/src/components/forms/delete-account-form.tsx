@@ -31,11 +31,13 @@ export function DeleteAccountForm() {
 
   const requestForm = useForm<RequestAccountDeletionInput>({
     resolver: zodResolver(requestAccountDeletionSchema),
+    mode: 'onTouched',
     defaultValues: { password: '' },
   });
 
   const confirmForm = useForm<ConfirmAccountDeletionInput>({
     resolver: zodResolver(confirmAccountDeletionSchema),
+    mode: 'onTouched',
     defaultValues: { code: '' },
   });
 

@@ -64,6 +64,7 @@ export function CreateTransactionForm({ onDone }: { onDone: () => void }) {
 
   const { control, handleSubmit, setValue } = useForm<TransactionInput>({
     resolver: zodResolver(transactionSchema),
+    mode: 'onTouched',
     defaultValues: {
       description: '',
       amount: 0,

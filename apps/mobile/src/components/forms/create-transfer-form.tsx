@@ -26,6 +26,7 @@ export function CreateTransferForm({ onDone }: { onDone: () => void }) {
 
   const { control, handleSubmit } = useForm<CreateTransferInput>({
     resolver: zodResolver(createTransferSchema),
+    mode: 'onTouched',
     defaultValues: { recipient: '', amount: 0, description: '', accountId: '' },
   });
 
@@ -34,6 +35,7 @@ export function CreateTransferForm({ onDone }: { onDone: () => void }) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['accounts', workspaceId] });
       queryClient.invalidateQueries({ queryKey: ['summary', workspaceId] });
+      queryClient.invalidateQueries({ queryKey: ['transactions', workspaceId] });
       onDone();
     },
   });

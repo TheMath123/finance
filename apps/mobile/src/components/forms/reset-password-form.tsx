@@ -27,6 +27,7 @@ export function ResetPasswordForm({ defaultEmail, defaultCode }: ResetPasswordFo
 
   const { control, handleSubmit, getValues } = useForm<VerifyResetCodeInput>({
     resolver: zodResolver(verifyResetCodeSchema),
+    mode: 'onTouched',
     defaultValues: { email: defaultEmail ?? '', code: defaultCode ?? '' },
   });
 

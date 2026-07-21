@@ -16,6 +16,7 @@ export function VerifyEmailForm() {
   const { refreshUser } = useSession();
   const { control, handleSubmit } = useForm<VerifyEmailInput>({
     resolver: zodResolver(verifyEmailSchema),
+    mode: 'onTouched',
     defaultValues: { token: '' },
   });
 

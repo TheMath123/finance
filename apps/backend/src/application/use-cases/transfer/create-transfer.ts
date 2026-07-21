@@ -33,9 +33,15 @@ export async function createTransfer(
     return left("rate_limited");
   }
 
-  const recipient = input.recipient.includes("@")
-    ? await deps.repos.user.findByEmail(input.recipient)
-    : await deps.repos.user.findByPhone(input.recipient);
+  // Mesma normalização de create-invite.ts: e-mail é case-insensitive na
+  // prática (armazenado em minúsculas no registro/login), mas a busca aqui
+  // comparava com o valor cru — um "Fulano@Teste.com" digitado com maiúsculas
+  // nunca batia com o registro, e a transferência inteira falhava silenciosa
+  // (recipient_not_found) sem criar nada nos dois lados.
+  const target = input.recipient.trim();
+  const recipient = target.includes("@")
+    ? await deps.repos.user.findByEmail(target.toLowerCase())
+    : await deps.repos.user.findByPhone(target);
   if (!recipient) return left("recipient_not_found");
   if (recipient.id === actor.userId) return left("self_transfer");
 

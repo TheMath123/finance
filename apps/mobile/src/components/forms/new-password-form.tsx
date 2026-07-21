@@ -21,6 +21,7 @@ export function NewPasswordForm({ email, code }: NewPasswordFormProps) {
   const router = useRouter();
   const { control, handleSubmit } = useForm<NewPasswordInput>({
     resolver: zodResolver(newPasswordSchema),
+    mode: 'onTouched',
     defaultValues: { password: '', confirmPassword: '' },
   });
 

@@ -32,6 +32,7 @@ export function PayInvoiceForm({
   const today = new Date().toISOString().slice(0, 10);
   const { control, handleSubmit } = useForm<PayInvoiceInput>({
     resolver: zodResolver(payInvoiceSchema),
+    mode: 'onTouched',
     defaultValues: { accountId: '', date: today, method: 'pix' },
   });
 

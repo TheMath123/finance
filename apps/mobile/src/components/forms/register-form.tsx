@@ -21,6 +21,7 @@ export function RegisterForm() {
   const { signIn } = useSession();
   const { control, handleSubmit, setValue } = useForm<RegisterInput>({
     resolver: zodResolver(registerSchema),
+    mode: 'onTouched',
     defaultValues: { name: '', email: '', password: '', termsAccepted: false },
   });
 

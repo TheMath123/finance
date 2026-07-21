@@ -34,11 +34,13 @@ export function ChangeEmailForm() {
 
   const requestForm = useForm<RequestEmailChangeInput>({
     resolver: zodResolver(requestEmailChangeSchema),
+    mode: 'onTouched',
     defaultValues: { newEmail: '', currentPassword: '' },
   });
 
   const confirmForm = useForm<ConfirmEmailChangeInput>({
     resolver: zodResolver(confirmEmailChangeSchema),
+    mode: 'onTouched',
     defaultValues: { code: '' },
   });
 

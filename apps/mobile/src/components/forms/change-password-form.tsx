@@ -24,6 +24,7 @@ const emptyValues: ChangePasswordInput = {
 export function ChangePasswordForm() {
   const { control, handleSubmit, reset } = useForm<ChangePasswordInput>({
     resolver: zodResolver(changePasswordSchema),
+    mode: 'onTouched',
     defaultValues: emptyValues,
   });
 

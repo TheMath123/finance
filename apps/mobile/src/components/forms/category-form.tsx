@@ -28,6 +28,7 @@ export function CategoryForm({ category, onDone }: { category?: Category; onDone
   const queryClient = useQueryClient();
   const { control, handleSubmit } = useForm<CategoryInput>({
     resolver: zodResolver(categorySchema),
+    mode: 'onTouched',
     defaultValues: {
       name: category?.name ?? '',
       icon: category?.icon ?? '',

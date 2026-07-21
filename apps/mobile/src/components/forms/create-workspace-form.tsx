@@ -20,6 +20,7 @@ export function CreateWorkspaceForm({ onDone }: CreateWorkspaceFormProps) {
   const { switchWorkspace } = useSession();
   const { control, handleSubmit } = useForm<CreateWorkspaceInput>({
     resolver: zodResolver(createWorkspaceSchema),
+    mode: 'onTouched',
     defaultValues: { name: '' },
   });
 

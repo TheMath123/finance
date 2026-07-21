@@ -27,6 +27,7 @@ export function CreateAccountForm({ account, onDone }: { account?: Account; onDo
   const queryClient = useQueryClient();
   const { control, handleSubmit } = useForm<AccountInput>({
     resolver: zodResolver(accountSchema),
+    mode: 'onTouched',
     defaultValues: {
       name: account?.name ?? '',
       bankCode: account?.bankCode ?? '',

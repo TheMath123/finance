@@ -60,6 +60,7 @@ export function EditTransactionForm({
 
   const { control, handleSubmit } = useForm<EditTransactionInput>({
     resolver: zodResolver(editTransactionSchema),
+    mode: 'onTouched',
     defaultValues: {
       description: transaction.description,
       amount: transaction.amount,

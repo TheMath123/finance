@@ -18,6 +18,7 @@ export function ForgotPasswordForm() {
   const router = useRouter();
   const { control, handleSubmit, setValue } = useForm<ForgotPasswordInput>({
     resolver: zodResolver(forgotPasswordSchema),
+    mode: 'onTouched',
     defaultValues: { email: '' },
   });
 

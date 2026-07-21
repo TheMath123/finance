@@ -152,6 +152,7 @@ export function CreateRecurringForm({
 
   const { control, handleSubmit, setValue } = useForm<RecurringInput>({
     resolver: zodResolver(recurringSchema),
+    mode: 'onTouched',
     defaultValues: {
       description: recurring?.description ?? '',
       amount: recurring?.amount ?? 0,
