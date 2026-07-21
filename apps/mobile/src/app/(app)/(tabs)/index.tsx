@@ -1,6 +1,6 @@
 import { useQueries, useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import { CaretDownIcon, TrendUpIcon, TrendDownIcon } from 'phosphor-react-native';
+import { ArrowsClockwiseIcon, CaretDownIcon, TrendUpIcon, TrendDownIcon } from 'phosphor-react-native';
 import { ActivityIndicator, Pressable, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
@@ -8,6 +8,7 @@ import { Card } from '@/components/ui/card';
 import { Screen } from '@/components/ui/screen';
 import { useSession } from '@/context/session';
 import { cardsApi } from '@/lib/cards-api';
+import { useRecurringPendingTotal } from '@/lib/hooks/use-recurring-pending-total';
 import { formatCents } from '@/lib/money';
 import { summaryApi } from '@/lib/summary-api';
 import { workspaceApi } from '@/lib/workspace-api';
@@ -51,6 +52,11 @@ function useNextInvoice(workspaceId: string | null): NextInvoice | null {
   return best;
 }
 
+/** Mês seguinte ao informado (rolando o ano quando dezembro → janeiro). */
+function nextMonth(year: number, month: number): { year: number; month: number } {
+  return month === 12 ? { year: year + 1, month: 1 } : { year, month: month + 1 };
+}
+
 export default function HomeScreen() {
   const { workspaceId } = useSession();
   const now = new Date();
@@ -61,7 +67,18 @@ export default function HomeScreen() {
     enabled: Boolean(workspaceId),
   });
 
+  // Mesma fórmula do mês corrente (saldo + recorrências previstas − faturas em
+  // aberto − estimativa de gasto variável), só que aplicada ao mês seguinte —
+  // o backend (monthlySummary) já suporta isso, só pedindo o mês certo.
+  const { year: nextYear, month: nextMonthNumber } = nextMonth(now.getFullYear(), now.getMonth() + 1);
+  const { data: nextSummary } = useQuery({
+    queryKey: ['summary', workspaceId, nextYear, nextMonthNumber],
+    queryFn: () => summaryApi.getMonthly(workspaceId!, nextYear, nextMonthNumber),
+    enabled: Boolean(workspaceId),
+  });
+
   const nextInvoice = useNextInvoice(workspaceId);
+  const recurringPending = useRecurringPendingTotal(workspaceId);
 
   const { data: workspaces } = useQuery({ queryKey: ['workspaces'], queryFn: workspaceApi.listMine });
   const activeWorkspace = workspaces?.find((w) => w.id === workspaceId);
@@ -135,6 +152,51 @@ export default function HomeScreen() {
             </ThemedText>
           </>
         )}
+      </Card>
+
+      <Card className="gap-3">
+        <View className="flex-row items-center gap-2">
+          <ArrowsClockwiseIcon size={18} color="#2563EB" weight="bold" />
+          <ThemedText type="smallBold">Recorrências deste mês</ThemedText>
+        </View>
+        {recurringPending && recurringPending.count > 0 ? (
+          <View className="flex-row gap-3">
+            <View className="flex-1">
+              <ThemedText type="small" themeColor="textSecondary">
+                A receber
+              </ThemedText>
+              <ThemedText type="smallBold" style={{ color: '#16A34A' }}>
+                {formatCents(recurringPending.income)}
+              </ThemedText>
+            </View>
+            <View className="flex-1">
+              <ThemedText type="small" themeColor="textSecondary">
+                A pagar
+              </ThemedText>
+              <ThemedText type="smallBold" style={{ color: '#DC2626' }}>
+                {formatCents(recurringPending.expense)}
+              </ThemedText>
+            </View>
+          </View>
+        ) : (
+          <ThemedText type="small" themeColor="textSecondary">
+            Nenhuma recorrência pendente este mês.
+          </ThemedText>
+        )}
+      </Card>
+
+      <Card className="gap-1">
+        <ThemedText type="small" themeColor="textSecondary">
+          Projeção pra {new Date(nextYear, nextMonthNumber - 1, 1).toLocaleDateString('pt-BR', { month: 'long' })}
+        </ThemedText>
+        {nextSummary?.projectedAvailable != null ? (
+          <ThemedText type="subtitle">{formatCents(nextSummary.projectedAvailable)}</ThemedText>
+        ) : (
+          <ActivityIndicator className="mt-1 self-start" />
+        )}
+        <ThemedText type="small" themeColor="textSecondary">
+          Saldo atual + recorrências previstas − faturas em aberto − estimativa de gasto variável.
+        </ThemedText>
       </Card>
     </Screen>
   );

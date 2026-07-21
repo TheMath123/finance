@@ -77,6 +77,12 @@ export async function monthlySummary(
       const pending = await listPendingOccurrences(deps, actor, y, m);
       for (const p of pending) {
         if (p.date < today || p.date > to) continue;
+        // Recorrência no crédito não debita a conta na data da ocorrência — ela vira
+        // fatura (`unpaidDue` abaixo já soma faturas em aberto). Contar aqui também
+        // dobraria o impacto (uma vez como "recorrência pendente", outra quando a
+        // fatura correspondente existir) e ainda no mês errado (o dinheiro só sai de
+        // verdade no vencimento da fatura, não na data da compra).
+        if (p.method === "credit") continue;
         if (p.type === "income") pendingIncome += p.amount;
         else pendingExpense += p.amount;
       }

@@ -7,6 +7,7 @@ import {
   DEFAULT_CATEGORIES,
   bankAccounts,
   banks,
+  cards,
   categories,
   users,
   workspaceMembers,
@@ -245,5 +246,43 @@ describe("visão mensal e projeção", () => {
     // no pior caso (ocorrência já passada no mês), projeção = saldo total
     expect(summary.projectedAvailable!).toBeLessThanOrEqual(350_000);
     expect(summary.projectedAvailable!).toBeGreaterThanOrEqual(350_000 - 120_000);
+  });
+
+  test("recorrência no crédito não abate a projeção direto — o impacto só existe quando virar fatura", async () => {
+    const before = await monthlySummary(deps, actor, YEAR, MONTH);
+
+    const [bank] = await db
+      .insert(banks)
+      .values({ workspaceId: actor.workspaceId, name: "Nu", bankCode: "nubank" })
+      .returning();
+    const [card] = await db
+      .insert(cards)
+      .values({
+        workspaceId: actor.workspaceId,
+        bankId: bank!.id,
+        name: "Cartão Teste",
+        limit: 500_000,
+        closingDay: 1,
+        dueDay: 10,
+      })
+      .returning();
+
+    const subscription = await createRecurring(deps, actor, {
+      description: "Streaming",
+      amount: 5_000, // R$ 50,00
+      type: "expense",
+      method: "credit",
+      categoryId: housingCategoryId,
+      cardId: card!.id,
+      frequency: "monthly",
+      dayOfReference: 31, // clampa pro fim do mês — sempre à frente de hoje
+    });
+    expect(subscription.ok).toBe(true);
+
+    // A recorrência no crédito ainda não confirmada não existe como fatura
+    // nenhuma (unpaidDue não a vê) e não pode ser tratada como saque de
+    // conta (pendingExpense) — a projeção não deve mudar por causa dela.
+    const after = await monthlySummary(deps, actor, YEAR, MONTH);
+    expect(after.projectedAvailable).toBe(before.projectedAvailable);
   });
 });

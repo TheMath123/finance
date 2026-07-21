@@ -32,6 +32,7 @@ import { accountsApi } from '@/lib/accounts-api';
 import { cardsApi } from '@/lib/cards-api';
 import { cn } from '@/lib/cn';
 import { useCategories } from '@/lib/hooks/use-categories';
+import { useRecurringPendingTotal } from '@/lib/hooks/use-recurring-pending-total';
 import { formatCents } from '@/lib/money';
 import { recurringApi, type PendingOccurrence, type RecurringTransaction } from '@/lib/recurring-api';
 import { transactionsApi, type Transaction } from '@/lib/transactions-api';
@@ -129,6 +130,8 @@ function RecurringManagerDialog({ open, onOpenChange }: { open: boolean; onOpenC
     enabled: Boolean(workspaceId) && open,
   });
 
+  const pendingTotal = useRecurringPendingTotal(workspaceId);
+
   const deleteMutation = useMutation({
     mutationFn: (recurringId: string) => recurringApi.delete(workspaceId!, recurringId),
     onSuccess: () => {
@@ -164,6 +167,27 @@ function RecurringManagerDialog({ open, onOpenChange }: { open: boolean; onOpenC
               <PlusIcon size={18} color="#FFFFFF" weight="bold" />
             </Pressable>
           </DialogHeader>
+
+          {pendingTotal && pendingTotal.count > 0 && (
+            <View className="mb-3 flex-row gap-3 rounded-lg border border-border bg-muted/40 p-3">
+              <View className="flex-1">
+                <ThemedText type="small" themeColor="textSecondary">
+                  A receber este mês
+                </ThemedText>
+                <ThemedText type="smallBold" style={{ color: '#16A34A' }}>
+                  {formatCents(pendingTotal.income)}
+                </ThemedText>
+              </View>
+              <View className="flex-1">
+                <ThemedText type="small" themeColor="textSecondary">
+                  A pagar este mês
+                </ThemedText>
+                <ThemedText type="smallBold" style={{ color: '#DC2626' }}>
+                  {formatCents(pendingTotal.expense)}
+                </ThemedText>
+              </View>
+            </View>
+          )}
 
           {isLoading ? (
             <ActivityIndicator className="mt-4" />
