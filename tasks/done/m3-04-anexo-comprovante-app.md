@@ -1,8 +1,9 @@
 # M3-04 — Anexo de comprovante nas transações (app)
 
-**Status:** 🟡 Em andamento — código completo (backend + mobile) e testado
-com storage in-memory, mas **não validado contra o R2 real** (bucket do
-M3-01 ainda não existe — ver [[m3-01-infra-storage-arquivos]]).
+**Status:** 🟢 Concluída (2026-07-21) — validada ponta a ponta contra o R2
+real (backend, 2026-07-20) e confirmada pelo usuário no app rodando de
+verdade: upload por câmera/galeria, padrão Editar/Remover e preview
+instantâneo após o envio.
 
 ## Contexto
 
@@ -100,7 +101,11 @@ de upload não logava a causa real (só mostrava "Não foi possível anexar o
 comprovante" genérico) — adicionado `console.error` no `onError` da
 mutation pra aparecer no Metro da próxima vez que algo falhar.
 
-## Próximo passo
+## Validação final (2026-07-21)
 
-Com o timeout corrigido, testar de novo pelo app (câmera e galeria) e
-conferir a foto aparecendo no preview. Só então mover pra `done/`.
+Usuário confirmou no app rodando de verdade, depois dos dois fixes
+client-side (timeout + `console.error` de diagnóstico) e dos ajustes de UX
+(botões Editar/Remover em vez de Câmera/Galeria sempre visíveis; preview
+atualizando na hora após o upload, sem precisar fechar o modal): upload
+funciona, o padrão de UI é o esperado, e o preview reage imediatamente.
+Task fechada — movida para `done/`.

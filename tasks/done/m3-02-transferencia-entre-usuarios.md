@@ -148,9 +148,33 @@ clique manual** num simulador/browser logado de verdade — as telas existem,
 estão no nav e chamam a API real (não mockada), mas o fluxo completo
 (login → enviar → aceitar) não foi exercitado interativamente nesta sessão.
 
+## Bugs encontrados no clique manual (2026-07-21)
+
+O usuário tentou o fluxo completo pela primeira vez (dois emuladores, cada
+um logado numa conta) e reportou: destinatário não recebia notificação e a
+transação nem aparecia pro remetente. Achados dois bugs reais, os dois
+corrigidos (commit `40735cf`):
+
+1. **Busca do destinatário era case-sensitive** (`create-transfer.ts`):
+   comparava o e-mail digitado direto com o banco, sem `.toLowerCase()` —
+   inconsistente com `create-invite.ts`, que já normalizava. Um e-mail
+   digitado com alguma maiúscula não encontrava o destinatário
+   (`recipient_not_found`) e a transferência inteira falhava — nada era
+   criado nos dois lados, o que explica sozinho as duas partes do
+   sintoma relatado. Corrigido normalizando no schema Zod compartilhado
+   (`emailOrPhoneSchema`, `packages/shared/src/validation.ts`).
+2. **`create-transfer-form.tsx` não invalidava a query de transações** do
+   remetente após criar a transferência (só invalidava `accounts` e
+   `summary`) — mesmo quando a transferência dava certo, a transação de
+   saída não aparecia na lista sem um refresh manual.
+
+Teste de regressão novo em `transfer.test.ts` (e-mail em caixa diferente
+encontra o destinatário). Suíte completa e typecheck seguem limpos.
+
 ## Próximo passo
 
-Nenhum bloqueio técnico restante. Ficaria bom, antes de considerar 100%
-fechado, alguém clicar o fluxo completo (enviar → notificação → aceitar
-escolhendo conta → conferir saldo dos dois lados) num app rodando de
-verdade — os testes automatizados cobrem a lógica, mas não a UX real.
+Os dois bugs conhecidos foram corrigidos, mas o fluxo completo pós-fix
+(enviar → notificação chega → destinatário aceita escolhendo conta →
+saldo bate dos dois lados) ainda não foi reconfirmado pelo usuário depois
+da correção — vale um novo clique manual antes de considerar 100%
+fechado.
