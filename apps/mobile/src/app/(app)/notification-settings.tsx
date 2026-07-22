@@ -42,6 +42,10 @@ const TYPE_LABELS: Record<NotificationType, { title: string; description: string
     title: 'Parte de split pendente',
     description: 'Quando alguém divide uma despesa com você.',
   },
+  split_payment_paid: {
+    title: 'Split marcado como pago',
+    description: 'Quando um participante marca a parte dele como paga — falta você confirmar.',
+  },
   split_reimbursement_confirmed: {
     title: 'Reembolso de split confirmado',
     description: 'Quando seu pagamento de uma parte é confirmado.',

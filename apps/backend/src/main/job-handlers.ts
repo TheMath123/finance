@@ -16,7 +16,7 @@ import { downloadMedia, fetchMediaUrl, sendWhatsAppText } from "../infra/whatsap
 export function createJobHandlers(
   deps: Pick<
     UseCaseDeps,
-    "repos" | "rateLimiter" | "tokenBudget" | "tokens" | "uow" | "dispatch" | "cache" | "storage"
+    "repos" | "rateLimiter" | "tokenBudget" | "tokens" | "uow" | "dispatch" | "cache" | "storage" | "notificationBus"
   >,
 ): JobHandlers {
   return {
@@ -28,7 +28,7 @@ export function createJobHandlers(
     "email.confirm-account-deletion": (p) => mailer.sendConfirmAccountDeletion(p),
     "email.account-locked": (p) => mailer.sendAccountLocked(p),
     "email.workspace-invite": (p) => mailer.sendWorkspaceInvite(p),
-    "push.send": (p) => sendExpoPush(p.tokens, p.title, p.body, p.data),
+    "push.send": (p) => sendExpoPush(p.tokens, p.title, p.body, p.data, p.categoryId),
     async "whatsapp.inbound-message"(p) {
       const reply = await handleInboundWhatsAppMessage(deps, p);
       await sendWhatsAppText(reply.to, reply.body);

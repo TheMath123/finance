@@ -10,8 +10,17 @@ import { Card } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Screen } from '@/components/ui/screen';
 import { Select, type SelectOption } from '@/components/ui/select';
+import { ApiError } from '@/lib/api-client';
 import { formatCents } from '@/lib/money';
 import { transferApi, type PendingTransfer } from '@/lib/transfer-api';
+
+function MutationError({ error }: { error: unknown }) {
+  return (
+    <ThemedText type="small" style={{ color: '#DC2626' }}>
+      {error instanceof ApiError ? error.message : 'Erro inesperado, tenta de novo.'}
+    </ThemedText>
+  );
+}
 
 function timeLeft(iso: string): string {
   const days = Math.ceil((new Date(iso).getTime() - Date.now()) / 86_400_000);
@@ -78,6 +87,7 @@ function PendingTransferCard({
           Aceitar
         </Button>
       </View>
+      {(accept.isError || reject.isError) && <MutationError error={accept.error ?? reject.error} />}
     </Card>
   );
 }

@@ -52,6 +52,7 @@ export const NOTIFICATION_TYPES = [
   "transfer_pending",
   "transfer_accepted",
   "split_payment_pending",
+  "split_payment_paid",
   "split_reimbursement_confirmed",
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];

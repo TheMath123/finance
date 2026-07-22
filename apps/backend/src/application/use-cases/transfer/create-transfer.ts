@@ -23,7 +23,7 @@ function todayCompetence(): string {
 }
 
 export async function createTransfer(
-  deps: Pick<UseCaseDeps, "repos" | "uow" | "rateLimiter" | "dispatch">,
+  deps: Pick<UseCaseDeps, "repos" | "uow" | "rateLimiter" | "dispatch" | "notificationBus">,
   actor: Actor,
   input: CreateTransferInput,
 ): Promise<Either<TransferError, InterUserTransfer>> {

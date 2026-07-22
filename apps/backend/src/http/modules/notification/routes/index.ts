@@ -5,6 +5,7 @@ import { markNotificationReadRoute } from "./mark-read";
 import { archiveNotificationRoute, unarchiveNotificationRoute } from "./archive-notification";
 import { listNotificationPreferencesRoute, updateNotificationPreferenceRoute } from "./preferences";
 import { registerPushTokenRoute, unregisterPushTokenRoute } from "./push-tokens";
+import { notificationStreamRoute } from "./stream";
 
 export function notificationRoutes(deps: AppDeps) {
   return new Elysia()
@@ -15,5 +16,6 @@ export function notificationRoutes(deps: AppDeps) {
     .use(listNotificationPreferencesRoute(deps))
     .use(updateNotificationPreferenceRoute(deps))
     .use(registerPushTokenRoute(deps))
-    .use(unregisterPushTokenRoute(deps));
+    .use(unregisterPushTokenRoute(deps))
+    .use(notificationStreamRoute(deps));
 }

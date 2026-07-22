@@ -1,8 +1,11 @@
+import { useQueryClient } from '@tanstack/react-query';
 import { Redirect, Stack } from 'expo-router';
+import { useEffect } from 'react';
 
 import { BiometricLockScreen } from '@/components/biometric-lock-screen';
 import { BiometricLockProvider, useBiometricLock } from '@/context/biometric-lock';
 import { useSession } from '@/context/session';
+import { subscribeToNotificationStream, type NotificationStreamMessage } from '@/lib/notification-stream';
 
 /**
  * As 3 telas de tab (Resumo/Transações/Contas) ficam no grupo (tabs), que
@@ -18,8 +21,30 @@ function AppStack() {
   return <Stack screenOptions={{ headerShown: false }} />;
 }
 
+/** Repassa a notificação pras queries que cada tela usa — sem isso, o app só atualizaria reabrindo a tela. */
+function invalidateForMessage(queryClient: ReturnType<typeof useQueryClient>, message: NotificationStreamMessage) {
+  queryClient.invalidateQueries({ queryKey: ['notifications'] });
+  const data = message.data ?? {};
+  if (data.transferId) {
+    queryClient.invalidateQueries({ queryKey: ['transfers-pending'] });
+  }
+  if (data.splitId) {
+    queryClient.invalidateQueries({ queryKey: ['splits-owed-by-me'] });
+    queryClient.invalidateQueries({ queryKey: ['splits-owed-to-me'] });
+  }
+  if (data.inviteId) {
+    queryClient.invalidateQueries({ queryKey: ['my-invites'] });
+  }
+}
+
 export default function AppLayout() {
   const { user, isLoading } = useSession();
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    if (!user) return;
+    return subscribeToNotificationStream((message) => invalidateForMessage(queryClient, message));
+  }, [user, queryClient]);
 
   if (isLoading) return null;
   if (!user) return <Redirect href="/login" />;

@@ -19,7 +19,7 @@ export interface ConfirmWhatsAppLinkOutput {
  * coluna `attempts` por linha (ver `whatsapp-link-code.ts` no schema).
  */
 export async function confirmWhatsAppLink(
-  deps: Pick<UseCaseDeps, "repos" | "rateLimiter" | "tokens" | "uow" | "dispatch">,
+  deps: Pick<UseCaseDeps, "repos" | "rateLimiter" | "tokens" | "uow" | "dispatch" | "notificationBus">,
   phone: string,
   code: string,
 ): Promise<Either<WhatsAppLinkError, ConfirmWhatsAppLinkOutput>> {

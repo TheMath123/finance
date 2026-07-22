@@ -5,7 +5,7 @@ import type { Actor, UseCaseDeps } from "../../deps";
 import { confirmOccurrence } from "../recurring/confirm-occurrence";
 import { createNotification } from "./create-notification";
 
-type SweepDeps = Pick<UseCaseDeps, "repos" | "dispatch" | "uow">;
+type SweepDeps = Pick<UseCaseDeps, "repos" | "dispatch" | "uow" | "notificationBus">;
 
 function daysInMonth(year: number, month: number): number {
   return new Date(year, month, 0).getDate();

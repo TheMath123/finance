@@ -14,7 +14,7 @@ export interface CreateSplitInput {
 }
 
 export async function createSplit(
-  deps: Pick<UseCaseDeps, "repos" | "uow" | "dispatch">,
+  deps: Pick<UseCaseDeps, "repos" | "uow" | "dispatch" | "notificationBus">,
   actor: Actor,
   transactionId: string,
   input: CreateSplitInput,

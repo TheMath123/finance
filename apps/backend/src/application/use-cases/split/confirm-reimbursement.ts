@@ -20,7 +20,7 @@ class AlreadyFinalizedError extends Error {}
  * nunca mexe na transação original.
  */
 export async function confirmShareReimbursement(
-  deps: Pick<UseCaseDeps, "repos" | "uow" | "dispatch" | "rateLimiter">,
+  deps: Pick<UseCaseDeps, "repos" | "uow" | "dispatch" | "rateLimiter" | "notificationBus">,
   actor: { userId: string },
   shareId: string,
 ): Promise<Either<SplitError, SplitShare>> {

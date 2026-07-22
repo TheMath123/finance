@@ -87,7 +87,7 @@ async function deterministicFallback(
 export async function handleInboundWhatsAppMessage(
   deps: Pick<
     UseCaseDeps,
-    "repos" | "rateLimiter" | "tokenBudget" | "tokens" | "uow" | "dispatch" | "cache"
+    "repos" | "rateLimiter" | "tokenBudget" | "tokens" | "uow" | "dispatch" | "cache" | "notificationBus"
   >,
   message: InboundWhatsAppMessage,
 ): Promise<WhatsAppReply> {

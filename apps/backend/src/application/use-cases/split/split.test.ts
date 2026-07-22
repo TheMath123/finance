@@ -227,6 +227,10 @@ describe("fluxo de confirmação (dois lados) + reembolso", () => {
     expect(paid.ok).toBe(true);
     if (paid.ok) expect(paid.value.status).toBe("paid");
 
+    // Criador precisa saber que já dá pra confirmar — sem isso só descobre abrindo a tela sozinho.
+    const creatorNotifications = await listNotifications(deps, creator.userId, false);
+    expect(creatorNotifications.some((n) => n.type === "split_payment_paid")).toBe(true);
+
     // Só o criador confirma.
     const wrongConfirmer = await confirmShareReimbursement(deps, { userId: p1.userId }, share.id);
     expect(wrongConfirmer.ok).toBe(false);

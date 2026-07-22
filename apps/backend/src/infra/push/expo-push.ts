@@ -8,6 +8,7 @@ interface ExpoPushMessage {
   body: string;
   data?: Record<string, unknown>;
   sound: "default";
+  categoryId?: string;
 }
 
 function chunk<T>(items: T[], size: number): T[][] {
@@ -26,8 +27,9 @@ export async function sendExpoPush(
   title: string,
   body: string,
   data?: Record<string, unknown>,
+  categoryId?: string,
 ): Promise<void> {
-  const messages: ExpoPushMessage[] = tokens.map((to) => ({ to, title, body, data, sound: "default" }));
+  const messages: ExpoPushMessage[] = tokens.map((to) => ({ to, title, body, data, sound: "default", categoryId }));
 
   for (const batch of chunk(messages, MAX_MESSAGES_PER_REQUEST)) {
     await fetch(EXPO_PUSH_URL, {

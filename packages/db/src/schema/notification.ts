@@ -17,6 +17,7 @@ export const notificationTypeEnum = pgEnum("notification_type", [
   "transfer_pending",
   "transfer_accepted",
   "split_payment_pending",
+  "split_payment_paid",
   "split_reimbursement_confirmed",
 ]);
 

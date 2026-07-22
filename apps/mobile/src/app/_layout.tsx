@@ -7,7 +7,8 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { SessionProvider } from '@/context/session';
 import { queryClient } from '@/lib/query-client';
-import { addNotificationTapListener, notificationTargetRoute } from '@/lib/push-notifications';
+import { handleNotificationAction } from '@/lib/notification-actions';
+import { addNotificationResponseListener, notificationTargetRoute } from '@/lib/push-notifications';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -19,9 +20,13 @@ export default function RootLayout() {
   }, []);
 
   useEffect(() => {
-    // Toque numa notificação (app em background ou fechado) — navega pro destino do payload.
-    return addNotificationTapListener((data) => {
-      const target = notificationTargetRoute(data);
+    return addNotificationResponseListener((response) => {
+      if (response.kind === 'action') {
+        void handleNotificationAction(response.actionIdentifier, response.data);
+        return;
+      }
+      // Toque no corpo da notificação (app em background ou fechado) — navega pro destino do payload.
+      const target = notificationTargetRoute(response.data);
       if (target) router.push(target as never);
     });
   }, []);

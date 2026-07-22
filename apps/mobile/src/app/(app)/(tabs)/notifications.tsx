@@ -31,6 +31,7 @@ const TYPE_ICONS: Record<string, typeof BellIcon> = {
   transfer_pending: HandCoinsIcon,
   transfer_accepted: PaperPlaneTiltIcon,
   split_payment_pending: ArrowsSplitIcon,
+  split_payment_paid: ArrowsSplitIcon,
   split_reimbursement_confirmed: ArrowsSplitIcon,
 };
 

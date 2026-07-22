@@ -8,8 +8,17 @@ import { ThemedText } from '@/components/themed-text';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Screen } from '@/components/ui/screen';
+import { ApiError } from '@/lib/api-client';
 import { formatCents } from '@/lib/money';
 import { splitApi, type OwedByMeShare, type OwedToMeShare } from '@/lib/split-api';
+
+function MutationError({ error }: { error: unknown }) {
+  return (
+    <ThemedText type="small" style={{ color: '#DC2626' }}>
+      {error instanceof ApiError ? error.message : 'Erro inesperado, tenta de novo.'}
+    </ThemedText>
+  );
+}
 
 const STATUS_LABELS: Record<string, string> = {
   pending: 'Pendente',
@@ -41,6 +50,7 @@ function OwedByMeCard({ share }: { share: OwedByMeShare }) {
           Marcar como pago
         </Button>
       )}
+      {markPaid.isError && <MutationError error={markPaid.error} />}
     </Card>
   );
 }
@@ -55,6 +65,11 @@ function OwedToMeCard({ share }: { share: OwedToMeShare }) {
     },
   });
 
+  // Participante com conta (participantUserId) precisa ter marcado "paguei" antes —
+  // criador só confirma nesse ponto (ver requiredStatus em confirm-reimbursement.ts).
+  // Externo (sem conta) pula direto de "pending" pra confirmado.
+  const canConfirm = share.status === (share.participantUserId ? 'paid' : 'pending');
+
   return (
     <Card className="gap-2">
       <ThemedText type="smallBold">{share.transactionDescription}</ThemedText>
@@ -67,9 +82,16 @@ function OwedToMeCard({ share }: { share: OwedToMeShare }) {
           {STATUS_LABELS[share.status] ?? share.status}
         </ThemedText>
       </View>
-      <Button loading={confirm.isPending} onPress={() => confirm.mutate()}>
-        Confirmar recebimento
-      </Button>
+      {canConfirm ? (
+        <Button loading={confirm.isPending} onPress={() => confirm.mutate()}>
+          Confirmar recebimento
+        </Button>
+      ) : (
+        <ThemedText type="small" themeColor="textSecondary">
+          Aguardando {share.participantName} marcar como pago.
+        </ThemedText>
+      )}
+      {confirm.isError && <MutationError error={confirm.error} />}
     </Card>
   );
 }

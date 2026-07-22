@@ -1,0 +1,1 @@
+ALTER TYPE "public"."notification_type" ADD VALUE 'split_payment_paid' BEFORE 'split_reimbursement_confirmed';

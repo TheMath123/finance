@@ -48,6 +48,7 @@ export function createSplitShareRepository(db: DbHandle): SplitShareRepository {
           status: splitShares.status,
           transactionDescription: transactions.description,
           participantName: splitShares.participantName,
+          participantUserId: splitShares.participantUserId,
           participantUserName: users.name,
         })
         .from(splitShares)
@@ -62,6 +63,7 @@ export function createSplitShareRepository(db: DbHandle): SplitShareRepository {
         status: r.status,
         transactionDescription: r.transactionDescription,
         participantName: r.participantUserName ?? r.participantName ?? "Desconhecido",
+        participantUserId: r.participantUserId,
       }));
     },
   };

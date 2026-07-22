@@ -8,6 +8,7 @@ import type { SecurityLogger } from "./ports/logger";
 import type { RateLimiter } from "./ports/rate-limiter";
 import type { TokenBudget } from "./ports/token-budget";
 import type { Cache } from "./ports/cache";
+import type { NotificationBus } from "./ports/notification-bus";
 
 /** Dependências dos use cases — apenas ports (nunca Drizzle/Elysia). */
 export interface UseCaseDeps {
@@ -24,6 +25,8 @@ export interface UseCaseDeps {
   cache: Cache;
   /** Storage de arquivos S3-compatible (M3-01) — anexo de comprovante (M3-04/M3-05) plugam aqui. */
   storage: Storage;
+  /** Fan-out em tempo real (SSE) de notificações novas — ver `createNotification`. */
+  notificationBus: NotificationBus;
   termsVersion: string;
 }
 

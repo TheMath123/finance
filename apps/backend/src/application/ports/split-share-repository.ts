@@ -24,6 +24,8 @@ export interface OwedToMeView {
   status: SplitShareStatus;
   transactionDescription: string;
   participantName: string;
+  /** Null = participante externo (sem conta). Usado pra saber quando "confirmar recebimento" é válido (ver confirm-reimbursement.ts). */
+  participantUserId: string | null;
 }
 
 export interface SplitShareRepository {

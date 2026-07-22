@@ -34,6 +34,7 @@ export interface OwedToMeShare {
   status: SplitShareStatus;
   transactionDescription: string;
   participantName: string;
+  participantUserId: string | null;
 }
 
 export const splitApi = {

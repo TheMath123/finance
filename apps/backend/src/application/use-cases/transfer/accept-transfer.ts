@@ -21,7 +21,7 @@ function todayCompetence(): string {
 class AlreadyFinalizedError extends Error {}
 
 export async function acceptTransfer(
-  deps: Pick<UseCaseDeps, "repos" | "uow" | "dispatch" | "rateLimiter">,
+  deps: Pick<UseCaseDeps, "repos" | "uow" | "dispatch" | "rateLimiter" | "notificationBus">,
   actor: { userId: string },
   input: AcceptTransferInput,
 ): Promise<Either<TransferError, InterUserTransfer>> {

@@ -15,8 +15,19 @@ export interface JobPayloads {
   "email.account-locked": { to: string; name: string; minutes: number };
   /** Sem link (mesmo motivo do reset por código: clientes de e-mail removem <a href> com esquema custom) — o convite é aceito na tela "Convites" do app. */
   "email.workspace-invite": { to: string; inviterName: string; workspaceName: string };
-  /** Um ou mais tokens do Expo Push Service (mesmo usuário pode ter vários devices). */
-  "push.send": { tokens: string[]; title: string; body: string; data?: Record<string, unknown> };
+  /**
+   * Um ou mais tokens do Expo Push Service (mesmo usuário pode ter vários devices).
+   * `categoryId` liga a notificação numa categoria de ação rápida já registrada
+   * no device (`Notifications.setNotificationCategoryAsync`) — recusar
+   * transferência, marcar/confirmar split direto na notificação, sem abrir o app.
+   */
+  "push.send": {
+    tokens: string[];
+    title: string;
+    body: string;
+    data?: Record<string, unknown>;
+    categoryId?: string;
+  };
   /** Mensagem de texto recebida no webhook do WhatsApp (M2-06) — processamento tirado do handler síncrono. */
   "whatsapp.inbound-message": { from: string; text: string };
   /** Foto recebida no webhook do WhatsApp (M3-05) — vira comprovante da última transação do remetente. */

@@ -8,6 +8,7 @@ import { createTokenService } from "../infra/security/jose-token-service";
 import { createRedisRateLimiter } from "../infra/security/redis-rate-limiter";
 import { createRedisTokenBudget } from "../infra/ai/redis-token-budget";
 import { createRedisCache } from "../infra/cache/redis-cache";
+import { createRedisNotificationBus } from "../infra/realtime/redis-notification-bus";
 import { createLogger } from "../infra/observability/logger";
 import { createJobHandlers } from "./job-handlers";
 import { loadEnv } from "./env";
@@ -40,6 +41,7 @@ const deps = {
   rateLimiter: createRedisRateLimiter(env.REDIS_URL),
   tokenBudget: createRedisTokenBudget(env.REDIS_URL),
   cache: createRedisCache(env.REDIS_URL),
+  notificationBus: createRedisNotificationBus(env.REDIS_URL),
   tokens: createTokenService(env.JWT_SECRET),
   dispatch: dispatcher.dispatch,
   storage: createS3Storage({

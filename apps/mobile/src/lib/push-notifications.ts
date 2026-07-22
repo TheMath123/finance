@@ -22,6 +22,30 @@ function loadNotificationsModule(): typeof import('expo-notifications') | null {
 }
 
 let handlerConfigured = false;
+let categoriesConfigured = false;
+
+/**
+ * Ação rápida direto na notificação (recusar transferência, marcar/confirmar
+ * split) sem precisar abrir o app numa lista pra achar o item — categoria
+ * some tipo tem 1 ação sem input extra (aceitar transferência continua só
+ * abrindo o app, porque precisa escolher a conta de destino). `opensAppToForeground`
+ * fica no padrão (`true`): com `false` a ação não dispara o listener se o app
+ * estiver morto (não só em segundo plano) — preferível abrir o app rapidinho
+ * a simplesmente não executar a ação.
+ */
+async function registerNotificationCategories(Notifications: typeof import('expo-notifications')): Promise<void> {
+  if (categoriesConfigured) return;
+  categoriesConfigured = true;
+  await Notifications.setNotificationCategoryAsync('transfer_pending', [
+    { identifier: 'reject_transfer', buttonTitle: 'Recusar' },
+  ]);
+  await Notifications.setNotificationCategoryAsync('split_payment_pending', [
+    { identifier: 'mark_paid', buttonTitle: 'Marquei como pago' },
+  ]);
+  await Notifications.setNotificationCategoryAsync('split_payment_paid', [
+    { identifier: 'confirm_reimbursement', buttonTitle: 'Confirmar recebimento' },
+  ]);
+}
 
 /**
  * Pede permissão, pega o token do Expo Push Service e registra no backend.
@@ -43,6 +67,8 @@ export async function registerForPushNotifications(): Promise<void> {
     });
     handlerConfigured = true;
   }
+
+  await registerNotificationCategories(Notifications);
 
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync('default', {
@@ -80,15 +106,27 @@ export async function unregisterCurrentPushToken(): Promise<void> {
   }
 }
 
-/** Listener de toque em notificação (app em background/fechado) — chamado só quando suportado aqui. */
-export function addNotificationTapListener(
-  onTap: (data: Record<string, unknown> | undefined) => void,
-): () => void {
+export type NotificationResponse =
+  | { kind: 'tap'; data: Record<string, unknown> | undefined }
+  | { kind: 'action'; actionIdentifier: string; data: Record<string, unknown> | undefined };
+
+/**
+ * Listener de interação com notificação (app em background/fechado) — chamado
+ * só quando suportado aqui. Distingue toque no corpo ('tap', navega pro
+ * destino de sempre) de toque num botão de ação rápida ('action', ver
+ * `registerNotificationCategories` acima e `notification-actions.ts`).
+ */
+export function addNotificationResponseListener(onResponse: (response: NotificationResponse) => void): () => void {
   const Notifications = loadNotificationsModule();
   if (!Notifications) return () => {};
 
   const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
-    onTap(response.notification.request.content.data as Record<string, unknown> | undefined);
+    const data = response.notification.request.content.data as Record<string, unknown> | undefined;
+    if (response.actionIdentifier === Notifications.DEFAULT_ACTION_IDENTIFIER) {
+      onResponse({ kind: 'tap', data });
+    } else {
+      onResponse({ kind: 'action', actionIdentifier: response.actionIdentifier, data });
+    }
   });
   return () => subscription.remove();
 }
