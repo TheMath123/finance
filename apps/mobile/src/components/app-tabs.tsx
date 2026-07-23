@@ -79,7 +79,7 @@ function CustomTabList(props: TabListProps) {
     <View {...props} className="absolute bottom-0 w-full flex-row items-center justify-center p-4">
       <ThemedView
         type="backgroundElement"
-        className="w-full flex-row justify-between gap-4 rounded-lg p-2 shadow-md"
+        className="w-full flex-row justify-between gap-4 rounded-lg border border-border p-2"
         style={{ maxWidth: MaxContentWidth }}>
         {props.children}
       </ThemedView>

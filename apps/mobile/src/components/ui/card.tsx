@@ -10,7 +10,7 @@ export interface CardProps extends React.ComponentPropsWithoutRef<typeof View> {
 export function Card({ className, ...props }: CardProps) {
   return (
     <View
-      className={cn("rounded-lg border border-border bg-card p-6", className)}
+      className={cn("rounded-lg border border-border bg-card p-4", className)}
       {...props}
     />
   );
