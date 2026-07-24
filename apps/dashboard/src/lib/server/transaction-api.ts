@@ -70,6 +70,10 @@ export function listTransactions(
 ): Promise<Either<ApiError, TransactionView[]>> {
 	const query = new URLSearchParams();
 	for (const [key, value] of Object.entries(filters)) {
+		// z.coerce.boolean() no backend trata QUALQUER string não-vazia como
+		// true — inclusive "false" — então "deletedOnly=false" nunca pode ser
+		// enviado; omitir é o único jeito de pedir "não-arquivadas".
+		if (value === false) continue;
 		if (value !== undefined && value !== '') query.set(key, String(value));
 	}
 	const suffix = query.size > 0 ? `?${query}` : '';

@@ -1,7 +1,14 @@
 <script lang="ts">
+	import ArchiveIcon from 'phosphor-svelte/lib/ArchiveIcon';
+	import ArrowCounterClockwiseIcon from 'phosphor-svelte/lib/ArrowCounterClockwiseIcon';
+	import PencilSimpleIcon from 'phosphor-svelte/lib/PencilSimpleIcon';
+
 	import { enhance } from '$app/forms';
 	import { resolve } from '$app/paths';
+	import { page } from '$app/state';
+	import { SvelteURLSearchParams } from 'svelte/reactivity';
 
+	import { resolveCategoryIcon } from '$lib/category-icon';
 	import { Button } from '$lib/components/ui/button';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { Input } from '$lib/components/ui/input';
@@ -13,6 +20,7 @@
 	let { data, form } = $props();
 
 	const canManage = $derived(data.activeWorkspace?.role !== 'viewer');
+	const archivedView = $derived(data.filters.deletedOnly);
 
 	const categoryById = $derived(new Map(data.categories.map((c) => [c.id, c])));
 	const accountById = $derived(new Map(data.accounts.map((a) => [a.id, a])));
@@ -42,6 +50,17 @@
 	function todayIso(): string {
 		return new Date().toISOString().slice(0, 10);
 	}
+
+	/** Preserva os demais filtros da URL atual, só troca "Ativas"/"Arquivadas" (query string apenas — o `resolve()` da rota fica literal no template). */
+	function archivedToggleQuery(archived: boolean): string {
+		const params = new SvelteURLSearchParams(page.url.searchParams);
+		if (archived) {
+			params.set('deletedOnly', 'true');
+		} else {
+			params.delete('deletedOnly');
+		}
+		return params.toString();
+	}
 </script>
 
 <svelte:head>
@@ -64,8 +83,31 @@
 		</div>
 	</div>
 
+	<!-- Ativas/Arquivadas são duas listagens separadas (nunca misturadas) — mesmo padrão de abas usado no resto do dashboard. -->
+	<nav class="flex gap-2">
+		<a
+			href="{resolve('/transactions')}?{archivedToggleQuery(false)}"
+			class="rounded-lg px-3 py-1.5 text-sm transition-colors {!archivedView
+				? 'bg-primary font-medium text-primary-foreground'
+				: 'bg-primary/10 text-primary hover:bg-primary/20'}"
+		>
+			Ativas
+		</a>
+		<a
+			href="{resolve('/transactions')}?{archivedToggleQuery(true)}"
+			class="rounded-lg px-3 py-1.5 text-sm transition-colors {archivedView
+				? 'bg-primary font-medium text-primary-foreground'
+				: 'bg-primary/10 text-primary hover:bg-primary/20'}"
+		>
+			Arquivadas
+		</a>
+	</nav>
+
 	<!-- Filtros: GET puro, sem JS necessário — cada campo re-submete a página. -->
 	<form method="GET" class="flex flex-wrap items-end gap-3">
+		{#if archivedView}
+			<input type="hidden" name="deletedOnly" value="true" />
+		{/if}
 		<div class="grid min-w-48 flex-1 gap-2">
 			<Label for="q">Buscar</Label>
 			<Input id="q" name="q" value={data.filters.q ?? ''} placeholder="Descrição" />
@@ -120,16 +162,6 @@
 				{/each}
 			</select>
 		</div>
-		<label class="flex items-center gap-2 pb-2 text-sm text-muted-foreground">
-			<input
-				type="checkbox"
-				name="deletedOnly"
-				value="true"
-				checked={data.filters.deletedOnly}
-				class="accent-primary"
-			/>
-			Ver excluídas
-		</label>
 		<Button type="submit" variant="outline">Filtrar</Button>
 	</form>
 
@@ -137,15 +169,22 @@
 		<p class="text-sm text-destructive">{form.message}</p>
 	{/if}
 
+	{#if archivedView}
+		<p class="text-sm text-muted-foreground">
+			Mostrando transações arquivadas — elas não entram em nenhum resumo/projeção até serem
+			restauradas.
+		</p>
+	{/if}
+
 	<!-- overflow-x-auto: tabela nunca deve estourar a largura em telas pequenas (spec: dashboard também atende mobile). -->
 	<div class="overflow-x-auto rounded-lg border border-foreground/10">
 		<table class="w-full min-w-[720px] text-sm">
 			<thead>
 				<tr class="border-b border-foreground/10 text-left text-muted-foreground">
-					<th class="px-3 py-2 font-medium">Descrição</th>
-					<th class="px-3 py-2 font-medium">Categoria</th>
-					<th class="px-3 py-2 font-medium">Origem</th>
 					<th class="px-3 py-2 font-medium">Data</th>
+					<th class="px-3 py-2 font-medium">Categoria</th>
+					<th class="px-3 py-2 font-medium">Descrição</th>
+					<th class="px-3 py-2 font-medium">Origem</th>
 					<th class="px-3 py-2 text-right font-medium">Valor</th>
 					{#if canManage}
 						<th class="px-3 py-2 text-right font-medium">Ações</th>
@@ -155,24 +194,31 @@
 			<tbody>
 				{#each data.transactions as transaction (transaction.id)}
 					{@const category = categoryById.get(transaction.categoryId)}
+					{@const CategoryIcon = resolveCategoryIcon(category?.icon)}
 					{@const isExpense = transaction.type === 'expense'}
 					{@const isInstallment = transaction.installmentTotal !== null}
 					<tr class="border-b border-foreground/10 last:border-0 hover:bg-primary/5">
-						<td class="max-w-64 truncate px-3 py-2 font-medium">{transaction.description}</td>
+						<td class="px-3 py-2 whitespace-nowrap text-muted-foreground">
+							{formatTransactionDate(transaction.date)}
+						</td>
 						<td class="px-3 py-2">
 							<span class="inline-flex items-center gap-2 whitespace-nowrap">
-								<span
-									class="h-2.5 w-2.5 shrink-0 rounded-full"
-									style="background-color: {category?.color ?? '#6B7280'}"
-								></span>
+								<CategoryIcon size={16} color={category?.color ?? '#6B7280'} />
 								{category?.name ?? '—'}
 							</span>
 						</td>
-						<td class="px-3 py-2 whitespace-nowrap text-muted-foreground">
-							{transactionSourceLabel(transaction, cardById, accountById)}
+						<td class="max-w-64 truncate px-3 py-2 font-medium">
+							{transaction.description}
+							{#if archivedView}
+								<span
+									class="ml-1 rounded bg-muted px-1.5 py-0.5 text-xs font-normal text-muted-foreground"
+								>
+									Arquivada
+								</span>
+							{/if}
 						</td>
 						<td class="px-3 py-2 whitespace-nowrap text-muted-foreground">
-							{formatTransactionDate(transaction.date)}
+							{transactionSourceLabel(transaction, cardById, accountById)}
 						</td>
 						<td class="px-3 py-2 text-right whitespace-nowrap">
 							{#if isInstallment}
@@ -188,19 +234,41 @@
 						</td>
 						{#if canManage}
 							<td class="px-3 py-2 text-right whitespace-nowrap">
-								<div class="flex justify-end gap-2">
-									{#if transaction.deletedAt}
+								<div class="flex justify-end gap-1">
+									{#if archivedView}
 										<form method="POST" action="?/restore" use:enhance>
 											<input type="hidden" name="transactionId" value={transaction.id} />
-											<Button type="submit" variant="outline" size="sm">Restaurar</Button>
+											<Button
+												type="submit"
+												variant="ghost"
+												size="icon-sm"
+												title="Restaurar"
+												aria-label="Restaurar"
+											>
+												<ArrowCounterClockwiseIcon size={16} />
+											</Button>
 										</form>
 									{:else}
-										<Button variant="outline" size="sm" onclick={() => (editing = transaction)}>
-											Editar
+										<Button
+											variant="ghost"
+											size="icon-sm"
+											title="Editar"
+											aria-label="Editar"
+											onclick={() => (editing = transaction)}
+										>
+											<PencilSimpleIcon size={16} />
 										</Button>
 										<form method="POST" action="?/remove" use:enhance>
 											<input type="hidden" name="transactionId" value={transaction.id} />
-											<Button type="submit" variant="destructive" size="sm">Excluir</Button>
+											<Button
+												type="submit"
+												variant="ghost"
+												size="icon-sm"
+												title="Arquivar"
+												aria-label="Arquivar"
+											>
+												<ArchiveIcon size={16} />
+											</Button>
 										</form>
 									{/if}
 								</div>
@@ -210,7 +278,7 @@
 				{:else}
 					<tr>
 						<td colspan={canManage ? 6 : 5} class="px-3 py-6 text-center text-muted-foreground">
-							Nenhuma transação encontrada.
+							{archivedView ? 'Nenhuma transação arquivada.' : 'Nenhuma transação encontrada.'}
 						</td>
 					</tr>
 				{/each}

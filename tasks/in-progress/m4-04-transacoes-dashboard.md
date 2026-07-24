@@ -46,14 +46,23 @@ dialog em vez de form inline/página separada):
   bloqueia listar/filtrar/criar/editar/exportar — registrado aqui como
   gap consciente, não esquecimento. Fast-follow natural quando alguém
   pedir.
-- **Ícone de categoria por Phosphor também adiado**: a listagem usa a
-  **cor da categoria** (`category.color`, já existe na entidade) num
-  dot, mesmo padrão do dot de banco no M4-03, em vez de resolver
-  dinamicamente o ícone Phosphor a partir do slug (`category.icon`) como
-  o app mobile faz (`resolveCategoryIcon`) — replicar isso no Svelte
-  exigiria um loader dinâmico de ~1300 ícones (`phosphor-svelte` expõe
-  cada ícone como arquivo `.svelte` próprio, sem objeto indexável como
-  o pacote React), custo desproporcional ao ganho visual nesta rodada.
+- **Ícone de categoria por Phosphor**: revertido o adiamento inicial a
+  pedido do usuário. `lib/category-icon.ts` replica
+  `resolveCategoryIcon` do mobile — descoberta em cima da hora: o
+  `phosphor-svelte` **também** reexporta todo o pacote pelo índice
+  principal (`import * as PhosphorIcons from 'phosphor-svelte'`),
+  então dá pra indexar por string em runtime exatamente como o pacote
+  React do mobile faz — não precisou de loader dinâmico nenhum. Mesmo
+  trade-off aceito lá (sem tree-shaking, pacote inteiro no bundle) —
+  ok pra um dashboard atrás de login.
+- **Logo de marca (Fase 3 do thesvg.org, pedida pelo usuário pra
+  substituir o ícone quando a descrição bate com uma marca conhecida)**:
+  **não implementada ainda** — tentei confirmar o formato exato da URL
+  do asset (`thesvg.org` é SPA renderizado em JS, o fetch automatizado
+  só devolve o título da página, sem HTML navegável) e não travei um
+  padrão confiável pra não arriscar link quebrado em produção. Preciso
+  de uma URL de exemplo real (abrir o ícone de uma marca no site e
+  copiar o link da imagem) antes de implementar `getMerchantLogoUrl`.
 
 O que existe:
 - `lib/server/transaction-api.ts` — `listTransactions` (filtros
@@ -70,8 +79,31 @@ O que existe:
   devolve a `Response` crua (não assume JSON), usada só pelo export CSV.
 - **Filtros via GET puro** (`<form method="GET">`, sem JS) — a URL vira a
   fonte da verdade dos filtros, SSR re-executa a query; paridade com os
-  filtros do app (texto, período, categoria, conta, cartão) + toggle
-  "Ver excluídas" (`deletedOnly`).
+  filtros do app (texto, período, categoria, conta, cartão).
+- **Bug real encontrado e corrigido**: o filtro de arquivadas nunca
+  funcionava. `z.coerce.boolean()` no schema do backend
+  (`listTransactionsSchema`) trata **qualquer string não-vazia** como
+  `true` — inclusive a string `"false"` — e o client sempre mandava
+  `deletedOnly=false` explicitamente quando o checkbox estava
+  desmarcado. `transaction-api.ts` agora omite o parâmetro inteiro
+  quando o valor é `false` (só envia quando `true`).
+- **Tabela redesenhada a pedido do usuário** (três rodadas de feedback):
+  virou `<table>` de verdade (era lista de linhas com divisor, como o
+  resto do M4) — mais fácil de escanear numa tela densa. Colunas na
+  ordem pedida: **Data, Categoria (ícone+nome), Descrição, Origem,
+  Valor, Ações**. Ações viraram botões **ghost, só ícone**
+  (`variant="ghost" size="icon-sm"`, com `title`/`aria-label` pra
+  acessibilidade) em vez de botões com texto: Editar (`PencilSimpleIcon`)
+  e Arquivar (`ArchiveIcon`) na visão normal.
+- **"Excluídas" virou "Arquivadas" numa aba própria**: em vez do
+  checkbox "Ver excluídas" (que também escondia o bug acima), agora tem
+  duas abas-pílula **Ativas/Arquivadas** que trocam a listagem inteira
+  (nunca mistura os dois conjuntos — mesmo padrão de abas do resto do
+  dashboard). Na aba Arquivadas: banner explicando que a transação não
+  entra em nenhum resumo, badge "Arquivada" em cada linha, e a única
+  ação é Restaurar (`ArrowCounterClockwiseIcon`, ghost). Backend
+  continua o mesmo par soft-delete/restore de sempre — só a UI ficou
+  mais honesta sobre o que a ação realmente faz.
 - **Dialog de criar** com campos condicionais por método (`bind:value`
   no select de método controla se aparece conta única, cartão+parcelas,
   ou conta origem/destino) — mesma árvore de regras do backend.
@@ -79,9 +111,6 @@ O que existe:
   `installmentGroupId` (regra do backend: `installment_field_locked`) —
   os inputs ficam `disabled` e a mensagem já avisa antes de tentar
   submeter.
-- Excluir é soft-delete (`?/remove`) com botão "Restaurar" (`?/restore`)
-  quando `deletedOnly=true` está na URL — espelha exatamente o par
-  `deleteTransaction`/`restoreTransaction` do backend.
 - `routes/(app)/transactions/export/+server.ts` — proxy do
   `GET .../export.csv` (gate `admin`/`owner` já é do backend); repassa
   o header `Content-Disposition` pro browser baixar direto, sem o client
