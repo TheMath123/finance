@@ -69,3 +69,21 @@ export async function apiRequest<T>(
 
 	return right((await response.json()) as T);
 }
+
+/**
+ * Variante crua pra respostas não-JSON (ex.: CSV) — devolve a Response direto
+ * pro caller decidir status/headers/corpo. Mesma regra de "só o servidor
+ * fala com o backend".
+ */
+export async function apiRequestRaw(
+	path: string,
+	options: Pick<ApiRequestOptions, 'accessToken'> = {}
+): Promise<Response> {
+	const headers: Record<string, string> = {};
+	if (options.accessToken) headers.Authorization = `Bearer ${options.accessToken}`;
+
+	return fetch(new URL(path, env.API_URL), {
+		headers,
+		signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS)
+	});
+}

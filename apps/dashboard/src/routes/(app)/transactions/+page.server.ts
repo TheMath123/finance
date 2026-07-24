@@ -1,0 +1,158 @@
+import { type Cookies, fail, redirect } from '@sveltejs/kit';
+
+import { parseReaisToCents } from '$lib/money';
+import { transactionEditSchema, transactionFormSchema } from '$lib/schemas/transaction';
+import * as accountApi from '$lib/server/account-api';
+import { getActiveWorkspaceId } from '$lib/server/active-workspace';
+import * as cardApi from '$lib/server/card-api';
+import * as categoryApi from '$lib/server/category-api';
+import * as transactionApi from '$lib/server/transaction-api';
+
+import type { Actions, PageServerLoad } from './$types';
+
+export const load: PageServerLoad = async ({ parent, locals, url }) => {
+	const { activeWorkspace } = await parent();
+	if (!activeWorkspace || !locals.session) redirect(303, '/');
+
+	const accessToken = locals.session.accessToken;
+	const workspaceId = activeWorkspace.id;
+
+	const filters = {
+		q: url.searchParams.get('q') ?? undefined,
+		from: url.searchParams.get('from') ?? undefined,
+		to: url.searchParams.get('to') ?? undefined,
+		categoryId: url.searchParams.get('categoryId') ?? undefined,
+		accountId: url.searchParams.get('accountId') ?? undefined,
+		cardId: url.searchParams.get('cardId') ?? undefined,
+		deletedOnly: url.searchParams.get('deletedOnly') === 'true'
+	};
+
+	const [transactions, categories, accounts, cards] = await Promise.all([
+		transactionApi.listTransactions(accessToken, workspaceId, filters),
+		categoryApi.listCategories(accessToken, workspaceId),
+		accountApi.listAccounts(accessToken, workspaceId),
+		cardApi.listCards(accessToken, workspaceId)
+	]);
+
+	return {
+		transactions: transactions.ok ? transactions.value : [],
+		categories: categories.ok ? categories.value : [],
+		accounts: accounts.ok ? accounts.value : [],
+		cards: cards.ok ? cards.value : [],
+		filters
+	};
+};
+
+function resolveWorkspaceId(cookies: Cookies, fallback: string): string {
+	return getActiveWorkspaceId(cookies) ?? fallback;
+}
+
+function numberField(form: FormData, key: string): number | undefined {
+	const raw = form.get(key)?.toString();
+	if (!raw) return undefined;
+	const value = Number(raw);
+	return Number.isFinite(value) ? value : undefined;
+}
+
+function centsField(form: FormData, key: string): number {
+	return parseReaisToCents(form.get(key)?.toString() ?? '') ?? Number.NaN;
+}
+
+function textField(form: FormData, key: string): string | undefined {
+	const raw = form.get(key)?.toString().trim();
+	return raw ? raw : undefined;
+}
+
+export const actions: Actions = {
+	create: async ({ request, cookies, locals }) => {
+		if (!locals.session) redirect(303, '/login');
+		const form = await request.formData();
+		const workspaceId = resolveWorkspaceId(cookies, locals.session.defaultWorkspaceId);
+
+		const raw = {
+			description: textField(form, 'description') ?? '',
+			amount: centsField(form, 'amount'),
+			type: form.get('type')?.toString() ?? 'expense',
+			method: form.get('method')?.toString() ?? 'pix',
+			date: textField(form, 'date') ?? '',
+			categoryId: textField(form, 'categoryId') ?? '',
+			accountId: textField(form, 'accountId'),
+			toAccountId: textField(form, 'toAccountId'),
+			cardId: textField(form, 'cardId'),
+			installments: numberField(form, 'installments')
+		};
+
+		const parsed = transactionFormSchema.safeParse(raw);
+		if (!parsed.success) {
+			return fail(400, { message: parsed.error.issues[0]?.message ?? 'Dados inválidos.' });
+		}
+
+		const result = await transactionApi.createTransaction(
+			locals.session.accessToken,
+			workspaceId,
+			parsed.data
+		);
+		if (!result.ok) return fail(result.error.status || 500, { message: result.error.message });
+		return { success: true };
+	},
+
+	update: async ({ request, cookies, locals }) => {
+		if (!locals.session) redirect(303, '/login');
+		const form = await request.formData();
+		const transactionId = form.get('transactionId')?.toString() ?? '';
+		const workspaceId = resolveWorkspaceId(cookies, locals.session.defaultWorkspaceId);
+
+		const raw = {
+			description: textField(form, 'description') ?? '',
+			amount: centsField(form, 'amount'),
+			categoryId: textField(form, 'categoryId') ?? '',
+			date: textField(form, 'date') ?? '',
+			accountId: textField(form, 'accountId'),
+			cardId: textField(form, 'cardId')
+		};
+
+		const parsed = transactionEditSchema.safeParse(raw);
+		if (!parsed.success) {
+			return fail(400, { message: parsed.error.issues[0]?.message ?? 'Dados inválidos.' });
+		}
+
+		const result = await transactionApi.updateTransaction(
+			locals.session.accessToken,
+			workspaceId,
+			transactionId,
+			parsed.data
+		);
+		if (!result.ok) return fail(result.error.status || 500, { message: result.error.message });
+		return { success: true };
+	},
+
+	remove: async ({ request, cookies, locals }) => {
+		if (!locals.session) redirect(303, '/login');
+		const form = await request.formData();
+		const transactionId = form.get('transactionId')?.toString() ?? '';
+		const workspaceId = resolveWorkspaceId(cookies, locals.session.defaultWorkspaceId);
+
+		const result = await transactionApi.deleteTransaction(
+			locals.session.accessToken,
+			workspaceId,
+			transactionId
+		);
+		if (!result.ok) return fail(result.error.status || 500, { message: result.error.message });
+		return { success: true };
+	},
+
+	restore: async ({ request, cookies, locals }) => {
+		if (!locals.session) redirect(303, '/login');
+		const form = await request.formData();
+		const transactionId = form.get('transactionId')?.toString() ?? '';
+		const workspaceId = resolveWorkspaceId(cookies, locals.session.defaultWorkspaceId);
+
+		const result = await transactionApi.restoreTransaction(
+			locals.session.accessToken,
+			workspaceId,
+			transactionId
+		);
+		if (!result.ok) return fail(result.error.status || 500, { message: result.error.message });
+		return { success: true };
+	}
+};

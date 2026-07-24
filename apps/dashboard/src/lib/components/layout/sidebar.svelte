@@ -1,5 +1,6 @@
 <script lang="ts">
 	import House from 'phosphor-svelte/lib/House';
+	import ReceiptIcon from 'phosphor-svelte/lib/Receipt';
 	import SquaresFour from 'phosphor-svelte/lib/SquaresFour';
 	import UsersThree from 'phosphor-svelte/lib/UsersThree';
 
@@ -7,6 +8,7 @@
 	import { page } from '$app/state';
 
 	const homeActive = $derived(page.url.pathname === resolve('/'));
+	const transactionsActive = $derived(page.url.pathname.startsWith('/transactions'));
 	const moreActive = $derived(page.url.pathname.startsWith('/more'));
 	const workspaceActive = $derived(page.url.pathname.startsWith('/workspace'));
 </script>
@@ -30,6 +32,17 @@
 	>
 		<House size={18} weight={homeActive ? 'fill' : 'regular'} />
 		<span class="hidden sm:inline">Início</span>
+	</a>
+
+	<a
+		href={resolve('/transactions')}
+		title="Transações"
+		class="flex items-center justify-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors sm:justify-start {transactionsActive
+			? 'bg-primary font-medium text-primary-foreground'
+			: 'text-muted-foreground hover:bg-primary/10 hover:text-foreground'}"
+	>
+		<ReceiptIcon size={18} weight={transactionsActive ? 'fill' : 'regular'} />
+		<span class="hidden sm:inline">Transações</span>
 	</a>
 
 	<a
