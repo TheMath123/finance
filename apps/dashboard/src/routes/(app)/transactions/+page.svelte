@@ -137,62 +137,85 @@
 		<p class="text-sm text-destructive">{form.message}</p>
 	{/if}
 
-	<div>
-		{#each data.transactions as transaction (transaction.id)}
-			{@const category = categoryById.get(transaction.categoryId)}
-			{@const isExpense = transaction.type === 'expense'}
-			{@const isInstallment = transaction.installmentTotal !== null}
-			<div class="flex items-center justify-between gap-4 border-t border-foreground/10 px-2 py-4">
-				<div class="flex min-w-0 items-center gap-3">
-					<span
-						class="h-3 w-3 shrink-0 rounded-full"
-						style="background-color: {category?.color ?? '#6B7280'}"
-					></span>
-					<div class="min-w-0">
-						<p class="truncate text-sm font-medium">{transaction.description}</p>
-						<p class="truncate text-sm text-muted-foreground">
-							{transactionSourceLabel(transaction, cardById, accountById)} •
-							{formatTransactionDate(transaction.date)}
-							{#if category}
-								• {category.name}
-							{/if}
-						</p>
-					</div>
-				</div>
-				<div class="flex shrink-0 items-center gap-3">
-					<div class="text-right">
-						{#if isInstallment}
-							<p class="text-xs text-muted-foreground">
-								{transaction.installmentNumber}/{transaction.installmentTotal}
-							</p>
-						{:else if transaction.hasActiveSplit}
-							<p class="text-xs text-muted-foreground">Dividido</p>
-						{/if}
-						<p class="text-sm font-medium {isExpense ? 'text-destructive' : 'text-success'}">
-							{isExpense ? '- ' : ''}{formatCents(transaction.amount)}
-						</p>
-					</div>
+	<!-- overflow-x-auto: tabela nunca deve estourar a largura em telas pequenas (spec: dashboard também atende mobile). -->
+	<div class="overflow-x-auto rounded-lg border border-foreground/10">
+		<table class="w-full min-w-[720px] text-sm">
+			<thead>
+				<tr class="border-b border-foreground/10 text-left text-muted-foreground">
+					<th class="px-3 py-2 font-medium">Descrição</th>
+					<th class="px-3 py-2 font-medium">Categoria</th>
+					<th class="px-3 py-2 font-medium">Origem</th>
+					<th class="px-3 py-2 font-medium">Data</th>
+					<th class="px-3 py-2 text-right font-medium">Valor</th>
 					{#if canManage}
-						{#if transaction.deletedAt}
-							<form method="POST" action="?/restore" use:enhance>
-								<input type="hidden" name="transactionId" value={transaction.id} />
-								<Button type="submit" variant="outline" size="sm">Restaurar</Button>
-							</form>
-						{:else}
-							<Button variant="outline" size="sm" onclick={() => (editing = transaction)}>
-								Editar
-							</Button>
-							<form method="POST" action="?/remove" use:enhance>
-								<input type="hidden" name="transactionId" value={transaction.id} />
-								<Button type="submit" variant="destructive" size="sm">Excluir</Button>
-							</form>
-						{/if}
+						<th class="px-3 py-2 text-right font-medium">Ações</th>
 					{/if}
-				</div>
-			</div>
-		{:else}
-			<p class="text-sm text-muted-foreground">Nenhuma transação encontrada.</p>
-		{/each}
+				</tr>
+			</thead>
+			<tbody>
+				{#each data.transactions as transaction (transaction.id)}
+					{@const category = categoryById.get(transaction.categoryId)}
+					{@const isExpense = transaction.type === 'expense'}
+					{@const isInstallment = transaction.installmentTotal !== null}
+					<tr class="border-b border-foreground/10 last:border-0 hover:bg-primary/5">
+						<td class="max-w-64 truncate px-3 py-2 font-medium">{transaction.description}</td>
+						<td class="px-3 py-2">
+							<span class="inline-flex items-center gap-2 whitespace-nowrap">
+								<span
+									class="h-2.5 w-2.5 shrink-0 rounded-full"
+									style="background-color: {category?.color ?? '#6B7280'}"
+								></span>
+								{category?.name ?? '—'}
+							</span>
+						</td>
+						<td class="px-3 py-2 whitespace-nowrap text-muted-foreground">
+							{transactionSourceLabel(transaction, cardById, accountById)}
+						</td>
+						<td class="px-3 py-2 whitespace-nowrap text-muted-foreground">
+							{formatTransactionDate(transaction.date)}
+						</td>
+						<td class="px-3 py-2 text-right whitespace-nowrap">
+							{#if isInstallment}
+								<p class="text-xs text-muted-foreground">
+									{transaction.installmentNumber}/{transaction.installmentTotal}
+								</p>
+							{:else if transaction.hasActiveSplit}
+								<p class="text-xs text-muted-foreground">Dividido</p>
+							{/if}
+							<p class="font-medium {isExpense ? 'text-destructive' : 'text-success'}">
+								{isExpense ? '- ' : ''}{formatCents(transaction.amount)}
+							</p>
+						</td>
+						{#if canManage}
+							<td class="px-3 py-2 text-right whitespace-nowrap">
+								<div class="flex justify-end gap-2">
+									{#if transaction.deletedAt}
+										<form method="POST" action="?/restore" use:enhance>
+											<input type="hidden" name="transactionId" value={transaction.id} />
+											<Button type="submit" variant="outline" size="sm">Restaurar</Button>
+										</form>
+									{:else}
+										<Button variant="outline" size="sm" onclick={() => (editing = transaction)}>
+											Editar
+										</Button>
+										<form method="POST" action="?/remove" use:enhance>
+											<input type="hidden" name="transactionId" value={transaction.id} />
+											<Button type="submit" variant="destructive" size="sm">Excluir</Button>
+										</form>
+									{/if}
+								</div>
+							</td>
+						{/if}
+					</tr>
+				{:else}
+					<tr>
+						<td colspan={canManage ? 6 : 5} class="px-3 py-6 text-center text-muted-foreground">
+							Nenhuma transação encontrada.
+						</td>
+					</tr>
+				{/each}
+			</tbody>
+		</table>
 	</div>
 </div>
 
