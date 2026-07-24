@@ -1,5 +1,6 @@
 import type { TransactionMethod } from '@finance/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import {
   CaretDownIcon,
@@ -51,6 +52,7 @@ import { resolveCategoryIcon } from '@/lib/category-icons';
 import { cn } from '@/lib/cn';
 import { useCategories } from '@/lib/hooks/use-categories';
 import { useRecurringPendingTotal } from '@/lib/hooks/use-recurring-pending-total';
+import { getMerchantLogoUrl } from '@/lib/merchant-logo';
 import { formatCents } from '@/lib/money';
 import {
   type PendingOccurrence,
@@ -120,6 +122,9 @@ function TransactionRow({
   const isInstallment = transaction.installmentTotal !== null;
   const Icon = resolveCategoryIcon(category?.icon);
   const accentColor = isExpense ? BrandColors.destructive : BrandColors.success;
+  const logoUrl = getMerchantLogoUrl(transaction.description);
+  const [logoFailed, setLogoFailed] = useState(false);
+  const showLogo = logoUrl !== null && !logoFailed;
 
   return (
     <Pressable
@@ -132,10 +137,19 @@ function TransactionRow({
           isExpense ? 'bg-destructive/10' : 'bg-success/10'
         )}
       >
-        {/* eslint-disable-next-line react-hooks/static-components -- resolveCategoryIcon escolhe
-            entre ícones Phosphor já existentes (não cria nada novo); trocar de ícone conforme a
-            categoria é intencional e não há estado interno pra perder no componente de ícone. */}
-        <Icon size={16} color={accentColor} />
+        {showLogo ? (
+          <Image
+            source={{ uri: logoUrl }}
+            style={{ width: 20, height: 20 }}
+            contentFit="contain"
+            onError={() => setLogoFailed(true)}
+          />
+        ) : (
+          // resolveCategoryIcon escolhe entre ícones Phosphor já existentes (não cria nada novo);
+          // trocar de ícone conforme a categoria é intencional, sem estado interno a perder.
+          // eslint-disable-next-line react-hooks/static-components
+          <Icon size={16} color={accentColor} />
+        )}
       </View>
       <View className="flex-1 flex-row items-center gap-2.5">
         <View className="flex-1 gap-2">

@@ -104,11 +104,11 @@ cadastrado.
 
 ## Fora dos milestones numerados
 
-- [UI — migração pro novo padrão visual (Figma)](backlog/ui-novo-padrao-figma.md):
+- [UI — migração pro novo padrão visual (Figma)](in-progress/ui-novo-padrao-figma.md):
   Fases 1 e 2 (fundação + Home/Transações do app mobile) concluídas e
-  validadas em 2026-07-24. Fase 3 (logo de marca via thesvg.org) em
-  backlog — pausada por decisão de produto pra focar no M4, não por
-  bloqueio técnico.
+  validadas em 2026-07-24. Fase 3 (logo de marca via thesvg.org) implementada
+  de carona durante o M4 — código pronto, falta validação manual no
+  emulador.
 
 ## M4 — Dashboard web (Svelte)
 

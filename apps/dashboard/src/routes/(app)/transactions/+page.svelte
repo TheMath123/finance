@@ -6,13 +6,14 @@
 	import { enhance } from '$app/forms';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
-	import { SvelteURLSearchParams } from 'svelte/reactivity';
+	import { SvelteSet, SvelteURLSearchParams } from 'svelte/reactivity';
 
 	import { resolveCategoryIcon } from '$lib/category-icon';
 	import { Button } from '$lib/components/ui/button';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
+	import { getMerchantLogoUrl } from '$lib/merchant-logo';
 	import { formatCents } from '$lib/money';
 	import type { TransactionView } from '$lib/server/transaction-api';
 	import { formatTransactionDate, transactionSourceLabel } from '$lib/transaction-labels';
@@ -21,6 +22,9 @@
 
 	const canManage = $derived(data.activeWorkspace?.role !== 'viewer');
 	const archivedView = $derived(data.filters.deletedOnly);
+
+	/** IDs cuja logo de marca falhou ao carregar — cai pro ícone da categoria (fallback garantido). */
+	const failedLogos = new SvelteSet<string>();
 
 	const categoryById = $derived(new Map(data.categories.map((c) => [c.id, c])));
 	const accountById = $derived(new Map(data.accounts.map((a) => [a.id, a])));
@@ -195,6 +199,8 @@
 				{#each data.transactions as transaction (transaction.id)}
 					{@const category = categoryById.get(transaction.categoryId)}
 					{@const CategoryIcon = resolveCategoryIcon(category?.icon)}
+					{@const logoUrl = getMerchantLogoUrl(transaction.description)}
+					{@const showLogo = logoUrl && !failedLogos.has(transaction.id)}
 					{@const isExpense = transaction.type === 'expense'}
 					{@const isInstallment = transaction.installmentTotal !== null}
 					<tr class="border-b border-foreground/10 last:border-0 hover:bg-primary/5">
@@ -203,7 +209,16 @@
 						</td>
 						<td class="px-3 py-2">
 							<span class="inline-flex items-center gap-2 whitespace-nowrap">
-								<CategoryIcon size={16} color={category?.color ?? '#6B7280'} />
+								{#if showLogo}
+									<img
+										src={logoUrl}
+										alt=""
+										class="h-4 w-4 shrink-0 object-contain"
+										onerror={() => failedLogos.add(transaction.id)}
+									/>
+								{:else}
+									<CategoryIcon size={16} color={category?.color ?? '#6B7280'} />
+								{/if}
 								{category?.name ?? '—'}
 							</span>
 						</td>

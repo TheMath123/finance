@@ -1,11 +1,10 @@
 # UI — Migração pro novo padrão visual (Figma)
 
-**Status:** ⚪ Em backlog (2026-07-24) — Fases 1 e 2 concluídas e validadas
-pelo usuário no emulador (várias rodadas de ajuste fino: tab bar, fonte/
-espaçamento dos cards, bug de `className` duplicado no `Select`, blur
-Android). Commitadas em `88fc053`. Fase 3 (logo de marca via thesvg) fica
-pra depois — pausada por decisão de produto pra focar no M4 (dashboard
-web), não por bloqueio técnico.
+**Status:** 🟡 Em andamento (2026-07-24) — Fases 1 e 2 concluídas e
+validadas pelo usuário no emulador (commitadas em `88fc053`). **Fase 3
+implementada** (código pronto, falta validação manual do usuário no
+emulador) — feita de carona durante o M4 (dashboard web ganhou a mesma
+feature e o formato de URL do thesvg precisou ser confirmado ali mesmo).
 
 ## Contexto
 
@@ -110,17 +109,38 @@ Starter no meio do trabalho):
 Typecheck e lint limpos (`bun run --filter=mobile typecheck`, `bun run lint`
 — nenhum erro novo nos arquivos tocados).
 
-## Fase 3 — Logo de marca via thesvg (a fazer)
+## Fase 3 — Logo de marca via thesvg (feita em 2026-07-24)
 
-- `apps/mobile/src/lib/merchant-logo.ts`: lista curada de marcas conhecidas →
-  slug do thesvg, match por palavra-chave na descrição da transação
-  (case-insensitive, sem campo novo). Confirmar o path exato do asset no
-  thesvg antes de codar a URL final.
-- Fallback pro ícone da categoria quando não há marca reconhecida.
+URL do asset confirmada manualmente (curl direto, não via WebFetch — o
+site é uma SPA em Next.js, HTML inicial não expõe o link real):
+`https://thesvg.org/icons/{slug}/default.svg`, `Content-Type: image/svg+xml`,
+testada contra ~15 marcas (netflix, spotify, uber, uber-eats, ifood, amazon,
+aliexpress, nubank, shopee, steam, playstation, xbox, disney-plus, hbo-max,
+whatsapp, telegram, youtube, picpay, itau, bradesco, santander, zoom — todas
+200).
+
+- `apps/mobile/src/lib/merchant-logo.ts` — `MERCHANT_LOGOS` (~24 marcas
+  curadas) + `getMerchantLogoUrl(description)`, match por palavra-chave
+  case-insensitive (ordenado por tamanho da keyword — "uber eats" checado
+  antes de "uber" pra não dar match errado).
+- `TransactionRow` (`explore.tsx`): usa `expo-image` (já confirmado no
+  código nativo que decodifica SVG remoto tanto no Android
+  — `androidsvg`/Glide — quanto no iOS) pra renderizar a logo no lugar do
+  ícone Phosphor da categoria, com `onError` caindo pro ícone de novo —
+  fallback garantido, nunca quebra a lista se o asset falhar.
+- Mesmíssima lista/lógica implementada em paralelo no dashboard web
+  (`apps/dashboard/src/lib/merchant-logo.ts`) — os dois ficam em sync
+  manualmente por ora (arquivos pequenos, sem framework compartilhado
+  entre React Native e Svelte que justifique extrair pra
+  `packages/shared`).
+
+**Não validado ainda**: rodar no emulador com uma transação "Netflix",
+"compra aliexpress" etc. e confirmar que a logo aparece e que texto sem
+marca reconhecida cai no ícone da categoria sem quebrar.
 
 ## Próximo passo
 
-Retomar quando o M4 estiver encaminhado: implementar Fase 3 (logo de marca
-via thesvg) e, se o limite de chamadas do Figma MCP já tiver resetado,
-revalidar o `Button` (`21:474`) e a variante light da tela de Transações
-que ficaram sem confirmação direta na Fase 2.
+Pedir pro usuário validar a Fase 3 no emulador (logo aparecendo pra
+marcas conhecidas, fallback ok). Se o limite de chamadas do Figma MCP já
+tiver resetado, revalidar o `Button` (`21:474`) e a variante light da
+tela de Transações que ficaram sem confirmação direta na Fase 2.

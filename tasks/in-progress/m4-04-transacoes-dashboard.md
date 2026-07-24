@@ -57,12 +57,22 @@ dialog em vez de form inline/página separada):
   ok pra um dashboard atrás de login.
 - **Logo de marca (Fase 3 do thesvg.org, pedida pelo usuário pra
   substituir o ícone quando a descrição bate com uma marca conhecida)**:
-  **não implementada ainda** — tentei confirmar o formato exato da URL
-  do asset (`thesvg.org` é SPA renderizado em JS, o fetch automatizado
-  só devolve o título da página, sem HTML navegável) e não travei um
-  padrão confiável pra não arriscar link quebrado em produção. Preciso
-  de uma URL de exemplo real (abrir o ícone de uma marca no site e
-  copiar o link da imagem) antes de implementar `getMerchantLogoUrl`.
+  **implementada**. `WebFetch` não conseguia ver o HTML real do thesvg.org
+  (SPA em Next.js, HTML inicial só mostra "Loading..."), mas `curl` direto
+  revelou o padrão: `https://thesvg.org/icons/{slug}/default.svg`
+  (`Content-Type: image/svg+xml`), confirmado contra ~24 marcas (netflix,
+  spotify, uber, uber-eats, ifood, amazon, aliexpress, nubank, shopee,
+  steam, playstation, xbox, disney-plus, hbo-max, whatsapp, telegram,
+  youtube, picpay, itau, bradesco, santander, zoom — todas 200). `lib/
+  merchant-logo.ts` (`getMerchantLogoUrl`) faz o match por palavra-chave,
+  case-insensitive, ordenado por tamanho de keyword (evita "uber" comer
+  "uber eats"). Na tabela: `<img>` no lugar do `<CategoryIcon>` quando há
+  match, com `onerror` marcando o id num `SvelteSet` reativo (`failedLogos`)
+  pra cair de volta no ícone — fallback garantido, nunca quebra a linha.
+  Mesma lista replicada no app mobile de carona (ver
+  [[ui-novo-padrao-figma]], Fase 3 fechada na mesma sessão) — os dois
+  arquivos `merchant-logo.ts` ficam em sync manual por ora, sem
+  justificativa ainda pra extrair pra um pacote compartilhado.
 
 O que existe:
 - `lib/server/transaction-api.ts` — `listTransactions` (filtros
