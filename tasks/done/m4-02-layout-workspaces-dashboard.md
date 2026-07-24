@@ -1,7 +1,8 @@
 # M4-02 — Layout base + workspaces (seletor, membros, convites)
 
-**Status:** 🟡 Em andamento — código completo (lint, typecheck e build de
-produção limpos); falta a validação manual do usuário no browser.
+**Status:** 🟢 Concluída (2026-07-24) — validada pelo usuário no browser,
+incluindo os três ajustes de UX pedidos durante a implementação (aba única
+Workspace, criação pelo select, responsividade).
 
 ## Contexto
 
