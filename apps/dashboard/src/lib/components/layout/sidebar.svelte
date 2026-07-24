@@ -7,63 +7,66 @@
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 
-	const homeActive = $derived(page.url.pathname === resolve('/'));
-	const transactionsActive = $derived(page.url.pathname.startsWith('/transactions'));
-	const moreActive = $derived(page.url.pathname.startsWith('/more'));
-	const workspaceActive = $derived(page.url.pathname.startsWith('/workspace'));
+	const NAV = [
+		{ route: '/', label: 'Início', icon: House, match: (p: string) => p === resolve('/') },
+		{
+			route: '/transactions',
+			label: 'Transações',
+			icon: ReceiptIcon,
+			match: (p: string) => p.startsWith('/transactions')
+		},
+		{
+			route: '/more',
+			label: 'Mais',
+			icon: SquaresFour,
+			match: (p: string) => p.startsWith('/more')
+		},
+		{
+			route: '/workspace',
+			label: 'Workspace',
+			icon: UsersThree,
+			match: (p: string) => p.startsWith('/workspace')
+		}
+	] as const;
 </script>
 
 <!--
 	Flat, sem sombra, divisor sutil — linguagem do Figma (mesma do app mobile).
-	Em tela pequena (spec: dashboard também atende quem não usa o app) vira um
-	trilho só de ícones; os rótulos aparecem a partir de sm.
+	Desktop (sm+): trilho lateral com ícone+rótulo. Mobile: vira uma barra de
+	abas fixa no rodapé (mesma convenção do app — nunca um rail espremido
+	competindo por largura com o conteúdo numa tela de celular).
 -->
 <aside
-	class="flex w-14 shrink-0 flex-col gap-1 border-r border-foreground/10 bg-sidebar p-2 sm:w-56 sm:p-4"
+	class="hidden w-56 shrink-0 flex-col gap-1 border-r border-foreground/10 bg-sidebar p-4 sm:flex"
 >
-	<p class="mb-4 hidden px-3 text-lg font-semibold text-sidebar-foreground sm:block">Finance</p>
-
-	<a
-		href={resolve('/')}
-		title="Início"
-		class="flex items-center justify-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors sm:justify-start {homeActive
-			? 'bg-primary font-medium text-primary-foreground'
-			: 'text-muted-foreground hover:bg-primary/10 hover:text-foreground'}"
-	>
-		<House size={18} weight={homeActive ? 'fill' : 'regular'} />
-		<span class="hidden sm:inline">Início</span>
-	</a>
-
-	<a
-		href={resolve('/transactions')}
-		title="Transações"
-		class="flex items-center justify-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors sm:justify-start {transactionsActive
-			? 'bg-primary font-medium text-primary-foreground'
-			: 'text-muted-foreground hover:bg-primary/10 hover:text-foreground'}"
-	>
-		<ReceiptIcon size={18} weight={transactionsActive ? 'fill' : 'regular'} />
-		<span class="hidden sm:inline">Transações</span>
-	</a>
-
-	<a
-		href={resolve('/more')}
-		title="Mais"
-		class="flex items-center justify-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors sm:justify-start {moreActive
-			? 'bg-primary font-medium text-primary-foreground'
-			: 'text-muted-foreground hover:bg-primary/10 hover:text-foreground'}"
-	>
-		<SquaresFour size={18} weight={moreActive ? 'fill' : 'regular'} />
-		<span class="hidden sm:inline">Mais</span>
-	</a>
-
-	<a
-		href={resolve('/workspace')}
-		title="Workspace"
-		class="flex items-center justify-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors sm:justify-start {workspaceActive
-			? 'bg-primary font-medium text-primary-foreground'
-			: 'text-muted-foreground hover:bg-primary/10 hover:text-foreground'}"
-	>
-		<UsersThree size={18} weight={workspaceActive ? 'fill' : 'regular'} />
-		<span class="hidden sm:inline">Workspace</span>
-	</a>
+	<p class="mb-4 px-3 text-lg font-semibold text-sidebar-foreground">Finance</p>
+	{#each NAV as item (item.route)}
+		{@const active = item.match(page.url.pathname)}
+		<a
+			href={resolve(item.route)}
+			class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors {active
+				? 'bg-primary font-medium text-primary-foreground'
+				: 'text-muted-foreground hover:bg-primary/10 hover:text-foreground'}"
+		>
+			<item.icon size={18} weight={active ? 'fill' : 'regular'} />
+			{item.label}
+		</a>
+	{/each}
 </aside>
+
+<nav
+	class="fixed inset-x-0 bottom-0 z-10 flex items-center justify-around border-t border-foreground/10 bg-sidebar pb-[env(safe-area-inset-bottom)] sm:hidden"
+>
+	{#each NAV as item (item.route)}
+		{@const active = item.match(page.url.pathname)}
+		<a
+			href={resolve(item.route)}
+			class="flex flex-1 flex-col items-center gap-0.5 py-2 text-xs {active
+				? 'font-medium text-primary'
+				: 'text-muted-foreground'}"
+		>
+			<item.icon size={20} weight={active ? 'fill' : 'regular'} />
+			{item.label}
+		</a>
+	{/each}
+</nav>

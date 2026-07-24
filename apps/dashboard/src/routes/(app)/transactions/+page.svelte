@@ -107,66 +107,74 @@
 		</a>
 	</nav>
 
-	<!-- Filtros: GET puro, sem JS necessário — cada campo re-submete a página. -->
-	<form method="GET" class="flex flex-wrap items-end gap-3">
+	<!--
+		Filtros: GET puro, sem JS necessário — cada campo re-submete a página.
+		Uma única instância de cada campo (nunca duplicar: dois <select
+		name="categoryId"> no DOM ao mesmo tempo submeteriam os dois valores,
+		mesmo com um escondido via CSS) — só o layout muda por breakpoint: grid
+		2 colunas compacto no mobile, linha única flex no sm+.
+	-->
+	<form method="GET" class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
 		{#if archivedView}
 			<input type="hidden" name="deletedOnly" value="true" />
 		{/if}
-		<div class="grid min-w-48 flex-1 gap-2">
+		<div class="grid gap-2 sm:min-w-48 sm:flex-1">
 			<Label for="q">Buscar</Label>
 			<Input id="q" name="q" value={data.filters.q ?? ''} placeholder="Descrição" />
 		</div>
-		<div class="grid gap-2">
-			<Label for="from">De</Label>
-			<Input id="from" name="from" type="date" value={data.filters.from ?? ''} />
+		<div class="grid grid-cols-2 gap-3 sm:contents">
+			<div class="grid gap-2">
+				<Label for="from">De</Label>
+				<Input id="from" name="from" type="date" value={data.filters.from ?? ''} />
+			</div>
+			<div class="grid gap-2">
+				<Label for="to">Até</Label>
+				<Input id="to" name="to" type="date" value={data.filters.to ?? ''} />
+			</div>
+			<div class="grid gap-2">
+				<Label for="categoryId">Categoria</Label>
+				<select
+					id="categoryId"
+					name="categoryId"
+					value={data.filters.categoryId ?? ''}
+					class="h-9 rounded-lg border border-foreground/10 bg-transparent px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+				>
+					<option value="">Todas</option>
+					{#each data.categories as category (category.id)}
+						<option value={category.id}>{category.name}</option>
+					{/each}
+				</select>
+			</div>
+			<div class="grid gap-2">
+				<Label for="accountId">Conta</Label>
+				<select
+					id="accountId"
+					name="accountId"
+					value={data.filters.accountId ?? ''}
+					class="h-9 rounded-lg border border-foreground/10 bg-transparent px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+				>
+					<option value="">Todas</option>
+					{#each data.accounts as account (account.id)}
+						<option value={account.id}>{account.name}</option>
+					{/each}
+				</select>
+			</div>
+			<div class="grid gap-2">
+				<Label for="cardId">Cartão</Label>
+				<select
+					id="cardId"
+					name="cardId"
+					value={data.filters.cardId ?? ''}
+					class="h-9 rounded-lg border border-foreground/10 bg-transparent px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+				>
+					<option value="">Todos</option>
+					{#each data.cards as card (card.id)}
+						<option value={card.id}>{card.name}</option>
+					{/each}
+				</select>
+			</div>
 		</div>
-		<div class="grid gap-2">
-			<Label for="to">Até</Label>
-			<Input id="to" name="to" type="date" value={data.filters.to ?? ''} />
-		</div>
-		<div class="grid gap-2">
-			<Label for="categoryId">Categoria</Label>
-			<select
-				id="categoryId"
-				name="categoryId"
-				value={data.filters.categoryId ?? ''}
-				class="h-9 rounded-lg border border-foreground/10 bg-transparent px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-			>
-				<option value="">Todas</option>
-				{#each data.categories as category (category.id)}
-					<option value={category.id}>{category.name}</option>
-				{/each}
-			</select>
-		</div>
-		<div class="grid gap-2">
-			<Label for="accountId">Conta</Label>
-			<select
-				id="accountId"
-				name="accountId"
-				value={data.filters.accountId ?? ''}
-				class="h-9 rounded-lg border border-foreground/10 bg-transparent px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-			>
-				<option value="">Todas</option>
-				{#each data.accounts as account (account.id)}
-					<option value={account.id}>{account.name}</option>
-				{/each}
-			</select>
-		</div>
-		<div class="grid gap-2">
-			<Label for="cardId">Cartão</Label>
-			<select
-				id="cardId"
-				name="cardId"
-				value={data.filters.cardId ?? ''}
-				class="h-9 rounded-lg border border-foreground/10 bg-transparent px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-			>
-				<option value="">Todos</option>
-				{#each data.cards as card (card.id)}
-					<option value={card.id}>{card.name}</option>
-				{/each}
-			</select>
-		</div>
-		<Button type="submit" variant="outline">Filtrar</Button>
+		<Button type="submit" variant="outline" class="w-full sm:w-auto">Filtrar</Button>
 	</form>
 
 	{#if form?.message}

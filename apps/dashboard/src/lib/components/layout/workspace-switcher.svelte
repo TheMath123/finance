@@ -29,12 +29,12 @@
 </script>
 
 <!-- Pílula translúcida teal — mesma linguagem do seletor de workspace do app (Figma). -->
-<form method="POST" action="/workspace/switch" use:enhance>
+<form method="POST" action="/workspace/switch" use:enhance class="max-w-full">
 	<select
 		name="workspaceId"
 		value={activeWorkspace?.id}
 		onchange={handleChange}
-		class="cursor-pointer rounded-lg border-0 bg-primary/10 px-4 py-2 text-sm font-medium text-primary outline-none focus-visible:ring-2 focus-visible:ring-ring"
+		class="w-full max-w-56 cursor-pointer truncate rounded-lg border-0 bg-primary/10 px-3 py-2 text-sm font-medium text-primary outline-none focus-visible:ring-2 focus-visible:ring-ring sm:px-4"
 	>
 		{#each workspaces as workspace (workspace.id)}
 			<option value={workspace.id}>{workspace.name}</option>

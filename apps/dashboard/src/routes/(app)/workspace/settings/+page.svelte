@@ -1,4 +1,6 @@
 <script lang="ts">
+	import SignOut from 'phosphor-svelte/lib/SignOut';
+
 	import { enhance } from '$app/forms';
 
 	import { Button } from '$lib/components/ui/button';
@@ -47,4 +49,19 @@
 			</Card.Content>
 		</Card.Root>
 	{/if}
+
+	<Card.Root>
+		<Card.Header>
+			<Card.Title>Conta</Card.Title>
+			<Card.Description>Conectado como {data.user.name}.</Card.Description>
+		</Card.Header>
+		<Card.Content>
+			<form method="POST" action="/logout" use:enhance>
+				<Button type="submit" variant="outline">
+					<SignOut size={16} />
+					Sair
+				</Button>
+			</form>
+		</Card.Content>
+	</Card.Root>
 </div>
