@@ -13,16 +13,16 @@ pronto (`apps/backend/src/http/modules/bank/`, `.../account/`,
 ## Escopo
 
 ### Dashboard
-- `routes/(app)/banks/+page.svelte` + `lib/components/bank/bank-form.svelte`
-  (dialog Bits UI) — CRUD de bancos.
-- `routes/(app)/accounts/+page.svelte` + `lib/components/account/account-form.svelte`
-  — CRUD de contas (vinculadas a um banco).
-- `routes/(app)/cards/+page.svelte` + `lib/components/card/card-form.svelte`
-  — CRUD de cartões (vinculados a uma conta, dia de fechamento/vencimento).
-- `lib/schemas/bank.ts`, `lib/schemas/account.ts`, `lib/schemas/card.ts` —
-  Zod schema por entidade, espelhando a validação que já existe no backend
-  (`http/modules/*/schemas.ts`) — nunca reinventar a regra, só replicar
-  pro form dar feedback antes do submit.
+- `routes/(app)/more/banks/+page.svelte` (dialog shadcn-svelte/Bits UI) —
+  CRUD de bancos.
+- `routes/(app)/more/accounts/+page.svelte` — CRUD de contas (vinculadas a
+  um banco).
+- `routes/(app)/more/cards/+page.svelte` — CRUD de cartões (vinculados a
+  um banco, dia de fechamento/vencimento).
+- `lib/schemas/finance.ts` — Zod schema por entidade, espelhando a
+  validação que já existe no backend (`http/modules/*/schemas.ts`) —
+  nunca reinventar a regra, só replicar pro form dar feedback antes do
+  submit.
 
 ## Dependências
 
@@ -30,15 +30,22 @@ M4-02 (layout + contexto de workspace ativo).
 
 ## Implementação (2026-07-24)
 
-Desvios conscientes do escopo original:
-- **Sem dialog/form em componente separado**: em vez de modal Bits UI, cada
-  página usa form de criação no topo + **edição inline** na própria linha
-  (`?edit=<id>` na URL — SSR-friendly, funciona sem JS, mantém o padrão de
-  actions server-side do spec). Campos repetidos entre criar/editar viraram
-  `{#snippet}` do Svelte 5 dentro da própria página (accounts/cards) —
-  menos indireção que arquivo separado enquanto só uma tela usa.
-- **Um `lib/schemas/finance.ts` só** (três schemas espelhados juntos) em vez
-  de três arquivos — mesma granularidade do `lib/schemas/auth.ts`.
+Retrabalhado duas vezes após feedback do usuário, na sessão:
+1. Primeira versão: form de criação no topo + edição inline na própria
+   linha (`?edit=<id>` na URL). Bancos, Contas e Cartões como itens
+   próprios na sidebar.
+2. **Feedback**: "como no app, bancos/contas/cartões vão pra aba de Mais" →
+   as três telas viraram `routes/(app)/more/{banks,accounts,cards}/`, com
+   `routes/(app)/more/+layout.svelte` como hub de abas-pílula (mesmo padrão
+   do hub `/workspace` do M4-02), espelhando a aba "Mais" do app mobile.
+   Sidebar perdeu os três itens e ganhou um único "Mais" (ícone
+   `SquaresFour`). `/more` redireciona pra `/more/accounts` (ordem do app).
+3. **Feedback**: "adicionar/editar deve abrir um dialog" → trocado o form
+   inline por `Dialog.Root` do shadcn-svelte/Bits UI (`bunx shadcn-svelte
+   add dialog`) — um dialog de criação (botão no topo da lista) e um de
+   edição (estado local `editing` guarda a entidade clicada). `use:enhance`
+   fecha o dialog só quando a action responde `success` (erro mantém o
+   dialog aberto com a mensagem).
 
 O que existe:
 - `lib/server/{bank,account,card}-api.ts` — clients server-only espelhando
@@ -50,9 +57,14 @@ O que existe:
 - Catálogo de bancos direto de `@finance/shared` (`BANK_CATALOG`/`getBank`)
   — select de banco por `bankCode` + bolinha com a cor da marca, sem
   duplicar a lista.
-- Sidebar ganhou Bancos, Contas e Cartões (Phosphor: Bank/Wallet/CreditCard).
+- Um `lib/schemas/finance.ts` só (três schemas espelhados juntos) — mesma
+  granularidade do `lib/schemas/auth.ts`.
+- Campos repetidos entre criar/editar viraram `{#snippet}` do Svelte 5
+  dentro da própria página — menos indireção que componente separado
+  enquanto só uma tela usa.
 - Gate por papel: forms/ações só pra owner/admin (o mínimo do backend é
-  `admin`); viewer/member veem listagem com saldo/limite.
+  `admin`); viewer/member veem listagem com saldo/limite, sem botão de
+  adicionar/editar/arquivar/excluir.
 
 Verificado: lint (Biome + Prettier/ESLint), `svelte-check` e build de
 produção limpos.

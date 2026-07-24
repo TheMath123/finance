@@ -1,17 +1,13 @@
 <script lang="ts">
-	import Bank from 'phosphor-svelte/lib/Bank';
-	import CreditCard from 'phosphor-svelte/lib/CreditCard';
 	import House from 'phosphor-svelte/lib/House';
+	import SquaresFour from 'phosphor-svelte/lib/SquaresFour';
 	import UsersThree from 'phosphor-svelte/lib/UsersThree';
-	import Wallet from 'phosphor-svelte/lib/Wallet';
 
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 
 	const homeActive = $derived(page.url.pathname === resolve('/'));
-	const banksActive = $derived(page.url.pathname.startsWith('/banks'));
-	const accountsActive = $derived(page.url.pathname.startsWith('/accounts'));
-	const cardsActive = $derived(page.url.pathname.startsWith('/cards'));
+	const moreActive = $derived(page.url.pathname.startsWith('/more'));
 	const workspaceActive = $derived(page.url.pathname.startsWith('/workspace'));
 </script>
 
@@ -37,36 +33,14 @@
 	</a>
 
 	<a
-		href={resolve('/banks')}
-		title="Bancos"
-		class="flex items-center justify-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors sm:justify-start {banksActive
+		href={resolve('/more')}
+		title="Mais"
+		class="flex items-center justify-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors sm:justify-start {moreActive
 			? 'bg-primary font-medium text-primary-foreground'
 			: 'text-muted-foreground hover:bg-primary/10 hover:text-foreground'}"
 	>
-		<Bank size={18} weight={banksActive ? 'fill' : 'regular'} />
-		<span class="hidden sm:inline">Bancos</span>
-	</a>
-
-	<a
-		href={resolve('/accounts')}
-		title="Contas"
-		class="flex items-center justify-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors sm:justify-start {accountsActive
-			? 'bg-primary font-medium text-primary-foreground'
-			: 'text-muted-foreground hover:bg-primary/10 hover:text-foreground'}"
-	>
-		<Wallet size={18} weight={accountsActive ? 'fill' : 'regular'} />
-		<span class="hidden sm:inline">Contas</span>
-	</a>
-
-	<a
-		href={resolve('/cards')}
-		title="Cartões"
-		class="flex items-center justify-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors sm:justify-start {cardsActive
-			? 'bg-primary font-medium text-primary-foreground'
-			: 'text-muted-foreground hover:bg-primary/10 hover:text-foreground'}"
-	>
-		<CreditCard size={18} weight={cardsActive ? 'fill' : 'regular'} />
-		<span class="hidden sm:inline">Cartões</span>
+		<SquaresFour size={18} weight={moreActive ? 'fill' : 'regular'} />
+		<span class="hidden sm:inline">Mais</span>
 	</a>
 
 	<a

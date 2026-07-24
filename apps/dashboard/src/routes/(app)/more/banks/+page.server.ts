@@ -61,7 +61,7 @@ export const actions: Actions = {
 			parsed.data
 		);
 		if (!result.ok) return fail(result.error.status || 500, { message: result.error.message });
-		redirect(303, '/banks');
+		return { success: true };
 	},
 
 	archive: async ({ request, cookies, locals }) => {
