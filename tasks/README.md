@@ -65,48 +65,87 @@ as independentes (M2-09/10/11/12) encaixaram onde sobrou capacidade.
 
 ## M3 — camada social + anexo de comprovante
 
-Planejado em 2026-07-19, logo após o fechamento do M2. Modelos de dados
-(`InterUserTransfer`, `TrustedContact`, `ExpenseSplit`, `SplitShare`) já
-vinham fechados desde o spec original — faltava só quebrar em tasks.
-Ordem sugerida: M3-01 (storage) primeiro só por ser pré-requisito do
-anexo de comprovante; M3-02 e M3-03 são independentes entre si e do
-storage, dá pra fazer em paralelo ou em qualquer ordem; M3-04 depende do
-M3-01; M3-05 depende do M3-01 e do M3-04.
+Concluído em 2026-07-24. Planejado em 2026-07-19, logo após o fechamento
+do M2. Modelos de dados (`InterUserTransfer`, `TrustedContact`,
+`ExpenseSplit`, `SplitShare`) já vinham fechados desde o spec original —
+faltava só quebrar em tasks. Ordem sugerida: M3-01 (storage) primeiro só
+por ser pré-requisito do anexo de comprovante; M3-02 e M3-03 são
+independentes entre si e do storage, dá pra fazer em paralelo ou em
+qualquer ordem; M3-04 depende do M3-01; M3-05 depende do M3-01 e do
+M3-04.
 
 | # | Tarefa | Status | Depende de |
 |---|---|---|---|
 | M3-01 | [Infra de storage de arquivos (S3/R2)](done/m3-01-infra-storage-arquivos.md) | 🟢 Concluída (validada ponta a ponta contra o R2 real em 2026-07-20) | — |
 | M3-02 | [Transferência entre usuários + contato confiável](done/m3-02-transferencia-entre-usuarios.md) | 🟢 Concluída | M2-10 |
 | M3-03 | [Split de despesas](done/m3-03-split-despesas.md) | 🟢 Concluída | M2-10 |
-| M3-04 | [Anexo de comprovante nas transações (app)](in-progress/m3-04-anexo-comprovante-app.md) | 🟡 Em andamento (backend validado ponta a ponta contra R2 real; falta confirmar upload pela câmera/galeria no app) | M3-01 |
-| M3-05 | [Anexo de comprovante via WhatsApp (foto no chatbot)](in-progress/m3-05-anexo-comprovante-whatsapp.md) | 🟡 Em andamento (storage real já provado via M3-04; falta mandar uma foto real pro WhatsApp vinculado) | M3-01, M3-04, M2-06 |
+| M3-04 | [Anexo de comprovante nas transações (app)](done/m3-04-anexo-comprovante-app.md) | 🟢 Concluída (2026-07-21, validada no app rodando de verdade) | M3-01 |
+| M3-05 | [Anexo de comprovante via WhatsApp (foto no chatbot)](done/m3-05-anexo-comprovante-whatsapp.md) | 🟢 Concluída (2026-07-24, foto real confirmada pelo usuário) | M3-01, M3-04, M2-06 |
 
-Cada task tem uma seção "Próximo passo" com decisões de produto em
-aberto — vale ler antes de começar a implementar (se split pode ser
-editado depois de criado, limite de tamanho de arquivo, janela de
-associação foto→transação no WhatsApp). M3-01 decidiu usar **Cloudflare
-R2** direto (client S3-compatible genérico, extraído pro pacote
-`@finance/storage` — nomes de env sem "AWS"/"R2" pra não precisar
-renomear numa troca futura de provedor); M3-02 já fechou o prazo de
-expiração da transferência em 30 dias (spec); M3-03 decidiu que split
-criado só pode ser cancelado (nunca editado), e só enquanto nenhuma parte
-foi paga/confirmada; M3-04 decidiu só aceitar imagem (sem PDF) até virar
-necessidade real, limite de 5MB.
+Cada task tem uma seção "Próximo passo"/"Validação final" com as decisões
+de produto fechadas ao longo do caminho — vale ler antes de mexer nessa
+área depois (se split pode ser editado depois de criado, limite de
+tamanho de arquivo, janela de associação foto→transação no WhatsApp).
+M3-01 decidiu usar **Cloudflare R2** direto (client S3-compatible
+genérico, extraído pro pacote `@finance/storage` — nomes de env sem
+"AWS"/"R2" pra não precisar renomear numa troca futura de provedor);
+M3-02 já fechou o prazo de expiração da transferência em 30 dias (spec);
+M3-03 decidiu que split criado só pode ser cancelado (nunca editado), e
+só enquanto nenhuma parte foi paga/confirmada; M3-04 decidiu só aceitar
+imagem (sem PDF) até virar necessidade real, limite de 5MB; M3-05 fechou
+a janela de associação foto→transação em 5 minutos.
 
-M3-01, M3-04 e M3-05 ficam os três em `in-progress/` ao mesmo tempo por
-exceção — todo o código de M3-04/M3-05 já está pronto e testado (storage
-in-memory), só falta o bucket do M3-01 existir de verdade no R2 pra
-validar os três de uma vez. M3-05 decidiu a janela de associação
-foto→transação em 5 minutos, e "duas fotos" não precisou de lógica
-especial — reaproveita o "substitui o anexo anterior" que o M3-04 já
-tinha.
+[[meta-app-review-whatsapp-business-messaging]] em `validations/` segue
+cobrindo a revalidação que falta depois que a Meta aprovar o App Review —
+hoje o número roda em Development Mode, só testadores cadastrados
+conseguem usar o chatbot (M2-06) e o anexo via WhatsApp (M3-05); isso não
+bloqueou o fechamento do M3 porque o próprio usuário já é testador
+cadastrado.
 
-Além da validação manual de M3-04/M3-05 (upload real pelo app, foto real
-pelo WhatsApp), [[meta-app-review-whatsapp-business-messaging]] em
-`validations/` cobre a revalidação que falta depois que a Meta aprovar o
-App Review — hoje o número roda em Development Mode, só testadores
-cadastrados conseguem usar o chatbot (M2-06) e o anexo via WhatsApp
-(M3-05).
+## Fora dos milestones numerados
+
+- [UI — migração pro novo padrão visual (Figma)](backlog/ui-novo-padrao-figma.md):
+  Fases 1 e 2 (fundação + Home/Transações do app mobile) concluídas e
+  validadas em 2026-07-24. Fase 3 (logo de marca via thesvg.org) em
+  backlog — pausada por decisão de produto pra focar no M4, não por
+  bloqueio técnico.
+
+## M4 — Dashboard web (Svelte)
+
+Planejado em 2026-07-24, logo após o fechamento do M3. `spec.md`
+("Dashboard web") já fecha a stack (Svelte + Bits UI + Tailwind + Zod) e o
+conceito de `platformRole`/superadmin, mas não detalha telas — esta
+quebra em tasks é a especificação real do milestone. Ordem sugerida:
+M4-01 (scaffold + auth) é pré-requisito de tudo; M4-02 a M4-06 espelham
+telas que o app mobile já tem (workspace, CRUD financeiro, faturas/visão
+mensal, configurações — puramente frontend, backend já existe pra todas);
+M4-07 a M4-09 são a área de superadmin, nova mesmo no backend
+(`platformRole` existe no schema desde o M1 mas nunca foi usado por
+nenhuma rota).
+
+| # | Tarefa | Status | Depende de |
+|---|---|---|---|
+| M4-01 | [Scaffold do dashboard web + autenticação](in-progress/m4-01-scaffold-dashboard-web.md) | 🟡 Em andamento (código pronto, falta validação manual) | — |
+| M4-02 | [Layout base + workspaces (seletor, membros, convites)](m4-02-layout-workspaces-dashboard.md) | 🔵 Backlog | M4-01 |
+| M4-03 | [CRUD de bancos, contas e cartões](m4-03-bancos-contas-cartoes-dashboard.md) | 🔵 Backlog | M4-02 |
+| M4-04 | [Transações (listagem, filtros, criar/editar)](m4-04-transacoes-dashboard.md) | 🔵 Backlog | M4-03 |
+| M4-05 | [Faturas por cartão + visão mensal](m4-05-faturas-visao-mensal-dashboard.md) | 🔵 Backlog | M4-04 |
+| M4-06 | [Configurações de conta](m4-06-configuracoes-conta-dashboard.md) | 🔵 Backlog | M4-01 |
+| M4-07 | [Superadmin: fundação (guard + layout admin)](m4-07-superadmin-fundacao.md) | 🔵 Backlog | M4-01 |
+| M4-08 | [Superadmin: usuários + categorias padrão](m4-08-superadmin-usuarios-categorias.md) | 🔵 Backlog | M4-07 |
+| M4-09 | [Superadmin: guardrails de IA, feature flags, métricas](m4-09-superadmin-ia-flags-metricas.md) | 🔵 Backlog | M4-07 |
+
+Decisões de arquitetura já identificadas (cada task detalha o porquê):
+CORS precisa ser adicionado ao backend (nunca precisou pra servir só o
+app mobile); estratégia de sessão web (cookie `httpOnly` recomendado,
+sem mudar o contrato de login do backend); orçamento de tokens de IA e
+categorias padrão do seed precisam sair de constante/env estáticos pra
+tabela no banco pra virarem editáveis pelo painel (gap identificado no
+M4-08/M4-09); `User` não tem campo de suspensão ainda (gap do M4-08).
+
+M4-06 é independente do resto (só depende do M4-01) — dá pra fazer em
+paralelo a qualquer uma das outras. M4-08 e M4-09 também são
+paralelizáveis entre si (ambas só dependem do M4-07).
 
 ## Histórico do M1
 

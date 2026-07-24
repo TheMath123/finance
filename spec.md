@@ -48,6 +48,7 @@ Os dados financeiros vivem em **workspaces**, que podem ser pessoais ou comparti
 - **Estilo: Tailwind CSS** (nativo, sem NativeWind) — mesma convenção do app.
 - **Validação: Zod** para (a) todo formulário e (b) envs validadas no boot — mesma convenção do backend e do app (schema Zod por app/package, `.env.example` escopado, nunca um geral).
 - **Organização: um componente por arquivo**, cada um com sua própria lógica (mesma convenção de modularização do backend/app) — nunca vários componentes agrupados num arquivo só.
+- **Toda requisição à API do backend (e a qualquer outro serviço externo) é feita só do lado servidor** (`load` em `+page.server.ts`/`+layout.server.ts`, `actions`, `hooks.server.ts` ou `+server.ts`) — nunca `fetch` direto do client pro backend. O client nunca guarda token de sessão nem chama a API diretamente; toda variável de ambiente sensível (URL interna do backend, segredos, chaves) fica em env **privada** (sem prefixo `PUBLIC_`), inacessível ao bundle do browser. Decisão de 2026-07-24, motivada por segurança (evitar expor token/segredo/detalhe de infra no client) — vale para todo o dashboard, não só a tela de login.
 - Terá também um **modo superadmin** (ver "Papéis de plataforma" abaixo): área administrativa da plataforma para configurações globais — gestão de usuários (suspender/reativar), categorias padrão do seed, parâmetros dos guardrails de IA (orçamentos de tokens), feature flags e métricas de uso.
 
 ### Papéis de plataforma (≠ papéis de workspace)

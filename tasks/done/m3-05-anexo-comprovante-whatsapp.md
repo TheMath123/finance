@@ -1,10 +1,8 @@
 # M3-05 — Anexo de comprovante via WhatsApp (foto no chatbot)
 
-**Status:** 🟡 Em andamento — código completo, testado com storage
-in-memory. **Não validado contra o R2 real nem contra a Meta Cloud API de
-verdade** (mesma ressalva do M3-01/M3-04 — bucket ainda não existe;
-adicionalmente aqui, o fluxo de download de mídia da Meta nunca rodou
-contra o número de teste real).
+**Status:** 🟢 Concluída (2026-07-24) — validada ponta a ponta: usuário
+mandou uma foto real pro número de WhatsApp vinculado, logo depois de
+registrar uma transação, e confirmou o comprovante aparecendo no app.
 
 ## Contexto
 
@@ -99,8 +97,11 @@ contra a Meta Cloud API de verdade — o download de mídia
 (`fetchMediaUrl`/`downloadMedia`) nunca rodou contra um `media_id` real
 da Meta nesta sessão.
 
-## Próximo passo
+## Validação final (2026-07-24)
 
-Quando o bucket do M3-01 existir: mandar uma foto de teste pro número do
-WhatsApp vinculado, logo depois de registrar uma transação por lá, e
-conferir o comprovante aparecendo no app. Só aí mover pra `done/`.
+Usuário confirmou: foto real enviada pro número de WhatsApp vinculado
+logo após registrar uma transação, comprovante apareceu na transação
+correta no app. Prova o caminho completo — webhook reconhece a imagem,
+baixa da Meta Cloud API, sobe pro R2 real via `uploadAttachment`
+reaproveitado do M3-04, associa pela janela de 5 minutos. Task fechada —
+movida para `done/`.

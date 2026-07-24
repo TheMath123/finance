@@ -1,7 +1,11 @@
 # UI — Migração pro novo padrão visual (Figma)
 
-**Status:** 🟡 Em progresso — Fases 1 e 2 implementadas, aguardando o usuário
-conferir no emulador antes da Fase 3.
+**Status:** ⚪ Em backlog (2026-07-24) — Fases 1 e 2 concluídas e validadas
+pelo usuário no emulador (várias rodadas de ajuste fino: tab bar, fonte/
+espaçamento dos cards, bug de `className` duplicado no `Select`, blur
+Android). Commitadas em `88fc053`. Fase 3 (logo de marca via thesvg) fica
+pra depois — pausada por decisão de produto pra focar no M4 (dashboard
+web), não por bloqueio técnico.
 
 ## Contexto
 
@@ -116,10 +120,7 @@ Typecheck e lint limpos (`bun run --filter=mobile typecheck`, `bun run lint`
 
 ## Próximo passo
 
-Nada disto foi visto rodando de verdade ainda — pedir pro usuário conferir a
-Home e a tela de Transações no emulador (tab bar só com ícone, linhas sem
-Card na Home, avatar+linha de método na lista de transações, painel de
-filtros) antes de eu seguir pra Fase 3 (logo de marca). Se o limite de
-chamadas do Figma MCP já tiver resetado, vale revalidar o `Button` (`21:474`)
-e a variante light da tela de Transações que ficaram sem confirmação direta
-nesta rodada.
+Retomar quando o M4 estiver encaminhado: implementar Fase 3 (logo de marca
+via thesvg) e, se o limite de chamadas do Figma MCP já tiver resetado,
+revalidar o `Button` (`21:474`) e a variante light da tela de Transações
+que ficaram sem confirmação direta na Fase 2.
