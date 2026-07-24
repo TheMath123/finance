@@ -1,4 +1,8 @@
 <script lang="ts">
+	import UserCircleIcon from 'phosphor-svelte/lib/UserCircleIcon';
+
+	import { resolve } from '$app/paths';
+
 	import WorkspaceSwitcher from '$lib/components/layout/workspace-switcher.svelte';
 	import type { SessionUser } from '$lib/server/auth-api';
 	import type { WorkspaceSummary } from '$lib/server/workspace-api';
@@ -20,6 +24,11 @@
 	<div class="min-w-0 flex-1">
 		<WorkspaceSwitcher {workspaces} {activeWorkspace} />
 	</div>
-	<!-- "Sair" mora em Workspace > Configurações agora — nada de ação destrutiva solta no topo. -->
-	<span class="hidden shrink-0 text-sm text-muted-foreground sm:inline">{user.name}</span>
+	<a
+		href={resolve('/account')}
+		class="flex shrink-0 items-center gap-2 rounded-lg px-2 py-1 text-sm text-muted-foreground transition-colors hover:bg-primary/10 hover:text-foreground"
+	>
+		<UserCircleIcon size={18} />
+		<span class="hidden sm:inline">{user.name}</span>
+	</a>
 </header>

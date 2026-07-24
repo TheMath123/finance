@@ -78,6 +78,43 @@ O que existe:
 Verificado: lint (Biome + Prettier/ESLint), `svelte-check`, build de
 produção e boot do dev server (smoke test) limpos.
 
+## Atualização de UX (2026-07-24, pós-M4-07)
+
+Rodada de ajustes pedida pelo usuário, superando parte das decisões acima:
+- **`/account` em vez de `/more/account`** — saiu da aba do hub "Mais" e
+  virou rota própria; o nome do usuário no canto superior da topbar (antes
+  só texto estático) agora é um link pra lá (ícone sempre visível, nome ao
+  lado só em telas ≥ sm — no mobile o ícone sozinho é o único caminho até
+  a conta, já que a aba "Conta" saiu do `/more`).
+- **Editar nome, trocar senha, trocar e-mail e excluir conta viraram
+  botão + `Dialog`** — mesmo padrão de create/edit já usado em
+  bancos/contas/cartões (`Dialog.Root` + `closeOnSuccess` fechando o
+  dialog só quando a action responde `success`). O fluxo de dois passos
+  (e-mail e exclusão) continua idêntico, só que dentro do dialog: o passo
+  de solicitação não fecha o dialog (só chama `update()`), o passo de
+  confirmação fecha.
+- **"Sair" virou só um botão solto** (sem `Card` em volta) — a fricção de
+  ação destrutiva ficou reservada pra exclusão de conta mesmo.
+- **Tema claro/escuro/automático** — adicionado `mode-watcher`
+  (`bun add mode-watcher`, mesmo pacote que qualquer setup shadcn-svelte
+  usa pra isso) com `<ModeWatcher />` no `+layout.svelte` raiz e um
+  seletor de 3 botões na página de conta (`setMode`/`userPrefersMode`).
+
+Um detalhe de tipagem que valeu registrar: dentro do dialog de exclusão,
+checar `form?.deleteMessage` **dentro** do branch `{#if form?.deletionRequested}`
+quebrava o `svelte-check` (`Property 'deleteMessage' does not exist on
+type 'never'`) — o SvelteKit estreita o tipo de `form` pelo campo
+discriminante que acabou de ser lido, e o branch narrowed não inclui
+`deleteMessage`. Resolvido movendo a mensagem de erro pra fora do
+if/else (mesmo padrão que a versão anterior da página já usava, sem eu
+ter percebido o motivo até bater o erro).
+
+Validado ponta a ponta contra o backend/dashboard reais rodando (registro
+de usuário de teste, cookies de sessão de verdade em `/account`): todos
+os botões (Editar nome, Trocar senha, Trocar e-mail, Tema/Claro/Escuro/
+Automático, Excluir conta, Sair) presentes no HTML renderizado, e a aba
+"Conta" confirmada ausente de `/more`.
+
 ## Critério de conclusão
 
 Trocar senha/e-mail, revogar vínculo WhatsApp e excluir conta (fluxo de

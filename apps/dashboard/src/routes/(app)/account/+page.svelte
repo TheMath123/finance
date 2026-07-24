@@ -1,27 +1,55 @@
 <script lang="ts">
-	import SignOut from 'phosphor-svelte/lib/SignOut';
-	import WhatsappLogo from 'phosphor-svelte/lib/WhatsappLogo';
+	import DesktopIcon from 'phosphor-svelte/lib/DesktopIcon';
+	import MoonIcon from 'phosphor-svelte/lib/MoonIcon';
+	import PencilSimpleIcon from 'phosphor-svelte/lib/PencilSimpleIcon';
+	import SignOutIcon from 'phosphor-svelte/lib/SignOutIcon';
+	import SunIcon from 'phosphor-svelte/lib/SunIcon';
+	import TrashIcon from 'phosphor-svelte/lib/TrashIcon';
+	import WhatsappLogoIcon from 'phosphor-svelte/lib/WhatsappLogoIcon';
+	import { setMode, userPrefersMode } from 'mode-watcher';
 
 	import { enhance } from '$app/forms';
 
 	import { Button } from '$lib/components/ui/button';
 	import * as Card from '$lib/components/ui/card';
+	import * as Dialog from '$lib/components/ui/dialog';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
 
 	let { data, form } = $props();
 
+	let nameOpen = $state(false);
+	let passwordOpen = $state(false);
+	let emailOpen = $state(false);
+	let deleteOpen = $state(false);
+
 	// Fricção intencional antes de liberar o formulário de exclusão — mesmo
 	// padrão do app mobile (nunca deixar o botão destrutivo a um clique).
 	let deleteConfirmText = $state('');
 	const deleteUnlocked = $derived(deleteConfirmText.trim().toUpperCase() === 'EXCLUIR');
+
+	/** Fecha o dialog quando a action termina sem erro; o update() recarrega os dados. */
+	function closeOnSuccess(close: () => void) {
+		return async ({
+			result,
+			update
+		}: {
+			result: { type: string };
+			update: () => Promise<void>;
+		}) => {
+			if (result.type === 'success') close();
+			await update();
+		};
+	}
 </script>
 
 <svelte:head>
 	<title>Conta — Finance</title>
 </svelte:head>
 
-<div class="flex flex-col gap-6">
+<div class="mx-auto flex max-w-2xl flex-col gap-6">
+	<h1 class="text-xl font-semibold">Conta</h1>
+
 	<Card.Root>
 		<Card.Header>
 			<Card.Title>Perfil</Card.Title>
@@ -32,105 +60,54 @@
 				{/if}
 			</Card.Description>
 		</Card.Header>
-		<Card.Content>
-			<form method="POST" action="?/updateName" class="flex items-end gap-3" use:enhance>
-				<div class="grid flex-1 gap-2">
-					<Label for="name">Nome</Label>
-					<Input id="name" name="name" value={data.user.name} required />
-				</div>
-				<Button type="submit">Salvar</Button>
-			</form>
-			{#if form?.nameMessage}
-				<p class="mt-2 text-sm text-destructive">{form.nameMessage}</p>
-			{/if}
-			{#if form?.nameUpdated}
-				<p class="mt-2 text-sm text-success">Nome atualizado.</p>
-			{/if}
+		<Card.Content class="flex items-center justify-between gap-4">
+			<p class="truncate text-sm font-medium">{data.user.name}</p>
+			<Button variant="outline" size="sm" onclick={() => (nameOpen = true)}>
+				<PencilSimpleIcon size={16} />
+				Editar nome
+			</Button>
 		</Card.Content>
 	</Card.Root>
 
 	<Card.Root>
 		<Card.Header>
-			<Card.Title>Trocar senha</Card.Title>
+			<Card.Title>Segurança</Card.Title>
 		</Card.Header>
-		<Card.Content>
-			<form method="POST" action="?/changePassword" class="grid gap-4" use:enhance>
-				<div class="grid gap-2">
-					<Label for="currentPassword">Senha atual</Label>
-					<Input
-						id="currentPassword"
-						name="currentPassword"
-						type="password"
-						autocomplete="current-password"
-						required
-					/>
-				</div>
-				<div class="grid gap-2">
-					<Label for="newPassword">Nova senha</Label>
-					<Input
-						id="newPassword"
-						name="newPassword"
-						type="password"
-						autocomplete="new-password"
-						required
-					/>
-				</div>
-				<Button type="submit" class="w-fit">Trocar senha</Button>
-			</form>
-			{#if form?.passwordMessage}
-				<p class="mt-2 text-sm text-destructive">{form.passwordMessage}</p>
-			{/if}
-			{#if form?.passwordChanged}
-				<p class="mt-2 text-sm text-success">Senha atualizada.</p>
-			{/if}
+		<Card.Content class="flex flex-wrap gap-2">
+			<Button variant="outline" onclick={() => (passwordOpen = true)}>Trocar senha</Button>
+			<Button variant="outline" onclick={() => (emailOpen = true)}>Trocar e-mail</Button>
 		</Card.Content>
 	</Card.Root>
 
 	<Card.Root>
 		<Card.Header>
-			<Card.Title>Trocar e-mail</Card.Title>
-			{#if data.user.pendingEmail}
-				<Card.Description>
-					Confirmação pendente para {data.user.pendingEmail} — confira sua caixa de entrada.
-				</Card.Description>
-			{/if}
+			<Card.Title>Tema</Card.Title>
 		</Card.Header>
-		<Card.Content class="grid gap-4">
-			{#if data.user.pendingEmail}
-				<form method="POST" action="?/confirmEmailChange" class="flex items-end gap-3" use:enhance>
-					<div class="grid gap-2">
-						<Label for="email-code">Código de confirmação</Label>
-						<Input id="email-code" name="code" inputmode="numeric" maxlength={6} required />
-					</div>
-					<Button type="submit">Confirmar</Button>
-				</form>
-			{:else}
-				<form
-					method="POST"
-					action="?/requestEmailChange"
-					class="grid gap-4 sm:grid-cols-2"
-					use:enhance
-				>
-					<div class="grid gap-2">
-						<Label for="newEmail">Novo e-mail</Label>
-						<Input id="newEmail" name="newEmail" type="email" required />
-					</div>
-					<div class="grid gap-2">
-						<Label for="email-password">Senha atual</Label>
-						<Input id="email-password" name="currentPassword" type="password" required />
-					</div>
-					<Button type="submit" class="w-fit sm:col-span-2">Enviar código pro novo e-mail</Button>
-				</form>
-			{/if}
-			{#if form?.emailMessage}
-				<p class="text-sm text-destructive">{form.emailMessage}</p>
-			{/if}
-			{#if form?.emailChangeRequested}
-				<p class="text-sm text-success">Código enviado — confira o novo e-mail.</p>
-			{/if}
-			{#if form?.emailChanged}
-				<p class="text-sm text-success">E-mail atualizado.</p>
-			{/if}
+		<Card.Content class="flex flex-wrap gap-2">
+			<Button
+				variant={userPrefersMode.current === 'light' ? 'default' : 'outline'}
+				size="sm"
+				onclick={() => setMode('light')}
+			>
+				<SunIcon size={16} />
+				Claro
+			</Button>
+			<Button
+				variant={userPrefersMode.current === 'dark' ? 'default' : 'outline'}
+				size="sm"
+				onclick={() => setMode('dark')}
+			>
+				<MoonIcon size={16} />
+				Escuro
+			</Button>
+			<Button
+				variant={userPrefersMode.current === 'system' ? 'default' : 'outline'}
+				size="sm"
+				onclick={() => setMode('system')}
+			>
+				<DesktopIcon size={16} />
+				Automático
+			</Button>
 		</Card.Content>
 	</Card.Root>
 
@@ -150,7 +127,7 @@
 			<Card.Content>
 				<form method="POST" action="?/revokeWhatsapp" use:enhance>
 					<Button type="submit" variant="outline">
-						<WhatsappLogo size={16} />
+						<WhatsappLogoIcon size={16} />
 						Revogar vínculo
 					</Button>
 				</form>
@@ -161,20 +138,6 @@
 		{/if}
 	</Card.Root>
 
-	<Card.Root>
-		<Card.Header>
-			<Card.Title>Sessão</Card.Title>
-		</Card.Header>
-		<Card.Content>
-			<form method="POST" action="/logout" use:enhance>
-				<Button type="submit" variant="outline">
-					<SignOut size={16} />
-					Sair
-				</Button>
-			</form>
-		</Card.Content>
-	</Card.Root>
-
 	<Card.Root class="border-destructive/30">
 		<Card.Header>
 			<Card.Title class="text-destructive">Excluir conta</Card.Title>
@@ -183,24 +146,177 @@
 				nos compartilhados, sua participação é removida.
 			</Card.Description>
 		</Card.Header>
-		<Card.Content class="grid gap-4">
-			{#if form?.deletionRequested}
-				<form method="POST" action="?/confirmDeletion" class="flex items-end gap-3" use:enhance>
-					<div class="grid gap-2">
-						<Label for="delete-code">Código enviado ao seu e-mail</Label>
-						<Input id="delete-code" name="code" inputmode="numeric" maxlength={6} required />
-					</div>
+		<Card.Content>
+			<Button variant="destructive" onclick={() => (deleteOpen = true)}>
+				<TrashIcon size={16} />
+				Excluir conta
+			</Button>
+		</Card.Content>
+	</Card.Root>
+
+	<form method="POST" action="/logout" use:enhance>
+		<Button type="submit" variant="outline" class="text-red-500">
+			<SignOutIcon size={16} />
+			Sair
+		</Button>
+	</form>
+</div>
+
+<Dialog.Root bind:open={nameOpen}>
+	<Dialog.Content>
+		<Dialog.Header>
+			<Dialog.Title>Editar nome</Dialog.Title>
+		</Dialog.Header>
+		<form
+			method="POST"
+			action="?/updateName"
+			class="grid gap-4"
+			use:enhance={() => closeOnSuccess(() => (nameOpen = false))}
+		>
+			<div class="grid gap-2">
+				<Label for="name">Nome</Label>
+				<Input id="name" name="name" value={data.user.name} required />
+			</div>
+			{#if form?.nameMessage}
+				<p class="text-sm text-destructive">{form.nameMessage}</p>
+			{/if}
+			<Dialog.Footer>
+				<Button type="submit">Salvar</Button>
+			</Dialog.Footer>
+		</form>
+	</Dialog.Content>
+</Dialog.Root>
+
+<Dialog.Root bind:open={passwordOpen}>
+	<Dialog.Content>
+		<Dialog.Header>
+			<Dialog.Title>Trocar senha</Dialog.Title>
+		</Dialog.Header>
+		<form
+			method="POST"
+			action="?/changePassword"
+			class="grid gap-4"
+			use:enhance={() => closeOnSuccess(() => (passwordOpen = false))}
+		>
+			<div class="grid gap-2">
+				<Label for="currentPassword">Senha atual</Label>
+				<Input
+					id="currentPassword"
+					name="currentPassword"
+					type="password"
+					autocomplete="current-password"
+					required
+				/>
+			</div>
+			<div class="grid gap-2">
+				<Label for="newPassword">Nova senha</Label>
+				<Input
+					id="newPassword"
+					name="newPassword"
+					type="password"
+					autocomplete="new-password"
+					required
+				/>
+			</div>
+			{#if form?.passwordMessage}
+				<p class="text-sm text-destructive">{form.passwordMessage}</p>
+			{/if}
+			<Dialog.Footer>
+				<Button type="submit">Trocar senha</Button>
+			</Dialog.Footer>
+		</form>
+	</Dialog.Content>
+</Dialog.Root>
+
+<Dialog.Root bind:open={emailOpen}>
+	<Dialog.Content>
+		<Dialog.Header>
+			<Dialog.Title>Trocar e-mail</Dialog.Title>
+			{#if data.user.pendingEmail}
+				<Dialog.Description>
+					Confirmação pendente para {data.user.pendingEmail} — confira sua caixa de entrada.
+				</Dialog.Description>
+			{/if}
+		</Dialog.Header>
+		{#if data.user.pendingEmail}
+			<form
+				method="POST"
+				action="?/confirmEmailChange"
+				class="grid gap-4"
+				use:enhance={() => closeOnSuccess(() => (emailOpen = false))}
+			>
+				<div class="grid gap-2">
+					<Label for="email-code">Código de confirmação</Label>
+					<Input id="email-code" name="code" inputmode="numeric" maxlength={6} required />
+				</div>
+				{#if form?.emailMessage}
+					<p class="text-sm text-destructive">{form.emailMessage}</p>
+				{/if}
+				<Dialog.Footer>
+					<Button type="submit">Confirmar</Button>
+				</Dialog.Footer>
+			</form>
+		{:else}
+			<form method="POST" action="?/requestEmailChange" class="grid gap-4" use:enhance>
+				<div class="grid gap-2">
+					<Label for="newEmail">Novo e-mail</Label>
+					<Input id="newEmail" name="newEmail" type="email" required />
+				</div>
+				<div class="grid gap-2">
+					<Label for="email-password">Senha atual</Label>
+					<Input id="email-password" name="currentPassword" type="password" required />
+				</div>
+				{#if form?.emailMessage}
+					<p class="text-sm text-destructive">{form.emailMessage}</p>
+				{/if}
+				<Dialog.Footer>
+					<Button type="submit">Enviar código pro novo e-mail</Button>
+				</Dialog.Footer>
+			</form>
+		{/if}
+	</Dialog.Content>
+</Dialog.Root>
+
+<Dialog.Root
+	open={deleteOpen}
+	onOpenChange={(open) => {
+		deleteOpen = open;
+		if (!open) deleteConfirmText = '';
+	}}
+>
+	<Dialog.Content>
+		<Dialog.Header>
+			<Dialog.Title>Excluir conta</Dialog.Title>
+			<Dialog.Description>
+				Ação irreversível (LGPD). Workspaces em que você é o único dono são apagados por completo;
+				nos compartilhados, sua participação é removida.
+			</Dialog.Description>
+		</Dialog.Header>
+		{#if form?.deletionRequested}
+			<form
+				method="POST"
+				action="?/confirmDeletion"
+				class="grid gap-4"
+				use:enhance={() => closeOnSuccess(() => (deleteOpen = false))}
+			>
+				<div class="grid gap-2">
+					<Label for="delete-code">Código enviado ao seu e-mail</Label>
+					<Input id="delete-code" name="code" inputmode="numeric" maxlength={6} required />
+				</div>
+				<Dialog.Footer>
 					<Button type="submit" variant="destructive">Excluir definitivamente</Button>
-				</form>
-			{:else}
+				</Dialog.Footer>
+			</form>
+		{:else}
+			<div class="grid gap-4">
 				<div class="grid gap-2">
 					<Label for="delete-confirm-text">
 						Digite <span class="font-mono font-semibold">EXCLUIR</span> pra habilitar
 					</Label>
 					<Input id="delete-confirm-text" bind:value={deleteConfirmText} autocomplete="off" />
 				</div>
-				<form method="POST" action="?/requestDeletion" class="flex items-end gap-3" use:enhance>
-					<div class="grid flex-1 gap-2">
+				<form method="POST" action="?/requestDeletion" class="grid gap-4" use:enhance>
+					<div class="grid gap-2">
 						<Label for="delete-password">Senha atual</Label>
 						<Input
 							id="delete-password"
@@ -210,14 +326,16 @@
 							required
 						/>
 					</div>
-					<Button type="submit" variant="destructive" disabled={!deleteUnlocked}>
-						Solicitar exclusão
-					</Button>
+					<Dialog.Footer>
+						<Button type="submit" variant="destructive" disabled={!deleteUnlocked}>
+							Solicitar exclusão
+						</Button>
+					</Dialog.Footer>
 				</form>
-			{/if}
-			{#if form?.deleteMessage}
-				<p class="text-sm text-destructive">{form.deleteMessage}</p>
-			{/if}
-		</Card.Content>
-	</Card.Root>
-</div>
+			</div>
+		{/if}
+		{#if form?.deleteMessage}
+			<p class="text-sm text-destructive">{form.deleteMessage}</p>
+		{/if}
+	</Dialog.Content>
+</Dialog.Root>
