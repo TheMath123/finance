@@ -2,6 +2,7 @@
 	import { BANK_CATALOG, getBank } from '@finance/shared';
 
 	import { enhance } from '$app/forms';
+	import { resolve } from '$app/paths';
 
 	import { Button } from '$lib/components/ui/button';
 	import * as Dialog from '$lib/components/ui/dialog';
@@ -132,6 +133,9 @@
 						<p class="text-sm font-medium">{formatCents(card.availableLimit)}</p>
 						<p class="text-xs text-muted-foreground">de {formatCents(card.limit)}</p>
 					</div>
+					<Button href={resolve(`/more/cards/${card.id}/invoices`)} variant="outline" size="sm">
+						Faturas
+					</Button>
 					{#if canManage}
 						<Button variant="outline" size="sm" onclick={() => (editing = card)}>Editar</Button>
 						{#if !card.archivedAt}

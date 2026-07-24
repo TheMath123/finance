@@ -1,7 +1,9 @@
 # M4-04 — Transações (listagem, filtros, criar/editar)
 
-**Status:** 🟡 Em andamento — código completo (lint, typecheck e build de
-produção limpos); falta a validação manual do usuário no browser.
+**Status:** 🟢 Concluída (2026-07-24) — validada pelo usuário no browser ao
+longo de várias rodadas de ajuste (tabela reordenada, ícone/logo de marca
+na categoria, botões ghost, abas Ativas/Arquivadas, bug do filtro de
+arquivadas, responsividade mobile do shell e dos filtros).
 
 ## Contexto
 
