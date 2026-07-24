@@ -22,6 +22,12 @@ const envSchema = z.object({
     .default("false")
     .transform((v) => v === "true"),
   LOG_LEVEL: z.enum(["fatal", "error", "warn", "info", "debug", "trace"]).default("info"),
+  /**
+   * Origem permitida no CORS (dashboard web — M4). O dashboard fala com a API
+   * só pelo servidor do SvelteKit (server-to-server, sem CORS envolvido), então
+   * isto é defesa em profundidade caso alguma rota vire proxy direto no futuro.
+   */
+  DASHBOARD_ORIGIN: z.string().url().default("http://localhost:5173"),
 });
 
 export type Env = z.infer<typeof envSchema>;

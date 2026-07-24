@@ -47,6 +47,7 @@ export function createAppDeps(env: Env): AppDeps {
     }),
     termsVersion: env.TERMS_VERSION,
     trustProxy: env.TRUST_PROXY,
+    dashboardOrigin: env.DASHBOARD_ORIGIN,
     httpLogger: logger,
   };
 }

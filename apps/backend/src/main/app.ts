@@ -1,3 +1,4 @@
+import { cors } from "@elysiajs/cors";
 import { Elysia } from "elysia";
 import { requestId } from "../http/request-id";
 import { errorHandler } from "../http/error-handler";
@@ -18,6 +19,9 @@ import type { AppDeps } from "../http/deps";
 
 export function createApp(deps: AppDeps) {
   return new Elysia()
+    // Restrito à origem do dashboard (M4). O fluxo normal do dashboard é
+    // server-to-server (sem CORS); isto é defesa em profundidade.
+    .use(cors({ origin: deps.dashboardOrigin }))
     .use(requestId)
     .use(errorHandler(deps.httpLogger))
     .get("/health", () => ({ status: "ok" }))

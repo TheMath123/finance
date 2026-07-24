@@ -13,6 +13,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@elysiajs/cors": "^1.4.2",
     "@finance/db": "workspace:*",
     "@finance/email": "workspace:*",
     "@finance/queues": "workspace:*",
