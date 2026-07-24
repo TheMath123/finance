@@ -1,6 +1,7 @@
 <script lang="ts">
 	import House from 'phosphor-svelte/lib/House';
 	import ReceiptIcon from 'phosphor-svelte/lib/Receipt';
+	import RepeatIcon from 'phosphor-svelte/lib/RepeatIcon';
 	import SquaresFour from 'phosphor-svelte/lib/SquaresFour';
 	import UsersThree from 'phosphor-svelte/lib/UsersThree';
 
@@ -14,6 +15,12 @@
 			label: 'Transações',
 			icon: ReceiptIcon,
 			match: (p: string) => p.startsWith('/transactions')
+		},
+		{
+			route: '/recurring',
+			label: 'Recorrências',
+			icon: RepeatIcon,
+			match: (p: string) => p.startsWith('/recurring')
 		},
 		{
 			route: '/more',

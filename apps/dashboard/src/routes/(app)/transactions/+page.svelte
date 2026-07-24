@@ -65,6 +65,14 @@
 		}
 		return params.toString();
 	}
+
+	/** "De"/"Até" ficam pré-preenchidos com o mês atual (default do load) — este link limpa só o período, preservando os demais filtros. */
+	function clearPeriodQuery(): string {
+		const params = new SvelteURLSearchParams(page.url.searchParams);
+		params.set('from', '');
+		params.set('to', '');
+		return params.toString();
+	}
 </script>
 
 <svelte:head>
@@ -174,8 +182,22 @@
 				</select>
 			</div>
 		</div>
-		<Button type="submit" variant="outline" class="w-full sm:w-auto">Filtrar</Button>
+		<div class="flex gap-2">
+			<Button type="submit" variant="outline" class="flex-1 sm:flex-none">Filtrar</Button>
+			<a
+				href="{resolve('/transactions')}?{clearPeriodQuery()}"
+				class="flex items-center rounded-lg px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-primary/10 hover:text-foreground"
+			>
+				Ver tudo
+			</a>
+		</div>
 	</form>
+
+	<p class="text-xs text-muted-foreground">
+		Mostrando {data.filters.from ? formatTransactionDate(data.filters.from) : 'o início'} até
+		{data.filters.to ? formatTransactionDate(data.filters.to) : 'hoje'}
+		{#if !data.filters.from && !data.filters.to}(sem filtro de período){/if}
+	</p>
 
 	{#if form?.message}
 		<p class="text-sm text-destructive">{form.message}</p>

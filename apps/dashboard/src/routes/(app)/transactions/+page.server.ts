@@ -10,6 +10,15 @@ import * as transactionApi from '$lib/server/transaction-api';
 
 import type { Actions, PageServerLoad } from './$types';
 
+/** Primeiro/último dia do mês atual (YYYY-MM-DD) — default da listagem quando o usuário não escolheu um período. */
+function currentMonthRange(): { from: string; to: string } {
+	const [year, month] = new Date().toISOString().slice(0, 10).split('-').map(Number);
+	const from = `${year}-${String(month).padStart(2, '0')}-01`;
+	const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate();
+	const to = `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+	return { from, to };
+}
+
 export const load: PageServerLoad = async ({ parent, locals, url }) => {
 	const { activeWorkspace } = await parent();
 	if (!activeWorkspace || !locals.session) redirect(303, '/');
@@ -17,10 +26,15 @@ export const load: PageServerLoad = async ({ parent, locals, url }) => {
 	const accessToken = locals.session.accessToken;
 	const workspaceId = activeWorkspace.id;
 
+	// Sem "from"/"to" na URL (primeira visita) cai no mês atual — evita
+	// carregar o histórico inteiro de transações de cara. Um valor presente
+	// mas vazio (usuário limpou o campo e clicou em Filtrar) já significa
+	// "sem limite" e não deve reativar o default.
+	const defaultRange = currentMonthRange();
 	const filters = {
 		q: url.searchParams.get('q') ?? undefined,
-		from: url.searchParams.get('from') ?? undefined,
-		to: url.searchParams.get('to') ?? undefined,
+		from: url.searchParams.get('from') ?? defaultRange.from,
+		to: url.searchParams.get('to') ?? defaultRange.to,
 		categoryId: url.searchParams.get('categoryId') ?? undefined,
 		accountId: url.searchParams.get('accountId') ?? undefined,
 		cardId: url.searchParams.get('cardId') ?? undefined,
