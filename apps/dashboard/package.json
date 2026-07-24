@@ -46,6 +46,7 @@
 	},
 	"dependencies": {
 		"@finance/shared": "workspace:*",
+		"phosphor-svelte": "^3.1.0",
 		"zod": "^4.4.3"
 	}
 }

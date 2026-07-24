@@ -125,8 +125,8 @@ nenhuma rota).
 
 | # | Tarefa | Status | Depende de |
 |---|---|---|---|
-| M4-01 | [Scaffold do dashboard web + autenticação](in-progress/m4-01-scaffold-dashboard-web.md) | 🟡 Em andamento (código pronto, falta validação manual) | — |
-| M4-02 | [Layout base + workspaces (seletor, membros, convites)](m4-02-layout-workspaces-dashboard.md) | 🔵 Backlog | M4-01 |
+| M4-01 | [Scaffold do dashboard web + autenticação](done/m4-01-scaffold-dashboard-web.md) | 🟢 Concluída (2026-07-24, login validado pelo usuário) | — |
+| M4-02 | [Layout base + workspaces (seletor, membros, convites)](in-progress/m4-02-layout-workspaces-dashboard.md) | 🟡 Em andamento (código pronto, falta validação manual) | M4-01 |
 | M4-03 | [CRUD de bancos, contas e cartões](m4-03-bancos-contas-cartoes-dashboard.md) | 🔵 Backlog | M4-02 |
 | M4-04 | [Transações (listagem, filtros, criar/editar)](m4-04-transacoes-dashboard.md) | 🔵 Backlog | M4-03 |
 | M4-05 | [Faturas por cartão + visão mensal](m4-05-faturas-visao-mensal-dashboard.md) | 🔵 Backlog | M4-04 |

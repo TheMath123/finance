@@ -1,8 +1,9 @@
 # M4-01 — Scaffold do dashboard web + autenticação
 
-**Status:** 🟡 Em andamento — código completo (typecheck, lint e build de
-produção limpos); falta a validação manual do usuário (login ponta a ponta
-contra o backend real).
+**Status:** 🟢 Concluída (2026-07-24) — validada pelo usuário: login ponta a
+ponta contra o backend real funcionando no browser. Cookies de sessão
+renomeados pra `_ta`/`_rr` a pedido do usuário (nomes curtos, não anunciam o
+que carregam).
 
 ## Contexto
 

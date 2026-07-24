@@ -5,8 +5,9 @@ import { dev } from '$app/environment';
 import * as authApi from './auth-api';
 import type { AuthSession, SessionUser } from './auth-api';
 
-const ACCESS_COOKIE = 'access_token';
-const REFRESH_COOKIE = 'refresh_token';
+// Nomes curtos e não-descritivos de propósito — não anunciam o que carregam.
+const ACCESS_COOKIE = '_ta';
+const REFRESH_COOKIE = '_rr';
 
 /** Mesmo TTL do refresh token no backend (30 dias — infra/security/jose-token-service). */
 const REFRESH_MAX_AGE_S = 30 * 24 * 60 * 60;
