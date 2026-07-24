@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Alert, Image, Pressable, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
@@ -25,14 +25,20 @@ export function AttachmentField({
 }) {
   const queryClient = useQueryClient();
   const [editing, setEditing] = useState(false);
-  // Espelha o attachmentKey localmente: quem abre esse form (ex. explore.tsx)
-  // guarda a transação num useState congelado no momento em que o modal abriu,
-  // então invalidar a query da lista não atualiza esse prop — sem isso, a
-  // prévia só aparecia depois de fechar e reabrir o modal.
-  const [attachmentKey, setAttachmentKey] = useState(transaction.attachmentKey);
-  useEffect(() => {
-    setAttachmentKey(transaction.attachmentKey);
-  }, [transaction.attachmentKey]);
+  // Override local por transação: quem abre esse form (ex. explore.tsx) guarda
+  // a transação num useState congelado no momento em que o modal abriu, então
+  // invalidar a query da lista não atualiza esse prop — sem isso, a prévia só
+  // aparecia depois de fechar e reabrir o modal. Derivado no render (nada de
+  // espelhar prop em estado via effect); o id na chave descarta o override se
+  // o componente for reusado pra outra transação.
+  const [override, setOverride] = useState<{
+    transactionId: string;
+    key: string | null;
+  } | null>(null);
+  const attachmentKey =
+    override?.transactionId === transaction.id
+      ? override.key
+      : transaction.attachmentKey;
   const hasAttachment = Boolean(attachmentKey);
 
   const { data: preview } = useQuery({
@@ -58,7 +64,10 @@ export function AttachmentField({
         type: asset.mimeType ?? inferMimeType(asset.uri),
       }),
     onSuccess: (result) => {
-      setAttachmentKey(result.attachmentKey);
+      setOverride({
+        transactionId: transaction.id,
+        key: result.attachmentKey,
+      });
       invalidate();
       setEditing(false);
     },
@@ -76,7 +85,7 @@ export function AttachmentField({
   const remove = useMutation({
     mutationFn: () => attachmentApi.delete(workspaceId, transaction.id),
     onSuccess: () => {
-      setAttachmentKey(null);
+      setOverride({ transactionId: transaction.id, key: null });
       invalidate();
     },
     onError: (err) =>

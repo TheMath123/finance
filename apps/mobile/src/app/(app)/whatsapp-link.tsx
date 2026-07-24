@@ -37,27 +37,27 @@ export default function WhatsAppLinkScreen() {
     return () => clearInterval(tick);
   }, [code]);
 
-  // Enquanto o código está ativo, checa periodicamente se o vínculo já foi confirmado
-  // (o backend confirma sozinho quando o webhook do WhatsApp recebe a mensagem).
+  // Enquanto o código está ativo, checa periodicamente se o vínculo já foi
+  // confirmado (o backend confirma sozinho quando o webhook do WhatsApp recebe
+  // a mensagem). A detecção acontece dentro do próprio callback do poll — o
+  // `refreshUser` devolve o usuário fresco — em vez de um segundo effect
+  // reagindo à mudança de `user.phone` com setState.
   useEffect(() => {
     if (!code) return;
-    pollRef.current = setInterval(() => {
-      refreshUser().catch(() => {});
+    pollRef.current = setInterval(async () => {
+      const refreshed = await refreshUser().catch(() => null);
+      if (refreshed?.phone) {
+        setCode(null);
+        Alert.alert(
+          'WhatsApp vinculado!',
+          `O número ${refreshed.phone} foi vinculado à sua conta.`
+        );
+      }
     }, 5_000);
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);
     };
-  }, [code]);
-
-  useEffect(() => {
-    if (user?.phone && code) {
-      setCode(null);
-      Alert.alert(
-        'WhatsApp vinculado!',
-        `O número ${user.phone} foi vinculado à sua conta.`
-      );
-    }
-  }, [user?.phone]);
+  }, [code, refreshUser]);
 
   const generateCode = async () => {
     setGenerating(true);

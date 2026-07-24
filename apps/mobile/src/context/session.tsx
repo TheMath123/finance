@@ -19,8 +19,12 @@ interface SessionContextValue {
   isLoading: boolean;
   signIn: (session: AuthSession) => Promise<void>;
   signOut: () => Promise<void>;
-  /** Rebusca `/auth/me` e atualiza o usuário em memória (ex.: após verificar e-mail). Não mexe no workspace ativo. */
-  refreshUser: () => Promise<void>;
+  /**
+   * Rebusca `/auth/me` e atualiza o usuário em memória (ex.: após verificar
+   * e-mail). Não mexe no workspace ativo. Retorna o usuário fresco pra quem
+   * precisa reagir ao valor novo no mesmo tique (ex.: poll do vínculo WhatsApp).
+   */
+  refreshUser: () => Promise<AuthSession['user']>;
   /** Troca o workspace ativo (seletor) e persiste a escolha entre reaberturas do app. */
   switchWorkspace: (workspaceId: string) => Promise<void>;
 }
@@ -75,6 +79,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const refreshUser = async () => {
     const me = await authApi.me();
     setUser(me.user);
+    return me.user;
   };
 
   const switchWorkspace = async (id: string) => {

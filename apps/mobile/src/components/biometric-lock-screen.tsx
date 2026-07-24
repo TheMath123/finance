@@ -1,5 +1,5 @@
 import { LockKeyIcon } from 'phosphor-react-native';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { Button } from '@/components/ui/button';
@@ -9,7 +9,8 @@ import { useBiometricLock } from '@/context/biometric-lock';
 /** Tela cheia exibida por cima do app quando travado (M2-12) — não substitui login, só uma trava a mais sobre a sessão. */
 export function BiometricLockScreen() {
   const { unlock } = useBiometricLock();
-  const [authenticating, setAuthenticating] = useState(false);
+  // Começa true porque a tentativa automática dispara já no mount (effect abaixo).
+  const [authenticating, setAuthenticating] = useState(true);
   const [failed, setFailed] = useState(false);
 
   const attempt = async () => {
@@ -23,10 +24,23 @@ export function BiometricLockScreen() {
     }
   };
 
-  // Tenta autenticar assim que a tela aparece — evita exigir um toque extra antes do primeiro prompt.
+  // Tenta autenticar assim que a tela aparece — evita exigir um toque extra
+  // antes do primeiro prompt. Os setState acontecem só depois do await (nunca
+  // sincronamente dentro do effect); o ref garante uma única tentativa
+  // automática mesmo se `unlock` trocar de identidade.
+  const startedRef = useRef(false);
   useEffect(() => {
-    void attempt();
-  }, []);
+    if (startedRef.current) return;
+    startedRef.current = true;
+    (async () => {
+      try {
+        const success = await unlock();
+        if (!success) setFailed(true);
+      } finally {
+        setAuthenticating(false);
+      }
+    })();
+  }, [unlock]);
 
   return (
     <Screen center className="items-center gap-6">
