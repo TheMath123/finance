@@ -16,8 +16,16 @@ export default defineConfig({
 		})
 	],
 	ssr: {
-		// @finance/shared exporta TypeScript puro (exports -> src/index.ts) — sem isso o
-		// runtime SSR tentaria importar .ts direto do node_modules sem transformar.
-		noExternal: ['@finance/shared']
+		noExternal: [
+			// exporta TypeScript puro (exports -> src/index.ts) — sem isso o runtime SSR
+			// tentaria importar .ts direto do node_modules sem transformar.
+			'@finance/shared',
+			// import * as PhosphorIcons from 'phosphor-svelte' (lib/category-icon.ts) importa o
+			// índice inteiro do pacote, que reexporta ~1500 arquivos .svelte — como bare specifier,
+			// o Vite trata o pacote como externo em dev e tenta um import() nativo do Node, que não
+			// entende .svelte (ERR_UNKNOWN_FILE_EXTENSION). Imports diretos por ícone
+			// (phosphor-svelte/lib/XIcon) não têm esse problema, só o import do pacote inteiro.
+			'phosphor-svelte'
+		]
 	}
 });
