@@ -1,5 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
 import { getBank } from '@finance/shared';
+import { useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import {
   ArrowsSplitIcon,
@@ -38,7 +38,8 @@ function SectionHeader({ title, onAdd }: { title: string; onAdd: () => void }) {
       <ThemedText type="smallBold">{title}</ThemedText>
       <Pressable
         onPress={onAdd}
-        className="h-8 w-8 items-center justify-center rounded-full bg-primary/10 active:opacity-70">
+        className="h-8 w-8 items-center justify-center rounded-full bg-primary/10 active:opacity-70"
+      >
         <PlusIcon size={16} color="#2563EB" weight="bold" />
       </Pressable>
     </View>
@@ -60,7 +61,9 @@ function NavRow({
     <Pressable onPress={onPress}>
       <Card className="flex-row items-center justify-between">
         <View className="flex-row items-center gap-3">
-          <View className="h-9 w-9 items-center justify-center rounded-full bg-primary/10">{icon}</View>
+          <View className="h-9 w-9 items-center justify-center rounded-full bg-primary/10">
+            {icon}
+          </View>
           <ThemedText type="smallBold">{label}</ThemedText>
         </View>
         <View className="flex-row items-center gap-2">
@@ -119,14 +122,24 @@ export default function AccountsScreen() {
       <ThemedText type="subtitle">Mais</ThemedText>
 
       <View className="gap-3">
-        <SectionHeader title="Contas" onAdd={() => router.push('/accounts/new')} />
+        <SectionHeader
+          title="Contas"
+          onAdd={() => router.push('/accounts/new')}
+        />
         {loadingAccounts ? (
           <ActivityIndicator />
         ) : accounts && accounts.length > 0 ? (
           accounts.map((account) => (
-            <Pressable key={account.id} onPress={() => router.push(`/accounts/${account.id}`)}>
+            <Pressable
+              key={account.id}
+              onPress={() => router.push(`/accounts/${account.id}`)}
+            >
               <Card
-                className={cn('flex-row items-center justify-between', account.archivedAt && 'opacity-50')}>
+                className={cn(
+                  'flex-row items-center justify-between',
+                  account.archivedAt && 'opacity-50'
+                )}
+              >
                 <View>
                   <View className="flex-row items-center gap-2">
                     <ThemedText type="smallBold">{account.name}</ThemedText>
@@ -140,7 +153,9 @@ export default function AccountsScreen() {
                     {bankName(account.bankCode)}
                   </ThemedText>
                 </View>
-                <ThemedText type="smallBold">{formatCents(account.balance)}</ThemedText>
+                <ThemedText type="smallBold">
+                  {formatCents(account.balance)}
+                </ThemedText>
               </Card>
             </Pressable>
           ))

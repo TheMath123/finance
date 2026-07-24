@@ -1,4 +1,4 @@
-import { apiRequest, apiRequestUpload } from "@/lib/api-client";
+import { apiRequest, apiRequestUpload } from '@/lib/api-client';
 
 export interface PickedFile {
   uri: string;
@@ -10,14 +10,19 @@ export const attachmentApi = {
   upload: (workspaceId: string, transactionId: string, file: PickedFile) =>
     apiRequestUpload<{ attachmentKey: string }>(
       `/workspaces/${workspaceId}/transactions/${transactionId}/attachment`,
-      file,
+      file
     ),
 
   getUrl: (workspaceId: string, transactionId: string) =>
-    apiRequest<{ url: string }>(`/workspaces/${workspaceId}/transactions/${transactionId}/attachment`),
+    apiRequest<{ url: string }>(
+      `/workspaces/${workspaceId}/transactions/${transactionId}/attachment`
+    ),
 
   delete: (workspaceId: string, transactionId: string) =>
-    apiRequest<void>(`/workspaces/${workspaceId}/transactions/${transactionId}/attachment`, {
-      method: "DELETE",
-    }),
+    apiRequest<void>(
+      `/workspaces/${workspaceId}/transactions/${transactionId}/attachment`,
+      {
+        method: 'DELETE',
+      }
+    ),
 };

@@ -1,4 +1,9 @@
-import { useController, type Control, type FieldValues, type Path } from 'react-hook-form';
+import {
+  type Control,
+  type FieldValues,
+  type Path,
+  useController,
+} from 'react-hook-form';
 import { TextInput, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
@@ -17,7 +22,11 @@ export interface MoneyFieldProps<T extends FieldValues> {
  * 2 casas decimais visíveis. O valor do form fica em CENTAVOS (integer),
  * nunca em reais/float — mesma regra de dinheiro do backend.
  */
-export function MoneyField<T extends FieldValues>({ control, name, label }: MoneyFieldProps<T>) {
+export function MoneyField<T extends FieldValues>({
+  control,
+  name,
+  label,
+}: MoneyFieldProps<T>) {
   const { field, fieldState } = useController({ control, name });
   const cents = (field.value as number | undefined) ?? 0;
 
@@ -32,7 +41,9 @@ export function MoneyField<T extends FieldValues>({ control, name, label }: Mone
       <TextInput
         className={cn(
           'rounded-xl border px-4 py-3 text-left text-xl font-semibold dark:text-white',
-          fieldState.error ? 'border-destructive' : 'border-neutral-300 dark:border-neutral-700',
+          fieldState.error
+            ? 'border-destructive'
+            : 'border-neutral-300 dark:border-neutral-700'
         )}
         keyboardType="number-pad"
         value={formatCents(cents)}

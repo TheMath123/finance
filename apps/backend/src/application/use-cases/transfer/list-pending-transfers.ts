@@ -1,4 +1,4 @@
-import type { UseCaseDeps } from "../../deps";
+import type { UseCaseDeps } from '../../deps';
 
 export interface PendingTransferView {
   id: string;
@@ -11,10 +11,12 @@ export interface PendingTransferView {
 
 /** Transferências recebidas aguardando aceite/recusa. */
 export async function listPendingTransfers(
-  deps: Pick<UseCaseDeps, "repos">,
-  actor: { userId: string },
+  deps: Pick<UseCaseDeps, 'repos'>,
+  actor: { userId: string }
 ): Promise<PendingTransferView[]> {
-  const transfers = await deps.repos.interUserTransfer.listPendingForUser(actor.userId);
+  const transfers = await deps.repos.interUserTransfer.listPendingForUser(
+    actor.userId
+  );
   const views: PendingTransferView[] = [];
   for (const transfer of transfers) {
     const sender = await deps.repos.user.findById(transfer.fromUserId);
@@ -24,7 +26,7 @@ export async function listPendingTransfers(
       description: transfer.description,
       expiresAt: transfer.expiresAt,
       createdAt: transfer.createdAt,
-      fromUserName: sender?.name ?? "Usuário",
+      fromUserName: sender?.name ?? 'Usuário',
     });
   }
   return views;

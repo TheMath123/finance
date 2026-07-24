@@ -1,11 +1,11 @@
-import { normalizeDescription } from "../../../domain/services/occurrence-rules";
-import { parseAmountAndRest } from "../../../domain/services/transaction-text-parser";
-import type { UseCaseDeps } from "../../deps";
-import type { CreateTransactionInput } from "./create-transaction";
+import { normalizeDescription } from '../../../domain/services/occurrence-rules';
+import { parseAmountAndRest } from '../../../domain/services/transaction-text-parser';
+import type { UseCaseDeps } from '../../deps';
+import type { CreateTransactionInput } from './create-transaction';
 
 function todayIso(): string {
   const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 }
 
 /**
@@ -16,9 +16,9 @@ function todayIso(): string {
  * Só cobre despesa (o caso comum de "gastei X"); receita fica pra Camada 1.
  */
 export async function parseObviousTransaction(
-  deps: Pick<UseCaseDeps, "repos">,
+  deps: Pick<UseCaseDeps, 'repos'>,
   workspaceId: string,
-  text: string,
+  text: string
 ): Promise<CreateTransactionInput | null> {
   const parsed = parseAmountAndRest(text);
   if (!parsed) return null;
@@ -31,19 +31,37 @@ export async function parseObviousTransaction(
   const restNormalized = normalizeDescription(parsed.rest);
   const restWords = parsed.rest.split(/\s+/);
 
-  const candidates: { kind: "account" | "card"; id: string; wordCount: number }[] = [];
+  const candidates: {
+    kind: 'account' | 'card';
+    id: string;
+    wordCount: number;
+  }[] = [];
   for (const account of accounts) {
     if (account.archivedAt) continue;
     const nameNormalized = normalizeDescription(account.name);
-    if (restNormalized === nameNormalized || restNormalized.endsWith(` ${nameNormalized}`)) {
-      candidates.push({ kind: "account", id: account.id, wordCount: account.name.trim().split(/\s+/).length });
+    if (
+      restNormalized === nameNormalized ||
+      restNormalized.endsWith(` ${nameNormalized}`)
+    ) {
+      candidates.push({
+        kind: 'account',
+        id: account.id,
+        wordCount: account.name.trim().split(/\s+/).length,
+      });
     }
   }
   for (const card of cards) {
     if (card.archivedAt) continue;
     const nameNormalized = normalizeDescription(card.name);
-    if (restNormalized === nameNormalized || restNormalized.endsWith(` ${nameNormalized}`)) {
-      candidates.push({ kind: "card", id: card.id, wordCount: card.name.trim().split(/\s+/).length });
+    if (
+      restNormalized === nameNormalized ||
+      restNormalized.endsWith(` ${nameNormalized}`)
+    ) {
+      candidates.push({
+        kind: 'card',
+        id: card.id,
+        wordCount: card.name.trim().split(/\s+/).length,
+      });
     }
   }
 
@@ -51,23 +69,26 @@ export async function parseObviousTransaction(
   if (candidates.length !== 1) return null;
   const match = candidates[0]!;
 
-  const description = restWords.slice(0, restWords.length - match.wordCount).join(" ").trim();
+  const description = restWords
+    .slice(0, restWords.length - match.wordCount)
+    .join(' ')
+    .trim();
   if (!description) return null;
 
   const categoryId = await deps.repos.transaction.findMostUsedCategory(
     workspaceId,
-    normalizeDescription(description),
+    normalizeDescription(description)
   );
   if (!categoryId) return null;
 
   return {
     description,
     amount: parsed.amountCents,
-    type: "expense",
-    method: match.kind === "card" ? "credit" : "pix",
+    type: 'expense',
+    method: match.kind === 'card' ? 'credit' : 'pix',
     date: todayIso(),
     categoryId,
-    accountId: match.kind === "account" ? match.id : undefined,
-    cardId: match.kind === "card" ? match.id : undefined,
+    accountId: match.kind === 'account' ? match.id : undefined,
+    cardId: match.kind === 'card' ? match.id : undefined,
   };
 }

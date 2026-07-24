@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from 'zod';
 
 /** Envs de e-mail (Resend via SMTP), validadas no primeiro uso do transport. */
 const envSchema = z.object({

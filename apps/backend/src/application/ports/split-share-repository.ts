@@ -1,5 +1,5 @@
-import type { SplitShareStatus } from "@finance/shared";
-import type { SplitShare } from "../../domain/entities/expense-split";
+import type { SplitShareStatus } from '@finance/shared';
+import type { SplitShare } from '../../domain/entities/expense-split';
 
 export interface CreateSplitShareData {
   splitId: string;
@@ -37,7 +37,7 @@ export interface SplitShareRepository {
     id: string,
     fromStatus: SplitShareStatus,
     toStatus: SplitShareStatus,
-    reimbursementTransactionId?: string,
+    reimbursementTransactionId?: string
   ): Promise<SplitShare | undefined>;
   /** O que o usuário deve — participante (platform user) em shares ainda não confirmadas. */
   listOwedByUser(userId: string): Promise<OwedByMeView[]>;

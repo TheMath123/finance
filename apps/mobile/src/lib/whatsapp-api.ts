@@ -1,4 +1,4 @@
-import { apiRequest } from "@/lib/api-client";
+import { apiRequest } from '@/lib/api-client';
 
 export interface WhatsAppLinkStarted {
   code: string;
@@ -6,7 +6,8 @@ export interface WhatsAppLinkStarted {
 }
 
 export const whatsappApi = {
-  startLink: () => apiRequest<WhatsAppLinkStarted>("/whatsapp/link/start", { method: "POST" }),
+  startLink: () =>
+    apiRequest<WhatsAppLinkStarted>('/whatsapp/link/start', { method: 'POST' }),
 
-  revokeLink: () => apiRequest<void>("/whatsapp/link", { method: "DELETE" }),
+  revokeLink: () => apiRequest<void>('/whatsapp/link', { method: 'DELETE' }),
 };

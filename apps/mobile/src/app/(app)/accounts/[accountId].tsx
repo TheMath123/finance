@@ -1,6 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
-import { ArchiveIcon, ArrowCounterClockwiseIcon, ArrowLeftIcon, TrashIcon } from 'phosphor-react-native';
+import {
+  ArchiveIcon,
+  ArrowCounterClockwiseIcon,
+  ArrowLeftIcon,
+  TrashIcon,
+} from 'phosphor-react-native';
 import { useEffect } from 'react';
 import { ActivityIndicator, Alert, Pressable, View } from 'react-native';
 
@@ -39,7 +44,10 @@ export default function EditAccountScreen() {
         : accountsApi.archive(workspaceId!, accountId!),
     onSuccess: invalidateAccounts,
     onError: (error) => {
-      Alert.alert('Não foi possível', error instanceof ApiError ? error.message : 'Erro inesperado');
+      Alert.alert(
+        'Não foi possível',
+        error instanceof ApiError ? error.message : 'Erro inesperado'
+      );
     },
   });
 
@@ -50,14 +58,21 @@ export default function EditAccountScreen() {
       router.back();
     },
     onError: (error) => {
-      Alert.alert('Não foi possível excluir', error instanceof ApiError ? error.message : 'Erro inesperado');
+      Alert.alert(
+        'Não foi possível excluir',
+        error instanceof ApiError ? error.message : 'Erro inesperado'
+      );
     },
   });
 
   const confirmDelete = () => {
     Alert.alert('Excluir conta', `Deseja excluir "${account?.name}"?`, [
       { text: 'Cancelar', style: 'cancel' },
-      { text: 'Excluir', style: 'destructive', onPress: () => deleteMutation.mutate() },
+      {
+        text: 'Excluir',
+        style: 'destructive',
+        onPress: () => deleteMutation.mutate(),
+      },
     ]);
   };
 
@@ -65,7 +80,11 @@ export default function EditAccountScreen() {
     <Screen className="gap-6">
       <View className="flex-row items-center justify-between">
         <View className="flex-row items-center gap-3">
-          <Pressable onPress={() => router.back()} hitSlop={8} className="active:opacity-60">
+          <Pressable
+            onPress={() => router.back()}
+            hitSlop={8}
+            className="active:opacity-60"
+          >
             <ArrowLeftIcon size={22} />
           </Pressable>
           <ThemedText type="subtitle">Editar conta</ThemedText>
@@ -75,7 +94,8 @@ export default function EditAccountScreen() {
             <Pressable
               onPress={() => archiveMutation.mutate()}
               disabled={archiveMutation.isPending}
-              className="h-8 w-8 items-center justify-center rounded-full bg-primary/10 active:opacity-70">
+              className="h-8 w-8 items-center justify-center rounded-full bg-primary/10 active:opacity-70"
+            >
               {account.archivedAt ? (
                 <ArrowCounterClockwiseIcon size={16} color="#2563EB" />
               ) : (
@@ -85,7 +105,8 @@ export default function EditAccountScreen() {
             <Pressable
               onPress={confirmDelete}
               disabled={deleteMutation.isPending}
-              className="h-8 w-8 items-center justify-center rounded-full bg-destructive/10 active:opacity-70">
+              className="h-8 w-8 items-center justify-center rounded-full bg-destructive/10 active:opacity-70"
+            >
               <TrashIcon size={16} color="#DC2626" />
             </Pressable>
           </View>

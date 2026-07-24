@@ -1,9 +1,9 @@
-import { left, right, type Either } from "@finance/shared";
-import type { AccountType } from "@finance/shared";
-import type { BankAccount } from "../../../domain/entities/bank-account";
-import type { Actor, UseCaseDeps } from "../../deps";
-import { findOrCreateBank } from "../bank/find-or-create-bank";
-import type { AccountError } from "./errors";
+import type { AccountType } from '@finance/shared';
+import { type Either, left, right } from '@finance/shared';
+import type { BankAccount } from '../../../domain/entities/bank-account';
+import type { Actor, UseCaseDeps } from '../../deps';
+import { findOrCreateBank } from '../bank/find-or-create-bank';
+import type { AccountError } from './errors';
 
 export interface CreateAccountInput {
   name: string;
@@ -16,10 +16,14 @@ export interface CreateAccountInput {
 export async function createAccount(
   deps: UseCaseDeps,
   actor: Actor,
-  input: CreateAccountInput,
+  input: CreateAccountInput
 ): Promise<Either<AccountError, BankAccount>> {
   const created = await deps.uow.run(async (repos) => {
-    const bank = await findOrCreateBank(repos, actor.workspaceId, input.bankCode);
+    const bank = await findOrCreateBank(
+      repos,
+      actor.workspaceId,
+      input.bankCode
+    );
     if (!bank.ok) return bank;
 
     const account = await repos.account.create(actor.workspaceId, {
@@ -31,12 +35,12 @@ export async function createAccount(
     await repos.audit.record({
       workspaceId: actor.workspaceId,
       userId: actor.userId,
-      action: "create",
-      entity: "bank_account",
+      action: 'create',
+      entity: 'bank_account',
       entityId: account.id,
     });
     return right(account);
   });
-  if (!created.ok) return left("invalid_bank_code");
+  if (!created.ok) return left('invalid_bank_code');
   return created;
 }

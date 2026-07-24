@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { useSession } from '@/context/session';
 import { ApiError } from '@/lib/api-client';
 import { authApi } from '@/lib/auth-api';
-import { verifyEmailSchema, type VerifyEmailInput } from '@/lib/schemas/auth';
+import { type VerifyEmailInput, verifyEmailSchema } from '@/lib/schemas/auth';
 
 export function VerifyEmailForm() {
   const { refreshUser } = useSession();
@@ -49,11 +49,16 @@ export function VerifyEmailForm() {
 
       {mutation.isError && (
         <ThemedText type="small" style={{ color: '#DC2626' }}>
-          {mutation.error instanceof ApiError ? mutation.error.message : 'Erro inesperado'}
+          {mutation.error instanceof ApiError
+            ? mutation.error.message
+            : 'Erro inesperado'}
         </ThemedText>
       )}
 
-      <Button loading={mutation.isPending} onPress={handleSubmit((input) => mutation.mutate(input))}>
+      <Button
+        loading={mutation.isPending}
+        onPress={handleSubmit((input) => mutation.mutate(input))}
+      >
         Verificar e-mail
       </Button>
     </View>

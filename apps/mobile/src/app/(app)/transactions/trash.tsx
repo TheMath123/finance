@@ -1,6 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import { ArrowCounterClockwiseIcon, ArrowLeftIcon, TrashIcon } from 'phosphor-react-native';
+import {
+  ArrowCounterClockwiseIcon,
+  ArrowLeftIcon,
+  TrashIcon,
+} from 'phosphor-react-native';
 import { ActivityIndicator, Pressable, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
@@ -9,12 +13,18 @@ import { Card } from '@/components/ui/card';
 import { Screen } from '@/components/ui/screen';
 import { useSession } from '@/context/session';
 import { formatCents } from '@/lib/money';
-import { transactionsApi, type Transaction } from '@/lib/transactions-api';
+import { type Transaction, transactionsApi } from '@/lib/transactions-api';
 
 const TRASH_QUERY_KEY = (workspaceId: string | null | undefined) =>
   ['transactions', workspaceId, { deletedOnly: true }] as const;
 
-function TrashRow({ transaction, workspaceId }: { transaction: Transaction; workspaceId: string }) {
+function TrashRow({
+  transaction,
+  workspaceId,
+}: {
+  transaction: Transaction;
+  workspaceId: string;
+}) {
   const queryClient = useQueryClient();
   const isExpense = transaction.type === 'expense';
 
@@ -22,7 +32,9 @@ function TrashRow({ transaction, workspaceId }: { transaction: Transaction; work
     mutationFn: () => transactionsApi.restore(workspaceId, transaction.id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: TRASH_QUERY_KEY(workspaceId) });
-      queryClient.invalidateQueries({ queryKey: ['transactions', workspaceId] });
+      queryClient.invalidateQueries({
+        queryKey: ['transactions', workspaceId],
+      });
       queryClient.invalidateQueries({ queryKey: ['summary', workspaceId] });
     },
   });
@@ -37,7 +49,10 @@ function TrashRow({ transaction, workspaceId }: { transaction: Transaction; work
           <ThemedText type="small" themeColor="textSecondary">
             {transaction.date.split('-').reverse().join('/')}
           </ThemedText>
-          <ThemedText type="smallBold" style={{ color: isExpense ? '#DC2626' : '#16A34A' }}>
+          <ThemedText
+            type="smallBold"
+            style={{ color: isExpense ? '#DC2626' : '#16A34A' }}
+          >
             {isExpense ? '-' : '+'}
             {formatCents(transaction.amount)}
           </ThemedText>
@@ -48,7 +63,8 @@ function TrashRow({ transaction, workspaceId }: { transaction: Transaction; work
         variant="secondary"
         loading={restoreMutation.isPending}
         icon={<ArrowCounterClockwiseIcon size={16} weight="bold" />}
-        onPress={() => restoreMutation.mutate()}>
+        onPress={() => restoreMutation.mutate()}
+      >
         Restaurar
       </Button>
     </Card>
@@ -60,14 +76,19 @@ export default function TransactionsTrashScreen() {
 
   const { data: transactions, isLoading } = useQuery({
     queryKey: TRASH_QUERY_KEY(workspaceId),
-    queryFn: () => transactionsApi.list(workspaceId!, { deletedOnly: true, limit: 50 }),
+    queryFn: () =>
+      transactionsApi.list(workspaceId!, { deletedOnly: true, limit: 50 }),
     enabled: Boolean(workspaceId),
   });
 
   return (
     <Screen className="gap-6 pb-28">
       <View className="flex-row items-center gap-3">
-        <Pressable onPress={() => router.back()} hitSlop={8} className="active:opacity-60">
+        <Pressable
+          onPress={() => router.back()}
+          hitSlop={8}
+          className="active:opacity-60"
+        >
           <ArrowLeftIcon size={22} />
         </Pressable>
         <ThemedText type="subtitle">Lixeira</ThemedText>
@@ -78,7 +99,11 @@ export default function TransactionsTrashScreen() {
       ) : transactions && transactions.length > 0 ? (
         <View className="gap-2">
           {transactions.map((transaction) => (
-            <TrashRow key={transaction.id} transaction={transaction} workspaceId={workspaceId!} />
+            <TrashRow
+              key={transaction.id}
+              transaction={transaction}
+              workspaceId={workspaceId!}
+            />
           ))}
         </View>
       ) : (

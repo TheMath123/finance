@@ -1,25 +1,25 @@
-import React from "react";
-import { View, TextInput, useColorScheme, Platform } from "react-native";
-import { cva, type VariantProps } from "class-variance-authority";
-import { cn } from "../../lib/cn";
+import { cva, type VariantProps } from 'class-variance-authority';
+import React from 'react';
+import { Platform, TextInput, useColorScheme, View } from 'react-native';
+import { cn } from '../../lib/cn';
 
 const inputVariants = cva(
-  "rounded-md border py-2 text-foreground placeholder:text-muted-foreground",
+  'rounded-md border py-2 text-foreground placeholder:text-muted-foreground',
   {
     variants: {
       variant: {
-        default: "border-input bg-background p-2",
-        ghost: "border-transparent bg-transparent p-2",
+        default: 'border-input bg-background p-2',
+        ghost: 'border-transparent bg-transparent p-2',
       },
       size: {
-        sm: "min-h-9 px-3 text-sm",
-        md: "min-h-12 px-4 text-base",
-        lg: "min-h-14 px-5 text-lg",
+        sm: 'min-h-9 px-3 text-sm',
+        md: 'min-h-12 px-4 text-base',
+        lg: 'min-h-14 px-5 text-lg',
       },
     },
     defaultVariants: {
-      variant: "default",
-      size: "md",
+      variant: 'default',
+      size: 'md',
     },
   }
 );
@@ -40,16 +40,16 @@ export const Input = React.forwardRef<
   ref
 ) {
   const hasIcons = !!(leadingIcon || trailingIcon);
-  const dark = useColorScheme() === "dark";
-  const caret = dark ? "#fafafa" : "#18181b";
+  const dark = useColorScheme() === 'dark';
+  const caret = dark ? '#fafafa' : '#18181b';
 
   if (!hasIcons) {
     return (
       <TextInput
         ref={ref}
         className={cn(inputVariants({ variant, size }), className)}
-        placeholderTextColor={dark ? "#a1a1aa" : "#71717a"}
-        keyboardAppearance={dark ? "dark" : "light"}
+        placeholderTextColor={dark ? '#a1a1aa' : '#71717a'}
+        keyboardAppearance={dark ? 'dark' : 'light'}
         selectionColor={caret}
         cursorColor={caret}
         {...props}
@@ -60,7 +60,7 @@ export const Input = React.forwardRef<
   return (
     <View
       className={cn(
-        "flex-row items-center",
+        'flex-row items-center',
         inputVariants({ variant, size }),
         className
       )}
@@ -70,9 +70,12 @@ export const Input = React.forwardRef<
         ref={ref}
         // text-base sets lineHeight which mis-centers the cursor on iOS.
         // Keep it on Android so the input matches the variant font size.
-        className={cn("flex-1 text-foreground p-0", Platform.OS !== "ios" && "text-base")}
-        placeholderTextColor={dark ? "#a1a1aa" : "#71717a"}
-        keyboardAppearance={dark ? "dark" : "light"}
+        className={cn(
+          'flex-1 text-foreground p-0',
+          Platform.OS !== 'ios' && 'text-base'
+        )}
+        placeholderTextColor={dark ? '#a1a1aa' : '#71717a'}
+        keyboardAppearance={dark ? 'dark' : 'light'}
         selectionColor={caret}
         cursorColor={caret}
         {...props}

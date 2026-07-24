@@ -1,4 +1,4 @@
-import type { SplitShareStatus } from "@finance/shared";
+import type { SplitShareStatus } from '@finance/shared';
 
 export interface ExpenseSplit {
   id: string;

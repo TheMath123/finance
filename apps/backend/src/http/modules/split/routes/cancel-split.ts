@@ -1,14 +1,14 @@
-import { Elysia } from "elysia";
-import { cancelSplit } from "../../../../application/use-cases/split";
-import type { AppDeps } from "../../../deps";
-import { fail, respond } from "../../../http-error";
-import { requireAuthenticated } from "../../../guards";
-import { validateParams } from "../../../validate";
-import { splitParamsSchema } from "../schemas";
-import { SPLIT_ERRORS } from "../errors";
+import { Elysia } from 'elysia';
+import { cancelSplit } from '../../../../application/use-cases/split';
+import type { AppDeps } from '../../../deps';
+import { requireAuthenticated } from '../../../guards';
+import { fail, respond } from '../../../http-error';
+import { validateParams } from '../../../validate';
+import { SPLIT_ERRORS } from '../errors';
+import { splitParamsSchema } from '../schemas';
 
 export const cancelSplitRoute = (deps: AppDeps) =>
-  new Elysia().post("/splits/:id/cancel", async ({ request, params, set }) => {
+  new Elysia().post('/splits/:id/cancel', async ({ request, params, set }) => {
     const p = validateParams(splitParamsSchema, params);
     if (!p.ok) return fail(set, p.error);
     const auth = await requireAuthenticated(deps, request);

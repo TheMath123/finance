@@ -1,30 +1,32 @@
-import React, { useState } from "react";
-import { View, TextInput, Pressable, Text, useColorScheme } from "react-native";
-import { cva, type VariantProps } from "class-variance-authority";
-import { cn } from "../../lib/cn";
-import { EyeIcon, EyeSlashIcon } from "phosphor-react-native";
+import { cva, type VariantProps } from 'class-variance-authority';
+import { EyeIcon, EyeSlashIcon } from 'phosphor-react-native';
+import React, { useState } from 'react';
+import { Pressable, Text, TextInput, useColorScheme, View } from 'react-native';
+import { cn } from '../../lib/cn';
 
 const passwordVariants = cva(
-  "flex-row items-center rounded-md border py-2 text-foreground",
+  'flex-row items-center rounded-md border py-2 text-foreground',
   {
     variants: {
       variant: {
-        default: "border-input bg-background",
-        ghost: "border-transparent bg-transparent",
+        default: 'border-input bg-background',
+        ghost: 'border-transparent bg-transparent',
       },
       size: {
-        sm: "min-h-9 px-3",
-        md: "min-h-12 px-4",
-        lg: "min-h-14 px-5",
+        sm: 'min-h-9 px-3',
+        md: 'min-h-12 px-4',
+        lg: 'min-h-14 px-5',
       },
     },
-    defaultVariants: { variant: "default", size: "md" },
-  },
+    defaultVariants: { variant: 'default', size: 'md' },
+  }
 );
 
 export interface PasswordInputProps
-  extends
-    Omit<React.ComponentPropsWithoutRef<typeof TextInput>, "secureTextEntry">,
+  extends Omit<
+      React.ComponentPropsWithoutRef<typeof TextInput>,
+      'secureTextEntry'
+    >,
     VariantProps<typeof passwordVariants> {
   className?: string;
   showStrength?: boolean;
@@ -40,12 +42,12 @@ function getStrength(value: string): number {
 }
 
 const strengthColors = [
-  "bg-destructive",
-  "bg-orange-500",
-  "bg-yellow-500",
-  "bg-green-500",
+  'bg-destructive',
+  'bg-orange-500',
+  'bg-yellow-500',
+  'bg-green-500',
 ];
-const strengthLabels = ["Weak", "Fair", "Good", "Strong"];
+const strengthLabels = ['Weak', 'Fair', 'Good', 'Strong'];
 
 export const PasswordInput = React.forwardRef<
   React.ElementRef<typeof TextInput>,
@@ -55,10 +57,10 @@ export const PasswordInput = React.forwardRef<
   ref
 ) {
   const [visible, setVisible] = useState(false);
-  const [value, setValue] = useState("");
+  const [value, setValue] = useState('');
   const strength = getStrength(value);
-  const dark = useColorScheme() === "dark";
-  const caret = dark ? "#fafafa" : "#18181b";
+  const dark = useColorScheme() === 'dark';
+  const caret = dark ? '#fafafa' : '#18181b';
 
   return (
     <View className="gap-2">
@@ -66,8 +68,8 @@ export const PasswordInput = React.forwardRef<
         <TextInput
           ref={ref}
           className="flex-1 text-foreground p-0 text-base"
-          placeholderTextColor={dark ? "#a1a1aa" : "#71717a"}
-          keyboardAppearance={dark ? "dark" : "light"}
+          placeholderTextColor={dark ? '#a1a1aa' : '#71717a'}
+          keyboardAppearance={dark ? 'dark' : 'light'}
           selectionColor={caret}
           cursorColor={caret}
           secureTextEntry={!visible}
@@ -78,7 +80,13 @@ export const PasswordInput = React.forwardRef<
           accessibilityLabel="Password"
           {...props}
         />
-        <Pressable onPress={() => setVisible(!visible)} accessible={true} accessibilityRole="button" accessibilityLabel={visible ? "Hide password" : "Show password"} className="ms-2 min-h-8 min-w-8 items-center justify-center">
+        <Pressable
+          onPress={() => setVisible(!visible)}
+          accessible={true}
+          accessibilityRole="button"
+          accessibilityLabel={visible ? 'Hide password' : 'Show password'}
+          className="ms-2 min-h-8 min-w-8 items-center justify-center"
+        >
           {visible ? (
             <EyeSlashIcon size={20} color="#71717a" />
           ) : (
@@ -93,14 +101,14 @@ export const PasswordInput = React.forwardRef<
               <View
                 key={i}
                 className={cn(
-                  "flex-1 h-1 rounded-full",
-                  i < strength ? strengthColors[strength - 1] : "bg-muted",
+                  'flex-1 h-1 rounded-full',
+                  i < strength ? strengthColors[strength - 1] : 'bg-muted'
                 )}
               />
             ))}
           </View>
           <Text className="text-xs text-muted-foreground">
-            {strengthLabels[strength - 1] ?? ""}
+            {strengthLabels[strength - 1] ?? ''}
           </Text>
         </View>
       )}

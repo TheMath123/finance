@@ -1,5 +1,10 @@
-import { useController, type Control, type FieldValues, type Path } from 'react-hook-form';
-import { View, type TextInputProps } from 'react-native';
+import {
+  type Control,
+  type FieldValues,
+  type Path,
+  useController,
+} from 'react-hook-form';
+import { type TextInputProps, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { Input } from '@/components/ui/input';

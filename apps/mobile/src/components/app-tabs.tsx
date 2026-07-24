@@ -1,8 +1,21 @@
 import { BlurView } from 'expo-blur';
 import type { Href } from 'expo-router';
-import { Tabs, TabList, TabTrigger, TabSlot, TabTriggerSlotProps, TabListProps } from 'expo-router/ui';
-import { BellIcon, HouseIcon, ReceiptIcon, SquaresFourIcon, type IconProps } from 'phosphor-react-native';
-import { type ComponentType } from 'react';
+import {
+  TabList,
+  type TabListProps,
+  TabSlot,
+  Tabs,
+  TabTrigger,
+  type TabTriggerSlotProps,
+} from 'expo-router/ui';
+import {
+  BellIcon,
+  HouseIcon,
+  type IconProps,
+  ReceiptIcon,
+  SquaresFourIcon,
+} from 'phosphor-react-native';
+import type { ComponentType } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -36,7 +49,11 @@ export default function AppTabs() {
   );
 }
 
-function TabButton({ isFocused, icon: Icon, ...props }: TabTriggerSlotProps & { icon: ComponentType<IconProps> }) {
+function TabButton({
+  isFocused,
+  icon: Icon,
+  ...props
+}: TabTriggerSlotProps & { icon: ComponentType<IconProps> }) {
   const theme = useTheme();
 
   return (
@@ -44,10 +61,20 @@ function TabButton({ isFocused, icon: Icon, ...props }: TabTriggerSlotProps & { 
       {...props}
       // TabTrigger (asChild) injeta style={flexDirection:'row', justifyContent:'space-between'}
       // por padrão — sobrepõe o className do NativeWind, então precisa ser cancelado aqui.
-      style={{ height: '100%', width: 42, alignItems: 'center', justifyContent: 'center' }}
+      style={{
+        height: '100%',
+        width: 42,
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
       className={cn('rounded-lg active:opacity-70', isFocused && 'bg-primary')}
-      android_ripple={{ color: 'rgba(0,0,0,0.1)', borderless: false }}>
-      <Icon color={isFocused ? '#FFFFFF' : theme.textSecondary} size={16} weight={isFocused ? 'fill' : 'regular'} />
+      android_ripple={{ color: 'rgba(0,0,0,0.1)', borderless: false }}
+    >
+      <Icon
+        color={isFocused ? '#FFFFFF' : theme.textSecondary}
+        size={16}
+        weight={isFocused ? 'fill' : 'regular'}
+      />
     </Pressable>
   );
 }
@@ -70,7 +97,8 @@ function CustomTabList(props: TabListProps) {
         alignItems: 'center',
         justifyContent: 'center',
         padding: 16,
-      }}>
+      }}
+    >
       <View className="overflow-hidden rounded-lg" style={{ height: 58 }}>
         {/*
           expo-blur só faz blur de verdade no iOS — no Android (mesmo com blurMethod setado,
@@ -79,8 +107,15 @@ function CustomTabList(props: TabListProps) {
           Deixando sem blurMethod (default 'none') pra não fingir um efeito que não é garantido: o
           tint mais forte abaixo (bg-primary/20) é a aproximação honesta pro Android.
         */}
-        <BlurView intensity={30} tint={dark ? 'dark' : 'light'} style={StyleSheet.absoluteFill} />
-        <View className="flex-row items-center gap-4 bg-primary/20 p-2" style={{ height: 58 }}>
+        <BlurView
+          intensity={30}
+          tint={dark ? 'dark' : 'light'}
+          style={StyleSheet.absoluteFill}
+        />
+        <View
+          className="flex-row items-center gap-4 bg-primary/20 p-2"
+          style={{ height: 58 }}
+        >
           {props.children}
         </View>
       </View>

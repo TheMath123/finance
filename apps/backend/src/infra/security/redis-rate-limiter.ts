@@ -1,5 +1,5 @@
-import { Redis } from "ioredis";
-import type { RateLimiter } from "../../application/ports/rate-limiter";
+import { Redis } from 'ioredis';
+import type { RateLimiter } from '../../application/ports/rate-limiter';
 
 /**
  * Rate limiting via Redis — janela deslizante com sorted set (ZADD + ZREMRANGEBYSCORE

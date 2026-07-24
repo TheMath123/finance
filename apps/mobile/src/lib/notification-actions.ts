@@ -36,13 +36,17 @@ const ACTION_HANDLERS: Record<string, ActionHandler> = {
 /** Sem toast pra reportar falha aqui (a ação pode rodar sem nenhuma tela visível) — se der erro, o item continua pendente e o usuário resolve normalmente pela lista. */
 export async function handleNotificationAction(
   actionIdentifier: string,
-  data: Record<string, unknown> | undefined,
+  data: Record<string, unknown> | undefined
 ): Promise<void> {
   const handler = ACTION_HANDLERS[actionIdentifier];
   if (!handler || !data) return;
   try {
     await handler(data);
   } catch (error) {
-    console.warn('[notifications] falha ao executar ação rápida', actionIdentifier, error);
+    console.warn(
+      '[notifications] falha ao executar ação rápida',
+      actionIdentifier,
+      error
+    );
   }
 }

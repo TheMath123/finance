@@ -1,9 +1,9 @@
-import type { RecurrenceFrequency, TransactionType } from "@finance/shared";
+import type { RecurrenceFrequency, TransactionType } from '@finance/shared';
 
-import { apiRequest } from "@/lib/api-client";
+import { apiRequest } from '@/lib/api-client';
 
 /** Método de recorrência — transferência recorrente fica fora do M1 (sem conta destino). */
-export type RecurringMethod = "pix" | "debit" | "cash" | "credit";
+export type RecurringMethod = 'pix' | 'debit' | 'cash' | 'credit';
 
 export interface RecurringTransaction {
   id: string;
@@ -64,29 +64,36 @@ export const recurringApi = {
 
   create: (workspaceId: string, input: CreateRecurringInput) =>
     apiRequest<RecurringTransaction>(`/workspaces/${workspaceId}/recurring`, {
-      method: "POST",
+      method: 'POST',
       body: input,
     }),
 
   listPending: (workspaceId: string, year: number, month: number) =>
     apiRequest<PendingOccurrence[]>(
-      `/workspaces/${workspaceId}/recurring/pending?year=${year}&month=${month}`,
+      `/workspaces/${workspaceId}/recurring/pending?year=${year}&month=${month}`
     ),
 
   confirmOccurrence: (workspaceId: string, recurringId: string, date: string) =>
     apiRequest(`/workspaces/${workspaceId}/recurring/${recurringId}/confirm`, {
-      method: "POST",
+      method: 'POST',
       body: { date },
     }),
 
-  update: (workspaceId: string, recurringId: string, input: UpdateRecurringInput) =>
-    apiRequest<RecurringTransaction>(`/workspaces/${workspaceId}/recurring/${recurringId}`, {
-      method: "PATCH",
-      body: input,
-    }),
+  update: (
+    workspaceId: string,
+    recurringId: string,
+    input: UpdateRecurringInput
+  ) =>
+    apiRequest<RecurringTransaction>(
+      `/workspaces/${workspaceId}/recurring/${recurringId}`,
+      {
+        method: 'PATCH',
+        body: input,
+      }
+    ),
 
   delete: (workspaceId: string, recurringId: string) =>
     apiRequest<void>(`/workspaces/${workspaceId}/recurring/${recurringId}`, {
-      method: "DELETE",
+      method: 'DELETE',
     }),
 };

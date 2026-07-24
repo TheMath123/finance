@@ -1,11 +1,20 @@
-import { Elysia } from "elysia";
-import type { AppDeps } from "../../../deps";
-import { listNotificationsRoute } from "./list-notifications";
-import { markNotificationReadRoute } from "./mark-read";
-import { archiveNotificationRoute, unarchiveNotificationRoute } from "./archive-notification";
-import { listNotificationPreferencesRoute, updateNotificationPreferenceRoute } from "./preferences";
-import { registerPushTokenRoute, unregisterPushTokenRoute } from "./push-tokens";
-import { notificationStreamRoute } from "./stream";
+import { Elysia } from 'elysia';
+import type { AppDeps } from '../../../deps';
+import {
+  archiveNotificationRoute,
+  unarchiveNotificationRoute,
+} from './archive-notification';
+import { listNotificationsRoute } from './list-notifications';
+import { markNotificationReadRoute } from './mark-read';
+import {
+  listNotificationPreferencesRoute,
+  updateNotificationPreferenceRoute,
+} from './preferences';
+import {
+  registerPushTokenRoute,
+  unregisterPushTokenRoute,
+} from './push-tokens';
+import { notificationStreamRoute } from './stream';
 
 export function notificationRoutes(deps: AppDeps) {
   return new Elysia()

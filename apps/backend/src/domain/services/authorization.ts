@@ -1,4 +1,4 @@
-import type { WorkspaceRole } from "@finance/shared";
+import type { WorkspaceRole } from '@finance/shared';
 
 /** owner > admin > member > viewer (spec: autorização por workspace). */
 const ROLE_RANK: Record<WorkspaceRole, number> = {

@@ -1,11 +1,14 @@
-import type { NotificationType } from "@finance/shared";
-import { effectiveStatus } from "../../../domain/services/invoice-rules";
-import { occurrencesInMonth } from "../../../domain/services/occurrence-rules";
-import type { Actor, UseCaseDeps } from "../../deps";
-import { confirmOccurrence } from "../recurring/confirm-occurrence";
-import { createNotification } from "./create-notification";
+import type { NotificationType } from '@finance/shared';
+import { effectiveStatus } from '../../../domain/services/invoice-rules';
+import { occurrencesInMonth } from '../../../domain/services/occurrence-rules';
+import type { Actor, UseCaseDeps } from '../../deps';
+import { confirmOccurrence } from '../recurring/confirm-occurrence';
+import { createNotification } from './create-notification';
 
-type SweepDeps = Pick<UseCaseDeps, "repos" | "dispatch" | "uow" | "notificationBus">;
+type SweepDeps = Pick<
+  UseCaseDeps,
+  'repos' | 'dispatch' | 'uow' | 'notificationBus'
+>;
 
 function daysInMonth(year: number, month: number): number {
   return new Date(year, month, 0).getDate();
@@ -13,7 +16,7 @@ function daysInMonth(year: number, month: number): number {
 
 function todayIso(): string {
   const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 }
 
 async function notifyWorkspaceMembers(
@@ -23,11 +26,15 @@ async function notifyWorkspaceMembers(
   title: string,
   body: string,
   data: Record<string, unknown>,
-  entityKey: string,
+  entityKey: string
 ): Promise<void> {
   const members = await deps.repos.workspace.listMembers(workspaceId);
   for (const member of members) {
-    const already = await deps.repos.notification.existsForEntity(member.userId, type, entityKey);
+    const already = await deps.repos.notification.existsForEntity(
+      member.userId,
+      type,
+      entityKey
+    );
     if (already) continue;
     await createNotification(deps, {
       userId: member.userId,
@@ -45,16 +52,16 @@ async function sweepInvoiceClosed(deps: SweepDeps): Promise<void> {
   const rows = await deps.repos.invoice.listAllOpen();
   for (const { invoice, closingDay, cardName } of rows) {
     const status = effectiveStatus(invoice, closingDay);
-    if (status !== "closed") continue;
+    if (status !== 'closed') continue;
     await deps.repos.invoice.setStatus(invoice.id, status);
     await notifyWorkspaceMembers(
       deps,
       invoice.workspaceId,
-      "invoice_closed",
-      "Fatura fechou",
+      'invoice_closed',
+      'Fatura fechou',
       `A fatura do cartão ${cardName} fechou.`,
       { invoiceId: invoice.id, cardId: invoice.cardId },
-      invoice.id,
+      invoice.id
     );
   }
 }
@@ -64,17 +71,24 @@ async function sweepInvoiceDue(deps: SweepDeps): Promise<void> {
   const rows = await deps.repos.invoice.listAllClosedUnpaid();
   const now = new Date();
   for (const { invoice, dueDay, cardName } of rows) {
-    if (invoice.yearReference !== now.getFullYear() || invoice.monthReference !== now.getMonth() + 1) continue;
-    const clampedDue = Math.min(dueDay, daysInMonth(invoice.yearReference, invoice.monthReference));
+    if (
+      invoice.yearReference !== now.getFullYear() ||
+      invoice.monthReference !== now.getMonth() + 1
+    )
+      continue;
+    const clampedDue = Math.min(
+      dueDay,
+      daysInMonth(invoice.yearReference, invoice.monthReference)
+    );
     if (now.getDate() !== clampedDue) continue;
     await notifyWorkspaceMembers(
       deps,
       invoice.workspaceId,
-      "invoice_due",
-      "Fatura vence hoje",
+      'invoice_due',
+      'Fatura vence hoje',
       `A fatura do cartão ${cardName} vence hoje.`,
       { invoiceId: invoice.id, cardId: invoice.cardId },
-      `${invoice.id}:due`,
+      `${invoice.id}:due`
     );
   }
 }
@@ -93,16 +107,24 @@ async function sweepRecurringAutoLaunch(deps: SweepDeps): Promise<void> {
   if (rules.length === 0) return;
 
   const today = todayIso();
-  const [year, month] = today.split("-").map(Number) as [number, number];
+  const [year, month] = today.split('-').map(Number) as [number, number];
 
-  const confirmed = await deps.repos.transaction.confirmedOccurrenceKeys(rules.map((r) => r.id));
-  const confirmedKeys = new Set(confirmed.map((c) => `${c.recurringId}:${c.date}`));
+  const confirmed = await deps.repos.transaction.confirmedOccurrenceKeys(
+    rules.map((r) => r.id)
+  );
+  const confirmedKeys = new Set(
+    confirmed.map((c) => `${c.recurringId}:${c.date}`)
+  );
 
   for (const rule of rules) {
     const dates = occurrencesInMonth(
-      { frequency: rule.frequency, dayOfReference: rule.dayOfReference, monthOfReference: rule.monthOfReference },
+      {
+        frequency: rule.frequency,
+        dayOfReference: rule.dayOfReference,
+        monthOfReference: rule.monthOfReference,
+      },
       year,
-      month,
+      month
     );
     if (!dates.includes(today)) continue;
 
@@ -110,22 +132,30 @@ async function sweepRecurringAutoLaunch(deps: SweepDeps): Promise<void> {
     if (confirmedKeys.has(key)) continue;
 
     const members = await deps.repos.workspace.listMembers(rule.workspaceId);
-    const actorMember = members.find((m) => m.role === "owner") ?? members[0];
+    const actorMember = members.find((m) => m.role === 'owner') ?? members[0];
     if (!actorMember) continue; // workspace sem membros — não deveria acontecer
 
-    const actor: Actor = { userId: actorMember.userId, workspaceId: rule.workspaceId, role: actorMember.role };
+    const actor: Actor = {
+      userId: actorMember.userId,
+      workspaceId: rule.workspaceId,
+      role: actorMember.role,
+    };
     const result = await confirmOccurrence(deps, actor, rule.id, today);
     // Falhou (ex.: fatura já paga, regra ficou inválida) — não notifica lançamento que não aconteceu.
     if (!result.ok) continue;
 
     for (const member of members) {
-      const already = await deps.repos.notification.existsForEntity(member.userId, "recurring_pending", key);
+      const already = await deps.repos.notification.existsForEntity(
+        member.userId,
+        'recurring_pending',
+        key
+      );
       if (already) continue;
       await createNotification(deps, {
         userId: member.userId,
         workspaceId: rule.workspaceId,
-        type: "recurring_pending",
-        title: "Recorrência lançada",
+        type: 'recurring_pending',
+        title: 'Recorrência lançada',
         body: `"${rule.description}" foi lançada automaticamente hoje.`,
         data: { recurringId: rule.id, date: today, entityKey: key },
       });

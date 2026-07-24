@@ -1,4 +1,4 @@
-const EXPO_PUSH_URL = "https://exp.host/--/api/v2/push/send";
+const EXPO_PUSH_URL = 'https://exp.host/--/api/v2/push/send';
 /** Limite da API do Expo por request (spec deles) — só relevante em escala, hoje sempre 1 chamada. */
 const MAX_MESSAGES_PER_REQUEST = 100;
 
@@ -7,13 +7,14 @@ interface ExpoPushMessage {
   title: string;
   body: string;
   data?: Record<string, unknown>;
-  sound: "default";
+  sound: 'default';
   categoryId?: string;
 }
 
 function chunk<T>(items: T[], size: number): T[][] {
   const chunks: T[][] = [];
-  for (let i = 0; i < items.length; i += size) chunks.push(items.slice(i, i + size));
+  for (let i = 0; i < items.length; i += size)
+    chunks.push(items.slice(i, i + size));
   return chunks;
 }
 
@@ -27,14 +28,24 @@ export async function sendExpoPush(
   title: string,
   body: string,
   data?: Record<string, unknown>,
-  categoryId?: string,
+  categoryId?: string
 ): Promise<void> {
-  const messages: ExpoPushMessage[] = tokens.map((to) => ({ to, title, body, data, sound: "default", categoryId }));
+  const messages: ExpoPushMessage[] = tokens.map((to) => ({
+    to,
+    title,
+    body,
+    data,
+    sound: 'default',
+    categoryId,
+  }));
 
   for (const batch of chunk(messages, MAX_MESSAGES_PER_REQUEST)) {
     await fetch(EXPO_PUSH_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
       body: JSON.stringify(batch),
     });
   }

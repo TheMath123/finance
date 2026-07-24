@@ -1,20 +1,28 @@
-import { eq } from "drizzle-orm";
-import { users } from "@finance/db";
-import type { CreateUserData, UserRepository } from "../../../application/ports/user-repository";
-import type { DbHandle } from "../handle";
+import { users } from '@finance/db';
+import { eq } from 'drizzle-orm';
+import type {
+  CreateUserData,
+  UserRepository,
+} from '../../../application/ports/user-repository';
+import type { DbHandle } from '../handle';
 
 export function createUserRepository(db: DbHandle): UserRepository {
   return {
-    findByEmail: (email) => db.query.users.findFirst({ where: eq(users.email, email) }),
+    findByEmail: (email) =>
+      db.query.users.findFirst({ where: eq(users.email, email) }),
     findById: (id) => db.query.users.findFirst({ where: eq(users.id, id) }),
-    findByPhone: (phone) => db.query.users.findFirst({ where: eq(users.phone, phone) }),
+    findByPhone: (phone) =>
+      db.query.users.findFirst({ where: eq(users.phone, phone) }),
     async create(data: CreateUserData) {
       const [row] = await db.insert(users).values(data).returning();
-      if (!row) throw new Error("falha ao criar usuário");
+      if (!row) throw new Error('falha ao criar usuário');
       return row;
     },
     async setDefaultWorkspace(userId, workspaceId) {
-      await db.update(users).set({ defaultWorkspaceId: workspaceId }).where(eq(users.id, userId));
+      await db
+        .update(users)
+        .set({ defaultWorkspaceId: workspaceId })
+        .where(eq(users.id, userId));
     },
     async recordLoginFailure(userId, attempts, lockedUntil) {
       await db
@@ -35,7 +43,10 @@ export function createUserRepository(db: DbHandle): UserRepository {
         .where(eq(users.id, userId));
     },
     async markEmailVerified(userId) {
-      await db.update(users).set({ emailVerifiedAt: new Date() }).where(eq(users.id, userId));
+      await db
+        .update(users)
+        .set({ emailVerifiedAt: new Date() })
+        .where(eq(users.id, userId));
     },
     async updatePhone(userId, phone) {
       await db.update(users).set({ phone }).where(eq(users.id, userId));
@@ -47,12 +58,19 @@ export function createUserRepository(db: DbHandle): UserRepository {
       await db.update(users).set({ name }).where(eq(users.id, userId));
     },
     async setPendingEmail(userId, email) {
-      await db.update(users).set({ pendingEmail: email }).where(eq(users.id, userId));
+      await db
+        .update(users)
+        .set({ pendingEmail: email })
+        .where(eq(users.id, userId));
     },
     async applyEmailChange(userId, newEmail) {
       await db
         .update(users)
-        .set({ email: newEmail, pendingEmail: null, emailVerifiedAt: new Date() })
+        .set({
+          email: newEmail,
+          pendingEmail: null,
+          emailVerifiedAt: new Date(),
+        })
         .where(eq(users.id, userId));
     },
   };

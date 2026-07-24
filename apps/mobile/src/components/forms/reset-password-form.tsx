@@ -11,7 +11,10 @@ import { ThemedText } from '@/components/themed-text';
 import { Button } from '@/components/ui/button';
 import { ApiError } from '@/lib/api-client';
 import { authApi } from '@/lib/auth-api';
-import { verifyResetCodeSchema, type VerifyResetCodeInput } from '@/lib/schemas/auth';
+import {
+  type VerifyResetCodeInput,
+  verifyResetCodeSchema,
+} from '@/lib/schemas/auth';
 
 interface ResetPasswordFormProps {
   /** Pré-preenchido quando a tela anterior (esqueci minha senha) já capturou o e-mail. */
@@ -21,7 +24,10 @@ interface ResetPasswordFormProps {
 }
 
 /** Passo 1 do reset: confirmar e-mail + código recebido, antes de definir a nova senha. */
-export function ResetPasswordForm({ defaultEmail, defaultCode }: ResetPasswordFormProps) {
+export function ResetPasswordForm({
+  defaultEmail,
+  defaultCode,
+}: ResetPasswordFormProps) {
   const router = useRouter();
   const [resendMessage, setResendMessage] = useState<string | null>(null);
 
@@ -45,7 +51,8 @@ export function ResetPasswordForm({ defaultEmail, defaultCode }: ResetPasswordFo
 
   const resendMutation = useMutation({
     mutationFn: authApi.forgotPassword,
-    onSuccess: () => setResendMessage('Novo código enviado — confira seu e-mail.'),
+    onSuccess: () =>
+      setResendMessage('Novo código enviado — confira seu e-mail.'),
   });
 
   return (
@@ -60,11 +67,18 @@ export function ResetPasswordForm({ defaultEmail, defaultCode }: ResetPasswordFo
         keyboardType="email-address"
         editable={!defaultEmail}
       />
-      <CodeField control={control} name="code" label="Código" onComplete={() => onSubmit()} />
+      <CodeField
+        control={control}
+        name="code"
+        label="Código"
+        onComplete={() => onSubmit()}
+      />
 
       {verifyMutation.isError && (
         <ThemedText type="small" style={{ color: '#DC2626' }}>
-          {verifyMutation.error instanceof ApiError ? verifyMutation.error.message : 'Erro inesperado'}
+          {verifyMutation.error instanceof ApiError
+            ? verifyMutation.error.message
+            : 'Erro inesperado'}
         </ThemedText>
       )}
 
@@ -73,7 +87,11 @@ export function ResetPasswordForm({ defaultEmail, defaultCode }: ResetPasswordFo
       </Button>
 
       {resendMessage && (
-        <ThemedText type="small" themeColor="textSecondary" style={{ textAlign: 'center' }}>
+        <ThemedText
+          type="small"
+          themeColor="textSecondary"
+          style={{ textAlign: 'center' }}
+        >
           {resendMessage}
         </ThemedText>
       )}
@@ -84,7 +102,8 @@ export function ResetPasswordForm({ defaultEmail, defaultCode }: ResetPasswordFo
         onPress={() => {
           const email = getValues('email');
           if (email) resendMutation.mutate({ email });
-        }}>
+        }}
+      >
         Reenviar código
       </Button>
 

@@ -1,5 +1,5 @@
-import { zodResolver } from '@hookform/resolvers/zod';
 import { RECURRENCE_FREQUENCIES, TRANSACTION_TYPES } from '@finance/shared';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { useController, useForm, useWatch } from 'react-hook-form';
@@ -18,24 +18,35 @@ import { accountsApi } from '@/lib/accounts-api';
 import { ApiError } from '@/lib/api-client';
 import { cardsApi } from '@/lib/cards-api';
 import { categoriesApi } from '@/lib/categories-api';
-import { recurringApi, type RecurringTransaction } from '@/lib/recurring-api';
-import { recurringSchema, type RecurringInput } from '@/lib/schemas/finance';
+import { type RecurringTransaction, recurringApi } from '@/lib/recurring-api';
+import { type RecurringInput, recurringSchema } from '@/lib/schemas/finance';
 
 const TYPE_LABELS: Record<(typeof TRANSACTION_TYPES)[number], string> = {
   income: 'Receita',
   expense: 'Despesa',
 };
-const TYPE_OPTIONS = TRANSACTION_TYPES.map((type) => ({ label: TYPE_LABELS[type], value: type }));
+const TYPE_OPTIONS = TRANSACTION_TYPES.map((type) => ({
+  label: TYPE_LABELS[type],
+  value: type,
+}));
 
-const RECURRING_METHOD_LABELS: Record<'pix' | 'debit' | 'cash' | 'credit', string> = {
+const RECURRING_METHOD_LABELS: Record<
+  'pix' | 'debit' | 'cash' | 'credit',
+  string
+> = {
   pix: 'Pix',
   debit: 'Débito',
   cash: 'Dinheiro',
   credit: 'Crédito',
 };
-const METHOD_OPTIONS = Object.entries(RECURRING_METHOD_LABELS).map(([value, label]) => ({ label, value }));
+const METHOD_OPTIONS = Object.entries(RECURRING_METHOD_LABELS).map(
+  ([value, label]) => ({ label, value })
+);
 
-const FREQUENCY_LABELS: Record<(typeof RECURRENCE_FREQUENCIES)[number], string> = {
+const FREQUENCY_LABELS: Record<
+  (typeof RECURRENCE_FREQUENCIES)[number],
+  string
+> = {
   weekly: 'Semanal',
   monthly: 'Mensal',
   yearly: 'Anual',
@@ -59,9 +70,20 @@ const MONTH_LABELS = [
   'Novembro',
   'Dezembro',
 ];
-const MONTH_OPTIONS = MONTH_LABELS.map((label, index) => ({ label, value: String(index + 1) }));
+const MONTH_OPTIONS = MONTH_LABELS.map((label, index) => ({
+  label,
+  value: String(index + 1),
+}));
 
-const WEEKDAY_LABELS = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+const WEEKDAY_LABELS = [
+  'Domingo',
+  'Segunda',
+  'Terça',
+  'Quarta',
+  'Quinta',
+  'Sexta',
+  'Sábado',
+];
 
 /** Dia do mês (1-31) pra monthly/yearly, ou dia da semana 0-6 pra weekly. */
 function DayOfReferenceField({
@@ -71,22 +93,35 @@ function DayOfReferenceField({
   control: ReturnType<typeof useForm<RecurringInput>>['control'];
   frequency: RecurringInput['frequency'];
 }) {
-  const { field, fieldState } = useController({ control, name: 'dayOfReference' });
+  const { field, fieldState } = useController({
+    control,
+    name: 'dayOfReference',
+  });
   const isWeekly = frequency === 'weekly';
 
   return (
     <View className="gap-1.5">
-      <ThemedText type="smallBold">{isWeekly ? 'Dia da semana' : 'Dia do mês'}</ThemedText>
+      <ThemedText type="smallBold">
+        {isWeekly ? 'Dia da semana' : 'Dia do mês'}
+      </ThemedText>
       {isWeekly ? (
         <Select
           className={fieldState.error ? 'border-destructive' : undefined}
           placeholder="Selecione o dia da semana"
-          options={WEEKDAY_LABELS.map((label, value) => ({ label, value: String(value) }))}
+          options={WEEKDAY_LABELS.map((label, value) => ({
+            label,
+            value: String(value),
+          }))}
           value={field.value !== undefined ? String(field.value) : undefined}
           onValueChange={(value) => field.onChange(Number(value))}
         />
       ) : (
-        <NumberInput value={field.value} onValueChange={field.onChange} min={1} max={31} />
+        <NumberInput
+          value={field.value}
+          onValueChange={field.onChange}
+          min={1}
+          max={31}
+        />
       )}
       {fieldState.error?.message && (
         <ThemedText type="small" style={{ color: '#DC2626' }}>
@@ -97,8 +132,15 @@ function DayOfReferenceField({
   );
 }
 
-function MonthOfReferenceField({ control }: { control: ReturnType<typeof useForm<RecurringInput>>['control'] }) {
-  const { field, fieldState } = useController({ control, name: 'monthOfReference' });
+function MonthOfReferenceField({
+  control,
+}: {
+  control: ReturnType<typeof useForm<RecurringInput>>['control'];
+}) {
+  const { field, fieldState } = useController({
+    control,
+    name: 'monthOfReference',
+  });
 
   return (
     <View className="gap-1.5">
@@ -185,21 +227,47 @@ export function CreateRecurringForm({
         : recurringApi.create(workspaceId!, input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['recurring', workspaceId] });
-      queryClient.invalidateQueries({ queryKey: ['recurring-pending', workspaceId] });
+      queryClient.invalidateQueries({
+        queryKey: ['recurring-pending', workspaceId],
+      });
       onDone();
     },
   });
 
-  const categoryOptions = (categories ?? []).map((c) => ({ label: c.name, value: c.id }));
-  const accountOptions = (accounts ?? []).map((a) => ({ label: a.name, value: a.id }));
-  const cardOptions = (cards ?? []).map((c) => ({ label: c.name, value: c.id }));
+  const categoryOptions = (categories ?? []).map((c) => ({
+    label: c.name,
+    value: c.id,
+  }));
+  const accountOptions = (accounts ?? []).map((a) => ({
+    label: a.name,
+    value: a.id,
+  }));
+  const cardOptions = (cards ?? []).map((c) => ({
+    label: c.name,
+    value: c.id,
+  }));
 
   return (
     <View className="gap-4">
-      <TextField control={control} name="description" label="Descrição" placeholder="Ex.: Aluguel" />
+      <TextField
+        control={control}
+        name="description"
+        label="Descrição"
+        placeholder="Ex.: Aluguel"
+      />
       <MoneyField control={control} name="amount" label="Valor" />
-      <SelectField control={control} name="type" label="Tipo" options={TYPE_OPTIONS} />
-      <SelectField control={control} name="method" label="Método" options={METHOD_OPTIONS} />
+      <SelectField
+        control={control}
+        name="type"
+        label="Tipo"
+        options={TYPE_OPTIONS}
+      />
+      <SelectField
+        control={control}
+        name="method"
+        label="Método"
+        options={METHOD_OPTIONS}
+      />
       <SelectField
         control={control}
         name="categoryId"
@@ -224,16 +292,32 @@ export function CreateRecurringForm({
           options={accountOptions}
         />
       )}
-      <SelectField control={control} name="frequency" label="Frequência" options={FREQUENCY_OPTIONS} />
+      <SelectField
+        control={control}
+        name="frequency"
+        label="Frequência"
+        options={FREQUENCY_OPTIONS}
+      />
       <DayOfReferenceField control={control} frequency={frequency} />
       {frequency === 'yearly' && <MonthOfReferenceField control={control} />}
-      {isEditing && <CheckboxField control={control} name="active" label="Recorrência ativa" />}
+      {isEditing && (
+        <CheckboxField
+          control={control}
+          name="active"
+          label="Recorrência ativa"
+        />
+      )}
       {mutation.isError && (
         <ThemedText type="small" style={{ color: '#DC2626' }}>
-          {mutation.error instanceof ApiError ? mutation.error.message : 'Erro inesperado'}
+          {mutation.error instanceof ApiError
+            ? mutation.error.message
+            : 'Erro inesperado'}
         </ThemedText>
       )}
-      <Button loading={mutation.isPending} onPress={handleSubmit((input) => mutation.mutate(input))}>
+      <Button
+        loading={mutation.isPending}
+        onPress={handleSubmit((input) => mutation.mutate(input))}
+      >
         {isEditing ? 'Salvar alterações' : 'Salvar recorrência'}
       </Button>
     </View>

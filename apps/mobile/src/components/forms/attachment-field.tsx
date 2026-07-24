@@ -16,7 +16,13 @@ function inferMimeType(uri: string): string {
   return 'image/jpeg';
 }
 
-export function AttachmentField({ workspaceId, transaction }: { workspaceId: string; transaction: Transaction }) {
+export function AttachmentField({
+  workspaceId,
+  transaction,
+}: {
+  workspaceId: string;
+  transaction: Transaction;
+}) {
   const queryClient = useQueryClient();
   const [editing, setEditing] = useState(false);
   // Espelha o attachmentKey localmente: quem abre esse form (ex. explore.tsx)
@@ -36,7 +42,9 @@ export function AttachmentField({ workspaceId, transaction }: { workspaceId: str
   });
 
   const invalidate = () => {
-    queryClient.invalidateQueries({ queryKey: ['attachment-url', transaction.id] });
+    queryClient.invalidateQueries({
+      queryKey: ['attachment-url', transaction.id],
+    });
     queryClient.invalidateQueries({ queryKey: ['transactions', workspaceId] });
   };
 
@@ -44,7 +52,9 @@ export function AttachmentField({ workspaceId, transaction }: { workspaceId: str
     mutationFn: (asset: ImagePicker.ImagePickerAsset) =>
       attachmentApi.upload(workspaceId, transaction.id, {
         uri: asset.uri,
-        name: asset.fileName ?? `comprovante.${(asset.mimeType ?? 'image/jpeg').split('/')[1]}`,
+        name:
+          asset.fileName ??
+          `comprovante.${(asset.mimeType ?? 'image/jpeg').split('/')[1]}`,
         type: asset.mimeType ?? inferMimeType(asset.uri),
       }),
     onSuccess: (result) => {
@@ -54,7 +64,12 @@ export function AttachmentField({ workspaceId, transaction }: { workspaceId: str
     },
     onError: (err) => {
       if (!(err instanceof ApiError)) console.error('[attachment upload]', err);
-      Alert.alert('Erro', err instanceof ApiError ? err.message : 'Não foi possível anexar o comprovante.');
+      Alert.alert(
+        'Erro',
+        err instanceof ApiError
+          ? err.message
+          : 'Não foi possível anexar o comprovante.'
+      );
     },
   });
 
@@ -65,26 +80,43 @@ export function AttachmentField({ workspaceId, transaction }: { workspaceId: str
       invalidate();
     },
     onError: (err) =>
-      Alert.alert('Erro', err instanceof ApiError ? err.message : 'Não foi possível remover o comprovante.'),
+      Alert.alert(
+        'Erro',
+        err instanceof ApiError
+          ? err.message
+          : 'Não foi possível remover o comprovante.'
+      ),
   });
 
   const pickFromLibrary = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert('Permissão necessária', 'Precisamos acessar sua galeria pra anexar o comprovante.');
+      Alert.alert(
+        'Permissão necessária',
+        'Precisamos acessar sua galeria pra anexar o comprovante.'
+      );
       return;
     }
-    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.7 });
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      quality: 0.7,
+    });
     if (!result.canceled) upload.mutate(result.assets[0]!);
   };
 
   const pickFromCamera = async () => {
     const permission = await ImagePicker.requestCameraPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert('Permissão necessária', 'Precisamos acessar sua câmera pra fotografar o comprovante.');
+      Alert.alert(
+        'Permissão necessária',
+        'Precisamos acessar sua câmera pra fotografar o comprovante.'
+      );
       return;
     }
-    const result = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.7 });
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ['images'],
+      quality: 0.7,
+    });
     if (!result.canceled) upload.mutate(result.assets[0]!);
   };
 
@@ -92,17 +124,27 @@ export function AttachmentField({ workspaceId, transaction }: { workspaceId: str
     <View className="gap-2">
       <ThemedText type="smallBold">Comprovante</ThemedText>
       {hasAttachment && preview?.url && (
-        <Image source={{ uri: preview.url }} className="h-40 w-full rounded-md" resizeMode="cover" />
+        <Image
+          source={{ uri: preview.url }}
+          className="h-40 w-full rounded-md"
+          resizeMode="cover"
+        />
       )}
       {hasAttachment && !editing ? (
         <View className="flex-row gap-2">
-          <Button className="flex-1" variant="outline" size="sm" onPress={() => setEditing(true)}>
+          <Button
+            className="flex-1"
+            variant="outline"
+            size="sm"
+            onPress={() => setEditing(true)}
+          >
             Editar
           </Button>
           <Pressable
             onPress={() => remove.mutate()}
             hitSlop={8}
-            className="items-center justify-center px-2 active:opacity-60">
+            className="items-center justify-center px-2 active:opacity-60"
+          >
             <ThemedText type="small" style={{ color: '#DC2626' }}>
               Remover
             </ThemedText>
@@ -115,7 +157,8 @@ export function AttachmentField({ workspaceId, transaction }: { workspaceId: str
             variant="outline"
             size="sm"
             loading={upload.isPending}
-            onPress={pickFromCamera}>
+            onPress={pickFromCamera}
+          >
             Câmera
           </Button>
           <Button
@@ -123,14 +166,16 @@ export function AttachmentField({ workspaceId, transaction }: { workspaceId: str
             variant="outline"
             size="sm"
             loading={upload.isPending}
-            onPress={pickFromLibrary}>
+            onPress={pickFromLibrary}
+          >
             Galeria
           </Button>
           {hasAttachment && (
             <Pressable
               onPress={() => setEditing(false)}
               hitSlop={8}
-              className="items-center justify-center px-2 active:opacity-60">
+              className="items-center justify-center px-2 active:opacity-60"
+            >
               <ThemedText type="small" themeColor="textSecondary">
                 Cancelar
               </ThemedText>

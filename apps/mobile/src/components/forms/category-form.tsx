@@ -9,8 +9,8 @@ import { ThemedText } from '@/components/themed-text';
 import { Button } from '@/components/ui/button';
 import { useSession } from '@/context/session';
 import { ApiError } from '@/lib/api-client';
-import { categoriesApi, type Category } from '@/lib/categories-api';
-import { categorySchema, type CategoryInput } from '@/lib/schemas/finance';
+import { type Category, categoriesApi } from '@/lib/categories-api';
+import { type CategoryInput, categorySchema } from '@/lib/schemas/finance';
 
 const COLOR_OPTIONS = [
   { label: 'Verde', value: '#22C55E' },
@@ -23,7 +23,13 @@ const COLOR_OPTIONS = [
   { label: 'Cinza', value: '#6B7280' },
 ];
 
-export function CategoryForm({ category, onDone }: { category?: Category; onDone: () => void }) {
+export function CategoryForm({
+  category,
+  onDone,
+}: {
+  category?: Category;
+  onDone: () => void;
+}) {
   const { workspaceId } = useSession();
   const queryClient = useQueryClient();
   const { control, handleSubmit } = useForm<CategoryInput>({
@@ -49,8 +55,18 @@ export function CategoryForm({ category, onDone }: { category?: Category; onDone
 
   return (
     <View className="gap-4">
-      <TextField control={control} name="name" label="Nome" placeholder="Ex.: Mercado" />
-      <TextField control={control} name="icon" label="Ícone" placeholder="Ex.: shopping-cart" />
+      <TextField
+        control={control}
+        name="name"
+        label="Nome"
+        placeholder="Ex.: Mercado"
+      />
+      <TextField
+        control={control}
+        name="icon"
+        label="Ícone"
+        placeholder="Ex.: shopping-cart"
+      />
       <SelectField
         control={control}
         name="color"
@@ -60,10 +76,15 @@ export function CategoryForm({ category, onDone }: { category?: Category; onDone
       />
       {mutation.isError && (
         <ThemedText type="small" style={{ color: '#DC2626' }}>
-          {mutation.error instanceof ApiError ? mutation.error.message : 'Erro inesperado'}
+          {mutation.error instanceof ApiError
+            ? mutation.error.message
+            : 'Erro inesperado'}
         </ThemedText>
       )}
-      <Button loading={mutation.isPending} onPress={handleSubmit((input) => mutation.mutate(input))}>
+      <Button
+        loading={mutation.isPending}
+        onPress={handleSubmit((input) => mutation.mutate(input))}
+      >
         {category ? 'Salvar alterações' : 'Adicionar categoria'}
       </Button>
     </View>

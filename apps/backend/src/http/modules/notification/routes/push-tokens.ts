@@ -1,13 +1,16 @@
-import { Elysia } from "elysia";
-import { registerPushToken, unregisterPushToken } from "../../../../application/use-cases/notification";
-import type { AppDeps } from "../../../deps";
-import { fail } from "../../../http-error";
-import { requireAuthenticated } from "../../../guards";
-import { validateBody } from "../../../validate";
-import { registerPushTokenSchema, unregisterPushTokenSchema } from "../schemas";
+import { Elysia } from 'elysia';
+import {
+  registerPushToken,
+  unregisterPushToken,
+} from '../../../../application/use-cases/notification';
+import type { AppDeps } from '../../../deps';
+import { requireAuthenticated } from '../../../guards';
+import { fail } from '../../../http-error';
+import { validateBody } from '../../../validate';
+import { registerPushTokenSchema, unregisterPushTokenSchema } from '../schemas';
 
 export const registerPushTokenRoute = (deps: AppDeps) =>
-  new Elysia().post("/push-tokens", async ({ request, body, set }) => {
+  new Elysia().post('/push-tokens', async ({ request, body, set }) => {
     const auth = await requireAuthenticated(deps, request);
     if (!auth.ok) return fail(set, auth.error);
     const input = validateBody(registerPushTokenSchema, body);
@@ -17,7 +20,7 @@ export const registerPushTokenRoute = (deps: AppDeps) =>
   });
 
 export const unregisterPushTokenRoute = (deps: AppDeps) =>
-  new Elysia().delete("/push-tokens", async ({ request, body, set }) => {
+  new Elysia().delete('/push-tokens', async ({ request, body, set }) => {
     const auth = await requireAuthenticated(deps, request);
     if (!auth.ok) return fail(set, auth.error);
     const input = validateBody(unregisterPushTokenSchema, body);

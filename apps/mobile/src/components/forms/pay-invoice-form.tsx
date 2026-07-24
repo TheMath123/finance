@@ -11,7 +11,7 @@ import { useSession } from '@/context/session';
 import type { Account } from '@/lib/accounts-api';
 import { ApiError } from '@/lib/api-client';
 import { cardsApi } from '@/lib/cards-api';
-import { payInvoiceSchema, type PayInvoiceInput } from '@/lib/schemas/finance';
+import { type PayInvoiceInput, payInvoiceSchema } from '@/lib/schemas/finance';
 
 const METHOD_OPTIONS = [
   { label: 'Pix', value: 'pix' },
@@ -37,7 +37,8 @@ export function PayInvoiceForm({
   });
 
   const mutation = useMutation({
-    mutationFn: (input: PayInvoiceInput) => cardsApi.payInvoice(workspaceId!, invoiceId, input),
+    mutationFn: (input: PayInvoiceInput) =>
+      cardsApi.payInvoice(workspaceId!, invoiceId, input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['invoices', workspaceId] });
       queryClient.invalidateQueries({ queryKey: ['cards', workspaceId] });
@@ -47,7 +48,10 @@ export function PayInvoiceForm({
     },
   });
 
-  const accountOptions = accounts.map((account) => ({ label: account.name, value: account.id }));
+  const accountOptions = accounts.map((account) => ({
+    label: account.name,
+    value: account.id,
+  }));
 
   return (
     <View className="gap-4">
@@ -59,13 +63,23 @@ export function PayInvoiceForm({
         options={accountOptions}
       />
       <DateField control={control} name="date" label="Data" />
-      <SelectField control={control} name="method" label="Método" options={METHOD_OPTIONS} />
+      <SelectField
+        control={control}
+        name="method"
+        label="Método"
+        options={METHOD_OPTIONS}
+      />
       {mutation.isError && (
         <ThemedText type="small" style={{ color: '#DC2626' }}>
-          {mutation.error instanceof ApiError ? mutation.error.message : 'Erro inesperado'}
+          {mutation.error instanceof ApiError
+            ? mutation.error.message
+            : 'Erro inesperado'}
         </ThemedText>
       )}
-      <Button loading={mutation.isPending} onPress={handleSubmit((input) => mutation.mutate(input))}>
+      <Button
+        loading={mutation.isPending}
+        onPress={handleSubmit((input) => mutation.mutate(input))}
+      >
         Pagar fatura
       </Button>
     </View>

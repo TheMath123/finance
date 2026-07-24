@@ -1,7 +1,7 @@
-import { File, UploadTask, UploadType } from "expo-file-system";
+import { File, UploadTask, UploadType } from 'expo-file-system';
 
-import { env } from "@/env";
-import { tokenStore } from "@/lib/secure-store";
+import { env } from '@/env';
+import { tokenStore } from '@/lib/secure-store';
 
 export interface UploadFile {
   uri: string;
@@ -14,13 +14,13 @@ export class ApiError extends Error {
     public status: number,
     public code: string,
     message: string,
-    public issues?: { path: string; message: string }[],
+    public issues?: { path: string; message: string }[]
   ) {
     super(message);
   }
 }
 
-interface RequestOptions extends Omit<RequestInit, "body"> {
+interface RequestOptions extends Omit<RequestInit, 'body'> {
   body?: unknown;
   /** Não tenta refresh de sessão nem anexa Authorization (usado por login/register/refresh). */
   skipAuth?: boolean;
@@ -42,7 +42,10 @@ function withTimeout(ms: number) {
   return { signal: controller.signal, cancel: () => clearTimeout(timer) };
 }
 
-async function rawRequest<T>(path: string, { body, skipAuth, headers, ...init }: RequestOptions) {
+async function rawRequest<T>(
+  path: string,
+  { body, skipAuth, headers, ...init }: RequestOptions
+) {
   const accessToken = skipAuth ? null : await tokenStore.getAccessToken();
   const { signal, cancel } = withTimeout(DEFAULT_TIMEOUT_MS);
 
@@ -52,7 +55,7 @@ async function rawRequest<T>(path: string, { body, skipAuth, headers, ...init }:
       ...init,
       signal,
       headers: {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
         ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
         ...headers,
       },
@@ -62,28 +65,50 @@ async function rawRequest<T>(path: string, { body, skipAuth, headers, ...init }:
     cancel();
   }
 
-  const data = response.status === 204 ? undefined : await response.json().catch(() => undefined);
+  const data =
+    response.status === 204
+      ? undefined
+      : await response.json().catch(() => undefined);
 
   if (!response.ok) {
-    const error = data?.error ?? { code: "unknown_error", message: "Erro inesperado" };
-    throw new ApiError(response.status, error.code, error.message, error.issues);
+    const error = data?.error ?? {
+      code: 'unknown_error',
+      message: 'Erro inesperado',
+    };
+    throw new ApiError(
+      response.status,
+      error.code,
+      error.message,
+      error.issues
+    );
   }
 
   return data as T;
 }
 
 /** Faz uma requisição autenticada; em 401, tenta renovar a sessão uma única vez antes de desistir. */
-export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
+export async function apiRequest<T>(
+  path: string,
+  options: RequestOptions = {}
+): Promise<T> {
   try {
     return await rawRequest<T>(path, options);
   } catch (error) {
-    if (!(error instanceof ApiError) || error.status !== 401 || options.skipAuth) throw error;
+    if (
+      !(error instanceof ApiError) ||
+      error.status !== 401 ||
+      options.skipAuth
+    )
+      throw error;
 
     const refreshToken = await tokenStore.getRefreshToken();
     if (!refreshToken) throw error;
 
-    const session = await rawRequest<{ accessToken: string; refreshToken: string }>("/auth/refresh", {
-      method: "POST",
+    const session = await rawRequest<{
+      accessToken: string;
+      refreshToken: string;
+    }>('/auth/refresh', {
+      method: 'POST',
       body: { refreshToken },
       skipAuth: true,
     }).catch(() => null);
@@ -98,7 +123,10 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
   }
 }
 
-async function rawTextRequest(path: string, { skipAuth, headers, ...init }: Omit<RequestOptions, "body">) {
+async function rawTextRequest(
+  path: string,
+  { skipAuth, headers, ...init }: Omit<RequestOptions, 'body'>
+) {
   const accessToken = skipAuth ? null : await tokenStore.getAccessToken();
   const { signal, cancel } = withTimeout(DEFAULT_TIMEOUT_MS);
 
@@ -118,25 +146,44 @@ async function rawTextRequest(path: string, { skipAuth, headers, ...init }: Omit
 
   if (!response.ok) {
     const data = await response.json().catch(() => undefined);
-    const error = data?.error ?? { code: "unknown_error", message: "Erro inesperado" };
-    throw new ApiError(response.status, error.code, error.message, error.issues);
+    const error = data?.error ?? {
+      code: 'unknown_error',
+      message: 'Erro inesperado',
+    };
+    throw new ApiError(
+      response.status,
+      error.code,
+      error.message,
+      error.issues
+    );
   }
 
   return response.text();
 }
 
 /** Igual a `apiRequest`, mas devolve o corpo cru como texto (ex.: export CSV) em vez de fazer parse de JSON. */
-export async function apiRequestText(path: string, options: Omit<RequestOptions, "body"> = {}): Promise<string> {
+export async function apiRequestText(
+  path: string,
+  options: Omit<RequestOptions, 'body'> = {}
+): Promise<string> {
   try {
     return await rawTextRequest(path, options);
   } catch (error) {
-    if (!(error instanceof ApiError) || error.status !== 401 || options.skipAuth) throw error;
+    if (
+      !(error instanceof ApiError) ||
+      error.status !== 401 ||
+      options.skipAuth
+    )
+      throw error;
 
     const refreshToken = await tokenStore.getRefreshToken();
     if (!refreshToken) throw error;
 
-    const session = await rawRequest<{ accessToken: string; refreshToken: string }>("/auth/refresh", {
-      method: "POST",
+    const session = await rawRequest<{
+      accessToken: string;
+      refreshToken: string;
+    }>('/auth/refresh', {
+      method: 'POST',
       body: { refreshToken },
       skipAuth: true,
     }).catch(() => null);
@@ -162,16 +209,20 @@ async function rawUploadRequest<T>(path: string, file: UploadFile): Promise<T> {
   const accessToken = await tokenStore.getAccessToken();
   const { signal, cancel } = withTimeout(UPLOAD_TIMEOUT_MS);
 
-  let result: Awaited<ReturnType<UploadTask["uploadAsync"]>>;
+  let result: Awaited<ReturnType<UploadTask['uploadAsync']>>;
   try {
-    const task = new UploadTask(new File(file.uri), `${env.EXPO_PUBLIC_API_URL}${path}`, {
-      httpMethod: "POST",
-      uploadType: UploadType.MULTIPART,
-      fieldName: "file",
-      mimeType: file.type,
-      headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
-      signal,
-    });
+    const task = new UploadTask(
+      new File(file.uri),
+      `${env.EXPO_PUBLIC_API_URL}${path}`,
+      {
+        httpMethod: 'POST',
+        uploadType: UploadType.MULTIPART,
+        fieldName: 'file',
+        mimeType: file.type,
+        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+        signal,
+      }
+    );
     try {
       result = await task.uploadAsync();
     } finally {
@@ -189,15 +240,17 @@ async function rawUploadRequest<T>(path: string, file: UploadFile): Promise<T> {
   }
 
   if (result.status < 200 || result.status >= 300) {
-    const error = (data as { error?: { code: string; message: string; issues?: unknown } })?.error ?? {
-      code: "unknown_error",
-      message: "Erro inesperado",
+    const error = (
+      data as { error?: { code: string; message: string; issues?: unknown } }
+    )?.error ?? {
+      code: 'unknown_error',
+      message: 'Erro inesperado',
     };
     throw new ApiError(
       result.status,
       error.code,
       error.message,
-      error.issues as { path: string; message: string }[] | undefined,
+      error.issues as { path: string; message: string }[] | undefined
     );
   }
 
@@ -205,7 +258,10 @@ async function rawUploadRequest<T>(path: string, file: UploadFile): Promise<T> {
 }
 
 /** Anexo de comprovante (M3-04) — nunca JSON.stringify no body. */
-export async function apiRequestUpload<T>(path: string, file: UploadFile): Promise<T> {
+export async function apiRequestUpload<T>(
+  path: string,
+  file: UploadFile
+): Promise<T> {
   try {
     return await rawUploadRequest<T>(path, file);
   } catch (error) {
@@ -214,8 +270,11 @@ export async function apiRequestUpload<T>(path: string, file: UploadFile): Promi
     const refreshToken = await tokenStore.getRefreshToken();
     if (!refreshToken) throw error;
 
-    const session = await rawRequest<{ accessToken: string; refreshToken: string }>("/auth/refresh", {
-      method: "POST",
+    const session = await rawRequest<{
+      accessToken: string;
+      refreshToken: string;
+    }>('/auth/refresh', {
+      method: 'POST',
       body: { refreshToken },
       skipAuth: true,
     }).catch(() => null);

@@ -1,7 +1,7 @@
-import { and, eq, gt, isNull, ne } from "drizzle-orm";
-import { authTokens, refreshTokens } from "@finance/db";
-import type { TokenRepository } from "../../../application/ports/token-repository";
-import type { DbHandle } from "../handle";
+import { authTokens, refreshTokens } from '@finance/db';
+import { and, eq, gt, isNull, ne } from 'drizzle-orm';
+import type { TokenRepository } from '../../../application/ports/token-repository';
+import type { DbHandle } from '../handle';
 
 export function createTokenRepository(db: DbHandle): TokenRepository {
   return {
@@ -9,12 +9,16 @@ export function createTokenRepository(db: DbHandle): TokenRepository {
       await db.insert(refreshTokens).values(data);
     },
     findRefreshByHash: (tokenHash) =>
-      db.query.refreshTokens.findFirst({ where: eq(refreshTokens.tokenHash, tokenHash) }),
+      db.query.refreshTokens.findFirst({
+        where: eq(refreshTokens.tokenHash, tokenHash),
+      }),
     async deleteRefreshById(id) {
       await db.delete(refreshTokens).where(eq(refreshTokens.id, id));
     },
     async deleteRefreshByHash(tokenHash) {
-      await db.delete(refreshTokens).where(eq(refreshTokens.tokenHash, tokenHash));
+      await db
+        .delete(refreshTokens)
+        .where(eq(refreshTokens.tokenHash, tokenHash));
     },
     async deleteAllRefreshByUser(userId) {
       await db.delete(refreshTokens).where(eq(refreshTokens.userId, userId));
@@ -22,7 +26,12 @@ export function createTokenRepository(db: DbHandle): TokenRepository {
     async deleteAllRefreshByUserExcept(userId, keepTokenHash) {
       await db
         .delete(refreshTokens)
-        .where(and(eq(refreshTokens.userId, userId), ne(refreshTokens.tokenHash, keepTokenHash)));
+        .where(
+          and(
+            eq(refreshTokens.userId, userId),
+            ne(refreshTokens.tokenHash, keepTokenHash)
+          )
+        );
     },
     async createAuthToken(data) {
       await db.insert(authTokens).values(data);
@@ -33,7 +42,7 @@ export function createTokenRepository(db: DbHandle): TokenRepository {
           eq(authTokens.tokenHash, tokenHash),
           eq(authTokens.purpose, purpose),
           isNull(authTokens.usedAt),
-          gt(authTokens.expiresAt, new Date()),
+          gt(authTokens.expiresAt, new Date())
         ),
       }),
     findValidAuthTokenForUser: (userId, purpose, tokenHash) =>
@@ -43,11 +52,14 @@ export function createTokenRepository(db: DbHandle): TokenRepository {
           eq(authTokens.purpose, purpose),
           eq(authTokens.tokenHash, tokenHash),
           isNull(authTokens.usedAt),
-          gt(authTokens.expiresAt, new Date()),
+          gt(authTokens.expiresAt, new Date())
         ),
       }),
     async markAuthTokenUsed(id) {
-      await db.update(authTokens).set({ usedAt: new Date() }).where(eq(authTokens.id, id));
+      await db
+        .update(authTokens)
+        .set({ usedAt: new Date() })
+        .where(eq(authTokens.id, id));
     },
     async deleteUnusedAuthTokens(userId, purpose) {
       await db
@@ -56,8 +68,8 @@ export function createTokenRepository(db: DbHandle): TokenRepository {
           and(
             eq(authTokens.userId, userId),
             eq(authTokens.purpose, purpose),
-            isNull(authTokens.usedAt),
-          ),
+            isNull(authTokens.usedAt)
+          )
         );
     },
   };

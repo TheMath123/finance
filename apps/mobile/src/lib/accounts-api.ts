@@ -1,6 +1,6 @@
-import type { AccountType } from "@finance/shared";
+import type { AccountType } from '@finance/shared';
 
-import { apiRequest } from "@/lib/api-client";
+import { apiRequest } from '@/lib/api-client';
 
 export interface Account {
   id: string;
@@ -23,23 +23,39 @@ export interface CreateAccountInput {
 }
 
 export const accountsApi = {
-  list: (workspaceId: string) => apiRequest<Account[]>(`/workspaces/${workspaceId}/accounts`),
+  list: (workspaceId: string) =>
+    apiRequest<Account[]>(`/workspaces/${workspaceId}/accounts`),
 
   create: (workspaceId: string, input: CreateAccountInput) =>
-    apiRequest<Account>(`/workspaces/${workspaceId}/accounts`, { method: "POST", body: input }),
+    apiRequest<Account>(`/workspaces/${workspaceId}/accounts`, {
+      method: 'POST',
+      body: input,
+    }),
 
-  update: (workspaceId: string, accountId: string, input: Partial<CreateAccountInput>) =>
+  update: (
+    workspaceId: string,
+    accountId: string,
+    input: Partial<CreateAccountInput>
+  ) =>
     apiRequest<Account>(`/workspaces/${workspaceId}/accounts/${accountId}`, {
-      method: "PATCH",
+      method: 'PATCH',
       body: input,
     }),
 
   archive: (workspaceId: string, accountId: string) =>
-    apiRequest<Account>(`/workspaces/${workspaceId}/accounts/${accountId}/archive`, { method: "POST" }),
+    apiRequest<Account>(
+      `/workspaces/${workspaceId}/accounts/${accountId}/archive`,
+      { method: 'POST' }
+    ),
 
   unarchive: (workspaceId: string, accountId: string) =>
-    apiRequest<Account>(`/workspaces/${workspaceId}/accounts/${accountId}/unarchive`, { method: "POST" }),
+    apiRequest<Account>(
+      `/workspaces/${workspaceId}/accounts/${accountId}/unarchive`,
+      { method: 'POST' }
+    ),
 
   delete: (workspaceId: string, accountId: string) =>
-    apiRequest<void>(`/workspaces/${workspaceId}/accounts/${accountId}`, { method: "DELETE" }),
+    apiRequest<void>(`/workspaces/${workspaceId}/accounts/${accountId}`, {
+      method: 'DELETE',
+    }),
 };

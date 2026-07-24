@@ -1,4 +1,4 @@
-import { Redirect, Stack, type Href } from 'expo-router';
+import { type Href, Redirect, Stack } from 'expo-router';
 
 import { useSession } from '@/context/session';
 

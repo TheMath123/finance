@@ -1,9 +1,9 @@
-import { DEFAULT_CATEGORIES } from "@finance/db";
-import { left, right, type Either } from "@finance/shared";
-import { FREE_PLAN_LIMITS } from "../../../domain/services/plan-limits";
-import type { Workspace } from "../../../domain/entities/workspace";
-import type { UseCaseDeps } from "../../deps";
-import type { WorkspaceError } from "./errors";
+import { DEFAULT_CATEGORIES } from '@finance/db';
+import { type Either, left, right } from '@finance/shared';
+import type { Workspace } from '../../../domain/entities/workspace';
+import { FREE_PLAN_LIMITS } from '../../../domain/services/plan-limits';
+import type { UseCaseDeps } from '../../deps';
+import type { WorkspaceError } from './errors';
 
 export interface CreateWorkspaceInput {
   name: string;
@@ -24,19 +24,29 @@ export interface CreateWorkspaceInput {
 export async function createWorkspace(
   deps: UseCaseDeps,
   userId: string,
-  input: CreateWorkspaceInput,
+  input: CreateWorkspaceInput
 ): Promise<Either<WorkspaceError, Workspace>> {
   const memberships = await deps.repos.workspace.listByUser(userId);
   const ownedSharedFree = memberships.filter(
-    (m) => m.role === "owner" && m.workspace.type !== "personal" && m.workspace.plan === "free",
+    (m) =>
+      m.role === 'owner' &&
+      m.workspace.type !== 'personal' &&
+      m.workspace.plan === 'free'
   );
   if (ownedSharedFree.length >= FREE_PLAN_LIMITS.maxOwnedSharedWorkspaces) {
-    return left("plan_limit_reached");
+    return left('plan_limit_reached');
   }
 
   const workspace = await deps.uow.run(async (repos) => {
-    const workspace = await repos.workspace.create({ name: input.name, type: "family" });
-    await repos.workspace.addMember({ workspaceId: workspace.id, userId, role: "owner" });
+    const workspace = await repos.workspace.create({
+      name: input.name,
+      type: 'family',
+    });
+    await repos.workspace.addMember({
+      workspaceId: workspace.id,
+      userId,
+      role: 'owner',
+    });
 
     await repos.category.createMany(
       workspace.id,
@@ -46,22 +56,25 @@ export async function createWorkspace(
         color: c.color,
         isFallback: c.isFallback ?? false,
         isDefault: true,
-      })),
+      }))
     );
 
-    const bank = await repos.bank.create(workspace.id, { name: "Minha carteira", bankCode: "other" });
+    const bank = await repos.bank.create(workspace.id, {
+      name: 'Minha carteira',
+      bankCode: 'other',
+    });
     await repos.account.create(workspace.id, {
-      name: "Conta principal",
+      name: 'Conta principal',
       bankId: bank.id,
-      type: "checking",
+      type: 'checking',
       initialBalance: 0,
     });
 
     await repos.audit.record({
       workspaceId: workspace.id,
       userId,
-      action: "create",
-      entity: "workspace",
+      action: 'create',
+      entity: 'workspace',
       entityId: workspace.id,
     });
     return workspace;

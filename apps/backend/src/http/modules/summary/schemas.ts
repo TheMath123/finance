@@ -1,6 +1,8 @@
-import { z } from "zod";
+import { z } from 'zod';
 
-export const workspaceParamsSchema = z.object({ workspaceId: z.string().uuid() });
+export const workspaceParamsSchema = z.object({
+  workspaceId: z.string().uuid(),
+});
 
 export const monthQuerySchema = z.object({
   year: z.coerce.number().int().min(2000).max(2100),

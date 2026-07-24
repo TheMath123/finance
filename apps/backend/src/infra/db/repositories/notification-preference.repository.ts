@@ -1,15 +1,22 @@
-import { and, eq } from "drizzle-orm";
-import { notificationPreferences } from "@finance/db";
-import type { NotificationPreferenceRepository } from "../../../application/ports/notification-preference-repository";
-import type { DbHandle } from "../handle";
+import { notificationPreferences } from '@finance/db';
+import { and, eq } from 'drizzle-orm';
+import type { NotificationPreferenceRepository } from '../../../application/ports/notification-preference-repository';
+import type { DbHandle } from '../handle';
 
-export function createNotificationPreferenceRepository(db: DbHandle): NotificationPreferenceRepository {
+export function createNotificationPreferenceRepository(
+  db: DbHandle
+): NotificationPreferenceRepository {
   return {
     listByUser: (userId) =>
-      db.query.notificationPreferences.findMany({ where: eq(notificationPreferences.userId, userId) }),
+      db.query.notificationPreferences.findMany({
+        where: eq(notificationPreferences.userId, userId),
+      }),
     async isEnabled(userId, type) {
       const row = await db.query.notificationPreferences.findFirst({
-        where: and(eq(notificationPreferences.userId, userId), eq(notificationPreferences.type, type)),
+        where: and(
+          eq(notificationPreferences.userId, userId),
+          eq(notificationPreferences.type, type)
+        ),
       });
       return row?.enabled ?? true;
     },
@@ -18,11 +25,14 @@ export function createNotificationPreferenceRepository(db: DbHandle): Notificati
         .insert(notificationPreferences)
         .values({ userId, type, enabled })
         .onConflictDoUpdate({
-          target: [notificationPreferences.userId, notificationPreferences.type],
+          target: [
+            notificationPreferences.userId,
+            notificationPreferences.type,
+          ],
           set: { enabled },
         })
         .returning();
-      if (!row) throw new Error("falha ao salvar preferência de notificação");
+      if (!row) throw new Error('falha ao salvar preferência de notificação');
       return row;
     },
   };

@@ -1,5 +1,5 @@
-import OpenAI from "openai";
-import { loadAiEnv } from "./env";
+import OpenAI from 'openai';
+import { loadAiEnv } from './env';
 
 /**
  * Gateway multi-provedor (OpenRouter): uma chave só, modelo trocado por
@@ -25,7 +25,7 @@ export function getAiClient(): OpenAI {
   if (!cached) {
     cached = new OpenAI({
       apiKey: loadAiEnv().OPENROUTER_API_KEY,
-      baseURL: "https://openrouter.ai/api/v1",
+      baseURL: 'https://openrouter.ai/api/v1',
     });
   }
   return cached;

@@ -1,4 +1,8 @@
-import type { RecurrenceFrequency, TransactionMethod, TransactionType } from "@finance/shared";
+import type {
+  RecurrenceFrequency,
+  TransactionMethod,
+  TransactionType,
+} from '@finance/shared';
 
 export interface RecurringTransaction {
   id: string;

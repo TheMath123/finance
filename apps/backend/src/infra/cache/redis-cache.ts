@@ -1,5 +1,5 @@
-import { Redis } from "ioredis";
-import type { Cache } from "../../application/ports/cache";
+import { Redis } from 'ioredis';
+import type { Cache } from '../../application/ports/cache';
 
 export function createRedisCache(redisUrl: string): Cache {
   const redis = new Redis(redisUrl);
@@ -11,7 +11,7 @@ export function createRedisCache(redisUrl: string): Cache {
       return JSON.parse(raw) as T;
     },
     async set<T>(key: string, value: T, ttlSeconds: number) {
-      await redis.set(key, JSON.stringify(value), "EX", ttlSeconds);
+      await redis.set(key, JSON.stringify(value), 'EX', ttlSeconds);
     },
   };
 }

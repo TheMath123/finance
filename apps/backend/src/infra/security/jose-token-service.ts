@@ -1,18 +1,18 @@
-import { SignJWT, jwtVerify } from "jose";
-import type { TokenService } from "../../application/ports/token-service";
+import { jwtVerify, SignJWT } from 'jose';
+import type { TokenService } from '../../application/ports/token-service';
 
-const ACCESS_TOKEN_TTL = "15m";
+const ACCESS_TOKEN_TTL = '15m';
 
 export function createTokenService(jwtSecret: string): TokenService {
   const key = new TextEncoder().encode(jwtSecret);
 
   const hashOpaque = (raw: string): string =>
-    new Bun.CryptoHasher("sha256").update(raw).digest("hex");
+    new Bun.CryptoHasher('sha256').update(raw).digest('hex');
 
   return {
     signAccess: (userId) =>
       new SignJWT({})
-        .setProtectedHeader({ alg: "HS256" })
+        .setProtectedHeader({ alg: 'HS256' })
         .setSubject(userId)
         .setIssuedAt()
         .setExpirationTime(ACCESS_TOKEN_TTL)
@@ -28,14 +28,14 @@ export function createTokenService(jwtSecret: string): TokenService {
     generateOpaque() {
       const bytes = new Uint8Array(32);
       crypto.getRandomValues(bytes);
-      const raw = Buffer.from(bytes).toString("base64url");
+      const raw = Buffer.from(bytes).toString('base64url');
       return { raw, hash: hashOpaque(raw) };
     },
     generateCode() {
       const bytes = new Uint32Array(1);
       crypto.getRandomValues(bytes);
       const value = bytes[0] ?? 0;
-      const raw = String(value % 1_000_000).padStart(6, "0");
+      const raw = String(value % 1_000_000).padStart(6, '0');
       return { raw, hash: hashOpaque(raw) };
     },
     hashOpaque,

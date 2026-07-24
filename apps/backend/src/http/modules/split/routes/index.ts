@@ -1,10 +1,10 @@
-import { Elysia } from "elysia";
-import type { AppDeps } from "../../../deps";
-import { createSplitRoute } from "./create-split";
-import { cancelSplitRoute } from "./cancel-split";
-import { markSharePaidRoute } from "./mark-share-paid";
-import { confirmShareRoute } from "./confirm-share";
-import { listOwedByMeRoute, listOwedToMeRoute } from "./list-owed";
+import { Elysia } from 'elysia';
+import type { AppDeps } from '../../../deps';
+import { cancelSplitRoute } from './cancel-split';
+import { confirmShareRoute } from './confirm-share';
+import { createSplitRoute } from './create-split';
+import { listOwedByMeRoute, listOwedToMeRoute } from './list-owed';
+import { markSharePaidRoute } from './mark-share-paid';
 
 export function splitRoutes(deps: AppDeps) {
   return new Elysia()

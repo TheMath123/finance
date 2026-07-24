@@ -1,4 +1,4 @@
-import type { Repositories } from "./repositories";
+import type { Repositories } from './repositories';
 
 /**
  * Transação de banco atravessando múltiplos repositórios: tudo dentro de `run`

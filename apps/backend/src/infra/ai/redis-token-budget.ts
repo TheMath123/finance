@@ -1,12 +1,12 @@
-import { Redis } from "ioredis";
-import type { TokenBudget } from "../../application/ports/token-budget";
+import { Redis } from 'ioredis';
+import type { TokenBudget } from '../../application/ports/token-budget';
 
 /** Generoso o bastante pro uso diário normal, baixo o bastante pra travar um runaway de custo. */
 export const DAILY_TOKEN_BUDGET_PER_USER = 100_000;
 
 function todayIso(): string {
   const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 }
 
 export function createRedisTokenBudget(redisUrl: string): TokenBudget {

@@ -1,12 +1,12 @@
 /**
  * Testes da Camada 0 do pipeline de IA (M2-07) contra o Postgres local.
  */
-import { beforeAll, describe, expect, test } from "bun:test";
-import { bankAccounts, banks, cards, createDb, type Db } from "@finance/db";
-import type { Actor } from "../../deps";
-import { createTestDeps } from "../../../test/deps";
-import { register } from "../auth";
-import { parseObviousTransaction } from "./parse-obvious-transaction";
+import { beforeAll, describe, expect, test } from 'bun:test';
+import { bankAccounts, banks, cards, createDb, type Db } from '@finance/db';
+import { createTestDeps } from '../../../test/deps';
+import type { Actor } from '../../deps';
+import { register } from '../auth';
+import { parseObviousTransaction } from './parse-obvious-transaction';
 
 let db: Db;
 
@@ -17,28 +17,32 @@ beforeAll(() => {
 async function newActorWithAccountAndCard() {
   const deps = createTestDeps(db);
   const result = await register(deps, {
-    name: "Teste Parser",
+    name: 'Teste Parser',
     email: `parser-${crypto.randomUUID()}@test.local`,
-    password: "senha-forte-123",
+    password: 'senha-forte-123',
   });
-  if (!result.ok) throw new Error("falha ao registrar usuário de teste");
+  if (!result.ok) throw new Error('falha ao registrar usuário de teste');
   const actor: Actor = {
     userId: result.value.user.id,
     workspaceId: result.value.defaultWorkspaceId,
-    role: "owner",
+    role: 'owner',
   };
 
   const [bank] = await db
     .insert(banks)
-    .values({ workspaceId: actor.workspaceId, name: "Banco Parser", bankCode: "other" })
+    .values({
+      workspaceId: actor.workspaceId,
+      name: 'Banco Parser',
+      bankCode: 'other',
+    })
     .returning();
   const [account] = await db
     .insert(bankAccounts)
     .values({
       workspaceId: actor.workspaceId,
       bankId: bank!.id,
-      name: "Conta Corrente",
-      type: "checking",
+      name: 'Conta Corrente',
+      type: 'checking',
       initialBalance: 0,
     })
     .returning();
@@ -47,7 +51,7 @@ async function newActorWithAccountAndCard() {
     .values({
       workspaceId: actor.workspaceId,
       bankId: bank!.id,
-      name: "Nubank",
+      name: 'Nubank',
       limit: 100_000,
       closingDay: 5,
       dueDay: 15,
@@ -58,45 +62,64 @@ async function newActorWithAccountAndCard() {
     where: (c, { eq }) => eq(c.workspaceId, actor.workspaceId),
   });
 
-  return { deps, actor, accountId: account!.id, cardId: card!.id, categoryId: categories[0]!.id };
+  return {
+    deps,
+    actor,
+    accountId: account!.id,
+    cardId: card!.id,
+    categoryId: categories[0]!.id,
+  };
 }
 
-describe("parseObviousTransaction (Camada 0)", () => {
-  test("sem cache de categorização, mesmo com conta reconhecida, cai pra Camada 1 (null)", async () => {
+describe('parseObviousTransaction (Camada 0)', () => {
+  test('sem cache de categorização, mesmo com conta reconhecida, cai pra Camada 1 (null)', async () => {
     const { deps, actor } = await newActorWithAccountAndCard();
-    const result = await parseObviousTransaction(deps, actor.workspaceId, "50 mercado conta corrente");
+    const result = await parseObviousTransaction(
+      deps,
+      actor.workspaceId,
+      '50 mercado conta corrente'
+    );
     expect(result).toBeNull();
   });
 
-  test("sem menção a conta/cartão reconhecido, cai pra Camada 1 (null)", async () => {
+  test('sem menção a conta/cartão reconhecido, cai pra Camada 1 (null)', async () => {
     const { deps, actor } = await newActorWithAccountAndCard();
-    const result = await parseObviousTransaction(deps, actor.workspaceId, "50 mercado qualquer coisa");
+    const result = await parseObviousTransaction(
+      deps,
+      actor.workspaceId,
+      '50 mercado qualquer coisa'
+    );
     expect(result).toBeNull();
   });
 
-  test("com cache de categorização e conta reconhecida, resolve a transação", async () => {
-    const { deps, actor, accountId, categoryId } = await newActorWithAccountAndCard();
+  test('com cache de categorização e conta reconhecida, resolve a transação', async () => {
+    const { deps, actor, accountId, categoryId } =
+      await newActorWithAccountAndCard();
 
     // Popula o cache: uma transação anterior com a mesma descrição normalizada.
     await deps.repos.transaction.create({
       workspaceId: actor.workspaceId,
       createdBy: actor.userId,
-      description: "mercado",
-      descriptionNormalized: "mercado",
+      description: 'mercado',
+      descriptionNormalized: 'mercado',
       amount: 3000,
-      type: "expense",
-      method: "pix",
-      date: "2026-07-01",
+      type: 'expense',
+      method: 'pix',
+      date: '2026-07-01',
       categoryId,
       accountId,
     });
 
-    const result = await parseObviousTransaction(deps, actor.workspaceId, "50 mercado conta corrente");
+    const result = await parseObviousTransaction(
+      deps,
+      actor.workspaceId,
+      '50 mercado conta corrente'
+    );
     expect(result).toEqual({
-      description: "mercado",
+      description: 'mercado',
       amount: 5000,
-      type: "expense",
-      method: "pix",
+      type: 'expense',
+      method: 'pix',
       date: expect.any(String),
       categoryId,
       accountId,
@@ -104,29 +127,34 @@ describe("parseObviousTransaction (Camada 0)", () => {
     });
   });
 
-  test("com cache de categorização e cartão reconhecido, resolve como crédito", async () => {
-    const { deps, actor, cardId, categoryId } = await newActorWithAccountAndCard();
+  test('com cache de categorização e cartão reconhecido, resolve como crédito', async () => {
+    const { deps, actor, cardId, categoryId } =
+      await newActorWithAccountAndCard();
 
     await deps.repos.transaction.create({
       workspaceId: actor.workspaceId,
       createdBy: actor.userId,
-      description: "assinatura",
-      descriptionNormalized: "assinatura",
+      description: 'assinatura',
+      descriptionNormalized: 'assinatura',
       amount: 2000,
-      type: "expense",
-      method: "credit",
-      date: "2026-07-01",
+      type: 'expense',
+      method: 'credit',
+      date: '2026-07-01',
       categoryId,
       cardId,
       invoiceId: undefined,
     });
 
-    const result = await parseObviousTransaction(deps, actor.workspaceId, "20 assinatura nubank");
+    const result = await parseObviousTransaction(
+      deps,
+      actor.workspaceId,
+      '20 assinatura nubank'
+    );
     expect(result).toEqual({
-      description: "assinatura",
+      description: 'assinatura',
       amount: 2000,
-      type: "expense",
-      method: "credit",
+      type: 'expense',
+      method: 'credit',
       date: expect.any(String),
       categoryId,
       accountId: undefined,
@@ -134,9 +162,13 @@ describe("parseObviousTransaction (Camada 0)", () => {
     });
   });
 
-  test("texto que não começa com valor cai pra Camada 1 (null)", async () => {
+  test('texto que não começa com valor cai pra Camada 1 (null)', async () => {
     const { deps, actor } = await newActorWithAccountAndCard();
-    const result = await parseObviousTransaction(deps, actor.workspaceId, "gastei 50 no mercado");
+    const result = await parseObviousTransaction(
+      deps,
+      actor.workspaceId,
+      'gastei 50 no mercado'
+    );
     expect(result).toBeNull();
   });
 });

@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import { Pressable, type PressableProps } from 'react-native';
 
 import { cn } from '@/lib/cn';
@@ -16,9 +16,13 @@ export interface HeaderChipProps extends PressableProps {
 export function HeaderChip({ className, children, ...props }: HeaderChipProps) {
   return (
     <Pressable
-      className={cn('flex-row items-center justify-center gap-2.5 rounded bg-primary/10 px-2 py-1.5 active:opacity-70', className)}
+      className={cn(
+        'flex-row items-center justify-center gap-2.5 rounded bg-primary/10 px-2 py-1.5 active:opacity-70',
+        className
+      )}
       accessibilityRole="button"
-      {...props}>
+      {...props}
+    >
       {children}
     </Pressable>
   );

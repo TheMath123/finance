@@ -1,6 +1,6 @@
-import { left, right, type Either } from "@finance/shared";
-import type { UseCaseDeps } from "../../deps";
-import type { AuthError } from "./errors";
+import { type Either, left, right } from '@finance/shared';
+import type { UseCaseDeps } from '../../deps';
+import type { AuthError } from './errors';
 
 export interface MeOutput {
   user: {
@@ -16,11 +16,11 @@ export interface MeOutput {
 }
 
 export async function me(
-  deps: Pick<UseCaseDeps, "repos">,
-  userId: string,
+  deps: Pick<UseCaseDeps, 'repos'>,
+  userId: string
 ): Promise<Either<AuthError, MeOutput>> {
   const user = await deps.repos.user.findById(userId);
-  if (!user || !user.defaultWorkspaceId) return left("invalid_token");
+  if (!user?.defaultWorkspaceId) return left('invalid_token');
 
   return right({
     user: {
@@ -28,7 +28,9 @@ export async function me(
       name: user.name,
       email: user.email,
       phone: user.phone,
-      emailVerifiedAt: user.emailVerifiedAt ? user.emailVerifiedAt.toISOString() : null,
+      emailVerifiedAt: user.emailVerifiedAt
+        ? user.emailVerifiedAt.toISOString()
+        : null,
       pendingEmail: user.pendingEmail,
     },
     defaultWorkspaceId: user.defaultWorkspaceId,

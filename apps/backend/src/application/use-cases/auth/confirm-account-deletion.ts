@@ -1,6 +1,6 @@
-import { left, right, type Either } from "@finance/shared";
-import type { UseCaseDeps } from "../../deps";
-import type { AuthError } from "./errors";
+import { type Either, left, right } from '@finance/shared';
+import type { UseCaseDeps } from '../../deps';
+import type { AuthError } from './errors';
 
 export interface ConfirmAccountDeletionInput {
   /** Sempre o ator autenticado (guard extrai do JWT) — nunca um alvo vindo do cliente. */
@@ -30,25 +30,33 @@ export interface ConfirmAccountDeletionInput {
  */
 export async function confirmAccountDeletion(
   deps: UseCaseDeps,
-  input: ConfirmAccountDeletionInput,
+  input: ConfirmAccountDeletionInput
 ): Promise<Either<AuthError, null>> {
   // Espaço pequeno (6 dígitos) — mesmo limite de tentativas do reset de senha.
-  if (await deps.rateLimiter.isLimited(`account-deletion-confirm:${input.userId}`, 5, 15 * 60_000)) {
-    return left("rate_limited");
+  if (
+    await deps.rateLimiter.isLimited(
+      `account-deletion-confirm:${input.userId}`,
+      5,
+      15 * 60_000
+    )
+  ) {
+    return left('rate_limited');
   }
 
   const user = await deps.repos.user.findById(input.userId);
-  if (!user) return left("invalid_code");
+  if (!user) return left('invalid_code');
 
   const stored = await deps.repos.token.findValidAuthTokenForUser(
     user.id,
-    "account_deletion",
-    deps.tokens.hashOpaque(input.code),
+    'account_deletion',
+    deps.tokens.hashOpaque(input.code)
   );
-  if (!stored) return left("invalid_code");
+  if (!stored) return left('invalid_code');
 
   const memberships = await deps.repos.workspace.listByUser(user.id);
-  const ownedWorkspaceIds = memberships.filter((m) => m.role === "owner").map((m) => m.workspace.id);
+  const ownedWorkspaceIds = memberships
+    .filter((m) => m.role === 'owner')
+    .map((m) => m.workspace.id);
 
   await deps.uow.run(async (repos) => {
     await repos.user.delete(user.id);

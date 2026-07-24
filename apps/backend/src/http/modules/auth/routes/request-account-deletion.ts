@@ -1,14 +1,14 @@
-import { Elysia } from "elysia";
-import { requestAccountDeletion } from "../../../../application/use-cases/auth";
-import type { AppDeps } from "../../../deps";
-import { fail, respond } from "../../../http-error";
-import { requireAuthenticated } from "../../../guards";
-import { validateBody } from "../../../validate";
-import { AUTH_ERRORS } from "../errors";
-import { requestAccountDeletionSchema } from "../schemas";
+import { Elysia } from 'elysia';
+import { requestAccountDeletion } from '../../../../application/use-cases/auth';
+import type { AppDeps } from '../../../deps';
+import { requireAuthenticated } from '../../../guards';
+import { fail, respond } from '../../../http-error';
+import { validateBody } from '../../../validate';
+import { AUTH_ERRORS } from '../errors';
+import { requestAccountDeletionSchema } from '../schemas';
 
 export const requestAccountDeletionRoute = (deps: AppDeps) =>
-  new Elysia().post("/me/delete/request", async ({ request, body, set }) => {
+  new Elysia().post('/me/delete/request', async ({ request, body, set }) => {
     const auth = await requireAuthenticated(deps, request);
     if (!auth.ok) return fail(set, auth.error);
 

@@ -1,15 +1,19 @@
-import { left, right, type Either } from "@finance/shared";
-import type { TransactionMethod, TransactionSource, TransactionType } from "@finance/shared";
-import type { Transaction } from "../../../domain/entities/transaction";
+import type {
+  TransactionMethod,
+  TransactionSource,
+  TransactionType,
+} from '@finance/shared';
+import { type Either, left, right } from '@finance/shared';
+import type { Transaction } from '../../../domain/entities/transaction';
 import {
   addMonths,
   addMonthsToDate,
   competencePeriod,
   splitInstallments,
-} from "../../../domain/services/invoice-rules";
-import { normalizeDescription } from "../../../domain/services/occurrence-rules";
-import type { Actor, UseCaseDeps } from "../../deps";
-import type { TransactionError } from "./errors";
+} from '../../../domain/services/invoice-rules';
+import { normalizeDescription } from '../../../domain/services/occurrence-rules';
+import type { Actor, UseCaseDeps } from '../../deps';
+import type { TransactionError } from './errors';
 
 /**
  * Auditoria de segurança (2026-07-19): sinaliza dentro do `uow.run` que uma
@@ -38,12 +42,15 @@ export interface CreateTransactionInput {
 }
 
 export async function createTransaction(
-  deps: Pick<UseCaseDeps, "repos" | "uow">,
+  deps: Pick<UseCaseDeps, 'repos' | 'uow'>,
   actor: Actor,
-  input: CreateTransactionInput,
+  input: CreateTransactionInput
 ): Promise<Either<TransactionError, Transaction[]>> {
-  const category = await deps.repos.category.findInWorkspace(actor.workspaceId, input.categoryId);
-  if (!category) return left("category_not_found");
+  const category = await deps.repos.category.findInWorkspace(
+    actor.workspaceId,
+    input.categoryId
+  );
+  if (!category) return left('category_not_found');
 
   const base = {
     workspaceId: actor.workspaceId,
@@ -55,24 +62,34 @@ export async function createTransaction(
     date: input.date,
     categoryId: input.categoryId,
     recurringId: input.recurringId ?? null,
-    source: input.source ?? "app",
+    source: input.source ?? 'app',
   };
 
   // Transferência: conta origem + destino, neutra (convenção: type=expense)
-  if (input.method === "transfer") {
-    if (!input.accountId || !input.toAccountId || input.accountId === input.toAccountId) {
-      return left("invalid_method_fields");
+  if (input.method === 'transfer') {
+    if (
+      !input.accountId ||
+      !input.toAccountId ||
+      input.accountId === input.toAccountId
+    ) {
+      return left('invalid_method_fields');
     }
     const [from, to] = await Promise.all([
-      deps.repos.account.findActiveInWorkspace(actor.workspaceId, input.accountId),
-      deps.repos.account.findActiveInWorkspace(actor.workspaceId, input.toAccountId),
+      deps.repos.account.findActiveInWorkspace(
+        actor.workspaceId,
+        input.accountId
+      ),
+      deps.repos.account.findActiveInWorkspace(
+        actor.workspaceId,
+        input.toAccountId
+      ),
     ]);
-    if (!from || !to) return left("account_not_found");
+    if (!from || !to) return left('account_not_found');
 
     const created = await deps.uow.run(async (repos) => {
       const row = await repos.transaction.create({
         ...base,
-        type: "expense",
+        type: 'expense',
         amount: input.amount,
         accountId: input.accountId,
         toAccountId: input.toAccountId,
@@ -80,8 +97,8 @@ export async function createTransaction(
       await repos.audit.record({
         workspaceId: actor.workspaceId,
         userId: actor.userId,
-        action: "create",
-        entity: "transaction",
+        action: 'create',
+        entity: 'transaction',
         entityId: row.id,
       });
       return [row];
@@ -90,12 +107,15 @@ export async function createTransaction(
   }
 
   // Crédito: cartão + fatura lazy por competência; parcelas em faturas consecutivas
-  if (input.method === "credit") {
+  if (input.method === 'credit') {
     if (!input.cardId || input.accountId || input.toAccountId) {
-      return left("invalid_method_fields");
+      return left('invalid_method_fields');
     }
-    const card = await deps.repos.card.findActiveInWorkspace(actor.workspaceId, input.cardId);
-    if (!card) return left("card_not_found");
+    const card = await deps.repos.card.findActiveInWorkspace(
+      actor.workspaceId,
+      input.cardId
+    );
+    if (!card) return left('card_not_found');
 
     const count = input.installments ?? 1;
     const amounts = splitInstallments(input.amount, count);
@@ -109,9 +129,9 @@ export async function createTransaction(
           const invoice = await repos.invoice.getOrCreate(
             actor.workspaceId,
             card.id,
-            addMonths(firstPeriod, i),
+            addMonths(firstPeriod, i)
           );
-          if (invoice.status === "paid") throw new InvoicePaidError();
+          if (invoice.status === 'paid') throw new InvoicePaidError();
           const row = await repos.transaction.create({
             ...base,
             // Cada parcela é datada na sua própria competência, não na data da
@@ -128,8 +148,8 @@ export async function createTransaction(
           await repos.audit.record({
             workspaceId: actor.workspaceId,
             userId: actor.userId,
-            action: "create",
-            entity: "transaction",
+            action: 'create',
+            entity: 'transaction',
             entityId: row.id,
           });
           created.push(row);
@@ -138,17 +158,20 @@ export async function createTransaction(
       });
       return right(rows);
     } catch (error) {
-      if (error instanceof InvoicePaidError) return left("invoice_paid");
+      if (error instanceof InvoicePaidError) return left('invoice_paid');
       throw error;
     }
   }
 
   // Demais métodos (pix/debit/cash): conta obrigatória
   if (!input.accountId || input.cardId || input.toAccountId) {
-    return left("invalid_method_fields");
+    return left('invalid_method_fields');
   }
-  const account = await deps.repos.account.findActiveInWorkspace(actor.workspaceId, input.accountId);
-  if (!account) return left("account_not_found");
+  const account = await deps.repos.account.findActiveInWorkspace(
+    actor.workspaceId,
+    input.accountId
+  );
+  if (!account) return left('account_not_found');
 
   const created = await deps.uow.run(async (repos) => {
     const row = await repos.transaction.create({
@@ -159,8 +182,8 @@ export async function createTransaction(
     await repos.audit.record({
       workspaceId: actor.workspaceId,
       userId: actor.userId,
-      action: "create",
-      entity: "transaction",
+      action: 'create',
+      entity: 'transaction',
       entityId: row.id,
     });
     return [row];

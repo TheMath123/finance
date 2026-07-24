@@ -1,4 +1,9 @@
-import { useController, type Control, type FieldValues, type Path } from 'react-hook-form';
+import {
+  type Control,
+  type FieldValues,
+  type Path,
+  useController,
+} from 'react-hook-form';
 import { View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
@@ -30,7 +35,11 @@ function formatDisplay(date: Date): string {
   return date.toLocaleDateString('pt-BR');
 }
 
-export function DateField<T extends FieldValues>({ control, name, label }: DateFieldProps<T>) {
+export function DateField<T extends FieldValues>({
+  control,
+  name,
+  label,
+}: DateFieldProps<T>) {
   const { field, fieldState } = useController({ control, name });
 
   return (

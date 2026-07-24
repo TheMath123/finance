@@ -1,10 +1,10 @@
-import { Elysia } from "elysia";
-import { estimateVariableExpense } from "../../../../application/use-cases/summary";
-import type { AppDeps } from "../../../deps";
-import { fail } from "../../../http-error";
-import { requireWorkspaceRole } from "../../../guards";
-import { validateParams } from "../../../validate";
-import { workspaceParamsSchema } from "../schemas";
+import { Elysia } from 'elysia';
+import { estimateVariableExpense } from '../../../../application/use-cases/summary';
+import type { AppDeps } from '../../../deps';
+import { requireWorkspaceRole } from '../../../guards';
+import { fail } from '../../../http-error';
+import { validateParams } from '../../../validate';
+import { workspaceParamsSchema } from '../schemas';
 
 /**
  * Estimativa de gasto variável por categoria (M2-08) — média dos últimos 3
@@ -13,12 +13,17 @@ import { workspaceParamsSchema } from "../schemas";
  */
 export const getVariableExpenseEstimateRoute = (deps: AppDeps) =>
   new Elysia().get(
-    "/workspaces/:workspaceId/summary/variable-expense-estimate",
+    '/workspaces/:workspaceId/summary/variable-expense-estimate',
     async ({ request, params, set }) => {
       const p = validateParams(workspaceParamsSchema, params);
       if (!p.ok) return fail(set, p.error);
-      const auth = await requireWorkspaceRole(deps, request, p.value.workspaceId, "viewer");
+      const auth = await requireWorkspaceRole(
+        deps,
+        request,
+        p.value.workspaceId,
+        'viewer'
+      );
       if (!auth.ok) return fail(set, auth.error);
       return estimateVariableExpense(deps, auth.value);
-    },
+    }
   );

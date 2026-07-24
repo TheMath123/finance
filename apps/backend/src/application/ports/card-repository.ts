@@ -1,4 +1,4 @@
-import type { Card } from "../../domain/entities/card";
+import type { Card } from '../../domain/entities/card';
 
 export interface CreateCardData {
   name: string;
@@ -10,8 +10,14 @@ export interface CreateCardData {
 
 export interface CardRepository {
   create(workspaceId: string, data: CreateCardData): Promise<Card>;
-  findInWorkspace(workspaceId: string, cardId: string): Promise<Card | undefined>;
-  findActiveInWorkspace(workspaceId: string, cardId: string): Promise<Card | undefined>;
+  findInWorkspace(
+    workspaceId: string,
+    cardId: string
+  ): Promise<Card | undefined>;
+  findActiveInWorkspace(
+    workspaceId: string,
+    cardId: string
+  ): Promise<Card | undefined>;
   listByWorkspace(workspaceId: string): Promise<Card[]>;
   update(cardId: string, patch: Partial<CreateCardData>): Promise<Card>;
   setArchived(cardId: string, archived: boolean): Promise<Card>;

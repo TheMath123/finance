@@ -1,10 +1,10 @@
-import { Elysia } from "elysia";
-import type { AppDeps } from "../../../deps";
-import { createAccountRoute } from "./create-account";
-import { listAccountsRoute } from "./list-accounts";
-import { updateAccountRoute } from "./update-account";
-import { archiveAccountRoute } from "./archive-account";
-import { deleteAccountRoute } from "./delete-account";
+import { Elysia } from 'elysia';
+import type { AppDeps } from '../../../deps';
+import { archiveAccountRoute } from './archive-account';
+import { createAccountRoute } from './create-account';
+import { deleteAccountRoute } from './delete-account';
+import { listAccountsRoute } from './list-accounts';
+import { updateAccountRoute } from './update-account';
 
 export function accountRoutes(deps: AppDeps) {
   return new Elysia()

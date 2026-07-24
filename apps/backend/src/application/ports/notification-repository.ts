@@ -1,5 +1,5 @@
-import type { NotificationType } from "@finance/shared";
-import type { Notification } from "../../domain/entities/notification";
+import type { NotificationType } from '@finance/shared';
+import type { Notification } from '../../domain/entities/notification';
 
 export interface CreateNotificationData {
   userId: string;
@@ -19,5 +19,9 @@ export interface NotificationRepository {
   archive(id: string): Promise<void>;
   unarchive(id: string): Promise<void>;
   /** Evita duplicar notificação de sweep (invoice_closed/due, recurring_pending) já enviada. */
-  existsForEntity(userId: string, type: NotificationType, entityKey: string): Promise<boolean>;
+  existsForEntity(
+    userId: string,
+    type: NotificationType,
+    entityKey: string
+  ): Promise<boolean>;
 }

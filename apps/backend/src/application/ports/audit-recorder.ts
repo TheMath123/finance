@@ -1,4 +1,4 @@
-import type { AuditAction } from "@finance/shared";
+import type { AuditAction } from '@finance/shared';
 
 export interface AuditEntry {
   workspaceId: string;
@@ -34,5 +34,8 @@ export interface ListActivityFilters {
  */
 export interface AuditRecorder {
   record(entry: AuditEntry): Promise<void>;
-  list(workspaceId: string, filters: ListActivityFilters): Promise<AuditLogView[]>;
+  list(
+    workspaceId: string,
+    filters: ListActivityFilters
+  ): Promise<AuditLogView[]>;
 }

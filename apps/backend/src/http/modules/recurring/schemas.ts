@@ -1,7 +1,9 @@
-import { z } from "zod";
-import { RECURRENCE_FREQUENCIES, TRANSACTION_TYPES } from "@finance/shared";
+import { RECURRENCE_FREQUENCIES, TRANSACTION_TYPES } from '@finance/shared';
+import { z } from 'zod';
 
-export const workspaceParamsSchema = z.object({ workspaceId: z.string().uuid() });
+export const workspaceParamsSchema = z.object({
+  workspaceId: z.string().uuid(),
+});
 export const recurringParamsSchema = workspaceParamsSchema.extend({
   recurringId: z.string().uuid(),
 });
@@ -11,7 +13,7 @@ export const createRecurringSchema = z.object({
   amount: z.number().int().positive(),
   type: z.enum(TRANSACTION_TYPES),
   /** Transferência recorrente fica fora do M1 (schema não tem conta destino). */
-  method: z.enum(["pix", "debit", "cash", "credit"]),
+  method: z.enum(['pix', 'debit', 'cash', 'credit']),
   categoryId: z.string().uuid(),
   accountId: z.string().uuid().optional(),
   cardId: z.string().uuid().optional(),

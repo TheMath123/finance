@@ -3,32 +3,35 @@
  * competência de fatura, parcelamento, saldo derivado, transferência neutra,
  * imutabilidade pós-pagamento, reatribuição de categoria e auditoria.
  */
-import { beforeAll, describe, expect, test } from "bun:test";
-import { eq } from "drizzle-orm";
+import { beforeAll, describe, expect, test } from 'bun:test';
 import {
-  DEFAULT_CATEGORIES,
   auditLogs,
   bankAccounts,
   banks,
   cards,
   categories,
+  createDb,
+  type Db,
+  DEFAULT_CATEGORIES,
   transactions,
   users,
   workspaceMembers,
   workspaces,
-  type Db,
-} from "@finance/db";
-import { createDb } from "@finance/db";
-import type { Actor } from "../../deps";
-import { addMonthsToDate, competencePeriod, splitInstallments } from "../../../domain/services/invoice-rules";
-import { createTestDeps } from "../../../test/deps";
-import { createTransaction } from "./create-transaction";
-import { updateTransaction } from "./update-transaction";
-import { deleteTransaction } from "./delete-transaction";
-import { listInvoices } from "../card/list-invoices";
-import { payInvoice } from "../card/pay-invoice";
-import { deleteCategory } from "../category/delete-category";
-import type { UseCaseDeps } from "../../deps";
+} from '@finance/db';
+import { eq } from 'drizzle-orm';
+import {
+  addMonthsToDate,
+  competencePeriod,
+  splitInstallments,
+} from '../../../domain/services/invoice-rules';
+import { createTestDeps } from '../../../test/deps';
+import type { Actor, UseCaseDeps } from '../../deps';
+import { listInvoices } from '../card/list-invoices';
+import { payInvoice } from '../card/pay-invoice';
+import { deleteCategory } from '../category/delete-category';
+import { createTransaction } from './create-transaction';
+import { deleteTransaction } from './delete-transaction';
+import { updateTransaction } from './update-transaction';
 
 let db: Db;
 let deps: UseCaseDeps;
@@ -41,9 +44,15 @@ let categoryId: string;
 let fallbackCategoryId: string;
 
 async function accountBalance(accountId: string): Promise<number> {
-  const account = await deps.repos.account.findInWorkspace(actor.workspaceId, accountId);
-  if (!account) throw new Error("conta não encontrada");
-  return account.initialBalance + (await deps.repos.transaction.balanceDelta(accountId));
+  const account = await deps.repos.account.findInWorkspace(
+    actor.workspaceId,
+    accountId
+  );
+  if (!account) throw new Error('conta não encontrada');
+  return (
+    account.initialBalance +
+    (await deps.repos.transaction.balanceDelta(accountId))
+  );
 }
 
 /** Cenário base: workspace com conta (saldo inicial 1000,00), segunda conta, cartão fechando dia 10. */
@@ -53,21 +62,21 @@ beforeAll(async () => {
   const [user] = await db
     .insert(users)
     .values({
-      name: "Dono",
+      name: 'Dono',
       email: `domain-${crypto.randomUUID()}@test.local`,
-      passwordHash: "x",
+      passwordHash: 'x',
       termsAcceptedAt: new Date(),
-      termsVersion: "test",
+      termsVersion: 'test',
     })
     .returning();
   const [workspace] = await db
     .insert(workspaces)
-    .values({ name: "Domínio", type: "personal" })
+    .values({ name: 'Domínio', type: 'personal' })
     .returning();
-  if (!user || !workspace) throw new Error("setup falhou");
+  if (!user || !workspace) throw new Error('setup falhou');
   await db
     .insert(workspaceMembers)
-    .values({ workspaceId: workspace.id, userId: user.id, role: "owner" });
+    .values({ workspaceId: workspace.id, userId: user.id, role: 'owner' });
 
   const inserted = await db
     .insert(categories)
@@ -79,23 +88,23 @@ beforeAll(async () => {
         color: c.color,
         isFallback: c.isFallback ?? false,
         isDefault: true,
-      })),
+      }))
     )
     .returning();
-  categoryId = inserted.find((c) => c.name === "Mercado")!.id;
+  categoryId = inserted.find((c) => c.name === 'Mercado')!.id;
   fallbackCategoryId = inserted.find((c) => c.isFallback)!.id;
 
   const [bank] = await db
     .insert(banks)
-    .values({ workspaceId: workspace.id, name: "Nubank", bankCode: "nubank" })
+    .values({ workspaceId: workspace.id, name: 'Nubank', bankCode: 'nubank' })
     .returning();
   const [account] = await db
     .insert(bankAccounts)
     .values({
       workspaceId: workspace.id,
       bankId: bank!.id,
-      name: "Principal",
-      type: "checking",
+      name: 'Principal',
+      type: 'checking',
       initialBalance: 100_000,
     })
     .returning();
@@ -104,16 +113,30 @@ beforeAll(async () => {
     .values({
       workspaceId: workspace.id,
       bankId: bank!.id,
-      name: "Reserva",
-      type: "savings",
+      name: 'Reserva',
+      type: 'savings',
       initialBalance: 0,
     })
     .returning();
   const [card, secondCard] = await db
     .insert(cards)
     .values([
-      { workspaceId: workspace.id, bankId: bank!.id, name: "Ultravioleta", limit: 500_000, closingDay: 10, dueDay: 17 },
-      { workspaceId: workspace.id, bankId: bank!.id, name: "Inter Gold", limit: 300_000, closingDay: 10, dueDay: 17 },
+      {
+        workspaceId: workspace.id,
+        bankId: bank!.id,
+        name: 'Ultravioleta',
+        limit: 500_000,
+        closingDay: 10,
+        dueDay: 17,
+      },
+      {
+        workspaceId: workspace.id,
+        bankId: bank!.id,
+        name: 'Inter Gold',
+        limit: 300_000,
+        closingDay: 10,
+        dueDay: 17,
+      },
     ])
     .returning();
 
@@ -121,74 +144,83 @@ beforeAll(async () => {
   secondAccountId = second!.id;
   cardId = card!.id;
   secondCardId = secondCard!.id;
-  actor = { userId: user.id, workspaceId: workspace.id, role: "owner" };
+  actor = { userId: user.id, workspaceId: workspace.id, role: 'owner' };
 });
 
-describe("competência e parcelas (unidade)", () => {
-  test("dia ≤ closing_day cai no mês; depois vai para o mês seguinte (com virada de ano)", () => {
-    expect(competencePeriod("2026-07-10", 10)).toEqual({ month: 7, year: 2026 });
-    expect(competencePeriod("2026-07-11", 10)).toEqual({ month: 8, year: 2026 });
-    expect(competencePeriod("2026-12-25", 10)).toEqual({ month: 1, year: 2027 });
+describe('competência e parcelas (unidade)', () => {
+  test('dia ≤ closing_day cai no mês; depois vai para o mês seguinte (com virada de ano)', () => {
+    expect(competencePeriod('2026-07-10', 10)).toEqual({
+      month: 7,
+      year: 2026,
+    });
+    expect(competencePeriod('2026-07-11', 10)).toEqual({
+      month: 8,
+      year: 2026,
+    });
+    expect(competencePeriod('2026-12-25', 10)).toEqual({
+      month: 1,
+      year: 2027,
+    });
   });
 
-  test("parcelas somam exatamente o total; resto na primeira", () => {
+  test('parcelas somam exatamente o total; resto na primeira', () => {
     expect(splitInstallments(90_000, 3)).toEqual([30_000, 30_000, 30_000]);
     expect(splitInstallments(10_000, 3)).toEqual([3_334, 3_333, 3_333]);
     expect(splitInstallments(10_000, 3).reduce((a, b) => a + b)).toBe(10_000);
   });
 
-  test("addMonthsToDate mantém o dia, clampando no fim de mês curto (auditoria 2026-07-20)", () => {
-    expect(addMonthsToDate("2026-07-05", 0)).toBe("2026-07-05");
-    expect(addMonthsToDate("2026-07-05", 1)).toBe("2026-08-05");
-    expect(addMonthsToDate("2026-12-15", 2)).toBe("2027-02-15");
+  test('addMonthsToDate mantém o dia, clampando no fim de mês curto (auditoria 2026-07-20)', () => {
+    expect(addMonthsToDate('2026-07-05', 0)).toBe('2026-07-05');
+    expect(addMonthsToDate('2026-07-05', 1)).toBe('2026-08-05');
+    expect(addMonthsToDate('2026-12-15', 2)).toBe('2027-02-15');
     // dia 31 clampado no mês seguinte (fevereiro/2027 tem 28 dias)
-    expect(addMonthsToDate("2027-01-31", 1)).toBe("2027-02-28");
+    expect(addMonthsToDate('2027-01-31', 1)).toBe('2027-02-28');
   });
 });
 
-describe("transações e saldo derivado", () => {
-  test("receita/despesa afetam o saldo; transferência é neutra entre contas", async () => {
+describe('transações e saldo derivado', () => {
+  test('receita/despesa afetam o saldo; transferência é neutra entre contas', async () => {
     // receita 500,00 + despesa 120,00 na conta principal
     expect(
       (
         await createTransaction(deps, actor, {
-          description: "Freela",
+          description: 'Freela',
           amount: 50_000,
-          type: "income",
-          method: "pix",
-          date: "2026-07-05",
+          type: 'income',
+          method: 'pix',
+          date: '2026-07-05',
           categoryId,
           accountId,
         })
-      ).ok,
+      ).ok
     ).toBe(true);
     expect(
       (
         await createTransaction(deps, actor, {
-          description: "Mercado",
+          description: 'Mercado',
           amount: 12_000,
-          type: "expense",
-          method: "debit",
-          date: "2026-07-06",
+          type: 'expense',
+          method: 'debit',
+          date: '2026-07-06',
           categoryId,
           accountId,
         })
-      ).ok,
+      ).ok
     ).toBe(true);
     // transfere 200,00 para a reserva
     expect(
       (
         await createTransaction(deps, actor, {
-          description: "Guardar dinheiro",
+          description: 'Guardar dinheiro',
           amount: 20_000,
-          type: "expense",
-          method: "transfer",
-          date: "2026-07-07",
+          type: 'expense',
+          method: 'transfer',
+          date: '2026-07-07',
           categoryId,
           accountId,
           toAccountId: secondAccountId,
         })
-      ).ok,
+      ).ok
     ).toBe(true);
 
     // 1000 + 500 − 120 − 200 = 1180,00
@@ -197,24 +229,24 @@ describe("transações e saldo derivado", () => {
     expect(await accountBalance(secondAccountId)).toBe(20_000);
   });
 
-  test("validações de método: transfer sem destino e credit com conta falham", async () => {
+  test('validações de método: transfer sem destino e credit com conta falham', async () => {
     const noDest = await createTransaction(deps, actor, {
-      description: "x",
+      description: 'x',
       amount: 100,
-      type: "expense",
-      method: "transfer",
-      date: "2026-07-07",
+      type: 'expense',
+      method: 'transfer',
+      date: '2026-07-07',
       categoryId,
       accountId,
     });
     expect(noDest.ok).toBe(false);
 
     const creditWithAccount = await createTransaction(deps, actor, {
-      description: "x",
+      description: 'x',
       amount: 100,
-      type: "expense",
-      method: "credit",
-      date: "2026-07-07",
+      type: 'expense',
+      method: 'credit',
+      date: '2026-07-07',
       categoryId,
       cardId,
       accountId,
@@ -222,7 +254,7 @@ describe("transações e saldo derivado", () => {
     expect(creditWithAccount.ok).toBe(false);
   });
 
-  test("mutações geram AuditLog", async () => {
+  test('mutações geram AuditLog', async () => {
     const logs = await db
       .select()
       .from(auditLogs)
@@ -232,14 +264,14 @@ describe("transações e saldo derivado", () => {
   });
 });
 
-describe("crédito, fatura e pagamento", () => {
-  test("parcelada 3x cria 3 transações em faturas consecutivas somando o total", async () => {
+describe('crédito, fatura e pagamento', () => {
+  test('parcelada 3x cria 3 transações em faturas consecutivas somando o total', async () => {
     const result = await createTransaction(deps, actor, {
-      description: "Notebook",
+      description: 'Notebook',
       amount: 100_000,
-      type: "expense",
-      method: "credit",
-      date: "2026-07-05", // dia 5 ≤ closing 10 → fatura 07/2026
+      type: 'expense',
+      method: 'credit',
+      date: '2026-07-05', // dia 5 ≤ closing 10 → fatura 07/2026
       categoryId,
       cardId,
       installments: 3,
@@ -255,31 +287,41 @@ describe("crédito, fatura e pagamento", () => {
     const invoices = await listInvoices(deps, actor, cardId);
     expect(invoices.ok).toBe(true);
     if (!invoices.ok) return;
-    const periods = invoices.value.map((i) => `${i.monthReference}/${i.yearReference}`);
-    expect(periods).toContain("7/2026");
-    expect(periods).toContain("8/2026");
-    expect(periods).toContain("9/2026");
+    const periods = invoices.value.map(
+      (i) => `${i.monthReference}/${i.yearReference}`
+    );
+    expect(periods).toContain('7/2026');
+    expect(periods).toContain('8/2026');
+    expect(periods).toContain('9/2026');
 
     // Auditoria (2026-07-20): cada parcela é datada no mês em que efetivamente
     // cai, não todas na data da compra original — senão sumiam do resumo/filtro
     // por mês das faturas seguintes.
-    const byInstallment = [...result.value].sort((a, b) => a.installmentNumber! - b.installmentNumber!);
-    expect(byInstallment.map((t) => t.date)).toEqual(["2026-07-05", "2026-08-05", "2026-09-05"]);
+    const byInstallment = [...result.value].sort(
+      (a, b) => a.installmentNumber! - b.installmentNumber!
+    );
+    expect(byInstallment.map((t) => t.date)).toEqual([
+      '2026-07-05',
+      '2026-08-05',
+      '2026-09-05',
+    ]);
   });
 
-  test("pagar fatura cria transação de despesa na conta e marca paid; transação da fatura fica imutável", async () => {
+  test('pagar fatura cria transação de despesa na conta e marca paid; transação da fatura fica imutável', async () => {
     const invoices = await listInvoices(deps, actor, cardId);
-    if (!invoices.ok) throw new Error("listagem falhou");
-    const july = invoices.value.find((i) => i.monthReference === 7 && i.yearReference === 2026);
-    if (!july) throw new Error("fatura 07/2026 não encontrada");
+    if (!invoices.ok) throw new Error('listagem falhou');
+    const july = invoices.value.find(
+      (i) => i.monthReference === 7 && i.yearReference === 2026
+    );
+    if (!july) throw new Error('fatura 07/2026 não encontrada');
     // 1ª parcela leva o resto: 33.334
     expect(july.total).toBe(33_334);
 
     const balanceBefore = await accountBalance(accountId);
     const paid = await payInvoice(deps, actor, july.id, {
       accountId,
-      date: "2026-07-17",
-      method: "pix",
+      date: '2026-07-17',
+      method: 'pix',
     });
     expect(paid.ok).toBe(true);
 
@@ -289,104 +331,125 @@ describe("crédito, fatura e pagamento", () => {
     // pagar de novo falha
     const again = await payInvoice(deps, actor, july.id, {
       accountId,
-      date: "2026-07-18",
-      method: "pix",
+      date: '2026-07-18',
+      method: 'pix',
     });
     expect(again.ok).toBe(false);
 
     // transação de fatura paga é imutável (update e delete)
     const txInPaid = (await db.query.transactions.findMany()).find(
-      (t) => t.invoiceId === july.id && t.method === "credit",
+      (t) => t.invoiceId === july.id && t.method === 'credit'
     );
-    if (!txInPaid) throw new Error("parcela da fatura paga não encontrada");
-    const upd = await updateTransaction(deps, actor, txInPaid.id, { description: "hack" });
+    if (!txInPaid) throw new Error('parcela da fatura paga não encontrada');
+    const upd = await updateTransaction(deps, actor, txInPaid.id, {
+      description: 'hack',
+    });
     expect(upd.ok).toBe(false);
     const del = await deleteTransaction(deps, actor, txInPaid.id);
     expect(del.ok).toBe(false);
   });
 
-  test("compra parcelada cuja parcela futura cai em fatura já paga: reverte TODAS as parcelas, não deixa lixo parcial", async () => {
+  test('compra parcelada cuja parcela futura cai em fatura já paga: reverte TODAS as parcelas, não deixa lixo parcial', async () => {
     // Fatura de março/2027 já paga antecipadamente (isolada — nenhum outro teste toca esse período).
     const preTx = await createTransaction(deps, actor, {
-      description: "Assinatura pré-paga",
+      description: 'Assinatura pré-paga',
       amount: 1_000,
-      type: "expense",
-      method: "credit",
-      date: "2027-03-05", // dia ≤ 10 → competência março/2027
+      type: 'expense',
+      method: 'credit',
+      date: '2027-03-05', // dia ≤ 10 → competência março/2027
       categoryId,
       cardId,
     });
-    if (!preTx.ok) throw new Error("setup falhou");
+    if (!preTx.ok) throw new Error('setup falhou');
     const marchInvoiceId = preTx.value[0]!.invoiceId!;
     const paidMarch = await payInvoice(deps, actor, marchInvoiceId, {
       accountId,
-      date: "2027-03-06",
-      method: "pix",
+      date: '2027-03-06',
+      method: 'pix',
     });
     expect(paidMarch.ok).toBe(true);
 
     // Compra parcelada em 2x a partir de 2027-01-15 (dia > 10 → 1ª parcela cai em
     // fevereiro/2027, 2ª cai em março/2027 — a fatura que acabou de ser paga acima).
     const result = await createTransaction(deps, actor, {
-      description: "Compra que deveria reverter inteira",
+      description: 'Compra que deveria reverter inteira',
       amount: 2_000,
-      type: "expense",
-      method: "credit",
-      date: "2027-01-15",
+      type: 'expense',
+      method: 'credit',
+      date: '2027-01-15',
       categoryId,
       cardId,
       installments: 2,
     });
     expect(result.ok).toBe(false);
-    if (!result.ok) expect(result.error).toBe("invoice_paid");
+    if (!result.ok) expect(result.error).toBe('invoice_paid');
 
     // A parcela de fevereiro (que teria sido inserida ANTES de bater na de março,
     // já paga) não pode ter ficado no banco — prova que o throw reverteu tudo,
     // não só a parcela que efetivamente falhou.
     const leaked = await db.query.transactions.findMany({
-      where: eq(transactions.description, "Compra que deveria reverter inteira"),
+      where: eq(
+        transactions.description,
+        'Compra que deveria reverter inteira'
+      ),
     });
     expect(leaked).toHaveLength(0);
   });
 
-  test("duas chamadas paralelas de payInvoice: só uma vence a corrida, nunca dois pagamentos", async () => {
+  test('duas chamadas paralelas de payInvoice: só uma vence a corrida, nunca dois pagamentos', async () => {
     // Fatura isolada (dezembro/2026) — nenhum outro teste deste arquivo toca esse período.
     const created = await createTransaction(deps, actor, {
-      description: "Compra isolada pra teste de corrida",
+      description: 'Compra isolada pra teste de corrida',
       amount: 5_000,
-      type: "expense",
-      method: "credit",
-      date: "2026-12-05",
+      type: 'expense',
+      method: 'credit',
+      date: '2026-12-05',
       categoryId,
       cardId,
     });
-    if (!created.ok) throw new Error("setup falhou");
+    if (!created.ok) throw new Error('setup falhou');
     const invoiceId = created.value[0]!.invoiceId!;
 
     const [first, second] = await Promise.all([
-      payInvoice(deps, actor, invoiceId, { accountId, date: "2026-12-17", method: "pix" }),
-      payInvoice(deps, actor, invoiceId, { accountId, date: "2026-12-17", method: "pix" }),
+      payInvoice(deps, actor, invoiceId, {
+        accountId,
+        date: '2026-12-17',
+        method: 'pix',
+      }),
+      payInvoice(deps, actor, invoiceId, {
+        accountId,
+        date: '2026-12-17',
+        method: 'pix',
+      }),
     ]);
 
     const results = [first, second];
     expect(results.filter((r) => r.ok)).toHaveLength(1);
     const failed = results.find((r) => !r.ok);
-    expect(failed && !failed.ok ? failed.error : null).toBe("invoice_already_paid");
+    expect(failed && !failed.ok ? failed.error : null).toBe(
+      'invoice_already_paid'
+    );
 
     // Só uma transação de pagamento foi criada de verdade pra essa fatura (nunca duas).
     const invoicePayments = (await db.query.transactions.findMany()).filter(
-      (t) => t.method === "pix" && t.date === "2026-12-17" && t.accountId === accountId,
+      (t) =>
+        t.method === 'pix' &&
+        t.date === '2026-12-17' &&
+        t.accountId === accountId
     );
     expect(invoicePayments).toHaveLength(1);
   });
 
-  test("excluir parcelada remove só as parcelas de faturas não pagas", async () => {
+  test('excluir parcelada remove só as parcelas de faturas não pagas', async () => {
     // parcela 2 (fatura 08, não paga) — excluir a partir dela
     const all = await db.query.transactions.findMany();
     const parcel2 = all.find(
-      (t) => t.installmentNumber === 2 && t.description === "Notebook" && !t.deletedAt,
+      (t) =>
+        t.installmentNumber === 2 &&
+        t.description === 'Notebook' &&
+        !t.deletedAt
     );
-    if (!parcel2) throw new Error("parcela 2 não encontrada");
+    if (!parcel2) throw new Error('parcela 2 não encontrada');
 
     const result = await deleteTransaction(deps, actor, parcel2.id);
     expect(result.ok).toBe(true);
@@ -395,29 +458,33 @@ describe("crédito, fatura e pagamento", () => {
     expect(result.value.deletedIds).toHaveLength(2);
 
     const after = await db.query.transactions.findMany();
-    const parcel1 = after.find((t) => t.installmentNumber === 1 && t.description === "Notebook");
+    const parcel1 = after.find(
+      (t) => t.installmentNumber === 1 && t.description === 'Notebook'
+    );
     expect(parcel1?.deletedAt).toBeNull();
   });
 });
 
-describe("editar conta/cartão da transação (auditoria 2026-07-20)", () => {
-  test("troca de conta (pix/debit/cash): sai do saldo da conta antiga e entra na nova", async () => {
+describe('editar conta/cartão da transação (auditoria 2026-07-20)', () => {
+  test('troca de conta (pix/debit/cash): sai do saldo da conta antiga e entra na nova', async () => {
     const created = await createTransaction(deps, actor, {
-      description: "Editar conta",
+      description: 'Editar conta',
       amount: 5_000,
-      type: "expense",
-      method: "debit",
-      date: "2028-01-10",
+      type: 'expense',
+      method: 'debit',
+      date: '2028-01-10',
       categoryId,
       accountId,
     });
-    if (!created.ok) throw new Error("setup falhou");
+    if (!created.ok) throw new Error('setup falhou');
     const tx = created.value[0]!;
 
     const beforeOld = await accountBalance(accountId);
     const beforeNew = await accountBalance(secondAccountId);
 
-    const updated = await updateTransaction(deps, actor, tx.id, { accountId: secondAccountId });
+    const updated = await updateTransaction(deps, actor, tx.id, {
+      accountId: secondAccountId,
+    });
     expect(updated.ok).toBe(true);
     if (!updated.ok) return;
     expect(updated.value.accountId).toBe(secondAccountId);
@@ -427,134 +494,151 @@ describe("editar conta/cartão da transação (auditoria 2026-07-20)", () => {
     expect(await accountBalance(secondAccountId)).toBe(beforeNew - 5_000);
   });
 
-  test("trocar accountId numa transação credit é rejeitado", async () => {
+  test('trocar accountId numa transação credit é rejeitado', async () => {
     const created = await createTransaction(deps, actor, {
-      description: "Compra crédito p/ teste conta",
+      description: 'Compra crédito p/ teste conta',
       amount: 1_000,
-      type: "expense",
-      method: "credit",
-      date: "2028-02-05",
+      type: 'expense',
+      method: 'credit',
+      date: '2028-02-05',
       categoryId,
       cardId,
     });
-    if (!created.ok) throw new Error("setup falhou");
-    const result = await updateTransaction(deps, actor, created.value[0]!.id, { accountId });
+    if (!created.ok) throw new Error('setup falhou');
+    const result = await updateTransaction(deps, actor, created.value[0]!.id, {
+      accountId,
+    });
     expect(result.ok).toBe(false);
-    if (!result.ok) expect(result.error).toBe("invalid_method_fields");
+    if (!result.ok) expect(result.error).toBe('invalid_method_fields');
   });
 
-  test("trocar cardId numa transação não-crédito é rejeitado", async () => {
+  test('trocar cardId numa transação não-crédito é rejeitado', async () => {
     const created = await createTransaction(deps, actor, {
-      description: "Pix p/ teste cartão",
+      description: 'Pix p/ teste cartão',
       amount: 1_000,
-      type: "expense",
-      method: "pix",
-      date: "2028-02-06",
+      type: 'expense',
+      method: 'pix',
+      date: '2028-02-06',
       categoryId,
       accountId,
     });
-    if (!created.ok) throw new Error("setup falhou");
-    const result = await updateTransaction(deps, actor, created.value[0]!.id, { cardId });
+    if (!created.ok) throw new Error('setup falhou');
+    const result = await updateTransaction(deps, actor, created.value[0]!.id, {
+      cardId,
+    });
     expect(result.ok).toBe(false);
-    if (!result.ok) expect(result.error).toBe("invalid_method_fields");
+    if (!result.ok) expect(result.error).toBe('invalid_method_fields');
   });
 
-  test("trocar cartão de compra avulsa move a transação pra fatura do cartão novo", async () => {
+  test('trocar cartão de compra avulsa move a transação pra fatura do cartão novo', async () => {
     const created = await createTransaction(deps, actor, {
-      description: "Compra avulsa p/ trocar de cartão",
+      description: 'Compra avulsa p/ trocar de cartão',
       amount: 8_000,
-      type: "expense",
-      method: "credit",
-      date: "2028-03-05", // dia 5 ≤ closing 10 → fatura 03/2028 no cartão original
+      type: 'expense',
+      method: 'credit',
+      date: '2028-03-05', // dia 5 ≤ closing 10 → fatura 03/2028 no cartão original
       categoryId,
       cardId,
     });
-    if (!created.ok) throw new Error("setup falhou");
+    if (!created.ok) throw new Error('setup falhou');
     const tx = created.value[0]!;
     const oldInvoiceId = tx.invoiceId!;
 
-    const updated = await updateTransaction(deps, actor, tx.id, { cardId: secondCardId });
+    const updated = await updateTransaction(deps, actor, tx.id, {
+      cardId: secondCardId,
+    });
     expect(updated.ok).toBe(true);
     if (!updated.ok) return;
     expect(updated.value.cardId).toBe(secondCardId);
     expect(updated.value.invoiceId).not.toBe(oldInvoiceId);
 
     const newInvoices = await listInvoices(deps, actor, secondCardId);
-    if (!newInvoices.ok) throw new Error("listagem falhou");
-    expect(newInvoices.value.some((i) => i.id === updated.value.invoiceId)).toBe(true);
+    if (!newInvoices.ok) throw new Error('listagem falhou');
+    expect(
+      newInvoices.value.some((i) => i.id === updated.value.invoiceId)
+    ).toBe(true);
   });
 
-  test("trocar cartão de uma parcela é bloqueado (installment_field_locked)", async () => {
+  test('trocar cartão de uma parcela é bloqueado (installment_field_locked)', async () => {
     const created = await createTransaction(deps, actor, {
-      description: "Parcelada p/ bloquear troca de cartão",
+      description: 'Parcelada p/ bloquear troca de cartão',
       amount: 6_000,
-      type: "expense",
-      method: "credit",
-      date: "2028-04-05",
+      type: 'expense',
+      method: 'credit',
+      date: '2028-04-05',
       categoryId,
       cardId,
       installments: 2,
     });
-    if (!created.ok) throw new Error("setup falhou");
-    const result = await updateTransaction(deps, actor, created.value[0]!.id, { cardId: secondCardId });
+    if (!created.ok) throw new Error('setup falhou');
+    const result = await updateTransaction(deps, actor, created.value[0]!.id, {
+      cardId: secondCardId,
+    });
     expect(result.ok).toBe(false);
-    if (!result.ok) expect(result.error).toBe("installment_field_locked");
+    if (!result.ok) expect(result.error).toBe('installment_field_locked');
   });
 
-  test("trocar cartão pra um destino com fatura já paga é bloqueado", async () => {
+  test('trocar cartão pra um destino com fatura já paga é bloqueado', async () => {
     // Fatura de maio/2028 no cartão novo, paga antecipadamente
     const preTx = await createTransaction(deps, actor, {
-      description: "Pré-paga no cartão novo",
+      description: 'Pré-paga no cartão novo',
       amount: 1_000,
-      type: "expense",
-      method: "credit",
-      date: "2028-05-05",
+      type: 'expense',
+      method: 'credit',
+      date: '2028-05-05',
       categoryId,
       cardId: secondCardId,
     });
-    if (!preTx.ok) throw new Error("setup falhou");
+    if (!preTx.ok) throw new Error('setup falhou');
     const paid = await payInvoice(deps, actor, preTx.value[0]!.invoiceId!, {
       accountId,
-      date: "2028-05-06",
-      method: "pix",
+      date: '2028-05-06',
+      method: 'pix',
     });
     expect(paid.ok).toBe(true);
 
     const created = await createTransaction(deps, actor, {
-      description: "Compra no cartão original, mesma competência",
+      description: 'Compra no cartão original, mesma competência',
       amount: 2_000,
-      type: "expense",
-      method: "credit",
-      date: "2028-05-05",
+      type: 'expense',
+      method: 'credit',
+      date: '2028-05-05',
       categoryId,
       cardId,
     });
-    if (!created.ok) throw new Error("setup falhou");
+    if (!created.ok) throw new Error('setup falhou');
 
-    const result = await updateTransaction(deps, actor, created.value[0]!.id, { cardId: secondCardId });
+    const result = await updateTransaction(deps, actor, created.value[0]!.id, {
+      cardId: secondCardId,
+    });
     expect(result.ok).toBe(false);
-    if (!result.ok) expect(result.error).toBe("invoice_paid");
+    if (!result.ok) expect(result.error).toBe('invoice_paid');
   });
 });
 
-describe("categorias", () => {
-  test("excluir categoria em uso reatribui transações para a fallback; fallback não é deletável", async () => {
+describe('categorias', () => {
+  test('excluir categoria em uso reatribui transações para a fallback; fallback não é deletável', async () => {
     const [temp] = await db
       .insert(categories)
-      .values({ workspaceId: actor.workspaceId, name: "Temp", icon: "x", color: "#000000" })
+      .values({
+        workspaceId: actor.workspaceId,
+        name: 'Temp',
+        icon: 'x',
+        color: '#000000',
+      })
       .returning();
-    if (!temp) throw new Error("categoria temp não criada");
+    if (!temp) throw new Error('categoria temp não criada');
 
     const created = await createTransaction(deps, actor, {
-      description: "Compra temp",
+      description: 'Compra temp',
       amount: 5_000,
-      type: "expense",
-      method: "debit",
-      date: "2026-07-08",
+      type: 'expense',
+      method: 'debit',
+      date: '2026-07-08',
       categoryId: temp.id,
       accountId,
     });
-    if (!created.ok) throw new Error("transação temp não criada");
+    if (!created.ok) throw new Error('transação temp não criada');
 
     const del = await deleteCategory(deps, actor, temp.id);
     expect(del.ok).toBe(true);
@@ -565,7 +649,11 @@ describe("categorias", () => {
     });
     expect(reloaded?.categoryId).toBe(fallbackCategoryId);
 
-    const fallbackDelete = await deleteCategory(deps, actor, fallbackCategoryId);
+    const fallbackDelete = await deleteCategory(
+      deps,
+      actor,
+      fallbackCategoryId
+    );
     expect(fallbackDelete.ok).toBe(false);
   });
 });

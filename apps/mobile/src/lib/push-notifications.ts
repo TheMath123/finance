@@ -12,7 +12,10 @@ import { notificationApi } from '@/lib/notification-api';
  * tempo. `require` dinâmico só roda quando este guard já garantiu que é seguro.
  */
 function isPushUnsupportedHere(): boolean {
-  return Platform.OS === 'android' && Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
+  return (
+    Platform.OS === 'android' &&
+    Constants.executionEnvironment === ExecutionEnvironment.StoreClient
+  );
 }
 
 function loadNotificationsModule(): typeof import('expo-notifications') | null {
@@ -33,7 +36,9 @@ let categoriesConfigured = false;
  * estiver morto (não só em segundo plano) — preferível abrir o app rapidinho
  * a simplesmente não executar a ação.
  */
-async function registerNotificationCategories(Notifications: typeof import('expo-notifications')): Promise<void> {
+async function registerNotificationCategories(
+  Notifications: typeof import('expo-notifications')
+): Promise<void> {
   if (categoriesConfigured) return;
   categoriesConfigured = true;
   await Notifications.setNotificationCategoryAsync('transfer_pending', [
@@ -43,7 +48,10 @@ async function registerNotificationCategories(Notifications: typeof import('expo
     { identifier: 'mark_paid', buttonTitle: 'Marquei como pago' },
   ]);
   await Notifications.setNotificationCategoryAsync('split_payment_paid', [
-    { identifier: 'confirm_reimbursement', buttonTitle: 'Confirmar recebimento' },
+    {
+      identifier: 'confirm_reimbursement',
+      buttonTitle: 'Confirmar recebimento',
+    },
   ]);
 }
 
@@ -89,7 +97,10 @@ export async function registerForPushNotifications(): Promise<void> {
     const { data: token } = await Notifications.getExpoPushTokenAsync();
     await notificationApi.registerPushToken(token);
   } catch (error) {
-    console.warn('[push] não foi possível obter/registrar o token do Expo Push Service', error);
+    console.warn(
+      '[push] não foi possível obter/registrar o token do Expo Push Service',
+      error
+    );
   }
 }
 
@@ -108,7 +119,11 @@ export async function unregisterCurrentPushToken(): Promise<void> {
 
 export type NotificationResponse =
   | { kind: 'tap'; data: Record<string, unknown> | undefined }
-  | { kind: 'action'; actionIdentifier: string; data: Record<string, unknown> | undefined };
+  | {
+      kind: 'action';
+      actionIdentifier: string;
+      data: Record<string, unknown> | undefined;
+    };
 
 /**
  * Listener de interação com notificação (app em background/fechado) — chamado
@@ -116,23 +131,37 @@ export type NotificationResponse =
  * destino de sempre) de toque num botão de ação rápida ('action', ver
  * `registerNotificationCategories` acima e `notification-actions.ts`).
  */
-export function addNotificationResponseListener(onResponse: (response: NotificationResponse) => void): () => void {
+export function addNotificationResponseListener(
+  onResponse: (response: NotificationResponse) => void
+): () => void {
   const Notifications = loadNotificationsModule();
   if (!Notifications) return () => {};
 
-  const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
-    const data = response.notification.request.content.data as Record<string, unknown> | undefined;
-    if (response.actionIdentifier === Notifications.DEFAULT_ACTION_IDENTIFIER) {
-      onResponse({ kind: 'tap', data });
-    } else {
-      onResponse({ kind: 'action', actionIdentifier: response.actionIdentifier, data });
+  const subscription = Notifications.addNotificationResponseReceivedListener(
+    (response) => {
+      const data = response.notification.request.content.data as
+        | Record<string, unknown>
+        | undefined;
+      if (
+        response.actionIdentifier === Notifications.DEFAULT_ACTION_IDENTIFIER
+      ) {
+        onResponse({ kind: 'tap', data });
+      } else {
+        onResponse({
+          kind: 'action',
+          actionIdentifier: response.actionIdentifier,
+          data,
+        });
+      }
     }
-  });
+  );
   return () => subscription.remove();
 }
 
 /** Deep-link básico a partir do payload da notificação — usado no tap e no toque em foreground (lista de avisos). */
-export function notificationTargetRoute(data: Record<string, unknown> | undefined): string | null {
+export function notificationTargetRoute(
+  data: Record<string, unknown> | undefined
+): string | null {
   if (!data) return null;
   if (data.inviteId) return '/invites';
   if (data.cardId) return `/cards/${data.cardId}`;

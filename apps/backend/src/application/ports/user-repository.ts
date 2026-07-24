@@ -1,4 +1,4 @@
-import type { User } from "../../domain/entities/user";
+import type { User } from '../../domain/entities/user';
 
 export interface CreateUserData {
   name: string;
@@ -15,7 +15,11 @@ export interface UserRepository {
   findByPhone(phone: string): Promise<User | undefined>;
   create(data: CreateUserData): Promise<User>;
   setDefaultWorkspace(userId: string, workspaceId: string): Promise<void>;
-  recordLoginFailure(userId: string, attempts: number, lockedUntil: Date | null): Promise<void>;
+  recordLoginFailure(
+    userId: string,
+    attempts: number,
+    lockedUntil: Date | null
+  ): Promise<void>;
   resetLock(userId: string): Promise<void>;
   /** Também zera o lockout (regra do spec). */
   updatePassword(userId: string, passwordHash: string): Promise<void>;

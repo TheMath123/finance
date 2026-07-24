@@ -11,7 +11,10 @@ import { Button } from '@/components/ui/button';
 import { ApiError } from '@/lib/api-client';
 import { authApi } from '@/lib/auth-api';
 import { usePersistEmailField } from '@/lib/hooks/use-persist-email-field';
-import { forgotPasswordSchema, type ForgotPasswordInput } from '@/lib/schemas/auth';
+import {
+  type ForgotPasswordInput,
+  forgotPasswordSchema,
+} from '@/lib/schemas/auth';
 import { lastEmailStore } from '@/lib/secure-store';
 
 export function ForgotPasswordForm() {
@@ -34,7 +37,10 @@ export function ForgotPasswordForm() {
   const mutation = useMutation({
     mutationFn: authApi.forgotPassword,
     onSuccess: (_data, variables) => {
-      router.push({ pathname: '/reset-password', params: { email: variables.email } });
+      router.push({
+        pathname: '/reset-password',
+        params: { email: variables.email },
+      });
     },
   });
 
@@ -52,11 +58,16 @@ export function ForgotPasswordForm() {
 
       {mutation.isError && (
         <ThemedText type="small" style={{ color: '#DC2626' }}>
-          {mutation.error instanceof ApiError ? mutation.error.message : 'Erro inesperado'}
+          {mutation.error instanceof ApiError
+            ? mutation.error.message
+            : 'Erro inesperado'}
         </ThemedText>
       )}
 
-      <Button loading={mutation.isPending} onPress={handleSubmit((input) => mutation.mutate(input))}>
+      <Button
+        loading={mutation.isPending}
+        onPress={handleSubmit((input) => mutation.mutate(input))}
+      >
         Enviar código de redefinição
       </Button>
 

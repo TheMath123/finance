@@ -4,12 +4,18 @@
  */
 export function getClientIp(
   request: Request,
-  server: { requestIP(req: Request): { address: string } | null } | null | undefined,
-  trustProxy: boolean,
+  server:
+    | { requestIP(req: Request): { address: string } | null }
+    | null
+    | undefined,
+  trustProxy: boolean
 ): string {
   if (trustProxy) {
-    const forwarded = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
+    const forwarded = request.headers
+      .get('x-forwarded-for')
+      ?.split(',')[0]
+      ?.trim();
     if (forwarded) return forwarded;
   }
-  return server?.requestIP(request)?.address ?? "unknown";
+  return server?.requestIP(request)?.address ?? 'unknown';
 }

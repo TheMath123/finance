@@ -1,4 +1,4 @@
-import type { PlatformRole } from "@finance/shared";
+import type { PlatformRole } from '@finance/shared';
 
 /** Entidade pura — sem dependência de infra (as rows do Drizzle a satisfazem estruturalmente). */
 export interface User {

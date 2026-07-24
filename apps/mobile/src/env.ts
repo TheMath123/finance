@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from 'zod';
 
 /** Envs do app mobile, validadas no boot (regra: toda env nova entra aqui E no .env.example). */
 const envSchema = z.object({

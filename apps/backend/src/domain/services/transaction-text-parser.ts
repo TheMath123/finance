@@ -11,12 +11,15 @@ export interface ParsedAmountAndRest {
   rest: string;
 }
 
-const AMOUNT_AND_REST = /^(?:r\$\s*)?(\d{1,3}(?:\.\d{3})*(?:,\d{1,2})?|\d+(?:[.,]\d{1,2})?)\s+(.+)$/i;
+const AMOUNT_AND_REST =
+  /^(?:r\$\s*)?(\d{1,3}(?:\.\d{3})*(?:,\d{1,2})?|\d+(?:[.,]\d{1,2})?)\s+(.+)$/i;
 
 function parseAmountToCents(raw: string): number | null {
   // BR: "50", "50,90", "1.234,56" — vírgula decimal, ponto de milhar.
   // Sem vírgula, ponto é decimal ("50.90"), nunca milhar (regra do formato aceito acima).
-  const normalized = raw.includes(",") ? raw.replace(/\./g, "").replace(",", ".") : raw;
+  const normalized = raw.includes(',')
+    ? raw.replace(/\./g, '').replace(',', '.')
+    : raw;
   const value = Number(normalized);
   if (!Number.isFinite(value)) return null;
   return Math.round(value * 100);

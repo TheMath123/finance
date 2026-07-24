@@ -1,5 +1,5 @@
-import type { InviteRole } from "@finance/shared";
-import type { UseCaseDeps } from "../../deps";
+import type { InviteRole } from '@finance/shared';
+import type { UseCaseDeps } from '../../deps';
 
 export interface MyInviteView {
   id: string;
@@ -12,8 +12,8 @@ export interface MyInviteView {
 
 /** Convites pendentes endereçados ao usuário logado (por e-mail ou telefone vinculado). */
 export async function listMyInvites(
-  deps: Pick<UseCaseDeps, "repos">,
-  userId: string,
+  deps: Pick<UseCaseDeps, 'repos'>,
+  userId: string
 ): Promise<MyInviteView[]> {
   const user = await deps.repos.user.findById(userId);
   if (!user) return [];
@@ -30,11 +30,11 @@ export async function listMyInvites(
       return {
         id: invite.id,
         workspaceId: invite.workspaceId,
-        workspaceName: workspace?.name ?? "Workspace",
-        inviterName: inviter?.name ?? "Alguém",
+        workspaceName: workspace?.name ?? 'Workspace',
+        inviterName: inviter?.name ?? 'Alguém',
         role: invite.role,
         expiresAt: invite.expiresAt.toISOString(),
       };
-    }),
+    })
   );
 }

@@ -10,12 +10,18 @@ import { Card } from '@/components/ui/card';
 import { Screen } from '@/components/ui/screen';
 import { ApiError } from '@/lib/api-client';
 import { formatCents } from '@/lib/money';
-import { splitApi, type OwedByMeShare, type OwedToMeShare } from '@/lib/split-api';
+import {
+  type OwedByMeShare,
+  type OwedToMeShare,
+  splitApi,
+} from '@/lib/split-api';
 
 function MutationError({ error }: { error: unknown }) {
   return (
     <ThemedText type="small" style={{ color: '#DC2626' }}>
-      {error instanceof ApiError ? error.message : 'Erro inesperado, tenta de novo.'}
+      {error instanceof ApiError
+        ? error.message
+        : 'Erro inesperado, tenta de novo.'}
     </ThemedText>
   );
 }
@@ -30,7 +36,8 @@ function OwedByMeCard({ share }: { share: OwedByMeShare }) {
   const queryClient = useQueryClient();
   const markPaid = useMutation({
     mutationFn: () => splitApi.markPaid(share.shareId),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['splits-owed-by-me'] }),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ['splits-owed-by-me'] }),
   });
 
   return (
@@ -68,7 +75,8 @@ function OwedToMeCard({ share }: { share: OwedToMeShare }) {
   // Participante com conta (participantUserId) precisa ter marcado "paguei" antes —
   // criador só confirma nesse ponto (ver requiredStatus em confirm-reimbursement.ts).
   // Externo (sem conta) pula direto de "pending" pra confirmado.
-  const canConfirm = share.status === (share.participantUserId ? 'paid' : 'pending');
+  const canConfirm =
+    share.status === (share.participantUserId ? 'paid' : 'pending');
 
   return (
     <Card className="gap-2">
@@ -111,17 +119,29 @@ export default function SplitsScreen() {
   return (
     <Screen className="gap-6 pb-28">
       <View className="flex-row items-center gap-3">
-        <Pressable onPress={() => router.back()} hitSlop={8} className="active:opacity-60">
+        <Pressable
+          onPress={() => router.back()}
+          hitSlop={8}
+          className="active:opacity-60"
+        >
           <ArrowLeftIcon size={22} />
         </Pressable>
         <ThemedText type="subtitle">Splits pendentes</ThemedText>
       </View>
 
       <View className="flex-row gap-2">
-        <Button variant={tab === 'owed-by-me' ? 'default' : 'outline'} size="sm" onPress={() => setTab('owed-by-me')}>
+        <Button
+          variant={tab === 'owed-by-me' ? 'default' : 'outline'}
+          size="sm"
+          onPress={() => setTab('owed-by-me')}
+        >
           O que eu devo
         </Button>
-        <Button variant={tab === 'owed-to-me' ? 'default' : 'outline'} size="sm" onPress={() => setTab('owed-to-me')}>
+        <Button
+          variant={tab === 'owed-to-me' ? 'default' : 'outline'}
+          size="sm"
+          onPress={() => setTab('owed-to-me')}
+        >
           O que me devem
         </Button>
       </View>

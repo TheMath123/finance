@@ -1,9 +1,9 @@
-import { apiRequest } from "@/lib/api-client";
+import { apiRequest } from '@/lib/api-client';
 
-export type SplitShareStatus = "pending" | "paid" | "confirmed";
+export type SplitShareStatus = 'pending' | 'paid' | 'confirmed';
 
 export interface CreateSplitParticipant {
-  type: "user" | "external";
+  type: 'user' | 'external';
   contact?: string;
   name?: string;
   amount?: number;
@@ -38,19 +38,29 @@ export interface OwedToMeShare {
 }
 
 export const splitApi = {
-  create: (workspaceId: string, transactionId: string, participants: CreateSplitParticipant[]) =>
-    apiRequest<ExpenseSplit>(`/workspaces/${workspaceId}/transactions/${transactionId}/split`, {
-      method: "POST",
-      body: { participants },
-    }),
+  create: (
+    workspaceId: string,
+    transactionId: string,
+    participants: CreateSplitParticipant[]
+  ) =>
+    apiRequest<ExpenseSplit>(
+      `/workspaces/${workspaceId}/transactions/${transactionId}/split`,
+      {
+        method: 'POST',
+        body: { participants },
+      }
+    ),
 
-  cancel: (splitId: string) => apiRequest<ExpenseSplit>(`/splits/${splitId}/cancel`, { method: "POST" }),
+  cancel: (splitId: string) =>
+    apiRequest<ExpenseSplit>(`/splits/${splitId}/cancel`, { method: 'POST' }),
 
-  markPaid: (shareId: string) => apiRequest(`/split-shares/${shareId}/paid`, { method: "POST" }),
+  markPaid: (shareId: string) =>
+    apiRequest(`/split-shares/${shareId}/paid`, { method: 'POST' }),
 
-  confirm: (shareId: string) => apiRequest(`/split-shares/${shareId}/confirm`, { method: "POST" }),
+  confirm: (shareId: string) =>
+    apiRequest(`/split-shares/${shareId}/confirm`, { method: 'POST' }),
 
-  listOwedByMe: () => apiRequest<OwedByMeShare[]>("/splits/owed-by-me"),
+  listOwedByMe: () => apiRequest<OwedByMeShare[]>('/splits/owed-by-me'),
 
-  listOwedToMe: () => apiRequest<OwedToMeShare[]>("/splits/owed-to-me"),
+  listOwedToMe: () => apiRequest<OwedToMeShare[]>('/splits/owed-to-me'),
 };

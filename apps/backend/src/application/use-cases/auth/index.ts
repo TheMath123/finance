@@ -1,17 +1,32 @@
-export { register, type RegisterInput } from "./register";
-export { login, type LoginInput } from "./login";
-export { refresh, type RefreshInput } from "./refresh";
-export { logout } from "./logout";
-export { requestAccountDeletion, type RequestAccountDeletionInput } from "./request-account-deletion";
-export { confirmAccountDeletion, type ConfirmAccountDeletionInput } from "./confirm-account-deletion";
-export { forgotPassword, type ForgotPasswordInput } from "./forgot-password";
-export { resetPassword, type ResetPasswordInput } from "./reset-password";
-export { verifyResetCode, type VerifyResetCodeInput } from "./verify-reset-code";
-export { verifyEmail, type VerifyEmailInput } from "./verify-email";
-export { issueSession, type AuthSession } from "./session";
-export { me, type MeOutput } from "./me";
-export { updateName, type UpdateNameInput } from "./update-name";
-export { requestEmailChange, type RequestEmailChangeInput } from "./request-email-change";
-export { confirmEmailChange, type ConfirmEmailChangeInput } from "./confirm-email-change";
-export { changePassword, type ChangePasswordInput } from "./change-password";
-export type { AuthError } from "./errors";
+export { type ChangePasswordInput, changePassword } from './change-password';
+export {
+  type ConfirmAccountDeletionInput,
+  confirmAccountDeletion,
+} from './confirm-account-deletion';
+export {
+  type ConfirmEmailChangeInput,
+  confirmEmailChange,
+} from './confirm-email-change';
+export type { AuthError } from './errors';
+export { type ForgotPasswordInput, forgotPassword } from './forgot-password';
+export { type LoginInput, login } from './login';
+export { logout } from './logout';
+export { type MeOutput, me } from './me';
+export { type RefreshInput, refresh } from './refresh';
+export { type RegisterInput, register } from './register';
+export {
+  type RequestAccountDeletionInput,
+  requestAccountDeletion,
+} from './request-account-deletion';
+export {
+  type RequestEmailChangeInput,
+  requestEmailChange,
+} from './request-email-change';
+export { type ResetPasswordInput, resetPassword } from './reset-password';
+export { type AuthSession, issueSession } from './session';
+export { type UpdateNameInput, updateName } from './update-name';
+export { type VerifyEmailInput, verifyEmail } from './verify-email';
+export {
+  type VerifyResetCodeInput,
+  verifyResetCode,
+} from './verify-reset-code';

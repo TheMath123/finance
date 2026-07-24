@@ -1,5 +1,5 @@
-import { buildTransactionsCsv } from "../../../domain/services/transactions-csv";
-import type { Actor, UseCaseDeps } from "../../deps";
+import { buildTransactionsCsv } from '../../../domain/services/transactions-csv';
+import type { Actor, UseCaseDeps } from '../../deps';
 
 /**
  * M2-11: export CSV de transações (portabilidade LGPD). Síncrono — o volume
@@ -9,8 +9,8 @@ import type { Actor, UseCaseDeps } from "../../deps";
  * ORDER BY é ainda mais barato).
  */
 export async function exportTransactionsCsv(
-  deps: Pick<UseCaseDeps, "repos">,
-  actor: Actor,
+  deps: Pick<UseCaseDeps, 'repos'>,
+  actor: Actor
 ): Promise<string> {
   const rows = await deps.repos.transaction.listForExport(actor.workspaceId);
   return buildTransactionsCsv(rows);

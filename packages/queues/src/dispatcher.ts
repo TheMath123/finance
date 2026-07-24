@@ -1,4 +1,4 @@
-import type { JobHandlers, JobName, JobPayloads } from "./jobs";
+import type { JobHandlers, JobName, JobPayloads } from './jobs';
 
 /**
  * Interface única de enfileiramento. M1 usa o dispatcher direto (fire-and-forget,
@@ -15,7 +15,7 @@ export interface QueueDispatcher {
 export function createDirectDispatcher(
   handlers: JobHandlers,
   onError: (job: JobName, error: unknown) => void = (job, error) =>
-    console.error(`[queues] job "${job}" falhou:`, error),
+    console.error(`[queues] job "${job}" falhou:`, error)
 ): QueueDispatcher {
   return {
     async dispatch(name, payload) {

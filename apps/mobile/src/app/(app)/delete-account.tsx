@@ -11,7 +11,11 @@ export default function DeleteAccountScreen() {
   return (
     <Screen className="gap-6 pb-28">
       <View className="flex-row items-center gap-3">
-        <Pressable onPress={() => router.back()} hitSlop={8} className="active:opacity-60">
+        <Pressable
+          onPress={() => router.back()}
+          hitSlop={8}
+          className="active:opacity-60"
+        >
           <ArrowLeftIcon size={22} />
         </Pressable>
         <ThemedText type="subtitle">Excluir conta</ThemedText>
@@ -25,9 +29,10 @@ export default function DeleteAccountScreen() {
           </ThemedText>
         </View>
         <ThemedText type="small" themeColor="textSecondary">
-          Ao excluir sua conta, todas as suas transações, contas, cartões, categorias e faturas
-          serão apagados permanentemente e não poderão ser recuperados. Workspaces compartilhados
-          em que você não é o único dono continuam existindo para os demais membros.
+          Ao excluir sua conta, todas as suas transações, contas, cartões,
+          categorias e faturas serão apagados permanentemente e não poderão ser
+          recuperados. Workspaces compartilhados em que você não é o único dono
+          continuam existindo para os demais membros.
         </ThemedText>
       </Card>
 

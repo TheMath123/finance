@@ -15,8 +15,11 @@ import { accountsApi } from '@/lib/accounts-api';
 import { ApiError } from '@/lib/api-client';
 import { cardsApi } from '@/lib/cards-api';
 import { useCategories } from '@/lib/hooks/use-categories';
-import { editTransactionSchema, type EditTransactionInput } from '@/lib/schemas/finance';
-import { transactionsApi, type Transaction } from '@/lib/transactions-api';
+import {
+  type EditTransactionInput,
+  editTransactionSchema,
+} from '@/lib/schemas/finance';
+import { type Transaction, transactionsApi } from '@/lib/transactions-api';
 import { AttachmentField } from './attachment-field';
 import { CreateSplitForm } from './create-split-form';
 
@@ -66,7 +69,9 @@ export function EditTransactionForm({
       amount: transaction.amount,
       categoryId: transaction.categoryId,
       date: transaction.date,
-      accountId: canEditAccount ? (transaction.accountId ?? undefined) : undefined,
+      accountId: canEditAccount
+        ? (transaction.accountId ?? undefined)
+        : undefined,
       cardId: canEditCard ? (transaction.cardId ?? undefined) : undefined,
     },
   });
@@ -75,16 +80,28 @@ export function EditTransactionForm({
     mutationFn: (input: EditTransactionInput) =>
       transactionsApi.update(workspaceId!, transaction.id, input),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['transactions', workspaceId] });
+      queryClient.invalidateQueries({
+        queryKey: ['transactions', workspaceId],
+      });
       queryClient.invalidateQueries({ queryKey: ['summary', workspaceId] });
       onDone();
     },
   });
 
-  const categoryOptions = (categories ?? []).map((c) => ({ label: c.name, value: c.id }));
-  const accountOptions = (accounts ?? []).map((a) => ({ label: a.name, value: a.id }));
-  const cardOptions = (cards ?? []).map((c) => ({ label: c.name, value: c.id }));
-  const canSplit = transaction.type === 'expense' && Boolean(transaction.accountId);
+  const categoryOptions = (categories ?? []).map((c) => ({
+    label: c.name,
+    value: c.id,
+  }));
+  const accountOptions = (accounts ?? []).map((a) => ({
+    label: a.name,
+    value: a.id,
+  }));
+  const cardOptions = (cards ?? []).map((c) => ({
+    label: c.name,
+    value: c.id,
+  }));
+  const canSplit =
+    transaction.type === 'expense' && Boolean(transaction.accountId);
 
   if (splitting) {
     return <CreateSplitForm transaction={transaction} onDone={onDone} />;
@@ -92,12 +109,17 @@ export function EditTransactionForm({
 
   return (
     <View className="gap-4">
-      <TextField control={control} name="description" label="Descrição" placeholder="Ex.: Mercado" />
+      <TextField
+        control={control}
+        name="description"
+        label="Descrição"
+        placeholder="Ex.: Mercado"
+      />
       <MoneyField control={control} name="amount" label="Valor" />
       {isParceled && (
         <ThemedText type="small" themeColor="textSecondary">
-          Parcela {transaction.installmentNumber} de {transaction.installmentTotal} — o valor acima é só
-          desta parcela.
+          Parcela {transaction.installmentNumber} de{' '}
+          {transaction.installmentTotal} — o valor acima é só desta parcela.
         </ThemedText>
       )}
       <SelectField
@@ -134,10 +156,15 @@ export function EditTransactionForm({
       <AttachmentField workspaceId={workspaceId!} transaction={transaction} />
       {mutation.isError && (
         <ThemedText type="small" style={{ color: '#DC2626' }}>
-          {mutation.error instanceof ApiError ? mutation.error.message : 'Erro inesperado'}
+          {mutation.error instanceof ApiError
+            ? mutation.error.message
+            : 'Erro inesperado'}
         </ThemedText>
       )}
-      <Button loading={mutation.isPending} onPress={handleSubmit((input) => mutation.mutate(input))}>
+      <Button
+        loading={mutation.isPending}
+        onPress={handleSubmit((input) => mutation.mutate(input))}
+      >
         Salvar alterações
       </Button>
       {canSplit && (
@@ -146,7 +173,11 @@ export function EditTransactionForm({
         </Button>
       )}
       {onDelete && (
-        <Button variant="ghost" textClassName="text-destructive" onPress={onDelete}>
+        <Button
+          variant="ghost"
+          textClassName="text-destructive"
+          onPress={onDelete}
+        >
           Excluir transação
         </Button>
       )}

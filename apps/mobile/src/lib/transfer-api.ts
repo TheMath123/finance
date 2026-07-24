@@ -1,7 +1,10 @@
-import { apiRequest } from "@/lib/api-client";
-import type { AcceptTransferInput, CreateTransferInput } from "@/lib/schemas/finance";
+import { apiRequest } from '@/lib/api-client';
+import type {
+  AcceptTransferInput,
+  CreateTransferInput,
+} from '@/lib/schemas/finance';
 
-export type TransferStatus = "pending" | "accepted" | "rejected" | "expired";
+export type TransferStatus = 'pending' | 'accepted' | 'rejected' | 'expired';
 
 export interface Transfer {
   id: string;
@@ -42,19 +45,28 @@ export interface TrustedContact {
 
 export const transferApi = {
   create: (workspaceId: string, input: CreateTransferInput) =>
-    apiRequest<Transfer>(`/workspaces/${workspaceId}/transfers`, { method: "POST", body: input }),
+    apiRequest<Transfer>(`/workspaces/${workspaceId}/transfers`, {
+      method: 'POST',
+      body: input,
+    }),
 
-  listPending: () => apiRequest<PendingTransfer[]>("/transfers/pending"),
+  listPending: () => apiRequest<PendingTransfer[]>('/transfers/pending'),
 
   /** Contas do usuário logado em qualquer workspace seu — escolha de destino no aceite. */
-  listAccounts: () => apiRequest<TransferAccountOption[]>("/transfers/accounts"),
+  listAccounts: () =>
+    apiRequest<TransferAccountOption[]>('/transfers/accounts'),
 
   accept: (transferId: string, input: AcceptTransferInput) =>
-    apiRequest<Transfer>(`/transfers/${transferId}/accept`, { method: "POST", body: input }),
+    apiRequest<Transfer>(`/transfers/${transferId}/accept`, {
+      method: 'POST',
+      body: input,
+    }),
 
-  reject: (transferId: string) => apiRequest<Transfer>(`/transfers/${transferId}/reject`, { method: "POST" }),
+  reject: (transferId: string) =>
+    apiRequest<Transfer>(`/transfers/${transferId}/reject`, { method: 'POST' }),
 
-  listTrustedContacts: () => apiRequest<TrustedContact[]>("/trusted-contacts"),
+  listTrustedContacts: () => apiRequest<TrustedContact[]>('/trusted-contacts'),
 
-  removeTrustedContact: (id: string) => apiRequest<void>(`/trusted-contacts/${id}`, { method: "DELETE" }),
+  removeTrustedContact: (id: string) =>
+    apiRequest<void>(`/trusted-contacts/${id}`, { method: 'DELETE' }),
 };

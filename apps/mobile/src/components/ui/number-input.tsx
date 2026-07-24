@@ -1,25 +1,28 @@
-import React, { useState, useCallback } from "react";
-import { View, TextInput, Pressable, Text, useColorScheme } from "react-native";
-import { cva, type VariantProps } from "class-variance-authority";
-import { cn } from "../../lib/cn";
+import { cva, type VariantProps } from 'class-variance-authority';
+import React, { useCallback, useState } from 'react';
+import { Pressable, Text, TextInput, useColorScheme, View } from 'react-native';
+import { cn } from '../../lib/cn';
 
-const numberVariants = cva("flex-row items-center rounded-md border", {
+const numberVariants = cva('flex-row items-center rounded-md border', {
   variants: {
     variant: {
-      default: "border-input bg-background",
-      ghost: "border-transparent bg-transparent",
+      default: 'border-input bg-background',
+      ghost: 'border-transparent bg-transparent',
     },
     size: {
-      sm: "min-h-9 px-2",
-      md: "min-h-12 px-3",
-      lg: "min-h-14 px-4",
+      sm: 'min-h-9 px-2',
+      md: 'min-h-12 px-3',
+      lg: 'min-h-14 px-4',
     },
   },
-  defaultVariants: { variant: "default", size: "md" },
+  defaultVariants: { variant: 'default', size: 'md' },
 });
 
 export interface NumberInputProps
-  extends Omit<React.ComponentPropsWithoutRef<typeof TextInput>, "value" | "onChangeText">,
+  extends Omit<
+      React.ComponentPropsWithoutRef<typeof TextInput>,
+      'value' | 'onChangeText'
+    >,
     VariantProps<typeof numberVariants> {
   className?: string;
   value?: number;
@@ -33,13 +36,23 @@ export const NumberInput = React.forwardRef<
   React.ElementRef<typeof TextInput>,
   NumberInputProps
 >(function NumberInput(
-  { variant, size, className, value: controlledValue, onValueChange, min = 0, max = 999999, step = 1, ...props },
+  {
+    variant,
+    size,
+    className,
+    value: controlledValue,
+    onValueChange,
+    min = 0,
+    max = 999999,
+    step = 1,
+    ...props
+  },
   ref
 ) {
   const [internal, setInternal] = useState(controlledValue ?? min);
   const value = controlledValue ?? internal;
-  const dark = useColorScheme() === "dark";
-  const caret = dark ? "#fafafa" : "#18181b";
+  const dark = useColorScheme() === 'dark';
+  const caret = dark ? '#fafafa' : '#18181b';
 
   const update = useCallback(
     (next: number) => {
@@ -60,14 +73,21 @@ export const NumberInput = React.forwardRef<
         accessibilityLabel="Decrease"
         className="min-h-10 min-w-10 items-center justify-center"
       >
-        <Text className={cn("text-lg font-bold", value <= min ? "text-muted" : "text-foreground")}>−</Text>
+        <Text
+          className={cn(
+            'text-lg font-bold',
+            value <= min ? 'text-muted' : 'text-foreground'
+          )}
+        >
+          −
+        </Text>
       </Pressable>
       <TextInput
         ref={ref}
         className="flex-1 text-foreground text-base p-0"
         textAlign="center"
         keyboardType="number-pad"
-        keyboardAppearance={dark ? "dark" : "light"}
+        keyboardAppearance={dark ? 'dark' : 'light'}
         selectionColor={caret}
         cursorColor={caret}
         value={String(value)}
@@ -83,7 +103,14 @@ export const NumberInput = React.forwardRef<
         accessibilityLabel="Increase"
         className="min-h-10 min-w-10 items-center justify-center"
       >
-        <Text className={cn("text-lg font-bold", value >= max ? "text-muted" : "text-foreground")}>+</Text>
+        <Text
+          className={cn(
+            'text-lg font-bold',
+            value >= max ? 'text-muted' : 'text-foreground'
+          )}
+        >
+          +
+        </Text>
       </Pressable>
     </View>
   );

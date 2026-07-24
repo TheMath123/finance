@@ -24,7 +24,7 @@ const RECONNECT_MS = 10 * 60_000;
  * logout ou ao desmontar).
  */
 export function subscribeToNotificationStream(
-  onMessage: (message: NotificationStreamMessage) => void,
+  onMessage: (message: NotificationStreamMessage) => void
 ): () => void {
   let es: EventSource | null = null;
   let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
@@ -51,7 +51,8 @@ export function subscribeToNotificationStream(
     // 401 = token expirou antes da reconexão programada — o retry automático
     // da lib reusaria o mesmo header velho pra sempre, então força já.
     es.addEventListener('error', (event) => {
-      if (event.type === 'error' && event.xhrStatus === 401) scheduleReconnect(0);
+      if (event.type === 'error' && event.xhrStatus === 401)
+        scheduleReconnect(0);
     });
 
     scheduleReconnect(RECONNECT_MS);

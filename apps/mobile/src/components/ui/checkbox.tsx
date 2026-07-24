@@ -1,15 +1,22 @@
-import React from "react";
-import { Pressable, View, Text } from "react-native";
-import * as CheckboxPrimitive from "@rn-primitives/checkbox";
-import { cn } from "../../lib/cn";
+import * as CheckboxPrimitive from '@rn-primitives/checkbox';
+import type React from 'react';
+import { Pressable, Text, View } from 'react-native';
+import { cn } from '../../lib/cn';
 
-export interface CheckboxProps extends React.ComponentPropsWithoutRef<typeof Pressable> {
+export interface CheckboxProps
+  extends React.ComponentPropsWithoutRef<typeof Pressable> {
   className?: string;
   checked?: boolean;
   onCheckedChange?: (checked: boolean) => void;
 }
 
-export function Checkbox({ checked = false, onCheckedChange, className, disabled, ...props }: CheckboxProps) {
+export function Checkbox({
+  checked = false,
+  onCheckedChange,
+  className,
+  disabled,
+  ...props
+}: CheckboxProps) {
   return (
     <CheckboxPrimitive.Root
       checked={checked}
@@ -27,9 +34,11 @@ export function Checkbox({ checked = false, onCheckedChange, className, disabled
       >
         <View
           className={cn(
-            "h-5 w-5 items-center justify-center rounded border",
-            checked ? "border-primary bg-primary" : "border-input bg-background",
-            disabled && "opacity-50",
+            'h-5 w-5 items-center justify-center rounded border',
+            checked
+              ? 'border-primary bg-primary'
+              : 'border-input bg-background',
+            disabled && 'opacity-50',
             className
           )}
         >

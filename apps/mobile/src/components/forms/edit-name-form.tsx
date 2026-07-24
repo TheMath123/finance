@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { useSession } from '@/context/session';
 import { ApiError } from '@/lib/api-client';
 import { authApi } from '@/lib/auth-api';
-import { updateNameSchema, type UpdateNameInput } from '@/lib/schemas/auth';
+import { type UpdateNameInput, updateNameSchema } from '@/lib/schemas/auth';
 
 export interface EditNameFormProps {
   /** Chamado após salvar com sucesso — usado pelo modal do perfil pra se fechar sozinho. */
@@ -46,7 +46,9 @@ export function EditNameForm({ onSuccess }: EditNameFormProps = {}) {
 
       {mutation.isError && (
         <ThemedText type="small" style={{ color: '#DC2626' }}>
-          {mutation.error instanceof ApiError ? mutation.error.message : 'Erro inesperado'}
+          {mutation.error instanceof ApiError
+            ? mutation.error.message
+            : 'Erro inesperado'}
         </ThemedText>
       )}
       {mutation.isSuccess && (
@@ -55,7 +57,10 @@ export function EditNameForm({ onSuccess }: EditNameFormProps = {}) {
         </ThemedText>
       )}
 
-      <Button loading={mutation.isPending} onPress={handleSubmit((input) => mutation.mutate(input))}>
+      <Button
+        loading={mutation.isPending}
+        onPress={handleSubmit((input) => mutation.mutate(input))}
+      >
         Salvar nome
       </Button>
     </View>

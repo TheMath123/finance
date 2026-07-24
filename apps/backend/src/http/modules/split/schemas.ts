@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from 'zod';
 
 export const workspaceTransactionParamsSchema = z.object({
   workspaceId: z.string().uuid(),
@@ -7,15 +7,15 @@ export const workspaceTransactionParamsSchema = z.object({
 export const splitParamsSchema = z.object({ id: z.string().uuid() });
 export const shareParamsSchema = z.object({ id: z.string().uuid() });
 
-const participantSchema = z.discriminatedUnion("type", [
+const participantSchema = z.discriminatedUnion('type', [
   z.object({
-    type: z.literal("user"),
+    type: z.literal('user'),
     /** Telefone ou e-mail de um usuário existente na plataforma. */
     contact: z.string().min(3).max(320),
     amount: z.number().int().positive().optional(),
   }),
   z.object({
-    type: z.literal("external"),
+    type: z.literal('external'),
     name: z.string().min(1).max(120),
     amount: z.number().int().positive().optional(),
   }),

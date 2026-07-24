@@ -1,6 +1,6 @@
-import type { TransactionMethod, TransactionType } from "@finance/shared";
+import type { TransactionMethod, TransactionType } from '@finance/shared';
 
-import { apiRequest } from "@/lib/api-client";
+import { apiRequest } from '@/lib/api-client';
 
 export interface Transaction {
   id: string;
@@ -71,35 +71,50 @@ export interface UpdateTransactionInput {
 export const transactionsApi = {
   list: (workspaceId: string, filters: ListTransactionsFilters = {}) => {
     const query = new URLSearchParams(
-      Object.entries(filters).flatMap(([key, value]) => (value === undefined ? [] : [[key, String(value)]])),
+      Object.entries(filters).flatMap(([key, value]) =>
+        value === undefined ? [] : [[key, String(value)]]
+      )
     ).toString();
     return apiRequest<Transaction[]>(
-      `/workspaces/${workspaceId}/transactions${query ? `?${query}` : ""}`,
+      `/workspaces/${workspaceId}/transactions${query ? `?${query}` : ''}`
     );
   },
 
   /** Retorna um array — parcelas geram uma Transaction por parcela. */
   create: (workspaceId: string, input: CreateTransactionInput) =>
     apiRequest<Transaction[]>(`/workspaces/${workspaceId}/transactions`, {
-      method: "POST",
+      method: 'POST',
       body: input,
     }),
 
   /** Tipo/método continuam travados; conta (não-crédito) e cartão (crédito avulsa) já podem mudar. */
-  update: (workspaceId: string, transactionId: string, input: UpdateTransactionInput) =>
-    apiRequest<Transaction>(`/workspaces/${workspaceId}/transactions/${transactionId}`, {
-      method: "PATCH",
-      body: input,
-    }),
+  update: (
+    workspaceId: string,
+    transactionId: string,
+    input: UpdateTransactionInput
+  ) =>
+    apiRequest<Transaction>(
+      `/workspaces/${workspaceId}/transactions/${transactionId}`,
+      {
+        method: 'PATCH',
+        body: input,
+      }
+    ),
 
   /** Soft delete — some da listagem, mas pode ser restaurada. */
   delete: (workspaceId: string, transactionId: string) =>
-    apiRequest<void>(`/workspaces/${workspaceId}/transactions/${transactionId}`, {
-      method: "DELETE",
-    }),
+    apiRequest<void>(
+      `/workspaces/${workspaceId}/transactions/${transactionId}`,
+      {
+        method: 'DELETE',
+      }
+    ),
 
   restore: (workspaceId: string, transactionId: string) =>
-    apiRequest<Transaction>(`/workspaces/${workspaceId}/transactions/${transactionId}/restore`, {
-      method: "POST",
-    }),
+    apiRequest<Transaction>(
+      `/workspaces/${workspaceId}/transactions/${transactionId}/restore`,
+      {
+        method: 'POST',
+      }
+    ),
 };

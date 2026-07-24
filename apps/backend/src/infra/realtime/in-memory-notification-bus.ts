@@ -1,5 +1,5 @@
-import { EventEmitter } from "node:events";
-import type { NotificationBus } from "../../application/ports/notification-bus";
+import { EventEmitter } from 'node:events';
+import type { NotificationBus } from '../../application/ports/notification-bus';
 
 /** Só pra testes (`test/deps.ts`) — sem Redis, um processo só. */
 export function createInMemoryNotificationBus(): NotificationBus {

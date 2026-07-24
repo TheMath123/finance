@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from 'zod';
 
 /**
  * Campo que aceita e-mail OU telefone de um usuário já cadastrado (convite de
@@ -14,4 +14,4 @@ export const emailOrPhoneSchema = z
   .trim()
   .min(3)
   .max(320)
-  .transform((value) => (value.includes("@") ? value.toLowerCase() : value));
+  .transform((value) => (value.includes('@') ? value.toLowerCase() : value));

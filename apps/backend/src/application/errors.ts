@@ -5,9 +5,9 @@
  */
 export function isUniqueConstraintError(error: unknown): boolean {
   return (
-    typeof error === "object" &&
+    typeof error === 'object' &&
     error !== null &&
-    "code" in error &&
-    (error as { code?: string }).code === "23505"
+    'code' in error &&
+    (error as { code?: string }).code === '23505'
   );
 }

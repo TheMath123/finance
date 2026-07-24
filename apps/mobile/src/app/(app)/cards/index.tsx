@@ -1,5 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
 import { getBank } from '@finance/shared';
+import { useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { ArrowLeftIcon, CreditCardIcon, PlusIcon } from 'phosphor-react-native';
 import { ActivityIndicator, Pressable, View } from 'react-native';
@@ -27,14 +27,19 @@ export default function CardsScreen() {
     <Screen className="gap-6 pb-28">
       <View className="flex-row items-center justify-between">
         <View className="flex-row items-center gap-3">
-          <Pressable onPress={() => router.back()} hitSlop={8} className="active:opacity-60">
+          <Pressable
+            onPress={() => router.back()}
+            hitSlop={8}
+            className="active:opacity-60"
+          >
             <ArrowLeftIcon size={22} />
           </Pressable>
           <ThemedText type="subtitle">Cartões</ThemedText>
         </View>
         <Pressable
           onPress={() => router.push('/cards/new')}
-          className="h-9 w-9 items-center justify-center rounded-full bg-primary/10 active:opacity-70">
+          className="h-9 w-9 items-center justify-center rounded-full bg-primary/10 active:opacity-70"
+        >
           <PlusIcon size={18} color="#2563EB" weight="bold" />
         </Pressable>
       </View>
@@ -43,9 +48,16 @@ export default function CardsScreen() {
         <ActivityIndicator />
       ) : cards && cards.length > 0 ? (
         cards.map((cardItem) => (
-          <Pressable key={cardItem.id} onPress={() => router.push(`/cards/${cardItem.id}`)}>
+          <Pressable
+            key={cardItem.id}
+            onPress={() => router.push(`/cards/${cardItem.id}`)}
+          >
             <Card
-              className={cn('flex-row items-center justify-between', cardItem.archivedAt && 'opacity-50')}>
+              className={cn(
+                'flex-row items-center justify-between',
+                cardItem.archivedAt && 'opacity-50'
+              )}
+            >
               <View className="flex-row items-center gap-3">
                 <View className="h-9 w-9 items-center justify-center rounded-full bg-primary/10">
                   <CreditCardIcon size={18} color="#2563EB" />
@@ -68,7 +80,9 @@ export default function CardsScreen() {
                 <ThemedText type="small" themeColor="textSecondary">
                   Disponível
                 </ThemedText>
-                <ThemedText type="smallBold">{formatCents(cardItem.availableLimit)}</ThemedText>
+                <ThemedText type="smallBold">
+                  {formatCents(cardItem.availableLimit)}
+                </ThemedText>
               </View>
             </Card>
           </Pressable>

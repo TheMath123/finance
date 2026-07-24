@@ -10,14 +10,21 @@ export interface LockoutResult {
 }
 
 /** Regra pura: decide o próximo estado de tentativas/lock a partir de uma falha de login. */
-export function nextLockoutState(currentAttempts: number, now: Date): LockoutResult {
+export function nextLockoutState(
+  currentAttempts: number,
+  now: Date
+): LockoutResult {
   const attempts = currentAttempts + 1;
   if (attempts % LOCK_THRESHOLD !== 0) {
     return { attempts, lockedUntil: null, lockMinutes: null };
   }
   const level = Math.min(attempts / LOCK_THRESHOLD, LOCK_MINUTES.length) - 1;
   const minutes = LOCK_MINUTES[level]!;
-  return { attempts, lockedUntil: new Date(now.getTime() + minutes * 60_000), lockMinutes: minutes };
+  return {
+    attempts,
+    lockedUntil: new Date(now.getTime() + minutes * 60_000),
+    lockMinutes: minutes,
+  };
 }
 
 export function isLocked(lockedUntil: Date | null, now: Date): boolean {

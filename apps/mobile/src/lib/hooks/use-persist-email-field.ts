@@ -7,7 +7,10 @@ import { lastEmailStore } from '@/lib/secure-store';
 const DEBOUNCE_MS = 500;
 
 /** Salva o e-mail digitado (debounced) pra pré-preencher login/cadastro/esqueci senha da próxima vez. */
-export function usePersistEmailField<T extends FieldValues>(control: Control<T>, name: Path<T>) {
+export function usePersistEmailField<T extends FieldValues>(
+  control: Control<T>,
+  name: Path<T>
+) {
   const email = useWatch({ control, name }) as unknown as string;
 
   useEffect(() => {

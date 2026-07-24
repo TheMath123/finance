@@ -1,4 +1,4 @@
-import type { Actor, UseCaseDeps } from "../../deps";
+import type { Actor, UseCaseDeps } from '../../deps';
 
 /** Meses completos de histórico usados na média — mês corrente fica de fora (ainda em andamento). */
 const HISTORY_MONTHS = 3;
@@ -18,14 +18,22 @@ export interface VariableExpenseEstimate {
 }
 
 function isoDate(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
 /** Janela dos últimos `HISTORY_MONTHS` meses completos anteriores ao mês corrente. */
 function historyWindow(today: Date): { from: string; to: string } {
-  const firstOfCurrentMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+  const firstOfCurrentMonth = new Date(
+    today.getFullYear(),
+    today.getMonth(),
+    1
+  );
   const to = new Date(firstOfCurrentMonth.getTime() - 1);
-  const from = new Date(to.getFullYear(), to.getMonth() - (HISTORY_MONTHS - 1), 1);
+  const from = new Date(
+    to.getFullYear(),
+    to.getMonth() - (HISTORY_MONTHS - 1),
+    1
+  );
   return { from: isoDate(from), to: isoDate(to) };
 }
 
@@ -42,15 +50,19 @@ function cacheKey(workspaceId: string): string {
  * transações) pra rodar em toda consulta de resumo mensal.
  */
 export async function estimateVariableExpense(
-  deps: Pick<UseCaseDeps, "repos" | "cache">,
-  actor: Actor,
+  deps: Pick<UseCaseDeps, 'repos' | 'cache'>,
+  actor: Actor
 ): Promise<VariableExpenseEstimate> {
   const key = cacheKey(actor.workspaceId);
   const cached = await deps.cache.get<VariableExpenseEstimate>(key);
   if (cached) return cached;
 
   const { from, to } = historyWindow(new Date());
-  const rows = await deps.repos.transaction.variableExpenseByCategory(actor.workspaceId, from, to);
+  const rows = await deps.repos.transaction.variableExpenseByCategory(
+    actor.workspaceId,
+    from,
+    to
+  );
 
   const byCategory = rows.map((r) => ({
     categoryId: r.categoryId,

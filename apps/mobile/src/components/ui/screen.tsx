@@ -14,11 +14,22 @@ export interface ScreenProps {
   scroll?: boolean;
 }
 
-export function Screen({ children, center = false, className, scroll = true }: ScreenProps) {
+export function Screen({
+  children,
+  center = false,
+  className,
+  scroll = true,
+}: ScreenProps) {
   if (!scroll) {
     return (
       <ThemedView className="flex-1">
-        <SafeAreaView className={cn('flex-1 gap-4 px-6', center ? 'justify-center' : 'pt-6', className)}>
+        <SafeAreaView
+          className={cn(
+            'flex-1 gap-4 px-6',
+            center ? 'justify-center' : 'pt-6',
+            className
+          )}
+        >
           {children}
         </SafeAreaView>
       </ThemedView>
@@ -29,8 +40,13 @@ export function Screen({ children, center = false, className, scroll = true }: S
     <ThemedView className="flex-1">
       <SafeAreaView className="flex-1">
         <ScrollView
-          contentContainerClassName={cn('gap-4 px-6', center ? 'flex-grow justify-center' : 'pt-6', className)}
-          keyboardShouldPersistTaps="handled">
+          contentContainerClassName={cn(
+            'gap-4 px-6',
+            center ? 'flex-grow justify-center' : 'pt-6',
+            className
+          )}
+          keyboardShouldPersistTaps="handled"
+        >
           {children}
         </ScrollView>
       </SafeAreaView>

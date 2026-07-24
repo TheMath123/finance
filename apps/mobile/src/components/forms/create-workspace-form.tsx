@@ -8,7 +8,10 @@ import { ThemedText } from '@/components/themed-text';
 import { Button } from '@/components/ui/button';
 import { useSession } from '@/context/session';
 import { ApiError } from '@/lib/api-client';
-import { createWorkspaceSchema, type CreateWorkspaceInput } from '@/lib/schemas/workspace';
+import {
+  type CreateWorkspaceInput,
+  createWorkspaceSchema,
+} from '@/lib/schemas/workspace';
 import { workspaceApi } from '@/lib/workspace-api';
 
 interface CreateWorkspaceFormProps {
@@ -43,10 +46,15 @@ export function CreateWorkspaceForm({ onDone }: CreateWorkspaceFormProps) {
       />
       {mutation.isError && (
         <ThemedText type="small" style={{ color: '#DC2626' }}>
-          {mutation.error instanceof ApiError ? mutation.error.message : 'Erro inesperado'}
+          {mutation.error instanceof ApiError
+            ? mutation.error.message
+            : 'Erro inesperado'}
         </ThemedText>
       )}
-      <Button loading={mutation.isPending} onPress={handleSubmit((input) => mutation.mutate(input))}>
+      <Button
+        loading={mutation.isPending}
+        onPress={handleSubmit((input) => mutation.mutate(input))}
+      >
         Criar workspace
       </Button>
     </View>

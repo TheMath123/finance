@@ -1,6 +1,8 @@
-import { z } from "zod";
+import { z } from 'zod';
 
-export const workspaceParamsSchema = z.object({ workspaceId: z.string().uuid() });
+export const workspaceParamsSchema = z.object({
+  workspaceId: z.string().uuid(),
+});
 export const categoryParamsSchema = workspaceParamsSchema.extend({
   categoryId: z.string().uuid(),
 });

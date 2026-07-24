@@ -12,11 +12,17 @@ export const right = <T>(value: T): Right<T> => ({ ok: true, value });
 export const isLeft = <E, T>(e: Either<E, T>): e is Left<E> => !e.ok;
 export const isRight = <E, T>(e: Either<E, T>): e is Right<T> => e.ok;
 
-export function map<E, T, U>(e: Either<E, T>, fn: (value: T) => U): Either<E, U> {
+export function map<E, T, U>(
+  e: Either<E, T>,
+  fn: (value: T) => U
+): Either<E, U> {
   return e.ok ? right(fn(e.value)) : e;
 }
 
-export function flatMap<E, T, U>(e: Either<E, T>, fn: (value: T) => Either<E, U>): Either<E, U> {
+export function flatMap<E, T, U>(
+  e: Either<E, T>,
+  fn: (value: T) => Either<E, U>
+): Either<E, U> {
   return e.ok ? fn(e.value) : e;
 }
 

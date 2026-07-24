@@ -1,6 +1,10 @@
-import type { TransactionMethod, TransactionSource, TransactionType } from "@finance/shared";
-import type { Transaction } from "../../domain/entities/transaction";
-import type { TransactionExportRow } from "../../domain/services/transactions-csv";
+import type {
+  TransactionMethod,
+  TransactionSource,
+  TransactionType,
+} from '@finance/shared';
+import type { Transaction } from '../../domain/entities/transaction';
+import type { TransactionExportRow } from '../../domain/services/transactions-csv';
 
 /** Dados para inserção (id/timestamps são da infra). */
 export interface TransactionDraft {
@@ -51,36 +55,56 @@ export interface TransactionFilters {
 
 export interface TransactionRepository {
   create(draft: TransactionDraft): Promise<Transaction>;
-  findInWorkspace(workspaceId: string, id: string): Promise<Transaction | undefined>;
+  findInWorkspace(
+    workspaceId: string,
+    id: string
+  ): Promise<Transaction | undefined>;
   /** Sem escopo de workspace — só pra uso interno quando a propriedade já foi validada por outro caminho (ex.: criador de um split, M3-03). */
   findById(id: string): Promise<Transaction | undefined>;
   listByGroup(installmentGroupId: string): Promise<Transaction[]>;
   update(id: string, patch: TransactionPatch): Promise<Transaction>;
   softDelete(id: string): Promise<void>;
   restore(id: string): Promise<void>;
-  list(workspaceId: string, filters: TransactionFilters): Promise<Transaction[]>;
+  list(
+    workspaceId: string,
+    filters: TransactionFilters
+  ): Promise<Transaction[]>;
   existsByAccount(accountId: string): Promise<boolean>;
   existsByCard(cardId: string): Promise<boolean>;
-  findByRecurringAndDate(recurringId: string, date: string): Promise<Transaction | undefined>;
+  findByRecurringAndDate(
+    recurringId: string,
+    date: string
+  ): Promise<Transaction | undefined>;
   /** Última transação lançada por esse usuário desde `since` (não-deletada) — associação foto→transação no WhatsApp (M3-05). */
-  findMostRecentByCreator(workspaceId: string, createdBy: string, since: Date): Promise<Transaction | undefined>;
+  findMostRecentByCreator(
+    workspaceId: string,
+    createdBy: string,
+    since: Date
+  ): Promise<Transaction | undefined>;
   /** Pares (recurringId, date) já materializados — inclui soft-deletadas (spec). */
-  confirmedOccurrenceKeys(recurringIds: string[]): Promise<{ recurringId: string; date: string }[]>;
+  confirmedOccurrenceKeys(
+    recurringIds: string[]
+  ): Promise<{ recurringId: string; date: string }[]>;
   /** Σ efeitos na conta (sem o initial_balance) — saldo derivado (spec). */
   balanceDelta(accountId: string): Promise<number>;
   reassignCategory(fromCategoryId: string, toCategoryId: string): Promise<void>;
   /** Cache de categorização (M2-07): categoria mais usada pra essa descrição normalizada, se houver. */
-  findMostUsedCategory(workspaceId: string, descriptionNormalized: string): Promise<string | undefined>;
+  findMostUsedCategory(
+    workspaceId: string,
+    descriptionNormalized: string
+  ): Promise<string | undefined>;
   monthlyTotals(
     workspaceId: string,
     from: string,
-    to: string,
+    to: string
   ): Promise<{ income: number; expense: number }>;
   expenseByCategory(
     workspaceId: string,
     from: string,
-    to: string,
-  ): Promise<{ categoryId: string; name: string; color: string; total: number }[]>;
+    to: string
+  ): Promise<
+    { categoryId: string; name: string; color: string; total: number }[]
+  >;
   /**
    * Igual a `expenseByCategory`, mas só o que é "variável" de verdade —
    * exclui parcelas (`installmentGroupId`) e recorrências (`recurringId`),
@@ -89,8 +113,10 @@ export interface TransactionRepository {
   variableExpenseByCategory(
     workspaceId: string,
     from: string,
-    to: string,
-  ): Promise<{ categoryId: string; name: string; color: string; total: number }[]>;
+    to: string
+  ): Promise<
+    { categoryId: string; name: string; color: string; total: number }[]
+  >;
   /** Export CSV (M2-11, LGPD) — todas as transações do workspace, nomes já resolvidos, sem limite de página. */
   listForExport(workspaceId: string): Promise<TransactionExportRow[]>;
 }

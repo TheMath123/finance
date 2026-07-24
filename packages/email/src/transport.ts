@@ -1,5 +1,5 @@
-import nodemailer, { type Transporter } from "nodemailer";
-import { loadEmailEnv, type EmailEnv } from "./env";
+import nodemailer, { type Transporter } from 'nodemailer';
+import { type EmailEnv, loadEmailEnv } from './env';
 
 /**
  * Nodemailer via SMTP: trocar de provedor (Resend → outro) é trocar credenciais,

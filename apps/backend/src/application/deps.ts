@@ -1,14 +1,14 @@
-import type { QueueDispatcher } from "@finance/queues";
-import type { Storage } from "@finance/storage";
-import type { Repositories } from "./ports/repositories";
-import type { UnitOfWork } from "./ports/unit-of-work";
-import type { PasswordHasher } from "./ports/password-hasher";
-import type { TokenService } from "./ports/token-service";
-import type { SecurityLogger } from "./ports/logger";
-import type { RateLimiter } from "./ports/rate-limiter";
-import type { TokenBudget } from "./ports/token-budget";
-import type { Cache } from "./ports/cache";
-import type { NotificationBus } from "./ports/notification-bus";
+import type { QueueDispatcher } from '@finance/queues';
+import type { Storage } from '@finance/storage';
+import type { Cache } from './ports/cache';
+import type { SecurityLogger } from './ports/logger';
+import type { NotificationBus } from './ports/notification-bus';
+import type { PasswordHasher } from './ports/password-hasher';
+import type { RateLimiter } from './ports/rate-limiter';
+import type { Repositories } from './ports/repositories';
+import type { TokenBudget } from './ports/token-budget';
+import type { TokenService } from './ports/token-service';
+import type { UnitOfWork } from './ports/unit-of-work';
 
 /** Dependências dos use cases — apenas ports (nunca Drizzle/Elysia). */
 export interface UseCaseDeps {
@@ -16,7 +16,7 @@ export interface UseCaseDeps {
   uow: UnitOfWork;
   hasher: PasswordHasher;
   tokens: TokenService;
-  dispatch: QueueDispatcher["dispatch"];
+  dispatch: QueueDispatcher['dispatch'];
   logger: SecurityLogger;
   rateLimiter: RateLimiter;
   /** Guardrail de custo de IA (M2-07) — orçamento diário de tokens por usuário. */
@@ -34,5 +34,5 @@ export interface UseCaseDeps {
 export interface Actor {
   userId: string;
   workspaceId: string;
-  role: import("@finance/shared").WorkspaceRole;
+  role: import('@finance/shared').WorkspaceRole;
 }

@@ -1,4 +1,4 @@
-import type { AccountType } from "@finance/shared";
+import type { AccountType } from '@finance/shared';
 
 export interface BankAccount {
   id: string;

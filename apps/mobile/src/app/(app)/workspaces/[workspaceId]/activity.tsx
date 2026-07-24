@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { useLocalSearchParams, router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import {
   ArrowCounterClockwiseIcon,
   ArrowLeftIcon,
@@ -13,7 +13,7 @@ import { ActivityIndicator, Pressable, View } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { Card } from '@/components/ui/card';
 import { Screen } from '@/components/ui/screen';
-import { workspaceApi, type AuditLogView } from '@/lib/workspace-api';
+import { type AuditLogView, workspaceApi } from '@/lib/workspace-api';
 
 const ENTITY_LABELS: Record<string, string> = {
   workspace: 'workspace',
@@ -35,7 +35,10 @@ const ACTION_LABELS: Record<AuditLogView['action'], string> = {
   restore: 'restaurou',
 };
 
-const ACTION_ICONS: Record<AuditLogView['action'], ComponentType<{ size?: number; color?: string }>> = {
+const ACTION_ICONS: Record<
+  AuditLogView['action'],
+  ComponentType<{ size?: number; color?: string }>
+> = {
   create: PlusCircleIcon,
   update: PencilSimpleIcon,
   delete: TrashIcon,
@@ -81,7 +84,11 @@ export default function WorkspaceActivityScreen() {
   return (
     <Screen className="gap-6">
       <View className="flex-row items-center gap-3">
-        <Pressable onPress={() => router.back()} hitSlop={8} className="active:opacity-60">
+        <Pressable
+          onPress={() => router.back()}
+          hitSlop={8}
+          className="active:opacity-60"
+        >
           <ArrowLeftIcon size={22} />
         </Pressable>
         <ThemedText type="subtitle">Atividade</ThemedText>

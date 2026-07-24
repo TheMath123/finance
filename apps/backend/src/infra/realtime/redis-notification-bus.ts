@@ -1,8 +1,11 @@
-import { EventEmitter } from "node:events";
-import { Redis } from "ioredis";
-import type { NotificationBus, NotificationBusMessage } from "../../application/ports/notification-bus";
+import { EventEmitter } from 'node:events';
+import { Redis } from 'ioredis';
+import type {
+  NotificationBus,
+  NotificationBusMessage,
+} from '../../application/ports/notification-bus';
 
-const CHANNEL_PREFIX = "notifications:";
+const CHANNEL_PREFIX = 'notifications:';
 
 /**
  * Pub/sub via Redis (não em memória) porque quem publica pode ser o processo
@@ -19,7 +22,7 @@ export function createRedisNotificationBus(redisUrl: string): NotificationBus {
   emitter.setMaxListeners(0);
 
   void subscriber.psubscribe(`${CHANNEL_PREFIX}*`);
-  subscriber.on("pmessage", (_pattern, channel: string, raw: string) => {
+  subscriber.on('pmessage', (_pattern, channel: string, raw: string) => {
     const userId = channel.slice(CHANNEL_PREFIX.length);
     let message: NotificationBusMessage;
     try {
@@ -32,7 +35,10 @@ export function createRedisNotificationBus(redisUrl: string): NotificationBus {
 
   return {
     async publish(userId, message) {
-      await publisher.publish(`${CHANNEL_PREFIX}${userId}`, JSON.stringify(message));
+      await publisher.publish(
+        `${CHANNEL_PREFIX}${userId}`,
+        JSON.stringify(message)
+      );
     },
     subscribe(userId, onMessage) {
       emitter.on(userId, onMessage);

@@ -1,6 +1,6 @@
-import { left, right, type Either } from "@finance/shared";
-import type { Actor, UseCaseDeps } from "../../deps";
-import type { CategoryError } from "./errors";
+import { type Either, left, right } from '@finance/shared';
+import type { Actor, UseCaseDeps } from '../../deps';
+import type { CategoryError } from './errors';
 
 /**
  * Exclusão de categoria em uso: transações são reatribuídas para "Outros"
@@ -9,16 +9,20 @@ import type { CategoryError } from "./errors";
 export async function deleteCategory(
   deps: UseCaseDeps,
   actor: Actor,
-  categoryId: string,
+  categoryId: string
 ): Promise<Either<CategoryError, { reassignedTo: string }>> {
-  const existing = await deps.repos.category.findInWorkspace(actor.workspaceId, categoryId);
-  if (!existing) return left("category_not_found");
+  const existing = await deps.repos.category.findInWorkspace(
+    actor.workspaceId,
+    categoryId
+  );
+  if (!existing) return left('category_not_found');
   // isFallback: invariante estrutural — é o alvo de reatribuição, nunca pode sumir.
   // isDefault: regra de negócio — categoria do seed não é editável/excluível pelo usuário.
-  if (existing.isFallback || existing.isDefault) return left("default_category_protected");
+  if (existing.isFallback || existing.isDefault)
+    return left('default_category_protected');
 
   const fallback = await deps.repos.category.findFallback(actor.workspaceId);
-  if (!fallback) throw new Error("workspace sem categoria fallback");
+  if (!fallback) throw new Error('workspace sem categoria fallback');
 
   await deps.uow.run(async (repos) => {
     await repos.transaction.reassignCategory(categoryId, fallback.id);
@@ -26,8 +30,8 @@ export async function deleteCategory(
     await repos.audit.record({
       workspaceId: actor.workspaceId,
       userId: actor.userId,
-      action: "delete",
-      entity: "category",
+      action: 'delete',
+      entity: 'category',
       entityId: categoryId,
     });
   });

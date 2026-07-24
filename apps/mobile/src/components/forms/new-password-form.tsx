@@ -9,7 +9,7 @@ import { ThemedText } from '@/components/themed-text';
 import { Button } from '@/components/ui/button';
 import { ApiError } from '@/lib/api-client';
 import { authApi } from '@/lib/auth-api';
-import { newPasswordSchema, type NewPasswordInput } from '@/lib/schemas/auth';
+import { type NewPasswordInput, newPasswordSchema } from '@/lib/schemas/auth';
 
 interface NewPasswordFormProps {
   email: string;
@@ -51,11 +51,16 @@ export function NewPasswordForm({ email, code }: NewPasswordFormProps) {
 
       {mutation.isError && (
         <ThemedText type="small" style={{ color: '#DC2626' }}>
-          {mutation.error instanceof ApiError ? mutation.error.message : 'Erro inesperado'}
+          {mutation.error instanceof ApiError
+            ? mutation.error.message
+            : 'Erro inesperado'}
         </ThemedText>
       )}
 
-      <Button loading={mutation.isPending} onPress={handleSubmit((input) => mutation.mutate(input))}>
+      <Button
+        loading={mutation.isPending}
+        onPress={handleSubmit((input) => mutation.mutate(input))}
+      >
         Redefinir senha
       </Button>
     </View>

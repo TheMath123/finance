@@ -12,7 +12,11 @@ import { useSession } from '@/context/session';
 import { ApiError } from '@/lib/api-client';
 import { workspaceApi } from '@/lib/workspace-api';
 
-const ROLE_LABELS: Record<string, string> = { admin: 'Admin', member: 'Membro', viewer: 'Somente leitura' };
+const ROLE_LABELS: Record<string, string> = {
+  admin: 'Admin',
+  member: 'Membro',
+  viewer: 'Somente leitura',
+};
 
 export default function MyInvitesScreen() {
   const queryClient = useQueryClient();
@@ -33,7 +37,12 @@ export default function MyInvitesScreen() {
       await switchWorkspace(workspaceId);
       router.replace('/workspaces');
     } catch (error) {
-      Alert.alert('Erro', error instanceof ApiError ? error.message : 'Não foi possível aceitar o convite.');
+      Alert.alert(
+        'Erro',
+        error instanceof ApiError
+          ? error.message
+          : 'Não foi possível aceitar o convite.'
+      );
     } finally {
       setAcceptingId(null);
     }
@@ -42,7 +51,11 @@ export default function MyInvitesScreen() {
   return (
     <Screen className="gap-6">
       <View className="flex-row items-center gap-3">
-        <Pressable onPress={() => router.back()} hitSlop={8} className="active:opacity-60">
+        <Pressable
+          onPress={() => router.back()}
+          hitSlop={8}
+          className="active:opacity-60"
+        >
           <ArrowLeftIcon size={22} />
         </Pressable>
         <ThemedText type="subtitle">Convites recebidos</ThemedText>
@@ -57,10 +70,14 @@ export default function MyInvitesScreen() {
               <View>
                 <ThemedText type="smallBold">{invite.workspaceName}</ThemedText>
                 <ThemedText type="small" themeColor="textSecondary">
-                  {invite.inviterName} te convidou como {ROLE_LABELS[invite.role] ?? invite.role}
+                  {invite.inviterName} te convidou como{' '}
+                  {ROLE_LABELS[invite.role] ?? invite.role}
                 </ThemedText>
               </View>
-              <Button loading={acceptingId === invite.id} onPress={() => accept(invite.id, invite.workspaceId)}>
+              <Button
+                loading={acceptingId === invite.id}
+                onPress={() => accept(invite.id, invite.workspaceId)}
+              >
                 Aceitar
               </Button>
             </Card>

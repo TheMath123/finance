@@ -1,6 +1,11 @@
 import * as Clipboard from 'expo-clipboard';
 import { router } from 'expo-router';
-import { ArrowLeftIcon, CheckCircleIcon, CopyIcon, WhatsappLogoIcon } from 'phosphor-react-native';
+import {
+  ArrowLeftIcon,
+  CheckCircleIcon,
+  CopyIcon,
+  WhatsappLogoIcon,
+} from 'phosphor-react-native';
 import { useEffect, useRef, useState } from 'react';
 import { Alert, Linking, Pressable, View } from 'react-native';
 
@@ -25,7 +30,10 @@ export default function WhatsAppLinkScreen() {
 
   useEffect(() => {
     if (!code) return;
-    const tick = setInterval(() => setSecondsLeft((s) => Math.max(0, s - 1)), 1_000);
+    const tick = setInterval(
+      () => setSecondsLeft((s) => Math.max(0, s - 1)),
+      1_000
+    );
     return () => clearInterval(tick);
   }, [code]);
 
@@ -44,7 +52,10 @@ export default function WhatsAppLinkScreen() {
   useEffect(() => {
     if (user?.phone && code) {
       setCode(null);
-      Alert.alert('WhatsApp vinculado!', `O número ${user.phone} foi vinculado à sua conta.`);
+      Alert.alert(
+        'WhatsApp vinculado!',
+        `O número ${user.phone} foi vinculado à sua conta.`
+      );
     }
   }, [user?.phone]);
 
@@ -53,9 +64,21 @@ export default function WhatsAppLinkScreen() {
     try {
       const started = await whatsappApi.startLink();
       setCode(started.code);
-      setSecondsLeft(Math.max(0, Math.round((new Date(started.expiresAt).getTime() - Date.now()) / 1000)));
+      setSecondsLeft(
+        Math.max(
+          0,
+          Math.round(
+            (new Date(started.expiresAt).getTime() - Date.now()) / 1000
+          )
+        )
+      );
     } catch (error) {
-      Alert.alert('Erro', error instanceof ApiError ? error.message : 'Não foi possível gerar o código.');
+      Alert.alert(
+        'Erro',
+        error instanceof ApiError
+          ? error.message
+          : 'Não foi possível gerar o código.'
+      );
     } finally {
       setGenerating(false);
     }
@@ -70,7 +93,9 @@ export default function WhatsAppLinkScreen() {
     if (!code) return;
     const number = env.EXPO_PUBLIC_WHATSAPP_NUMBER;
     const text = encodeURIComponent(code);
-    const url = number ? `https://wa.me/${number}?text=${text}` : `https://wa.me/?text=${text}`;
+    const url = number
+      ? `https://wa.me/${number}?text=${text}`
+      : `https://wa.me/?text=${text}`;
     Linking.openURL(url).catch(() => {
       Alert.alert('Erro', 'Não foi possível abrir o WhatsApp.');
     });
@@ -91,23 +116,36 @@ export default function WhatsAppLinkScreen() {
       await whatsappApi.revokeLink();
       await refreshUser();
     } catch (error) {
-      Alert.alert('Erro', error instanceof ApiError ? error.message : 'Não foi possível revogar o vínculo.');
+      Alert.alert(
+        'Erro',
+        error instanceof ApiError
+          ? error.message
+          : 'Não foi possível revogar o vínculo.'
+      );
     } finally {
       setRevoking(false);
     }
   };
 
   const confirmRevoke = () => {
-    Alert.alert('Revogar vínculo do WhatsApp?', 'Você vai parar de conseguir registrar transações por lá.', [
-      { text: 'Cancelar', style: 'cancel' },
-      { text: 'Revogar', style: 'destructive', onPress: doRevoke },
-    ]);
+    Alert.alert(
+      'Revogar vínculo do WhatsApp?',
+      'Você vai parar de conseguir registrar transações por lá.',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Revogar', style: 'destructive', onPress: doRevoke },
+      ]
+    );
   };
 
   return (
     <Screen className="gap-6">
       <View className="flex-row items-center gap-3">
-        <Pressable onPress={() => router.back()} hitSlop={8} className="active:opacity-60">
+        <Pressable
+          onPress={() => router.back()}
+          hitSlop={8}
+          className="active:opacity-60"
+        >
           <ArrowLeftIcon size={22} />
         </Pressable>
         <ThemedText type="subtitle">Vincular WhatsApp</ThemedText>
@@ -126,26 +164,45 @@ export default function WhatsAppLinkScreen() {
               </ThemedText>
             </View>
           </View>
-          <Button variant="destructive" loading={revoking} onPress={confirmRevoke}>
+          <Button
+            variant="destructive"
+            loading={revoking}
+            onPress={confirmRevoke}
+          >
             Revogar vínculo
           </Button>
         </Card>
       ) : code ? (
         <Card className="gap-4 items-center">
-          <ThemedText type="small" themeColor="textSecondary" style={{ textAlign: 'center' }}>
-            Envie esse código pelo WhatsApp, a partir do número que você quer vincular:
+          <ThemedText
+            type="small"
+            themeColor="textSecondary"
+            style={{ textAlign: 'center' }}
+          >
+            Envie esse código pelo WhatsApp, a partir do número que você quer
+            vincular:
           </ThemedText>
-          <Pressable onPress={copyCode} className="flex-row items-center gap-2 active:opacity-70">
+          <Pressable
+            onPress={copyCode}
+            className="flex-row items-center gap-2 active:opacity-70"
+          >
             <ThemedText type="title" style={{ letterSpacing: 4 }}>
               {code}
             </ThemedText>
             <CopyIcon size={20} />
           </Pressable>
           <ThemedText type="small" themeColor="textSecondary">
-            {secondsLeft > 0 ? `Expira em ${Math.floor(secondsLeft / 60)}:${String(secondsLeft % 60).padStart(2, '0')}` : 'Código expirado — gere outro.'}
+            {secondsLeft > 0
+              ? `Expira em ${Math.floor(secondsLeft / 60)}:${String(secondsLeft % 60).padStart(2, '0')}`
+              : 'Código expirado — gere outro.'}
           </ThemedText>
           {secondsLeft > 0 && (
-            <Button icon={<WhatsappLogoIcon size={18} color="#fafafa" weight="fill" />} onPress={openWhatsApp}>
+            <Button
+              icon={
+                <WhatsappLogoIcon size={18} color="#fafafa" weight="fill" />
+              }
+              onPress={openWhatsApp}
+            >
               Abrir WhatsApp
             </Button>
           )}
@@ -153,7 +210,11 @@ export default function WhatsAppLinkScreen() {
             Já enviei, verificar agora
           </Button>
           {secondsLeft <= 0 && (
-            <Button variant="outline" loading={generating} onPress={generateCode}>
+            <Button
+              variant="outline"
+              loading={generating}
+              onPress={generateCode}
+            >
               Gerar novo código
             </Button>
           )}
@@ -161,9 +222,10 @@ export default function WhatsAppLinkScreen() {
       ) : (
         <Card className="gap-4">
           <ThemedText type="small" themeColor="textSecondary">
-            Vincule seu WhatsApp pra registrar transações por lá, em conversa privada ou num grupo
-            compartilhado. O vínculo nasce aqui no app: geramos um código, você envia pro nosso
-            número a partir do WhatsApp que quer vincular, e pronto.
+            Vincule seu WhatsApp pra registrar transações por lá, em conversa
+            privada ou num grupo compartilhado. O vínculo nasce aqui no app:
+            geramos um código, você envia pro nosso número a partir do WhatsApp
+            que quer vincular, e pronto.
           </ThemedText>
           <Button loading={generating} onPress={generateCode}>
             Gerar código

@@ -1,6 +1,11 @@
-import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import type { Storage } from "./storage";
+import {
+  DeleteObjectCommand,
+  GetObjectCommand,
+  PutObjectCommand,
+  S3Client,
+} from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import type { Storage } from './storage';
 
 export interface S3StorageConfig {
   bucket: string;
@@ -31,16 +36,27 @@ export function createS3Storage(config: S3StorageConfig): Storage {
   return {
     async upload(key, body, contentType) {
       await client.send(
-        new PutObjectCommand({ Bucket: config.bucket, Key: key, Body: body, ContentType: contentType }),
+        new PutObjectCommand({
+          Bucket: config.bucket,
+          Key: key,
+          Body: body,
+          ContentType: contentType,
+        })
       );
     },
     async getSignedReadUrl(key, ttlSeconds) {
-      return getSignedUrl(client, new GetObjectCommand({ Bucket: config.bucket, Key: key }), {
-        expiresIn: ttlSeconds,
-      });
+      return getSignedUrl(
+        client,
+        new GetObjectCommand({ Bucket: config.bucket, Key: key }),
+        {
+          expiresIn: ttlSeconds,
+        }
+      );
     },
     async delete(key) {
-      await client.send(new DeleteObjectCommand({ Bucket: config.bucket, Key: key }));
+      await client.send(
+        new DeleteObjectCommand({ Bucket: config.bucket, Key: key })
+      );
     },
   };
 }

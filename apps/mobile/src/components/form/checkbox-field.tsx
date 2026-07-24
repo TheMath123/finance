@@ -1,4 +1,9 @@
-import { useController, type Control, type FieldValues, type Path } from 'react-hook-form';
+import {
+  type Control,
+  type FieldValues,
+  type Path,
+  useController,
+} from 'react-hook-form';
 import { Pressable, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
@@ -10,13 +15,20 @@ export interface CheckboxFieldProps<T extends FieldValues> {
   label: string;
 }
 
-export function CheckboxField<T extends FieldValues>({ control, name, label }: CheckboxFieldProps<T>) {
+export function CheckboxField<T extends FieldValues>({
+  control,
+  name,
+  label,
+}: CheckboxFieldProps<T>) {
   const { field, fieldState } = useController({ control, name });
   const checked = Boolean(field.value);
 
   return (
     <View className="gap-1.5">
-      <Pressable className="flex-row items-center gap-2" onPress={() => field.onChange(!checked)}>
+      <Pressable
+        className="flex-row items-center gap-2"
+        onPress={() => field.onChange(!checked)}
+      >
         {/* onCheckedChange fica de fora de propósito — o toque é tratado pelo Pressable
             de fora, que cobre a linha inteira (caixinha + label), não só a caixinha. */}
         <Checkbox checked={checked} />

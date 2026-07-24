@@ -1,11 +1,11 @@
-import { Elysia } from "elysia";
-import type { AppDeps } from "../../../deps";
-import { createRecurringRoute } from "./create-recurring";
-import { listRecurringRoute } from "./list-recurring";
-import { updateRecurringRoute } from "./update-recurring";
-import { deleteRecurringRoute } from "./delete-recurring";
-import { listPendingOccurrencesRoute } from "./list-pending-occurrences";
-import { confirmOccurrenceRoute } from "./confirm-occurrence";
+import { Elysia } from 'elysia';
+import type { AppDeps } from '../../../deps';
+import { confirmOccurrenceRoute } from './confirm-occurrence';
+import { createRecurringRoute } from './create-recurring';
+import { deleteRecurringRoute } from './delete-recurring';
+import { listPendingOccurrencesRoute } from './list-pending-occurrences';
+import { listRecurringRoute } from './list-recurring';
+import { updateRecurringRoute } from './update-recurring';
 
 export function recurringRoutes(deps: AppDeps) {
   return new Elysia()

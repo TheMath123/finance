@@ -1,5 +1,5 @@
-import type { Card } from "../../../domain/entities/card";
-import type { Actor, UseCaseDeps } from "../../deps";
+import type { Card } from '../../../domain/entities/card';
+import type { Actor, UseCaseDeps } from '../../deps';
 
 export interface CardWithLimit extends Card {
   /** limit − Σ(faturas não pagas) — derivado (regra do spec). */
@@ -8,7 +8,10 @@ export interface CardWithLimit extends Card {
   bankCode: string;
 }
 
-export async function listCards(deps: UseCaseDeps, actor: Actor): Promise<CardWithLimit[]> {
+export async function listCards(
+  deps: UseCaseDeps,
+  actor: Actor
+): Promise<CardWithLimit[]> {
   const [cards, banks] = await Promise.all([
     deps.repos.card.listByWorkspace(actor.workspaceId),
     deps.repos.bank.listByWorkspace(actor.workspaceId),
@@ -18,8 +21,9 @@ export async function listCards(deps: UseCaseDeps, actor: Actor): Promise<CardWi
   return Promise.all(
     cards.map(async (card) => ({
       ...card,
-      availableLimit: card.limit - (await deps.repos.invoice.unpaidTotalByCard(card.id)),
-      bankCode: bankCodeById.get(card.bankId) ?? "other",
-    })),
+      availableLimit:
+        card.limit - (await deps.repos.invoice.unpaidTotalByCard(card.id)),
+      bankCode: bankCodeById.get(card.bankId) ?? 'other',
+    }))
   );
 }

@@ -1,7 +1,11 @@
-import type { WhatsAppLinkCode } from "../../domain/entities/whatsapp-link-code";
+import type { WhatsAppLinkCode } from '../../domain/entities/whatsapp-link-code';
 
 export interface WhatsAppLinkCodeRepository {
-  create(data: { userId: string; codeHash: string; expiresAt: Date }): Promise<WhatsAppLinkCode>;
+  create(data: {
+    userId: string;
+    codeHash: string;
+    expiresAt: Date;
+  }): Promise<WhatsAppLinkCode>;
   /**
    * Não usado e não expirado, por hash — sem escopo de usuário: o remetente só é
    * conhecido depois de achar a linha (é o próprio dado sendo vinculado). Proteção

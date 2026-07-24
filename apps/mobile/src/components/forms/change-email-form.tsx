@@ -13,10 +13,10 @@ import { useSession } from '@/context/session';
 import { ApiError } from '@/lib/api-client';
 import { authApi } from '@/lib/auth-api';
 import {
-  confirmEmailChangeSchema,
-  requestEmailChangeSchema,
   type ConfirmEmailChangeInput,
+  confirmEmailChangeSchema,
   type RequestEmailChangeInput,
+  requestEmailChangeSchema,
 } from '@/lib/schemas/auth';
 
 /**
@@ -27,7 +27,9 @@ import {
 export function ChangeEmailForm() {
   const { user, refreshUser } = useSession();
   // Retoma direto na etapa de confirmação se já existir uma troca pendente do backend.
-  const [pendingEmail, setPendingEmail] = useState<string | null>(user?.pendingEmail ?? null);
+  const [pendingEmail, setPendingEmail] = useState<string | null>(
+    user?.pendingEmail ?? null
+  );
   // Guardado só em memória (nunca persistido) pra permitir "Reenviar código" sem
   // pedir a senha de novo dentro da mesma sessão de troca.
   const [currentPassword, setCurrentPassword] = useState<string | null>(null);
@@ -66,26 +68,38 @@ export function ChangeEmailForm() {
     return (
       <View className="gap-4">
         <ThemedText type="small" themeColor="textSecondary">
-          Enviamos um código para {pendingEmail}. Cole o código abaixo para confirmar a troca.
+          Enviamos um código para {pendingEmail}. Cole o código abaixo para
+          confirmar a troca.
         </ThemedText>
         <CodeField control={confirmForm.control} name="code" label="Código" />
 
         {confirmMutation.isError && (
           <ThemedText type="small" style={{ color: '#DC2626' }}>
-            {confirmMutation.error instanceof ApiError ? confirmMutation.error.message : 'Erro inesperado'}
+            {confirmMutation.error instanceof ApiError
+              ? confirmMutation.error.message
+              : 'Erro inesperado'}
           </ThemedText>
         )}
 
         <Button
           loading={confirmMutation.isPending}
-          onPress={confirmForm.handleSubmit((input) => confirmMutation.mutate(input))}>
+          onPress={confirmForm.handleSubmit((input) =>
+            confirmMutation.mutate(input)
+          )}
+        >
           Confirmar novo e-mail
         </Button>
         {currentPassword && (
           <Button
             variant="ghost"
             loading={requestMutation.isPending}
-            onPress={() => requestMutation.mutate({ newEmail: pendingEmail, currentPassword })}>
+            onPress={() =>
+              requestMutation.mutate({
+                newEmail: pendingEmail,
+                currentPassword,
+              })
+            }
+          >
             Reenviar código
           </Button>
         )}
@@ -94,7 +108,8 @@ export function ChangeEmailForm() {
           onPress={() => {
             setPendingEmail(null);
             setCurrentPassword(null);
-          }}>
+          }}
+        >
           Usar outro e-mail
         </Button>
       </View>
@@ -122,13 +137,18 @@ export function ChangeEmailForm() {
 
       {requestMutation.isError && (
         <ThemedText type="small" style={{ color: '#DC2626' }}>
-          {requestMutation.error instanceof ApiError ? requestMutation.error.message : 'Erro inesperado'}
+          {requestMutation.error instanceof ApiError
+            ? requestMutation.error.message
+            : 'Erro inesperado'}
         </ThemedText>
       )}
 
       <Button
         loading={requestMutation.isPending}
-        onPress={requestForm.handleSubmit((input) => requestMutation.mutate(input))}>
+        onPress={requestForm.handleSubmit((input) =>
+          requestMutation.mutate(input)
+        )}
+      >
         Enviar código de confirmação
       </Button>
     </View>

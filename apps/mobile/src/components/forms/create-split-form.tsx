@@ -9,7 +9,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { useSession } from '@/context/session';
 import { ApiError } from '@/lib/api-client';
-import { splitApi, type CreateSplitParticipant } from '@/lib/split-api';
+import { type CreateSplitParticipant, splitApi } from '@/lib/split-api';
 import type { Transaction } from '@/lib/transactions-api';
 
 interface ParticipantRow {
@@ -27,7 +27,13 @@ function newRow(type: ParticipantRow['type']): ParticipantRow {
   return { key: `row-${Date.now()}-${rowKeySeq}`, type, value: '', amount: '' };
 }
 
-export function CreateSplitForm({ transaction, onDone }: { transaction: Transaction; onDone: () => void }) {
+export function CreateSplitForm({
+  transaction,
+  onDone,
+}: {
+  transaction: Transaction;
+  onDone: () => void;
+}) {
   const { workspaceId } = useSession();
   const queryClient = useQueryClient();
   const [equal, setEqual] = useState(true);
@@ -35,15 +41,22 @@ export function CreateSplitForm({ transaction, onDone }: { transaction: Transact
   const [error, setError] = useState<string | null>(null);
 
   const updateRow = (key: string, patch: Partial<ParticipantRow>) =>
-    setRows((prev) => prev.map((r) => (r.key === key ? { ...r, ...patch } : r)));
-  const removeRow = (key: string) => setRows((prev) => prev.filter((r) => r.key !== key));
+    setRows((prev) =>
+      prev.map((r) => (r.key === key ? { ...r, ...patch } : r))
+    );
+  const removeRow = (key: string) =>
+    setRows((prev) => prev.filter((r) => r.key !== key));
 
   const mutation = useMutation({
     mutationFn: () => {
       const participants: CreateSplitParticipant[] = rows.map((r) => ({
         type: r.type,
-        ...(r.type === 'user' ? { contact: r.value.trim() } : { name: r.value.trim() }),
-        ...(equal ? {} : { amount: Math.round(Number(r.amount.replace(',', '.')) * 100) }),
+        ...(r.type === 'user'
+          ? { contact: r.value.trim() }
+          : { name: r.value.trim() }),
+        ...(equal
+          ? {}
+          : { amount: Math.round(Number(r.amount.replace(',', '.')) * 100) }),
       }));
       return splitApi.create(workspaceId!, transaction.id, participants);
     },
@@ -51,7 +64,8 @@ export function CreateSplitForm({ transaction, onDone }: { transaction: Transact
       queryClient.invalidateQueries({ queryKey: ['splits-owed-to-me'] });
       onDone();
     },
-    onError: (err) => setError(err instanceof ApiError ? err.message : 'Erro inesperado'),
+    onError: (err) =>
+      setError(err instanceof ApiError ? err.message : 'Erro inesperado'),
   });
 
   return (
@@ -65,10 +79,16 @@ export function CreateSplitForm({ transaction, onDone }: { transaction: Transact
           <View key={row.key} className="gap-2">
             <View className="flex-row items-center justify-between">
               <ThemedText type="small">
-                {row.type === 'user' ? 'Usuário da plataforma' : 'Participante externo'}
+                {row.type === 'user'
+                  ? 'Usuário da plataforma'
+                  : 'Participante externo'}
               </ThemedText>
               {rows.length > 1 && (
-                <Pressable onPress={() => removeRow(row.key)} hitSlop={8} className="active:opacity-60">
+                <Pressable
+                  onPress={() => removeRow(row.key)}
+                  hitSlop={8}
+                  className="active:opacity-60"
+                >
                   <TrashIcon size={16} color="#DC2626" />
                 </Pressable>
               )}
@@ -97,7 +117,8 @@ export function CreateSplitForm({ transaction, onDone }: { transaction: Transact
           variant="outline"
           size="sm"
           icon={<PlusIcon size={14} />}
-          onPress={() => setRows((prev) => [...prev, newRow('user')])}>
+          onPress={() => setRows((prev) => [...prev, newRow('user')])}
+        >
           Usuário
         </Button>
         <Button
@@ -105,14 +126,20 @@ export function CreateSplitForm({ transaction, onDone }: { transaction: Transact
           variant="outline"
           size="sm"
           icon={<PlusIcon size={14} />}
-          onPress={() => setRows((prev) => [...prev, newRow('external')])}>
+          onPress={() => setRows((prev) => [...prev, newRow('external')])}
+        >
           Externo
         </Button>
       </View>
 
-      <Pressable onPress={() => setEqual((v) => !v)} className="flex-row items-center gap-2">
+      <Pressable
+        onPress={() => setEqual((v) => !v)}
+        className="flex-row items-center gap-2"
+      >
         <Checkbox checked={equal} onCheckedChange={setEqual} />
-        <ThemedText type="small">Dividir igualmente entre todos (você incluído)</ThemedText>
+        <ThemedText type="small">
+          Dividir igualmente entre todos (você incluído)
+        </ThemedText>
       </Pressable>
 
       {error && (

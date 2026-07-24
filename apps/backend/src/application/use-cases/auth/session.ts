@@ -1,6 +1,6 @@
-import type { User } from "../../../domain/entities/user";
-import type { UseCaseDeps } from "../../deps";
-import { REFRESH_TOKEN_TTL_MS } from "../../../infra/security/jose-token-service";
+import type { User } from '../../../domain/entities/user';
+import { REFRESH_TOKEN_TTL_MS } from '../../../infra/security/jose-token-service';
+import type { UseCaseDeps } from '../../deps';
 
 export interface AuthSession {
   user: {
@@ -18,9 +18,9 @@ export interface AuthSession {
 
 /** Emite access + refresh token para uma sessão autenticada (usado por register/login/refresh). */
 export async function issueSession(
-  deps: Pick<UseCaseDeps, "repos" | "tokens">,
+  deps: Pick<UseCaseDeps, 'repos' | 'tokens'>,
   user: User,
-  workspaceId: string,
+  workspaceId: string
 ): Promise<AuthSession> {
   const refresh = deps.tokens.generateOpaque();
   await deps.repos.token.createRefresh({
@@ -34,7 +34,9 @@ export async function issueSession(
       name: user.name,
       email: user.email,
       phone: user.phone,
-      emailVerifiedAt: user.emailVerifiedAt ? user.emailVerifiedAt.toISOString() : null,
+      emailVerifiedAt: user.emailVerifiedAt
+        ? user.emailVerifiedAt.toISOString()
+        : null,
       pendingEmail: user.pendingEmail,
     },
     defaultWorkspaceId: workspaceId,

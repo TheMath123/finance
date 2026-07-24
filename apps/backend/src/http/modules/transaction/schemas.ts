@@ -1,9 +1,13 @@
-import { z } from "zod";
-import { TRANSACTION_METHODS, TRANSACTION_TYPES } from "@finance/shared";
+import { TRANSACTION_METHODS, TRANSACTION_TYPES } from '@finance/shared';
+import { z } from 'zod';
 
-export const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "data no formato YYYY-MM-DD");
+export const dateSchema = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, 'data no formato YYYY-MM-DD');
 
-export const workspaceParamsSchema = z.object({ workspaceId: z.string().uuid() });
+export const workspaceParamsSchema = z.object({
+  workspaceId: z.string().uuid(),
+});
 export const transactionParamsSchema = workspaceParamsSchema.extend({
   transactionId: z.string().uuid(),
 });

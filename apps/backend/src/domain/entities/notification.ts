@@ -1,4 +1,4 @@
-import type { NotificationType } from "@finance/shared";
+import type { NotificationType } from '@finance/shared';
 
 export interface Notification {
   id: string;

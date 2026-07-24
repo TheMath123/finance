@@ -1,5 +1,5 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { NotificationType } from '@finance/shared';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { ArrowLeftIcon } from 'phosphor-react-native';
 import { ActivityIndicator, Pressable, Switch, View } from 'react-native';
@@ -9,7 +9,10 @@ import { Card } from '@/components/ui/card';
 import { Screen } from '@/components/ui/screen';
 import { notificationApi } from '@/lib/notification-api';
 
-const TYPE_LABELS: Record<NotificationType, { title: string; description: string }> = {
+const TYPE_LABELS: Record<
+  NotificationType,
+  { title: string; description: string }
+> = {
   workspace_invite: {
     title: 'Convites de workspace',
     description: 'Quando alguém te convida pra um workspace compartilhado.',
@@ -24,7 +27,8 @@ const TYPE_LABELS: Record<NotificationType, { title: string; description: string
   },
   recurring_pending: {
     title: 'Recorrência pendente',
-    description: 'Quando uma recorrência prevista pro dia ainda não foi confirmada.',
+    description:
+      'Quando uma recorrência prevista pro dia ainda não foi confirmada.',
   },
   whatsapp_linked: {
     title: 'WhatsApp vinculado',
@@ -44,7 +48,8 @@ const TYPE_LABELS: Record<NotificationType, { title: string; description: string
   },
   split_payment_paid: {
     title: 'Split marcado como pago',
-    description: 'Quando um participante marca a parte dele como paga — falta você confirmar.',
+    description:
+      'Quando um participante marca a parte dele como paga — falta você confirmar.',
   },
   split_reimbursement_confirmed: {
     title: 'Reembolso de split confirmado',
@@ -61,8 +66,10 @@ export default function NotificationSettingsScreen() {
   });
 
   const toggle = async (type: NotificationType, enabled: boolean) => {
-    queryClient.setQueryData(['notification-preferences'], (old: typeof preferences) =>
-      old?.map((p) => (p.type === type ? { ...p, enabled } : p)),
+    queryClient.setQueryData(
+      ['notification-preferences'],
+      (old: typeof preferences) =>
+        old?.map((p) => (p.type === type ? { ...p, enabled } : p))
     );
     try {
       await notificationApi.updatePreference(type, enabled);
@@ -74,7 +81,11 @@ export default function NotificationSettingsScreen() {
   return (
     <Screen className="gap-6">
       <View className="flex-row items-center gap-3">
-        <Pressable onPress={() => router.back()} hitSlop={8} className="active:opacity-60">
+        <Pressable
+          onPress={() => router.back()}
+          hitSlop={8}
+          className="active:opacity-60"
+        >
           <ArrowLeftIcon size={22} />
         </Pressable>
         <ThemedText type="subtitle">Notificações</ThemedText>
@@ -85,9 +96,14 @@ export default function NotificationSettingsScreen() {
       ) : (
         <View className="gap-3">
           {preferences?.map((preference) => (
-            <Card key={preference.type} className="flex-row items-center justify-between gap-3">
+            <Card
+              key={preference.type}
+              className="flex-row items-center justify-between gap-3"
+            >
               <View className="flex-1">
-                <ThemedText type="smallBold">{TYPE_LABELS[preference.type]?.title ?? preference.type}</ThemedText>
+                <ThemedText type="smallBold">
+                  {TYPE_LABELS[preference.type]?.title ?? preference.type}
+                </ThemedText>
                 <ThemedText type="small" themeColor="textSecondary">
                   {TYPE_LABELS[preference.type]?.description ?? ''}
                 </ThemedText>

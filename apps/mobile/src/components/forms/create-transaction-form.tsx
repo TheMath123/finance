@@ -1,5 +1,5 @@
-import { zodResolver } from '@hookform/resolvers/zod';
 import { TRANSACTION_TYPES } from '@finance/shared';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
@@ -16,14 +16,20 @@ import { accountsApi } from '@/lib/accounts-api';
 import { ApiError } from '@/lib/api-client';
 import { cardsApi } from '@/lib/cards-api';
 import { useCategories } from '@/lib/hooks/use-categories';
-import { transactionSchema, type TransactionInput } from '@/lib/schemas/finance';
+import {
+  type TransactionInput,
+  transactionSchema,
+} from '@/lib/schemas/finance';
 import { transactionsApi } from '@/lib/transactions-api';
 
 const TYPE_LABELS: Record<(typeof TRANSACTION_TYPES)[number], string> = {
   income: 'Receita',
   expense: 'Despesa',
 };
-const TYPE_OPTIONS = TRANSACTION_TYPES.map((type) => ({ label: TYPE_LABELS[type], value: type }));
+const TYPE_OPTIONS = TRANSACTION_TYPES.map((type) => ({
+  label: TYPE_LABELS[type],
+  value: type,
+}));
 
 /**
  * "transfer" fica fora por enquanto: exige conta origem + destino, e o form
@@ -96,26 +102,54 @@ export function CreateTransactionForm({ onDone }: { onDone: () => void }) {
     mutationFn: (input: TransactionInput) =>
       transactionsApi.create(workspaceId!, {
         ...input,
-        installments: input.installments ? Number(input.installments) : undefined,
+        installments: input.installments
+          ? Number(input.installments)
+          : undefined,
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['transactions', workspaceId] });
+      queryClient.invalidateQueries({
+        queryKey: ['transactions', workspaceId],
+      });
       queryClient.invalidateQueries({ queryKey: ['summary', workspaceId] });
       onDone();
     },
   });
 
-  const categoryOptions = (categories ?? []).map((c) => ({ label: c.name, value: c.id }));
-  const accountOptions = (accounts ?? []).map((a) => ({ label: a.name, value: a.id }));
-  const cardOptions = (cards ?? []).map((c) => ({ label: c.name, value: c.id }));
+  const categoryOptions = (categories ?? []).map((c) => ({
+    label: c.name,
+    value: c.id,
+  }));
+  const accountOptions = (accounts ?? []).map((a) => ({
+    label: a.name,
+    value: a.id,
+  }));
+  const cardOptions = (cards ?? []).map((c) => ({
+    label: c.name,
+    value: c.id,
+  }));
 
   return (
     <View className="gap-4">
-      <TextField control={control} name="description" label="Descrição" placeholder="Ex.: Mercado" />
+      <TextField
+        control={control}
+        name="description"
+        label="Descrição"
+        placeholder="Ex.: Mercado"
+      />
       <MoneyField control={control} name="amount" label="Valor" />
       <DateField control={control} name="date" label="Data" />
-      <SelectField control={control} name="type" label="Tipo" options={TYPE_OPTIONS} />
-      <SelectField control={control} name="method" label="Método" options={METHOD_OPTIONS} />
+      <SelectField
+        control={control}
+        name="type"
+        label="Tipo"
+        options={TYPE_OPTIONS}
+      />
+      <SelectField
+        control={control}
+        name="method"
+        label="Método"
+        options={METHOD_OPTIONS}
+      />
       <SelectField
         control={control}
         name="categoryId"
@@ -151,10 +185,15 @@ export function CreateTransactionForm({ onDone }: { onDone: () => void }) {
       )}
       {mutation.isError && (
         <ThemedText type="small" style={{ color: '#DC2626' }}>
-          {mutation.error instanceof ApiError ? mutation.error.message : 'Erro inesperado'}
+          {mutation.error instanceof ApiError
+            ? mutation.error.message
+            : 'Erro inesperado'}
         </ThemedText>
       )}
-      <Button loading={mutation.isPending} onPress={handleSubmit((input) => mutation.mutate(input))}>
+      <Button
+        loading={mutation.isPending}
+        onPress={handleSubmit((input) => mutation.mutate(input))}
+      >
         Salvar transação
       </Button>
     </View>

@@ -1,8 +1,8 @@
-import { left, right, type Either } from "@finance/shared";
-import type { Card } from "../../../domain/entities/card";
-import type { Actor, UseCaseDeps } from "../../deps";
-import { findOrCreateBank } from "../bank/find-or-create-bank";
-import type { CardError } from "./errors";
+import { type Either, left, right } from '@finance/shared';
+import type { Card } from '../../../domain/entities/card';
+import type { Actor, UseCaseDeps } from '../../deps';
+import { findOrCreateBank } from '../bank/find-or-create-bank';
+import type { CardError } from './errors';
 
 export interface CreateCardInput {
   name: string;
@@ -16,10 +16,14 @@ export interface CreateCardInput {
 export async function createCard(
   deps: UseCaseDeps,
   actor: Actor,
-  input: CreateCardInput,
+  input: CreateCardInput
 ): Promise<Either<CardError, Card>> {
   const created = await deps.uow.run(async (repos) => {
-    const bank = await findOrCreateBank(repos, actor.workspaceId, input.bankCode);
+    const bank = await findOrCreateBank(
+      repos,
+      actor.workspaceId,
+      input.bankCode
+    );
     if (!bank.ok) return bank;
 
     const card = await repos.card.create(actor.workspaceId, {
@@ -32,12 +36,12 @@ export async function createCard(
     await repos.audit.record({
       workspaceId: actor.workspaceId,
       userId: actor.userId,
-      action: "create",
-      entity: "card",
+      action: 'create',
+      entity: 'card',
       entityId: card.id,
     });
     return right(card);
   });
-  if (!created.ok) return left("invalid_bank_code");
+  if (!created.ok) return left('invalid_bank_code');
   return created;
 }

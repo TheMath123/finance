@@ -1,4 +1,4 @@
-import type { InvoiceStatus } from "@finance/shared";
+import type { InvoiceStatus } from '@finance/shared';
 
 export interface Card {
   id: string;

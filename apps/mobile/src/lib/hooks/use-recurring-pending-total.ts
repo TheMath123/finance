@@ -14,11 +14,23 @@ export interface RecurringPendingTotal {
  * dos dois lugares: compartilha cache e invalidação (confirmar/excluir
  * recorrência já invalida os dois de uma vez).
  */
-export function useRecurringPendingTotal(workspaceId: string | null): RecurringPendingTotal | null {
+export function useRecurringPendingTotal(
+  workspaceId: string | null
+): RecurringPendingTotal | null {
   const now = new Date();
   const { data } = useQuery({
-    queryKey: ['recurring-pending', workspaceId, now.getFullYear(), now.getMonth() + 1],
-    queryFn: () => recurringApi.listPending(workspaceId!, now.getFullYear(), now.getMonth() + 1),
+    queryKey: [
+      'recurring-pending',
+      workspaceId,
+      now.getFullYear(),
+      now.getMonth() + 1,
+    ],
+    queryFn: () =>
+      recurringApi.listPending(
+        workspaceId!,
+        now.getFullYear(),
+        now.getMonth() + 1
+      ),
     enabled: Boolean(workspaceId),
   });
 
@@ -30,6 +42,6 @@ export function useRecurringPendingTotal(workspaceId: string | null): RecurringP
       acc.count += 1;
       return acc;
     },
-    { income: 0, expense: 0, count: 0 },
+    { income: 0, expense: 0, count: 0 }
   );
 }

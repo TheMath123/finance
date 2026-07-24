@@ -11,7 +11,10 @@ import { Button } from '@/components/ui/button';
 import { useSession } from '@/context/session';
 import { accountsApi } from '@/lib/accounts-api';
 import { ApiError } from '@/lib/api-client';
-import { createTransferSchema, type CreateTransferInput } from '@/lib/schemas/finance';
+import {
+  type CreateTransferInput,
+  createTransferSchema,
+} from '@/lib/schemas/finance';
 import { transferApi } from '@/lib/transfer-api';
 
 export function CreateTransferForm({ onDone }: { onDone: () => void }) {
@@ -31,11 +34,14 @@ export function CreateTransferForm({ onDone }: { onDone: () => void }) {
   });
 
   const mutation = useMutation({
-    mutationFn: (input: CreateTransferInput) => transferApi.create(workspaceId!, input),
+    mutationFn: (input: CreateTransferInput) =>
+      transferApi.create(workspaceId!, input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['accounts', workspaceId] });
       queryClient.invalidateQueries({ queryKey: ['summary', workspaceId] });
-      queryClient.invalidateQueries({ queryKey: ['transactions', workspaceId] });
+      queryClient.invalidateQueries({
+        queryKey: ['transactions', workspaceId],
+      });
       onDone();
     },
   });
@@ -55,7 +61,12 @@ export function CreateTransferForm({ onDone }: { onDone: () => void }) {
         keyboardType="email-address"
       />
       <MoneyField control={control} name="amount" label="Valor" />
-      <TextField control={control} name="description" label="Descrição" placeholder="Ex.: Aluguel dividido" />
+      <TextField
+        control={control}
+        name="description"
+        label="Descrição"
+        placeholder="Ex.: Aluguel dividido"
+      />
       <SelectField
         control={control}
         name="accountId"
@@ -65,10 +76,15 @@ export function CreateTransferForm({ onDone }: { onDone: () => void }) {
       />
       {mutation.isError && (
         <ThemedText type="small" style={{ color: '#DC2626' }}>
-          {mutation.error instanceof ApiError ? mutation.error.message : 'Erro inesperado'}
+          {mutation.error instanceof ApiError
+            ? mutation.error.message
+            : 'Erro inesperado'}
         </ThemedText>
       )}
-      <Button loading={mutation.isPending} onPress={handleSubmit((input) => mutation.mutate(input))}>
+      <Button
+        loading={mutation.isPending}
+        onPress={handleSubmit((input) => mutation.mutate(input))}
+      >
         Enviar transferência
       </Button>
     </View>

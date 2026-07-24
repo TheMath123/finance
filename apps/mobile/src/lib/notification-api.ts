@@ -1,6 +1,6 @@
-import type { NotificationType } from "@finance/shared";
+import type { NotificationType } from '@finance/shared';
 
-import { apiRequest } from "@/lib/api-client";
+import { apiRequest } from '@/lib/api-client';
 
 export interface NotificationView {
   id: string;
@@ -24,23 +24,30 @@ export const notificationApi = {
   list: (archived: boolean) =>
     apiRequest<NotificationView[]>(`/notifications?archived=${archived}`),
 
-  markRead: (id: string) => apiRequest<void>(`/notifications/${id}/read`, { method: "POST" }),
+  markRead: (id: string) =>
+    apiRequest<void>(`/notifications/${id}/read`, { method: 'POST' }),
 
-  archive: (id: string) => apiRequest<void>(`/notifications/${id}/archive`, { method: "POST" }),
+  archive: (id: string) =>
+    apiRequest<void>(`/notifications/${id}/archive`, { method: 'POST' }),
 
-  unarchive: (id: string) => apiRequest<void>(`/notifications/${id}/unarchive`, { method: "POST" }),
+  unarchive: (id: string) =>
+    apiRequest<void>(`/notifications/${id}/unarchive`, { method: 'POST' }),
 
-  listPreferences: () => apiRequest<NotificationPreferenceView[]>("/notification-preferences"),
+  listPreferences: () =>
+    apiRequest<NotificationPreferenceView[]>('/notification-preferences'),
 
   updatePreference: (type: NotificationType, enabled: boolean) =>
-    apiRequest<NotificationPreferenceView>(`/notification-preferences/${type}`, {
-      method: "PATCH",
-      body: { enabled },
-    }),
+    apiRequest<NotificationPreferenceView>(
+      `/notification-preferences/${type}`,
+      {
+        method: 'PATCH',
+        body: { enabled },
+      }
+    ),
 
   registerPushToken: (token: string) =>
-    apiRequest<void>("/push-tokens", { method: "POST", body: { token } }),
+    apiRequest<void>('/push-tokens', { method: 'POST', body: { token } }),
 
   unregisterPushToken: (token: string) =>
-    apiRequest<void>("/push-tokens", { method: "DELETE", body: { token } }),
+    apiRequest<void>('/push-tokens', { method: 'DELETE', body: { token } }),
 };

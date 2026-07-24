@@ -1,7 +1,7 @@
-import { Queue, Worker } from "bullmq";
-import { Redis } from "ioredis";
-import type { QueueDispatcher } from "./dispatcher";
-import type { JobHandlers, JobName, JobPayloads } from "./jobs";
+import { Queue, Worker } from 'bullmq';
+import { Redis } from 'ioredis';
+import type { QueueDispatcher } from './dispatcher';
+import type { JobHandlers, JobName, JobPayloads } from './jobs';
 
 /**
  * Fila única do M2 — cada entrada carrega o nome do job + payload (mesmo par
@@ -12,7 +12,7 @@ import type { JobHandlers, JobName, JobPayloads } from "./jobs";
  * um `bun run worker` por fila (spec: "Um único processo worker, várias
  * filas", decisão de 2026-07-16).
  */
-export const QUEUE_NAME = "finance-jobs";
+export const QUEUE_NAME = 'finance-jobs';
 
 interface QueueEntry<N extends JobName = JobName> {
   name: N;
@@ -34,18 +34,24 @@ function createConnection(redisUrl: string) {
 export function createBullMqDispatcher(
   redisUrl: string,
   onError: (job: JobName, error: unknown) => void = (job, error) =>
-    console.error(`[queues] falha ao enfileirar job "${job}":`, error),
+    console.error(`[queues] falha ao enfileirar job "${job}":`, error)
 ): QueueDispatcher {
-  const queue = new Queue<QueueEntry>(QUEUE_NAME, { connection: createConnection(redisUrl) });
+  const queue = new Queue<QueueEntry>(QUEUE_NAME, {
+    connection: createConnection(redisUrl),
+  });
   return {
     async dispatch(name, payload) {
       try {
-        await queue.add(name, { name, payload }, {
-          attempts: 3,
-          backoff: { type: "exponential", delay: 5_000 },
-          removeOnComplete: true,
-          removeOnFail: 100,
-        });
+        await queue.add(
+          name,
+          { name, payload },
+          {
+            attempts: 3,
+            backoff: { type: 'exponential', delay: 5_000 },
+            removeOnComplete: true,
+            removeOnFail: 100,
+          }
+        );
       } catch (error) {
         onError(name, error);
       }
@@ -62,7 +68,7 @@ export function createBullMqDispatcher(
 export function createBullMqWorker(
   redisUrl: string,
   handlers: JobHandlers,
-  onError: (job: JobName, error: unknown) => void,
+  onError: (job: JobName, error: unknown) => void
 ): Worker<QueueEntry> {
   const worker = new Worker<QueueEntry>(
     QUEUE_NAME,
@@ -72,9 +78,9 @@ export function createBullMqWorker(
       // depois de serializado no Redis, o TS não consegue mais provar isso sozinho.
       await (handlers[name] as (p: unknown) => Promise<void>)(payload);
     },
-    { connection: createConnection(redisUrl) },
+    { connection: createConnection(redisUrl) }
   );
-  worker.on("failed", (job, error) => {
+  worker.on('failed', (job, error) => {
     if (job) onError(job.data.name, error);
   });
   return worker;

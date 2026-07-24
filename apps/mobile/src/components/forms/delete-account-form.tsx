@@ -12,10 +12,10 @@ import { useSession } from '@/context/session';
 import { ApiError } from '@/lib/api-client';
 import { authApi } from '@/lib/auth-api';
 import {
-  confirmAccountDeletionSchema,
-  requestAccountDeletionSchema,
   type ConfirmAccountDeletionInput,
+  confirmAccountDeletionSchema,
   type RequestAccountDeletionInput,
+  requestAccountDeletionSchema,
 } from '@/lib/schemas/auth';
 
 /**
@@ -66,7 +66,7 @@ export function DeleteAccountForm() {
           style: 'destructive',
           onPress: () => confirmMutation.mutate(input),
         },
-      ],
+      ]
     );
   });
 
@@ -74,24 +74,36 @@ export function DeleteAccountForm() {
     return (
       <View className="gap-4">
         <ThemedText type="small" themeColor="textSecondary">
-          Enviamos um código de confirmação para o seu e-mail cadastrado. Cole o código abaixo para
-          excluir a conta definitivamente.
+          Enviamos um código de confirmação para o seu e-mail cadastrado. Cole o
+          código abaixo para excluir a conta definitivamente.
         </ThemedText>
-        <CodeField control={confirmForm.control} name="code" label="Código" onComplete={() => confirmOnSubmit()} />
+        <CodeField
+          control={confirmForm.control}
+          name="code"
+          label="Código"
+          onComplete={() => confirmOnSubmit()}
+        />
 
         {confirmMutation.isError && (
           <ThemedText type="small" style={{ color: '#DC2626' }}>
-            {confirmMutation.error instanceof ApiError ? confirmMutation.error.message : 'Erro inesperado'}
+            {confirmMutation.error instanceof ApiError
+              ? confirmMutation.error.message
+              : 'Erro inesperado'}
           </ThemedText>
         )}
 
-        <Button variant="destructive" loading={confirmMutation.isPending} onPress={confirmOnSubmit}>
+        <Button
+          variant="destructive"
+          loading={confirmMutation.isPending}
+          onPress={confirmOnSubmit}
+        >
           Excluir conta definitivamente
         </Button>
         <Button
           variant="ghost"
           loading={requestMutation.isPending}
-          onPress={() => requestMutation.mutate({ password })}>
+          onPress={() => requestMutation.mutate({ password })}
+        >
           Reenviar código
         </Button>
         <Button variant="ghost" onPress={() => setPassword(null)}>
@@ -113,14 +125,19 @@ export function DeleteAccountForm() {
 
       {requestMutation.isError && (
         <ThemedText type="small" style={{ color: '#DC2626' }}>
-          {requestMutation.error instanceof ApiError ? requestMutation.error.message : 'Erro inesperado'}
+          {requestMutation.error instanceof ApiError
+            ? requestMutation.error.message
+            : 'Erro inesperado'}
         </ThemedText>
       )}
 
       <Button
         variant="destructive"
         loading={requestMutation.isPending}
-        onPress={requestForm.handleSubmit((input) => requestMutation.mutate(input))}>
+        onPress={requestForm.handleSubmit((input) =>
+          requestMutation.mutate(input)
+        )}
+      >
         Enviar código de confirmação
       </Button>
     </View>

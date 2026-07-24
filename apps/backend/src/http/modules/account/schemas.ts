@@ -1,7 +1,9 @@
-import { z } from "zod";
-import { ACCOUNT_TYPES } from "@finance/shared";
+import { ACCOUNT_TYPES } from '@finance/shared';
+import { z } from 'zod';
 
-export const workspaceParamsSchema = z.object({ workspaceId: z.string().uuid() });
+export const workspaceParamsSchema = z.object({
+  workspaceId: z.string().uuid(),
+});
 export const accountParamsSchema = workspaceParamsSchema.extend({
   accountId: z.string().uuid(),
 });

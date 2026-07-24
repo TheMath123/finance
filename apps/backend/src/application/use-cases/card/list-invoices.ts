@@ -1,9 +1,9 @@
-import type { InvoiceStatus } from "@finance/shared";
-import { left, right, type Either } from "@finance/shared";
-import type { CardInvoice } from "../../../domain/entities/card";
-import { effectiveStatus } from "../../../domain/services/invoice-rules";
-import type { Actor, UseCaseDeps } from "../../deps";
-import type { CardError } from "./errors";
+import type { InvoiceStatus } from '@finance/shared';
+import { type Either, left, right } from '@finance/shared';
+import type { CardInvoice } from '../../../domain/entities/card';
+import { effectiveStatus } from '../../../domain/services/invoice-rules';
+import type { Actor, UseCaseDeps } from '../../deps';
+import type { CardError } from './errors';
 
 export interface InvoiceView extends CardInvoice {
   total: number;
@@ -13,10 +13,10 @@ export interface InvoiceView extends CardInvoice {
 export async function listInvoices(
   deps: UseCaseDeps,
   actor: Actor,
-  cardId: string,
+  cardId: string
 ): Promise<Either<CardError, InvoiceView[]>> {
   const card = await deps.repos.card.findInWorkspace(actor.workspaceId, cardId);
-  if (!card) return left("card_not_found");
+  if (!card) return left('card_not_found');
 
   const rows = await deps.repos.invoice.listByCard(cardId);
 

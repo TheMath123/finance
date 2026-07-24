@@ -1,11 +1,19 @@
-import { useController, type Control, type FieldValues, type Path } from 'react-hook-form';
-import { View, type TextInputProps } from 'react-native';
+import {
+  type Control,
+  type FieldValues,
+  type Path,
+  useController,
+} from 'react-hook-form';
+import { type TextInputProps, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { PasswordInput } from '@/components/ui/password-input';
 
 export interface PasswordFieldProps<T extends FieldValues>
-  extends Pick<TextInputProps, 'placeholder' | 'autoComplete' | 'returnKeyType' | 'onSubmitEditing'> {
+  extends Pick<
+    TextInputProps,
+    'placeholder' | 'autoComplete' | 'returnKeyType' | 'onSubmitEditing'
+  > {
   control: Control<T>;
   name: Path<T>;
   label?: string;

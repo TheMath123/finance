@@ -1,7 +1,10 @@
-import { left, right, type Either } from "@finance/shared";
-import { isLocked, nextLockoutState } from "../../../domain/services/lockout-rules";
-import type { UseCaseDeps } from "../../deps";
-import type { AuthError } from "./errors";
+import { type Either, left, right } from '@finance/shared';
+import {
+  isLocked,
+  nextLockoutState,
+} from '../../../domain/services/lockout-rules';
+import type { UseCaseDeps } from '../../deps';
+import type { AuthError } from './errors';
 
 export interface ChangePasswordInput {
   /** Sempre o ator autenticado (guard extrai do JWT) — nunca um alvo vindo do cliente. */
@@ -25,19 +28,25 @@ export interface ChangePasswordInput {
  */
 export async function changePassword(
   deps: UseCaseDeps,
-  input: ChangePasswordInput,
+  input: ChangePasswordInput
 ): Promise<Either<AuthError, null>> {
   const user = await deps.repos.user.findById(input.userId);
-  if (!user) return left("invalid_credentials");
+  if (!user) return left('invalid_credentials');
 
   const now = new Date();
-  if (isLocked(user.lockedUntil, now)) return left("invalid_credentials");
+  if (isLocked(user.lockedUntil, now)) return left('invalid_credentials');
 
-  const valid = await deps.hasher.verify(input.currentPassword, user.passwordHash);
+  const valid = await deps.hasher.verify(
+    input.currentPassword,
+    user.passwordHash
+  );
   if (!valid) {
-    const { attempts, lockedUntil } = nextLockoutState(user.failedLoginAttempts, now);
+    const { attempts, lockedUntil } = nextLockoutState(
+      user.failedLoginAttempts,
+      now
+    );
     await deps.repos.user.recordLoginFailure(user.id, attempts, lockedUntil);
-    return left("invalid_credentials");
+    return left('invalid_credentials');
   }
   if (user.failedLoginAttempts > 0 || user.lockedUntil) {
     await deps.repos.user.resetLock(user.id);
@@ -49,13 +58,16 @@ export async function changePassword(
     if (input.currentRefreshToken) {
       await repos.token.deleteAllRefreshByUserExcept(
         user.id,
-        deps.tokens.hashOpaque(input.currentRefreshToken),
+        deps.tokens.hashOpaque(input.currentRefreshToken)
       );
     } else {
       await repos.token.deleteAllRefreshByUser(user.id);
     }
   });
 
-  await deps.dispatch("email.password-changed", { to: user.email, name: user.name });
+  await deps.dispatch('email.password-changed', {
+    to: user.email,
+    name: user.name,
+  });
   return right(null);
 }

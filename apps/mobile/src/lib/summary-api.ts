@@ -1,4 +1,4 @@
-import { apiRequest } from "@/lib/api-client";
+import { apiRequest } from '@/lib/api-client';
 
 export interface CategorySummary {
   categoryId: string;
@@ -32,8 +32,10 @@ export interface VariableExpenseEstimate {
 export const summaryApi = {
   getMonthly: (workspaceId: string, year: number, month: number) =>
     apiRequest<MonthlySummary>(
-      `/workspaces/${workspaceId}/summary?year=${year}&month=${month}`,
+      `/workspaces/${workspaceId}/summary?year=${year}&month=${month}`
     ),
   getVariableExpenseEstimate: (workspaceId: string) =>
-    apiRequest<VariableExpenseEstimate>(`/workspaces/${workspaceId}/summary/variable-expense-estimate`),
+    apiRequest<VariableExpenseEstimate>(
+      `/workspaces/${workspaceId}/summary/variable-expense-estimate`
+    ),
 };

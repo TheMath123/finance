@@ -1,4 +1,4 @@
-import type { RateLimiter } from "../../application/ports/rate-limiter";
+import type { RateLimiter } from '../../application/ports/rate-limiter';
 
 /**
  * Rate limiting em memória (janela deslizante) — só para testes (`test/deps.ts`),

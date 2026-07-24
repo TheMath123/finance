@@ -3,66 +3,85 @@
  * rede (`sendWhatsAppText` não é testado aqui). Críticos: um bug aqui é uma
  * forma de falsificar requisições do webhook.
  */
-import { describe, expect, test } from "bun:test";
-import { brazilianAltVariant, verifyWebhookChallenge, verifyWebhookSignature } from "./meta-cloud-api";
+import { describe, expect, test } from 'bun:test';
+import {
+  brazilianAltVariant,
+  verifyWebhookChallenge,
+  verifyWebhookSignature,
+} from './meta-cloud-api';
 
-process.env.WHATSAPP_PHONE_NUMBER_ID = "test-phone-id";
-process.env.WHATSAPP_ACCESS_TOKEN = "test-token";
-process.env.WHATSAPP_VERIFY_TOKEN = "meu-verify-token";
-process.env.WHATSAPP_APP_SECRET = "segredo-de-teste";
+process.env.WHATSAPP_PHONE_NUMBER_ID = 'test-phone-id';
+process.env.WHATSAPP_ACCESS_TOKEN = 'test-token';
+process.env.WHATSAPP_VERIFY_TOKEN = 'meu-verify-token';
+process.env.WHATSAPP_APP_SECRET = 'segredo-de-teste';
 
 function signaturePara(rawBody: string): string {
-  const hex = new Bun.CryptoHasher("sha256", "segredo-de-teste").update(rawBody).digest("hex");
+  const hex = new Bun.CryptoHasher('sha256', 'segredo-de-teste')
+    .update(rawBody)
+    .digest('hex');
   return `sha256=${hex}`;
 }
 
-describe("whatsapp: verificação do webhook (GET)", () => {
-  test("aceita mode=subscribe com o verify_token certo", () => {
-    expect(verifyWebhookChallenge("subscribe", "meu-verify-token")).toBe(true);
+describe('whatsapp: verificação do webhook (GET)', () => {
+  test('aceita mode=subscribe com o verify_token certo', () => {
+    expect(verifyWebhookChallenge('subscribe', 'meu-verify-token')).toBe(true);
   });
 
-  test("rejeita verify_token errado", () => {
-    expect(verifyWebhookChallenge("subscribe", "token-errado")).toBe(false);
+  test('rejeita verify_token errado', () => {
+    expect(verifyWebhookChallenge('subscribe', 'token-errado')).toBe(false);
   });
 
-  test("rejeita mode diferente de subscribe", () => {
-    expect(verifyWebhookChallenge("unsubscribe", "meu-verify-token")).toBe(false);
-  });
-});
-
-describe("whatsapp: assinatura do webhook (POST)", () => {
-  test("aceita assinatura válida do corpo", () => {
-    const body = JSON.stringify({ hello: "world" });
-    expect(verifyWebhookSignature(body, signaturePara(body))).toEqual({ valid: true });
-  });
-
-  test("rejeita assinatura de outro corpo (payload adulterado) com motivo mismatch", () => {
-    const body = JSON.stringify({ hello: "world" });
-    const outraAssinatura = signaturePara(JSON.stringify({ hello: "mundo" }));
-    expect(verifyWebhookSignature(body, outraAssinatura)).toEqual({ valid: false, reason: "mismatch" });
-  });
-
-  test("rejeita header ausente com motivo missing_header", () => {
-    const body = JSON.stringify({ hello: "world" });
-    expect(verifyWebhookSignature(body, null)).toEqual({ valid: false, reason: "missing_header" });
-  });
-
-  test("rejeita header em formato errado com motivo invalid_format", () => {
-    const body = JSON.stringify({ hello: "world" });
-    expect(verifyWebhookSignature(body, "md5=abc123")).toEqual({ valid: false, reason: "invalid_format" });
+  test('rejeita mode diferente de subscribe', () => {
+    expect(verifyWebhookChallenge('unsubscribe', 'meu-verify-token')).toBe(
+      false
+    );
   });
 });
 
-describe("whatsapp: variante do nono dígito (BR)", () => {
-  test("remove o 9 quando o número tem 9 dígitos após o DDD", () => {
-    expect(brazilianAltVariant("5511987654321")).toBe("551187654321");
+describe('whatsapp: assinatura do webhook (POST)', () => {
+  test('aceita assinatura válida do corpo', () => {
+    const body = JSON.stringify({ hello: 'world' });
+    expect(verifyWebhookSignature(body, signaturePara(body))).toEqual({
+      valid: true,
+    });
   });
 
-  test("adiciona o 9 quando o número tem 8 dígitos após o DDD", () => {
-    expect(brazilianAltVariant("551187654321")).toBe("5511987654321");
+  test('rejeita assinatura de outro corpo (payload adulterado) com motivo mismatch', () => {
+    const body = JSON.stringify({ hello: 'world' });
+    const outraAssinatura = signaturePara(JSON.stringify({ hello: 'mundo' }));
+    expect(verifyWebhookSignature(body, outraAssinatura)).toEqual({
+      valid: false,
+      reason: 'mismatch',
+    });
   });
 
-  test("retorna null pra número que não é do Brasil", () => {
-    expect(brazilianAltVariant("12025550123")).toBeNull();
+  test('rejeita header ausente com motivo missing_header', () => {
+    const body = JSON.stringify({ hello: 'world' });
+    expect(verifyWebhookSignature(body, null)).toEqual({
+      valid: false,
+      reason: 'missing_header',
+    });
+  });
+
+  test('rejeita header em formato errado com motivo invalid_format', () => {
+    const body = JSON.stringify({ hello: 'world' });
+    expect(verifyWebhookSignature(body, 'md5=abc123')).toEqual({
+      valid: false,
+      reason: 'invalid_format',
+    });
+  });
+});
+
+describe('whatsapp: variante do nono dígito (BR)', () => {
+  test('remove o 9 quando o número tem 9 dígitos após o DDD', () => {
+    expect(brazilianAltVariant('5511987654321')).toBe('551187654321');
+  });
+
+  test('adiciona o 9 quando o número tem 8 dígitos após o DDD', () => {
+    expect(brazilianAltVariant('551187654321')).toBe('5511987654321');
+  });
+
+  test('retorna null pra número que não é do Brasil', () => {
+    expect(brazilianAltVariant('12025550123')).toBeNull();
   });
 });

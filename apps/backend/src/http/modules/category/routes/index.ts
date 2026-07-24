@@ -1,9 +1,9 @@
-import { Elysia } from "elysia";
-import type { AppDeps } from "../../../deps";
-import { createCategoryRoute } from "./create-category";
-import { listCategoriesRoute } from "./list-categories";
-import { updateCategoryRoute } from "./update-category";
-import { deleteCategoryRoute } from "./delete-category";
+import { Elysia } from 'elysia';
+import type { AppDeps } from '../../../deps';
+import { createCategoryRoute } from './create-category';
+import { deleteCategoryRoute } from './delete-category';
+import { listCategoriesRoute } from './list-categories';
+import { updateCategoryRoute } from './update-category';
 
 export function categoryRoutes(deps: AppDeps) {
   return new Elysia()

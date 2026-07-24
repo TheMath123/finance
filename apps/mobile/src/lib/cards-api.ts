@@ -1,6 +1,6 @@
-import type { InvoiceStatus } from "@finance/shared";
+import type { InvoiceStatus } from '@finance/shared';
 
-import { apiRequest } from "@/lib/api-client";
+import { apiRequest } from '@/lib/api-client';
 
 export interface Card {
   id: string;
@@ -47,33 +47,56 @@ export interface Invoice {
 export interface PayInvoiceInput {
   accountId: string;
   date: string;
-  method: "pix" | "debit";
+  method: 'pix' | 'debit';
 }
 
 export const cardsApi = {
-  list: (workspaceId: string) => apiRequest<Card[]>(`/workspaces/${workspaceId}/cards`),
+  list: (workspaceId: string) =>
+    apiRequest<Card[]>(`/workspaces/${workspaceId}/cards`),
 
   create: (workspaceId: string, input: CreateCardInput) =>
-    apiRequest<Card>(`/workspaces/${workspaceId}/cards`, { method: "POST", body: input }),
+    apiRequest<Card>(`/workspaces/${workspaceId}/cards`, {
+      method: 'POST',
+      body: input,
+    }),
 
-  update: (workspaceId: string, cardId: string, input: Partial<CreateCardInput>) =>
-    apiRequest<Card>(`/workspaces/${workspaceId}/cards/${cardId}`, { method: "PATCH", body: input }),
+  update: (
+    workspaceId: string,
+    cardId: string,
+    input: Partial<CreateCardInput>
+  ) =>
+    apiRequest<Card>(`/workspaces/${workspaceId}/cards/${cardId}`, {
+      method: 'PATCH',
+      body: input,
+    }),
 
   archive: (workspaceId: string, cardId: string) =>
-    apiRequest<Card>(`/workspaces/${workspaceId}/cards/${cardId}/archive`, { method: "POST" }),
+    apiRequest<Card>(`/workspaces/${workspaceId}/cards/${cardId}/archive`, {
+      method: 'POST',
+    }),
 
   unarchive: (workspaceId: string, cardId: string) =>
-    apiRequest<Card>(`/workspaces/${workspaceId}/cards/${cardId}/unarchive`, { method: "POST" }),
+    apiRequest<Card>(`/workspaces/${workspaceId}/cards/${cardId}/unarchive`, {
+      method: 'POST',
+    }),
 
   delete: (workspaceId: string, cardId: string) =>
-    apiRequest<void>(`/workspaces/${workspaceId}/cards/${cardId}`, { method: "DELETE" }),
+    apiRequest<void>(`/workspaces/${workspaceId}/cards/${cardId}`, {
+      method: 'DELETE',
+    }),
 
   listInvoices: (workspaceId: string, cardId: string) =>
-    apiRequest<Invoice[]>(`/workspaces/${workspaceId}/cards/${cardId}/invoices`),
+    apiRequest<Invoice[]>(
+      `/workspaces/${workspaceId}/cards/${cardId}/invoices`
+    ),
 
-  payInvoice: (workspaceId: string, invoiceId: string, input: PayInvoiceInput) =>
+  payInvoice: (
+    workspaceId: string,
+    invoiceId: string,
+    input: PayInvoiceInput
+  ) =>
     apiRequest<void>(`/workspaces/${workspaceId}/invoices/${invoiceId}/pay`, {
-      method: "POST",
+      method: 'POST',
       body: input,
     }),
 };

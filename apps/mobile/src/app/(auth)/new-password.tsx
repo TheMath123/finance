@@ -7,7 +7,10 @@ import { ThemedText } from '@/components/themed-text';
 import { Screen } from '@/components/ui/screen';
 
 export default function NewPasswordScreen() {
-  const { email, code } = useLocalSearchParams<{ email?: string; code?: string }>();
+  const { email, code } = useLocalSearchParams<{
+    email?: string;
+    code?: string;
+  }>();
 
   // Chegou direto (sem passar pelo passo do código) — manda de volta pro início do fluxo.
   if (!email || !code) {

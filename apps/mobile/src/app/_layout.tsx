@@ -1,14 +1,23 @@
 import { QueryClientProvider } from '@tanstack/react-query';
-import { DarkTheme, DefaultTheme, router, Slot, ThemeProvider } from 'expo-router';
+import {
+  DarkTheme,
+  DefaultTheme,
+  router,
+  Slot,
+  ThemeProvider,
+} from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { useColorScheme } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { SessionProvider } from '@/context/session';
-import { queryClient } from '@/lib/query-client';
 import { handleNotificationAction } from '@/lib/notification-actions';
-import { addNotificationResponseListener, notificationTargetRoute } from '@/lib/push-notifications';
+import {
+  addNotificationResponseListener,
+  notificationTargetRoute,
+} from '@/lib/push-notifications';
+import { queryClient } from '@/lib/query-client';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -35,7 +44,9 @@ export default function RootLayout() {
     <QueryClientProvider client={queryClient}>
       <SafeAreaProvider>
         <SessionProvider>
-          <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+          <ThemeProvider
+            value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}
+          >
             <Slot />
           </ThemeProvider>
         </SessionProvider>

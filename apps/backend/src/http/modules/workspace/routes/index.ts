@@ -1,17 +1,17 @@
-import { Elysia } from "elysia";
-import type { AppDeps } from "../../../deps";
-import { listMyWorkspacesRoute } from "./list-my-workspaces";
-import { createWorkspaceRoute } from "./create-workspace";
-import { updateWorkspaceRoute } from "./update-workspace";
-import { listMembersRoute } from "./list-members";
-import { updateMemberRoleRoute } from "./update-member-role";
-import { removeMemberRoute } from "./remove-member";
-import { createInviteRoute } from "./create-invite";
-import { listWorkspaceInvitesRoute } from "./list-workspace-invites";
-import { listMyInvitesRoute } from "./list-my-invites";
-import { acceptInviteRoute } from "./accept-invite";
-import { revokeInviteRoute } from "./revoke-invite";
-import { listActivityRoute } from "./list-activity";
+import { Elysia } from 'elysia';
+import type { AppDeps } from '../../../deps';
+import { acceptInviteRoute } from './accept-invite';
+import { createInviteRoute } from './create-invite';
+import { createWorkspaceRoute } from './create-workspace';
+import { listActivityRoute } from './list-activity';
+import { listMembersRoute } from './list-members';
+import { listMyInvitesRoute } from './list-my-invites';
+import { listMyWorkspacesRoute } from './list-my-workspaces';
+import { listWorkspaceInvitesRoute } from './list-workspace-invites';
+import { removeMemberRoute } from './remove-member';
+import { revokeInviteRoute } from './revoke-invite';
+import { updateMemberRoleRoute } from './update-member-role';
+import { updateWorkspaceRoute } from './update-workspace';
 
 export function workspaceRoutes(deps: AppDeps) {
   return new Elysia()

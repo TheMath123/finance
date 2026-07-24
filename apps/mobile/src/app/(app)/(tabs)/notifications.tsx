@@ -19,7 +19,7 @@ import { ThemedText } from '@/components/themed-text';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Screen } from '@/components/ui/screen';
-import { notificationApi, type NotificationView } from '@/lib/notification-api';
+import { type NotificationView, notificationApi } from '@/lib/notification-api';
 import { notificationTargetRoute } from '@/lib/push-notifications';
 
 const TYPE_ICONS: Record<string, typeof BellIcon> = {
@@ -58,10 +58,12 @@ export default function NotificationsScreen() {
     staleTime: 0,
   });
 
-  const refresh = () => queryClient.invalidateQueries({ queryKey: ['notifications'] });
+  const refresh = () =>
+    queryClient.invalidateQueries({ queryKey: ['notifications'] });
 
   const openNotification = async (notification: NotificationView) => {
-    if (!notification.readAt) await notificationApi.markRead(notification.id).catch(() => {});
+    if (!notification.readAt)
+      await notificationApi.markRead(notification.id).catch(() => {});
     refresh();
     const target = notificationTargetRoute(notification.data ?? undefined);
     if (target) router.push(target as never);
@@ -84,7 +86,8 @@ export default function NotificationsScreen() {
         <Pressable
           onPress={() => router.push('/notification-settings')}
           hitSlop={8}
-          className="active:opacity-60">
+          className="active:opacity-60"
+        >
           <GearIcon size={22} />
         </Pressable>
       </View>
@@ -93,13 +96,15 @@ export default function NotificationsScreen() {
         <Button
           variant={showArchived ? 'outline' : 'default'}
           size="sm"
-          onPress={() => setShowArchived(false)}>
+          onPress={() => setShowArchived(false)}
+        >
           Ativas
         </Button>
         <Button
           variant={showArchived ? 'default' : 'outline'}
           size="sm"
-          onPress={() => setShowArchived(true)}>
+          onPress={() => setShowArchived(true)}
+        >
           Arquivadas
         </Button>
       </View>
@@ -111,15 +116,25 @@ export default function NotificationsScreen() {
           {notifications.map((notification) => {
             const Icon = TYPE_ICONS[notification.type] ?? BellIcon;
             return (
-              <Card key={notification.id} className="flex-row items-start gap-3">
-                <Pressable className="flex-1 flex-row items-start gap-3" onPress={() => openNotification(notification)}>
+              <Card
+                key={notification.id}
+                className="flex-row items-start gap-3"
+              >
+                <Pressable
+                  className="flex-1 flex-row items-start gap-3"
+                  onPress={() => openNotification(notification)}
+                >
                   <View className="h-9 w-9 items-center justify-center rounded-full bg-primary/10">
                     <Icon size={18} color="#2563EB" />
                   </View>
                   <View className="flex-1 gap-0.5">
                     <View className="flex-row items-center gap-2">
-                      {!notification.readAt && <View className="h-2 w-2 rounded-full bg-primary" />}
-                      <ThemedText type="smallBold">{notification.title}</ThemedText>
+                      {!notification.readAt && (
+                        <View className="h-2 w-2 rounded-full bg-primary" />
+                      )}
+                      <ThemedText type="smallBold">
+                        {notification.title}
+                      </ThemedText>
                     </View>
                     <ThemedText type="small" themeColor="textSecondary">
                       {notification.body}
@@ -130,9 +145,14 @@ export default function NotificationsScreen() {
                   </View>
                 </Pressable>
                 <Pressable
-                  onPress={() => (showArchived ? unarchive(notification) : archive(notification))}
+                  onPress={() =>
+                    showArchived
+                      ? unarchive(notification)
+                      : archive(notification)
+                  }
                   hitSlop={8}
-                  className="p-1 active:opacity-60">
+                  className="p-1 active:opacity-60"
+                >
                   <ArchiveIcon size={18} color="#71717a" />
                 </Pressable>
               </Card>
@@ -142,7 +162,9 @@ export default function NotificationsScreen() {
       ) : (
         <Card className="items-center py-8">
           <ThemedText type="small" themeColor="textSecondary">
-            {showArchived ? 'Nenhuma notificação arquivada.' : 'Nenhuma notificação por aqui.'}
+            {showArchived
+              ? 'Nenhuma notificação arquivada.'
+              : 'Nenhuma notificação por aqui.'}
           </ThemedText>
         </Card>
       )}

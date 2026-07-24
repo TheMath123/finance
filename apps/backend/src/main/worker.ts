@@ -1,17 +1,21 @@
-import { createDb } from "@finance/db";
-import { createBullMqDispatcher, createBullMqWorker, QUEUE_NAME } from "@finance/queues";
-import { createS3Storage } from "@finance/storage";
-import { runNotificationSweep } from "../application/use-cases/notification";
-import { createRepositories } from "../infra/db/repositories";
-import { createUnitOfWork } from "../infra/db/unit-of-work";
-import { createTokenService } from "../infra/security/jose-token-service";
-import { createRedisRateLimiter } from "../infra/security/redis-rate-limiter";
-import { createRedisTokenBudget } from "../infra/ai/redis-token-budget";
-import { createRedisCache } from "../infra/cache/redis-cache";
-import { createRedisNotificationBus } from "../infra/realtime/redis-notification-bus";
-import { createLogger } from "../infra/observability/logger";
-import { createJobHandlers } from "./job-handlers";
-import { loadEnv } from "./env";
+import { createDb } from '@finance/db';
+import {
+  createBullMqDispatcher,
+  createBullMqWorker,
+  QUEUE_NAME,
+} from '@finance/queues';
+import { createS3Storage } from '@finance/storage';
+import { runNotificationSweep } from '../application/use-cases/notification';
+import { createRedisTokenBudget } from '../infra/ai/redis-token-budget';
+import { createRedisCache } from '../infra/cache/redis-cache';
+import { createRepositories } from '../infra/db/repositories';
+import { createUnitOfWork } from '../infra/db/unit-of-work';
+import { createLogger } from '../infra/observability/logger';
+import { createRedisNotificationBus } from '../infra/realtime/redis-notification-bus';
+import { createTokenService } from '../infra/security/jose-token-service';
+import { createRedisRateLimiter } from '../infra/security/redis-rate-limiter';
+import { loadEnv } from './env';
+import { createJobHandlers } from './job-handlers';
 
 /**
  * Processo separado que consome a fila do BullMQ (spec M2: Redis + BullMQ —
@@ -20,11 +24,11 @@ import { loadEnv } from "./env";
  * processo HTTP (`main/index.ts`).
  */
 const env = loadEnv();
-const logger = createLogger(env.LOG_LEVEL, "worker");
+const logger = createLogger(env.LOG_LEVEL, 'worker');
 
 const db = createDb();
 const dispatcher = createBullMqDispatcher(env.REDIS_URL, (job, error) =>
-  logger.error({ scope: "queues", job, err: error }, "job_failed"),
+  logger.error({ scope: 'queues', job, err: error }, 'job_failed')
 );
 
 /**
@@ -54,11 +58,14 @@ const deps = {
   }),
 };
 
-const worker = createBullMqWorker(env.REDIS_URL, createJobHandlers(deps), (job, error) =>
-  logger.error({ scope: "queues", job, err: error }, "job_failed"),
+const worker = createBullMqWorker(
+  env.REDIS_URL,
+  createJobHandlers(deps),
+  (job, error) =>
+    logger.error({ scope: 'queues', job, err: error }, 'job_failed')
 );
 
-logger.info({ scope: "queues", queue: QUEUE_NAME }, "worker iniciado");
+logger.info({ scope: 'queues', queue: QUEUE_NAME }, 'worker iniciado');
 
 /**
  * Sweep diário (fatura fechou/vence, auto-lançamento de recorrências —
@@ -70,9 +77,9 @@ logger.info({ scope: "queues", queue: QUEUE_NAME }, "worker iniciado");
 async function runSweepSafely() {
   try {
     await runNotificationSweep(deps);
-    logger.info({ scope: "notifications" }, "sweep concluído");
+    logger.info({ scope: 'notifications' }, 'sweep concluído');
   } catch (error) {
-    logger.error({ scope: "notifications", err: error }, "sweep falhou");
+    logger.error({ scope: 'notifications', err: error }, 'sweep falhou');
   }
 }
 
@@ -80,11 +87,11 @@ void runSweepSafely();
 const sweepInterval = setInterval(runSweepSafely, 24 * 60 * 60 * 1000);
 
 async function shutdown() {
-  logger.info({ scope: "queues" }, "worker encerrando");
+  logger.info({ scope: 'queues' }, 'worker encerrando');
   clearInterval(sweepInterval);
   await worker.close();
   process.exit(0);
 }
 
-process.on("SIGTERM", shutdown);
-process.on("SIGINT", shutdown);
+process.on('SIGTERM', shutdown);
+process.on('SIGINT', shutdown);

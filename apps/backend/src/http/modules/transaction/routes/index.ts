@@ -1,14 +1,14 @@
-import { Elysia } from "elysia";
-import type { AppDeps } from "../../../deps";
-import { createTransactionRoute } from "./create-transaction";
-import { listTransactionsRoute } from "./list-transactions";
-import { updateTransactionRoute } from "./update-transaction";
-import { deleteTransactionRoute } from "./delete-transaction";
-import { restoreTransactionRoute } from "./restore-transaction";
-import { exportTransactionsRoute } from "./export-transactions";
-import { uploadAttachmentRoute } from "./upload-attachment";
-import { deleteAttachmentRoute } from "./delete-attachment";
-import { getAttachmentRoute } from "./get-attachment";
+import { Elysia } from 'elysia';
+import type { AppDeps } from '../../../deps';
+import { createTransactionRoute } from './create-transaction';
+import { deleteAttachmentRoute } from './delete-attachment';
+import { deleteTransactionRoute } from './delete-transaction';
+import { exportTransactionsRoute } from './export-transactions';
+import { getAttachmentRoute } from './get-attachment';
+import { listTransactionsRoute } from './list-transactions';
+import { restoreTransactionRoute } from './restore-transaction';
+import { updateTransactionRoute } from './update-transaction';
+import { uploadAttachmentRoute } from './upload-attachment';
 
 export function transactionRoutes(deps: AppDeps) {
   return new Elysia()

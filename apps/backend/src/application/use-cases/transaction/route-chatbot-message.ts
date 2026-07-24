@@ -1,19 +1,23 @@
-import { z } from "zod";
-import { zodResponseFormat } from "openai/helpers/zod";
-import { normalizeDescription } from "../../../domain/services/occurrence-rules";
-import { getAiClient, getRouterModel } from "../../../infra/ai/ai-client";
-import type { UseCaseDeps } from "../../deps";
-import { answerAnalyticalQuestion } from "../summary/analyst-agent";
-import { createTransaction } from "./create-transaction";
+import { zodResponseFormat } from 'openai/helpers/zod';
+import { z } from 'zod';
+import { normalizeDescription } from '../../../domain/services/occurrence-rules';
+import { getAiClient, getRouterModel } from '../../../infra/ai/ai-client';
+import type { UseCaseDeps } from '../../deps';
+import { answerAnalyticalQuestion } from '../summary/analyst-agent';
+import { createTransaction } from './create-transaction';
 
 const RouterOutputSchema = z.object({
-  intent: z.enum(["register_transaction", "analytical_question", "out_of_scope"]),
+  intent: z.enum([
+    'register_transaction',
+    'analytical_question',
+    'out_of_scope',
+  ]),
   transaction: z
     .object({
       description: z.string().min(1),
       amountCents: z.number().int().positive(),
-      type: z.enum(["income", "expense"]),
-      method: z.enum(["pix", "debit", "cash", "credit"]),
+      type: z.enum(['income', 'expense']),
+      method: z.enum(['pix', 'debit', 'cash', 'credit']),
       /** Nome aproximado da categoria em português — resolvido depois contra as categorias reais do workspace. */
       categoryHint: z.string(),
       /** Apelido/nome da conta ou cartão mencionado no texto, ou null se não mencionado. */
@@ -56,13 +60,15 @@ export interface ChatbotReply {
 }
 
 async function resolveCategoryId(
-  deps: Pick<UseCaseDeps, "repos">,
+  deps: Pick<UseCaseDeps, 'repos'>,
   workspaceId: string,
-  categoryHint: string,
+  categoryHint: string
 ): Promise<string> {
   const categories = await deps.repos.category.listByWorkspace(workspaceId);
   const hintNormalized = normalizeDescription(categoryHint);
-  const match = categories.find((c) => normalizeDescription(c.name) === hintNormalized);
+  const match = categories.find(
+    (c) => normalizeDescription(c.name) === hintNormalized
+  );
   if (match) return match.id;
 
   const fallback = await deps.repos.category.findFallback(workspaceId);
@@ -71,13 +77,16 @@ async function resolveCategoryId(
   return categories[0]!.id;
 }
 
-export type ResolvedTarget = { kind: "account" | "card"; id: string } | null | "ambiguous";
+export type ResolvedTarget =
+  | { kind: 'account' | 'card'; id: string }
+  | null
+  | 'ambiguous';
 
 /** Exportada — reaproveitada pelo fallback determinístico (`handle-inbound-message.ts`) quando a IA está fora do ar. */
 export async function resolveAccountOrCard(
-  deps: Pick<UseCaseDeps, "repos">,
+  deps: Pick<UseCaseDeps, 'repos'>,
   workspaceId: string,
-  hint: string | null,
+  hint: string | null
 ): Promise<ResolvedTarget> {
   const [accounts, cards] = await Promise.all([
     deps.repos.account.listByWorkspace(workspaceId),
@@ -90,20 +99,22 @@ export async function resolveAccountOrCard(
     const total = activeAccounts.length + activeCards.length;
     if (total !== 1) return null;
     return activeAccounts.length === 1
-      ? { kind: "account", id: activeAccounts[0]!.id }
-      : { kind: "card", id: activeCards[0]!.id };
+      ? { kind: 'account', id: activeAccounts[0]!.id }
+      : { kind: 'card', id: activeCards[0]!.id };
   }
 
   const hintNormalized = normalizeDescription(hint);
-  const matches: { kind: "account" | "card"; id: string }[] = [];
+  const matches: { kind: 'account' | 'card'; id: string }[] = [];
   for (const a of activeAccounts) {
-    if (normalizeDescription(a.name) === hintNormalized) matches.push({ kind: "account", id: a.id });
+    if (normalizeDescription(a.name) === hintNormalized)
+      matches.push({ kind: 'account', id: a.id });
   }
   for (const c of activeCards) {
-    if (normalizeDescription(c.name) === hintNormalized) matches.push({ kind: "card", id: c.id });
+    if (normalizeDescription(c.name) === hintNormalized)
+      matches.push({ kind: 'card', id: c.id });
   }
   if (matches.length === 1) return matches[0]!;
-  if (matches.length > 1) return "ambiguous";
+  if (matches.length > 1) return 'ambiguous';
   return null;
 }
 
@@ -115,20 +126,20 @@ export async function resolveAccountOrCard(
  * mudar código, sem lock-in num provedor de IA específico.
  */
 export async function routeChatbotMessage(
-  deps: Pick<UseCaseDeps, "repos" | "uow" | "cache">,
+  deps: Pick<UseCaseDeps, 'repos' | 'uow' | 'cache'>,
   workspaceId: string,
   userId: string,
-  text: string,
+  text: string
 ): Promise<ChatbotReply> {
   const client = getAiClient();
   const response = await client.chat.completions.parse({
     model: getRouterModel(),
     max_tokens: 1024,
     messages: [
-      { role: "system", content: SYSTEM_PROMPT },
-      { role: "user", content: text },
+      { role: 'system', content: SYSTEM_PROMPT },
+      { role: 'user', content: text },
     ],
-    response_format: zodResponseFormat(RouterOutputSchema, "router_output"),
+    response_format: zodResponseFormat(RouterOutputSchema, 'router_output'),
   });
 
   const usage = {
@@ -138,21 +149,24 @@ export async function routeChatbotMessage(
 
   const parsed = response.choices[0]?.message.parsed;
   if (!parsed) {
-    return { body: "Não consegui entender essa mensagem. Pode reformular?", usage };
-  }
-
-  if (parsed.intent === "out_of_scope") {
     return {
-      body: "Só consigo ajudar com suas finanças por aqui — registrar gastos/receitas ou responder sobre seus dados financeiros.",
+      body: 'Não consegui entender essa mensagem. Pode reformular?',
       usage,
     };
   }
 
-  if (parsed.intent === "analytical_question") {
+  if (parsed.intent === 'out_of_scope') {
+    return {
+      body: 'Só consigo ajudar com suas finanças por aqui — registrar gastos/receitas ou responder sobre seus dados financeiros.',
+      usage,
+    };
+  }
+
+  if (parsed.intent === 'analytical_question') {
     const analystResult = await answerAnalyticalQuestion(
       deps,
-      { userId, workspaceId, role: "member" },
-      text,
+      { userId, workspaceId, role: 'member' },
+      text
     );
     return {
       body: analystResult.body,
@@ -164,41 +178,56 @@ export async function routeChatbotMessage(
   }
 
   if (parsed.clarification || !parsed.transaction) {
-    return { body: parsed.clarification ?? "Pode dar mais detalhes sobre essa transação?", usage };
+    return {
+      body:
+        parsed.clarification ?? 'Pode dar mais detalhes sobre essa transação?',
+      usage,
+    };
   }
 
   const { transaction } = parsed;
-  const categoryId = await resolveCategoryId(deps, workspaceId, transaction.categoryHint);
-  const target = await resolveAccountOrCard(deps, workspaceId, transaction.accountOrCardHint);
+  const categoryId = await resolveCategoryId(
+    deps,
+    workspaceId,
+    transaction.categoryHint
+  );
+  const target = await resolveAccountOrCard(
+    deps,
+    workspaceId,
+    transaction.accountOrCardHint
+  );
 
-  if (target === "ambiguous") {
+  if (target === 'ambiguous') {
     return {
       body: `Tenho mais de uma conta/cartão parecido com "${transaction.accountOrCardHint}". Qual deles?`,
       usage,
     };
   }
   if (!target) {
-    return { body: "Em qual conta ou cartão foi essa transação?", usage };
+    return { body: 'Em qual conta ou cartão foi essa transação?', usage };
   }
 
   const result = await createTransaction(
     deps,
-    { userId, workspaceId, role: "member" },
+    { userId, workspaceId, role: 'member' },
     {
       description: transaction.description,
       amount: transaction.amountCents,
       type: transaction.type,
-      method: target.kind === "card" ? "credit" : transaction.method,
+      method: target.kind === 'card' ? 'credit' : transaction.method,
       date: new Date().toISOString().slice(0, 10),
       categoryId,
-      accountId: target.kind === "account" ? target.id : undefined,
-      cardId: target.kind === "card" ? target.id : undefined,
-      source: "chatbot",
-    },
+      accountId: target.kind === 'account' ? target.id : undefined,
+      cardId: target.kind === 'card' ? target.id : undefined,
+      source: 'chatbot',
+    }
   );
 
   if (!result.ok) {
-    return { body: "Não consegui registrar essa transação. Confere os dados no app?", usage };
+    return {
+      body: 'Não consegui registrar essa transação. Confere os dados no app?',
+      usage,
+    };
   }
 
   return {

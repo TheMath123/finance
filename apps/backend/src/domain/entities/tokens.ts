@@ -6,7 +6,11 @@ export interface RefreshToken {
   createdAt: Date;
 }
 
-export type AuthTokenPurpose = "password_reset" | "email_verification" | "email_change" | "account_deletion";
+export type AuthTokenPurpose =
+  | 'password_reset'
+  | 'email_verification'
+  | 'email_change'
+  | 'account_deletion';
 
 export interface AuthToken {
   id: string;

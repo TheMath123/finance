@@ -8,7 +8,10 @@ import { ThemedText } from '@/components/themed-text';
 import { Button } from '@/components/ui/button';
 import { ApiError } from '@/lib/api-client';
 import { authApi } from '@/lib/auth-api';
-import { changePasswordSchema, type ChangePasswordInput } from '@/lib/schemas/auth';
+import {
+  type ChangePasswordInput,
+  changePasswordSchema,
+} from '@/lib/schemas/auth';
 
 const emptyValues: ChangePasswordInput = {
   currentPassword: '',
@@ -60,7 +63,9 @@ export function ChangePasswordForm() {
 
       {mutation.isError && (
         <ThemedText type="small" style={{ color: '#DC2626' }}>
-          {mutation.error instanceof ApiError ? mutation.error.message : 'Erro inesperado'}
+          {mutation.error instanceof ApiError
+            ? mutation.error.message
+            : 'Erro inesperado'}
         </ThemedText>
       )}
       {mutation.isSuccess && (
@@ -69,7 +74,10 @@ export function ChangePasswordForm() {
         </ThemedText>
       )}
 
-      <Button loading={mutation.isPending} onPress={handleSubmit((input) => mutation.mutate(input))}>
+      <Button
+        loading={mutation.isPending}
+        onPress={handleSubmit((input) => mutation.mutate(input))}
+      >
         Alterar senha
       </Button>
     </View>

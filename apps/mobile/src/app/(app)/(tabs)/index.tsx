@@ -45,7 +45,11 @@ function useNextInvoice(workspaceId: string | null): NextInvoice | null {
     if (!card || !query.data) return;
     for (const invoice of query.data) {
       if (invoice.effectiveStatus === 'paid') continue;
-      const dueDate = new Date(invoice.yearReference, invoice.monthReference - 1, card.dueDay);
+      const dueDate = new Date(
+        invoice.yearReference,
+        invoice.monthReference - 1,
+        card.dueDay
+      );
       if (!best || dueDate < best.dueDate) {
         best = { cardName: card.name, total: invoice.total, dueDate };
       }
@@ -55,19 +59,40 @@ function useNextInvoice(workspaceId: string | null): NextInvoice | null {
 }
 
 /** Mês seguinte ao informado (rolando o ano quando dezembro → janeiro). */
-function nextMonth(year: number, month: number): { year: number; month: number } {
-  return month === 12 ? { year: year + 1, month: 1 } : { year, month: month + 1 };
+function nextMonth(
+  year: number,
+  month: number
+): { year: number; month: number } {
+  return month === 12
+    ? { year: year + 1, month: 1 }
+    : { year, month: month + 1 };
 }
 
 /** Linha com divisor no topo (label + valor + descrição opcional) — mesmo padrão flat dos 3 blocos da Home no Figma, sem Card/borda ao redor. */
-function SummaryListRow({ label, value, description }: { label: string; value: React.ReactNode; description?: string }) {
+function SummaryListRow({
+  label,
+  value,
+  description,
+}: {
+  label: string;
+  value: React.ReactNode;
+  description?: string;
+}) {
   const theme = useTheme();
   return (
     <View className="w-full flex-row items-start justify-center border-t border-foreground/10 px-4 pt-4">
       <View className="flex-1 gap-2.5">
-        <Text className="text-[10px] font-normal leading-tight text-foreground">{label}</Text>
-        <Text className="text-[20px] font-medium leading-tight text-foreground">{value}</Text>
-        {description && <Text className="text-[10px] font-normal leading-tight text-muted-foreground">{description}</Text>}
+        <Text className="text-[10px] font-normal leading-tight text-foreground">
+          {label}
+        </Text>
+        <Text className="text-[20px] font-medium leading-tight text-foreground">
+          {value}
+        </Text>
+        {description && (
+          <Text className="text-[10px] font-normal leading-tight text-muted-foreground">
+            {description}
+          </Text>
+        )}
       </View>
       <CaretRightIcon size={14} weight="bold" color={theme.textSecondary} />
     </View>
@@ -81,32 +106,49 @@ export default function HomeScreen() {
 
   const { data: summary, isLoading } = useQuery({
     queryKey: ['summary', workspaceId, now.getFullYear(), now.getMonth() + 1],
-    queryFn: () => summaryApi.getMonthly(workspaceId!, now.getFullYear(), now.getMonth() + 1),
+    queryFn: () =>
+      summaryApi.getMonthly(
+        workspaceId!,
+        now.getFullYear(),
+        now.getMonth() + 1
+      ),
     enabled: Boolean(workspaceId),
   });
 
   // Mesma fórmula do mês corrente (saldo + recorrências previstas − faturas em
   // aberto − estimativa de gasto variável), só que aplicada ao mês seguinte —
   // o backend (monthlySummary) já suporta isso, só pedindo o mês certo.
-  const { year: nextYear, month: nextMonthNumber } = nextMonth(now.getFullYear(), now.getMonth() + 1);
+  const { year: nextYear, month: nextMonthNumber } = nextMonth(
+    now.getFullYear(),
+    now.getMonth() + 1
+  );
   const { data: nextSummary } = useQuery({
     queryKey: ['summary', workspaceId, nextYear, nextMonthNumber],
-    queryFn: () => summaryApi.getMonthly(workspaceId!, nextYear, nextMonthNumber),
+    queryFn: () =>
+      summaryApi.getMonthly(workspaceId!, nextYear, nextMonthNumber),
     enabled: Boolean(workspaceId),
   });
 
   const nextInvoice = useNextInvoice(workspaceId);
   const recurringPending = useRecurringPendingTotal(workspaceId);
 
-  const { data: workspaces } = useQuery({ queryKey: ['workspaces'], queryFn: workspaceApi.listMine });
+  const { data: workspaces } = useQuery({
+    queryKey: ['workspaces'],
+    queryFn: workspaceApi.listMine,
+  });
   const activeWorkspace = workspaces?.find((w) => w.id === workspaceId);
 
   return (
     <Screen className="gap-4 px-0 pb-28">
       <View className="px-4">
         {activeWorkspace && (
-          <HeaderChip onPress={() => router.push('/workspaces')} className="self-start">
-            <Text className="text-[10px] font-normal leading-tight text-foreground">{activeWorkspace.name}</Text>
+          <HeaderChip
+            onPress={() => router.push('/workspaces')}
+            className="self-start"
+          >
+            <Text className="text-[10px] font-normal leading-tight text-foreground">
+              {activeWorkspace.name}
+            </Text>
             <CaretDownIcon size={16} color={theme.textSecondary} />
           </HeaderChip>
         )}
@@ -125,7 +167,11 @@ export default function HomeScreen() {
           description={`Vence em ${nextInvoice.dueDate.toLocaleDateString('pt-BR')}`}
         />
       ) : (
-        <SummaryListRow label="Nenhuma fatura este mês" value="—" description="Suas próximas faturas de cartão aparecem aqui." />
+        <SummaryListRow
+          label="Nenhuma fatura este mês"
+          value="—"
+          description="Suas próximas faturas de cartão aparecem aqui."
+        />
       )}
 
       <SummaryListRow
@@ -144,7 +190,11 @@ export default function HomeScreen() {
 
       <SummaryListRow
         label={`Projeção para ${new Date(nextYear, nextMonthNumber - 1, 1).toLocaleDateString('pt-BR', { month: 'long' })}`}
-        value={nextSummary?.projectedAvailable != null ? formatCents(nextSummary.projectedAvailable) : '—'}
+        value={
+          nextSummary?.projectedAvailable != null
+            ? formatCents(nextSummary.projectedAvailable)
+            : '—'
+        }
         description="Saldo atual + recorrências previstas − faturas em aberto − estimativa de gasto variável."
       />
     </Screen>

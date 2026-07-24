@@ -1,6 +1,6 @@
-import { left, right, type Either } from "@finance/shared";
-import type { UseCaseDeps } from "../../deps";
-import type { AuthError } from "./errors";
+import { type Either, left, right } from '@finance/shared';
+import type { UseCaseDeps } from '../../deps';
+import type { AuthError } from './errors';
 
 export interface VerifyResetCodeInput {
   email: string;
@@ -15,22 +15,28 @@ export interface VerifyResetCodeInput {
  */
 export async function verifyResetCode(
   deps: UseCaseDeps,
-  input: VerifyResetCodeInput,
+  input: VerifyResetCodeInput
 ): Promise<Either<AuthError, null>> {
   // Código de 6 dígitos = espaço pequeno; limite curto por e-mail alvo evita força bruta
-  if (await deps.rateLimiter.isLimited(`reset-code:${input.email}`, 5, 15 * 60_000)) {
-    return left("invalid_code");
+  if (
+    await deps.rateLimiter.isLimited(
+      `reset-code:${input.email}`,
+      5,
+      15 * 60_000
+    )
+  ) {
+    return left('invalid_code');
   }
 
   const user = await deps.repos.user.findByEmail(input.email);
-  if (!user) return left("invalid_code");
+  if (!user) return left('invalid_code');
 
   const stored = await deps.repos.token.findValidAuthTokenForUser(
     user.id,
-    "password_reset",
-    deps.tokens.hashOpaque(input.code),
+    'password_reset',
+    deps.tokens.hashOpaque(input.code)
   );
-  if (!stored) return left("invalid_code");
+  if (!stored) return left('invalid_code');
 
   return right(null);
 }

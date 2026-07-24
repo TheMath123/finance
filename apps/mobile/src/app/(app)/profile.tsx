@@ -17,15 +17,23 @@ import { EditNameForm } from '@/components/forms/edit-name-form';
 import { ThemedText } from '@/components/themed-text';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Screen } from '@/components/ui/screen';
 import { useBiometricLock } from '@/context/biometric-lock';
 import { useSession } from '@/context/session';
 
 export default function ProfileScreen() {
   const { user, signOut } = useSession();
-  const { available: biometricsAvailable, enabled: biometricsEnabled, setEnabled: setBiometricsEnabled } =
-    useBiometricLock();
+  const {
+    available: biometricsAvailable,
+    enabled: biometricsEnabled,
+    setEnabled: setBiometricsEnabled,
+  } = useBiometricLock();
   const [signingOut, setSigningOut] = useState(false);
   const [editingName, setEditingName] = useState(false);
 
@@ -48,7 +56,11 @@ export default function ProfileScreen() {
   return (
     <Screen className="gap-6 pb-28">
       <View className="flex-row items-center gap-3">
-        <Pressable onPress={() => router.back()} hitSlop={8} className="active:opacity-60">
+        <Pressable
+          onPress={() => router.back()}
+          hitSlop={8}
+          className="active:opacity-60"
+        >
           <ArrowLeftIcon size={22} />
         </Pressable>
         <ThemedText type="subtitle">Perfil</ThemedText>
@@ -64,7 +76,11 @@ export default function ProfileScreen() {
             {user?.email}
           </ThemedText>
         </View>
-        <Button variant="ghost" icon={<PencilSimpleIcon size={18} />} onPress={() => setEditingName(true)}>
+        <Button
+          variant="ghost"
+          icon={<PencilSimpleIcon size={18} />}
+          onPress={() => setEditingName(true)}
+        >
           Editar
         </Button>
       </Card>
@@ -108,14 +124,16 @@ export default function ProfileScreen() {
       <Button
         variant="outline"
         icon={<EnvelopeIcon size={18} />}
-        onPress={() => router.push('/change-email')}>
+        onPress={() => router.push('/change-email')}
+      >
         Alterar e-mail
       </Button>
 
       <Button
         variant="outline"
         icon={<LockKeyIcon size={18} />}
-        onPress={() => router.push('/change-password')}>
+        onPress={() => router.push('/change-password')}
+      >
         Alterar senha
       </Button>
 
@@ -124,7 +142,8 @@ export default function ProfileScreen() {
         className="border-destructive"
         textClassName="text-destructive"
         icon={<TrashIcon size={18} color="#DC2626" />}
-        onPress={() => router.push('/delete-account')}>
+        onPress={() => router.push('/delete-account')}
+      >
         Excluir conta
       </Button>
 
@@ -132,7 +151,8 @@ export default function ProfileScreen() {
         variant="destructive"
         icon={<SignOutIcon size={18} color="#fafafa" />}
         loading={signingOut}
-        onPress={confirmSignOut}>
+        onPress={confirmSignOut}
+      >
         Sair da conta
       </Button>
 
@@ -140,7 +160,11 @@ export default function ProfileScreen() {
         <DialogContent>
           <DialogHeader className="flex-row items-center justify-between">
             <DialogTitle>Editar nome</DialogTitle>
-            <Pressable onPress={() => setEditingName(false)} hitSlop={8} className="active:opacity-60">
+            <Pressable
+              onPress={() => setEditingName(false)}
+              hitSlop={8}
+              className="active:opacity-60"
+            >
               <XIcon size={20} />
             </Pressable>
           </DialogHeader>

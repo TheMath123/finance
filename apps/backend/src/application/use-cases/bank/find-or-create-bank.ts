@@ -1,8 +1,14 @@
-import { getBank, isValidBankCode, left, right, type Either } from "@finance/shared";
-import type { Bank } from "../../../domain/entities/bank";
-import type { Repositories } from "../../ports/repositories";
+import {
+  type Either,
+  getBank,
+  isValidBankCode,
+  left,
+  right,
+} from '@finance/shared';
+import type { Bank } from '../../../domain/entities/bank';
+import type { Repositories } from '../../ports/repositories';
 
-export type FindOrCreateBankError = "invalid_bank_code";
+export type FindOrCreateBankError = 'invalid_bank_code';
 
 /**
  * Usuário não cadastra banco manualmente (spec: escolher um do catálogo já basta,
@@ -12,14 +18,17 @@ export type FindOrCreateBankError = "invalid_bank_code";
 export async function findOrCreateBank(
   repos: Repositories,
   workspaceId: string,
-  bankCode: string,
+  bankCode: string
 ): Promise<Either<FindOrCreateBankError, Bank>> {
-  if (!isValidBankCode(bankCode)) return left("invalid_bank_code");
+  if (!isValidBankCode(bankCode)) return left('invalid_bank_code');
 
   const existing = await repos.bank.findByCode(workspaceId, bankCode);
   if (existing) return right(existing);
 
   const catalog = getBank(bankCode);
-  const created = await repos.bank.create(workspaceId, { name: catalog!.name, bankCode });
+  const created = await repos.bank.create(workspaceId, {
+    name: catalog!.name,
+    bankCode,
+  });
   return right(created);
 }

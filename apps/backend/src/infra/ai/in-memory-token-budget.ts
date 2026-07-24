@@ -1,5 +1,5 @@
-import type { TokenBudget } from "../../application/ports/token-budget";
-import { DAILY_TOKEN_BUDGET_PER_USER } from "./redis-token-budget";
+import type { TokenBudget } from '../../application/ports/token-budget';
+import { DAILY_TOKEN_BUDGET_PER_USER } from './redis-token-budget';
 
 /** Só para testes (`test/deps.ts`) — mesma ideia do `in-memory-rate-limiter.ts`. */
 export function createInMemoryTokenBudget(): TokenBudget {

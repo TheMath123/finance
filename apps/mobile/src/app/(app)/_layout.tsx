@@ -3,9 +3,15 @@ import { Redirect, Stack } from 'expo-router';
 import { useEffect } from 'react';
 
 import { BiometricLockScreen } from '@/components/biometric-lock-screen';
-import { BiometricLockProvider, useBiometricLock } from '@/context/biometric-lock';
+import {
+  BiometricLockProvider,
+  useBiometricLock,
+} from '@/context/biometric-lock';
 import { useSession } from '@/context/session';
-import { subscribeToNotificationStream, type NotificationStreamMessage } from '@/lib/notification-stream';
+import {
+  type NotificationStreamMessage,
+  subscribeToNotificationStream,
+} from '@/lib/notification-stream';
 
 /**
  * As 3 telas de tab (Resumo/Transações/Contas) ficam no grupo (tabs), que
@@ -22,7 +28,10 @@ function AppStack() {
 }
 
 /** Repassa a notificação pras queries que cada tela usa — sem isso, o app só atualizaria reabrindo a tela. */
-function invalidateForMessage(queryClient: ReturnType<typeof useQueryClient>, message: NotificationStreamMessage) {
+function invalidateForMessage(
+  queryClient: ReturnType<typeof useQueryClient>,
+  message: NotificationStreamMessage
+) {
   queryClient.invalidateQueries({ queryKey: ['notifications'] });
   const data = message.data ?? {};
   if (data.transferId) {
@@ -43,7 +52,9 @@ export default function AppLayout() {
 
   useEffect(() => {
     if (!user) return;
-    return subscribeToNotificationStream((message) => invalidateForMessage(queryClient, message));
+    return subscribeToNotificationStream((message) =>
+      invalidateForMessage(queryClient, message)
+    );
   }, [user, queryClient]);
 
   if (isLoading) return null;

@@ -13,7 +13,7 @@ import { useSession } from '@/context/session';
 import { ApiError } from '@/lib/api-client';
 import { authApi } from '@/lib/auth-api';
 import { usePersistEmailField } from '@/lib/hooks/use-persist-email-field';
-import { loginSchema, type LoginInput } from '@/lib/schemas/auth';
+import { type LoginInput, loginSchema } from '@/lib/schemas/auth';
 import { lastEmailStore } from '@/lib/secure-store';
 
 export function LoginForm() {
@@ -64,7 +64,9 @@ export function LoginForm() {
 
       {mutation.isError && (
         <ThemedText type="small" style={{ color: '#DC2626' }}>
-          {mutation.error instanceof ApiError ? mutation.error.message : 'Erro inesperado'}
+          {mutation.error instanceof ApiError
+            ? mutation.error.message
+            : 'Erro inesperado'}
         </ThemedText>
       )}
 
@@ -73,7 +75,9 @@ export function LoginForm() {
       </Button>
 
       <Link href="/register" className="pt-2 text-center">
-        <ThemedText type="linkPrimary">Ainda não tem conta? Criar conta</ThemedText>
+        <ThemedText type="linkPrimary">
+          Ainda não tem conta? Criar conta
+        </ThemedText>
       </Link>
 
       <Link href="/forgot-password" className="text-center">

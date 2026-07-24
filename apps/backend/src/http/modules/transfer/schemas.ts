@@ -1,7 +1,9 @@
-import { z } from "zod";
-import { emailOrPhoneSchema } from "@finance/shared";
+import { emailOrPhoneSchema } from '@finance/shared';
+import { z } from 'zod';
 
-export const workspaceParamsSchema = z.object({ workspaceId: z.string().uuid() });
+export const workspaceParamsSchema = z.object({
+  workspaceId: z.string().uuid(),
+});
 export const transferParamsSchema = z.object({ id: z.string().uuid() });
 export const trustedContactParamsSchema = z.object({ id: z.string().uuid() });
 

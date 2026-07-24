@@ -11,5 +11,8 @@ export interface NotificationBusMessage {
 export interface NotificationBus {
   publish(userId: string, message: NotificationBusMessage): Promise<void>;
   /** Chama `onMessage` a cada notificação nova do usuário; retorna a função de cancelamento. */
-  subscribe(userId: string, onMessage: (message: NotificationBusMessage) => void): () => void;
+  subscribe(
+    userId: string,
+    onMessage: (message: NotificationBusMessage) => void
+  ): () => void;
 }

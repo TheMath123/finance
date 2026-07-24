@@ -1,4 +1,4 @@
-import type { UseCaseDeps } from "../../deps";
+import type { UseCaseDeps } from '../../deps';
 
 export interface WorkspaceSummary {
   id: string;
@@ -11,7 +11,7 @@ export interface WorkspaceSummary {
 /** Workspaces do usuário autenticado (seletor do app). */
 export async function listMyWorkspaces(
   deps: UseCaseDeps,
-  userId: string,
+  userId: string
 ): Promise<WorkspaceSummary[]> {
   const memberships = await deps.repos.workspace.listByUser(userId);
   return memberships.map((m) => ({

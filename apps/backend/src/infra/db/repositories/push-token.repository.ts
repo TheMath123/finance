@@ -1,7 +1,7 @@
-import { and, eq } from "drizzle-orm";
-import { pushTokens } from "@finance/db";
-import type { PushTokenRepository } from "../../../application/ports/push-token-repository";
-import type { DbHandle } from "../handle";
+import { pushTokens } from '@finance/db';
+import { and, eq } from 'drizzle-orm';
+import type { PushTokenRepository } from '../../../application/ports/push-token-repository';
+import type { DbHandle } from '../handle';
 
 export function createPushTokenRepository(db: DbHandle): PushTokenRepository {
   return {
@@ -12,10 +12,14 @@ export function createPushTokenRepository(db: DbHandle): PushTokenRepository {
         .onConflictDoUpdate({ target: pushTokens.token, set: { userId } });
     },
     async unregister(userId, token) {
-      await db.delete(pushTokens).where(and(eq(pushTokens.token, token), eq(pushTokens.userId, userId)));
+      await db
+        .delete(pushTokens)
+        .where(and(eq(pushTokens.token, token), eq(pushTokens.userId, userId)));
     },
     async listByUser(userId) {
-      const rows = await db.query.pushTokens.findMany({ where: eq(pushTokens.userId, userId) });
+      const rows = await db.query.pushTokens.findMany({
+        where: eq(pushTokens.userId, userId),
+      });
       return rows.map((r) => r.token);
     },
   };

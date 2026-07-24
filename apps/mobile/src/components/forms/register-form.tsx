@@ -14,7 +14,7 @@ import { useSession } from '@/context/session';
 import { ApiError } from '@/lib/api-client';
 import { authApi } from '@/lib/auth-api';
 import { usePersistEmailField } from '@/lib/hooks/use-persist-email-field';
-import { registerSchema, type RegisterInput } from '@/lib/schemas/auth';
+import { type RegisterInput, registerSchema } from '@/lib/schemas/auth';
 import { lastEmailStore } from '@/lib/secure-store';
 
 export function RegisterForm() {
@@ -41,7 +41,13 @@ export function RegisterForm() {
 
   return (
     <View className="gap-4">
-      <TextField control={control} name="name" label="Nome" placeholder="Seu nome" autoComplete="name" />
+      <TextField
+        control={control}
+        name="name"
+        label="Nome"
+        placeholder="Seu nome"
+        autoComplete="name"
+      />
       <TextField
         control={control}
         name="email"
@@ -58,15 +64,24 @@ export function RegisterForm() {
         placeholder="Mínimo de 8 caracteres"
         autoComplete="new-password"
       />
-      <CheckboxField control={control} name="termsAccepted" label="Aceito os termos de uso" />
+      <CheckboxField
+        control={control}
+        name="termsAccepted"
+        label="Aceito os termos de uso"
+      />
 
       {mutation.isError && (
         <ThemedText type="small" style={{ color: '#DC2626' }}>
-          {mutation.error instanceof ApiError ? mutation.error.message : 'Erro inesperado'}
+          {mutation.error instanceof ApiError
+            ? mutation.error.message
+            : 'Erro inesperado'}
         </ThemedText>
       )}
 
-      <Button loading={mutation.isPending} onPress={handleSubmit((input) => mutation.mutate(input))}>
+      <Button
+        loading={mutation.isPending}
+        onPress={handleSubmit((input) => mutation.mutate(input))}
+      >
         Criar conta
       </Button>
 

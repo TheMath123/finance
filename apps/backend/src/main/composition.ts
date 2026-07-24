@@ -1,18 +1,18 @@
-import { createDb } from "@finance/db";
-import { createBullMqDispatcher } from "@finance/queues";
-import { createS3Storage } from "@finance/storage";
-import { createRepositories } from "../infra/db/repositories";
-import { createUnitOfWork } from "../infra/db/unit-of-work";
-import { bunPasswordHasher } from "../infra/security/bun-password-hasher";
-import { createTokenService } from "../infra/security/jose-token-service";
-import { createRedisRateLimiter } from "../infra/security/redis-rate-limiter";
-import { createRedisTokenBudget } from "../infra/ai/redis-token-budget";
-import { createRedisCache } from "../infra/cache/redis-cache";
-import { createRedisNotificationBus } from "../infra/realtime/redis-notification-bus";
-import { createLogger } from "../infra/observability/logger";
-import { createSecurityLogger } from "../infra/observability/pino-security-logger";
-import type { AppDeps } from "../http/deps";
-import type { Env } from "./env";
+import { createDb } from '@finance/db';
+import { createBullMqDispatcher } from '@finance/queues';
+import { createS3Storage } from '@finance/storage';
+import type { AppDeps } from '../http/deps';
+import { createRedisTokenBudget } from '../infra/ai/redis-token-budget';
+import { createRedisCache } from '../infra/cache/redis-cache';
+import { createRepositories } from '../infra/db/repositories';
+import { createUnitOfWork } from '../infra/db/unit-of-work';
+import { createLogger } from '../infra/observability/logger';
+import { createSecurityLogger } from '../infra/observability/pino-security-logger';
+import { createRedisNotificationBus } from '../infra/realtime/redis-notification-bus';
+import { bunPasswordHasher } from '../infra/security/bun-password-hasher';
+import { createTokenService } from '../infra/security/jose-token-service';
+import { createRedisRateLimiter } from '../infra/security/redis-rate-limiter';
+import type { Env } from './env';
 
 /**
  * Composition root: monta as implementações de infra atrás dos ports e devolve
@@ -23,7 +23,7 @@ export function createAppDeps(env: Env): AppDeps {
   const logger = createLogger(env.LOG_LEVEL);
 
   const dispatcher = createBullMqDispatcher(env.REDIS_URL, (job, error) =>
-    logger.error({ scope: "queues", job, err: error }, "job_failed"),
+    logger.error({ scope: 'queues', job, err: error }, 'job_failed')
   );
 
   return {

@@ -1,5 +1,5 @@
 import type { TransactionMethod } from '@finance/shared';
-import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import {
   CaretDownIcon,
@@ -14,19 +14,29 @@ import {
   XIcon,
 } from 'phosphor-react-native';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, Pressable, View } from 'react-native';
-
+import {
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  Pressable,
+  View,
+} from 'react-native';
+import { BalanceOverview } from '@/components/finance/balance-overview';
+import { HeaderChip } from '@/components/finance/header-chip';
 import { formatIsoDate } from '@/components/form/date-field';
 import { CreateRecurringForm } from '@/components/forms/create-recurring-form';
 import { CreateTransactionForm } from '@/components/forms/create-transaction-form';
 import { EditTransactionForm } from '@/components/forms/edit-transaction-form';
-import { BalanceOverview } from '@/components/finance/balance-overview';
-import { HeaderChip } from '@/components/finance/header-chip';
 import { ThemedText } from '@/components/themed-text';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { DatePicker } from '@/components/ui/date-picker';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Screen } from '@/components/ui/screen';
 import { Select } from '@/components/ui/select';
@@ -34,17 +44,21 @@ import { Text } from '@/components/ui/text';
 import { BrandColors } from '@/constants/theme';
 import { useSession } from '@/context/session';
 import { useTheme } from '@/hooks/use-theme';
-import { accountsApi, type Account } from '@/lib/accounts-api';
-import { cardsApi, type Card as CardAccount } from '@/lib/cards-api';
+import { type Account, accountsApi } from '@/lib/accounts-api';
+import { type Card as CardAccount, cardsApi } from '@/lib/cards-api';
 import type { Category } from '@/lib/categories-api';
 import { resolveCategoryIcon } from '@/lib/category-icons';
 import { cn } from '@/lib/cn';
 import { useCategories } from '@/lib/hooks/use-categories';
 import { useRecurringPendingTotal } from '@/lib/hooks/use-recurring-pending-total';
 import { formatCents } from '@/lib/money';
-import { recurringApi, type PendingOccurrence, type RecurringTransaction } from '@/lib/recurring-api';
+import {
+  type PendingOccurrence,
+  type RecurringTransaction,
+  recurringApi,
+} from '@/lib/recurring-api';
 import { summaryApi } from '@/lib/summary-api';
-import { transactionsApi, type Transaction } from '@/lib/transactions-api';
+import { type Transaction, transactionsApi } from '@/lib/transactions-api';
 import { workspaceApi } from '@/lib/workspace-api';
 
 const ALL_CATEGORIES_VALUE = '';
@@ -69,11 +83,14 @@ const METHOD_LABELS: Record<TransactionMethod, string> = {
 function transactionSourceLabel(
   transaction: Transaction,
   cardById: Map<string, CardAccount>,
-  accountById: Map<string, Account>,
+  accountById: Map<string, Account>
 ): string {
-  if (transaction.cardId) return cardById.get(transaction.cardId)?.name ?? METHOD_LABELS.credit;
+  if (transaction.cardId)
+    return cardById.get(transaction.cardId)?.name ?? METHOD_LABELS.credit;
   if (transaction.method === 'transfer' && transaction.accountId) {
-    return accountById.get(transaction.accountId)?.name ?? METHOD_LABELS.transfer;
+    return (
+      accountById.get(transaction.accountId)?.name ?? METHOD_LABELS.transfer
+    );
   }
   return METHOD_LABELS[transaction.method];
 }
@@ -85,7 +102,8 @@ function transactionSourceLabel(
  * externa e o `Pressable` interno) — sobrescrever lá duplica padding/fundo e quebra o texto, por
  * isso os `Select` ficam com a aparência padrão do componente nesta tela.
  */
-const CHIP_FIELD_CLASSNAME = 'min-h-0 rounded-lg border border-primary/30 bg-transparent px-4 py-2';
+const CHIP_FIELD_CLASSNAME =
+  'min-h-0 rounded-lg border border-primary/30 bg-transparent px-4 py-2';
 
 function TransactionRow({
   transaction,
@@ -106,8 +124,14 @@ function TransactionRow({
   return (
     <Pressable
       onPress={onPress}
-      className="w-full flex-row gap-2 border-t border-foreground/10 px-4 py-5 active:opacity-70">
-      <View className={cn('h-10 w-10 items-center justify-center rounded-full', isExpense ? 'bg-destructive/10' : 'bg-success/10')}>
+      className="w-full flex-row gap-2 border-t border-foreground/10 px-4 py-5 active:opacity-70"
+    >
+      <View
+        className={cn(
+          'h-10 w-10 items-center justify-center rounded-full',
+          isExpense ? 'bg-destructive/10' : 'bg-success/10'
+        )}
+      >
         {/* eslint-disable-next-line react-hooks/static-components -- resolveCategoryIcon escolhe
             entre ícones Phosphor já existentes (não cria nada novo); trocar de ícone conforme a
             categoria é intencional e não há estado interno pra perder no componente de ícone. */}
@@ -115,24 +139,40 @@ function TransactionRow({
       </View>
       <View className="flex-1 flex-row items-center gap-2.5">
         <View className="flex-1 gap-2">
-          <Text className="text-[12px] font-normal leading-tight text-foreground" numberOfLines={1}>
+          <Text
+            className="text-[12px] font-normal leading-tight text-foreground"
+            numberOfLines={1}
+          >
             {transaction.description}
           </Text>
-          <Text className="text-[12px] font-normal leading-tight text-muted-foreground" numberOfLines={1}>
+          <Text
+            className="text-[12px] font-normal leading-tight text-muted-foreground"
+            numberOfLines={1}
+          >
             {sourceLabel} • {transaction.date.split('-').reverse().join('/')}
           </Text>
         </View>
         <View className="items-end gap-2">
           {isInstallment && (
-            <Text className="text-[12px] font-normal leading-tight text-muted-foreground" numberOfLines={1}>
-              {formatCents(transaction.amount * (transaction.installmentTotal ?? 1))} • {transaction.installmentNumber}/
-              {transaction.installmentTotal}
+            <Text
+              className="text-[12px] font-normal leading-tight text-muted-foreground"
+              numberOfLines={1}
+            >
+              {formatCents(
+                transaction.amount * (transaction.installmentTotal ?? 1)
+              )}{' '}
+              • {transaction.installmentNumber}/{transaction.installmentTotal}
             </Text>
           )}
           {!isInstallment && transaction.hasActiveSplit && (
-            <Text className="text-[12px] font-normal leading-tight text-muted-foreground">Dividido</Text>
+            <Text className="text-[12px] font-normal leading-tight text-muted-foreground">
+              Dividido
+            </Text>
           )}
-          <Text className="text-[14px] font-medium leading-tight" style={{ color: accentColor }}>
+          <Text
+            className="text-[14px] font-medium leading-tight"
+            style={{ color: accentColor }}
+          >
             {isExpense ? '- ' : ''}
             {formatCents(transaction.amount)}
           </Text>
@@ -142,46 +182,83 @@ function TransactionRow({
   );
 }
 
-function PendingOccurrenceRow({ occurrence, workspaceId }: { occurrence: PendingOccurrence; workspaceId: string }) {
+function PendingOccurrenceRow({
+  occurrence,
+  workspaceId,
+}: {
+  occurrence: PendingOccurrence;
+  workspaceId: string;
+}) {
   const queryClient = useQueryClient();
   const isExpense = occurrence.type === 'expense';
 
   const mutation = useMutation({
-    mutationFn: () => recurringApi.confirmOccurrence(workspaceId, occurrence.recurringId, occurrence.date),
+    mutationFn: () =>
+      recurringApi.confirmOccurrence(
+        workspaceId,
+        occurrence.recurringId,
+        occurrence.date
+      ),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['transactions', workspaceId] });
+      queryClient.invalidateQueries({
+        queryKey: ['transactions', workspaceId],
+      });
       queryClient.invalidateQueries({ queryKey: ['summary', workspaceId] });
-      queryClient.invalidateQueries({ queryKey: ['recurring-pending', workspaceId] });
+      queryClient.invalidateQueries({
+        queryKey: ['recurring-pending', workspaceId],
+      });
     },
   });
 
   return (
     <View className="w-full flex-row items-center justify-between gap-2 border-t border-foreground/10 px-4 py-5">
       <View className="flex-1 gap-2 pr-3">
-        <Text className="text-[12px] font-normal leading-tight text-foreground" numberOfLines={1}>
+        <Text
+          className="text-[12px] font-normal leading-tight text-foreground"
+          numberOfLines={1}
+        >
           {occurrence.description}
         </Text>
         <View className="flex-row items-center gap-2">
-          <Text className="text-[12px] font-normal leading-tight text-muted-foreground">{occurrence.date.split('-').reverse().join('/')}</Text>
-          <Text className="text-[14px] font-medium leading-tight" style={{ color: isExpense ? BrandColors.destructive : BrandColors.success }}>
+          <Text className="text-[12px] font-normal leading-tight text-muted-foreground">
+            {occurrence.date.split('-').reverse().join('/')}
+          </Text>
+          <Text
+            className="text-[14px] font-medium leading-tight"
+            style={{
+              color: isExpense ? BrandColors.destructive : BrandColors.success,
+            }}
+          >
             {isExpense ? '- ' : ''}
             {formatCents(occurrence.amount)}
           </Text>
         </View>
       </View>
-      <Button size="sm" variant="secondary" loading={mutation.isPending} onPress={() => mutation.mutate()}>
+      <Button
+        size="sm"
+        variant="secondary"
+        loading={mutation.isPending}
+        onPress={() => mutation.mutate()}
+      >
         Confirmar
       </Button>
     </View>
   );
 }
 
-function RecurringManagerDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
+function RecurringManagerDialog({
+  open,
+  onOpenChange,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
   const { workspaceId } = useSession();
   const queryClient = useQueryClient();
   const theme = useTheme();
   const [createOpen, setCreateOpen] = useState(false);
-  const [editingRecurring, setEditingRecurring] = useState<RecurringTransaction | null>(null);
+  const [editingRecurring, setEditingRecurring] =
+    useState<RecurringTransaction | null>(null);
 
   const { data: recurring, isLoading } = useQuery({
     queryKey: ['recurring', workspaceId],
@@ -192,10 +269,13 @@ function RecurringManagerDialog({ open, onOpenChange }: { open: boolean; onOpenC
   const pendingTotal = useRecurringPendingTotal(workspaceId);
 
   const deleteMutation = useMutation({
-    mutationFn: (recurringId: string) => recurringApi.delete(workspaceId!, recurringId),
+    mutationFn: (recurringId: string) =>
+      recurringApi.delete(workspaceId!, recurringId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['recurring', workspaceId] });
-      queryClient.invalidateQueries({ queryKey: ['recurring-pending', workspaceId] });
+      queryClient.invalidateQueries({
+        queryKey: ['recurring-pending', workspaceId],
+      });
     },
   });
 
@@ -210,7 +290,7 @@ function RecurringManagerDialog({ open, onOpenChange }: { open: boolean; onOpenC
           style: 'destructive',
           onPress: () => deleteMutation.mutate(item.id),
         },
-      ],
+      ]
     );
   };
 
@@ -222,7 +302,8 @@ function RecurringManagerDialog({ open, onOpenChange }: { open: boolean; onOpenC
             <DialogTitle>Recorrências</DialogTitle>
             <Pressable
               onPress={() => setCreateOpen(true)}
-              className="h-9 w-9 items-center justify-center rounded-full bg-primary active:opacity-80">
+              className="h-9 w-9 items-center justify-center rounded-full bg-primary active:opacity-80"
+            >
               <PlusIcon size={18} color="#FFFFFF" weight="bold" />
             </Pressable>
           </DialogHeader>
@@ -233,7 +314,10 @@ function RecurringManagerDialog({ open, onOpenChange }: { open: boolean; onOpenC
                 <ThemedText type="small" themeColor="textSecondary">
                   A receber este mês
                 </ThemedText>
-                <ThemedText type="smallBold" style={{ color: BrandColors.success }}>
+                <ThemedText
+                  type="smallBold"
+                  style={{ color: BrandColors.success }}
+                >
                   {formatCents(pendingTotal.income)}
                 </ThemedText>
               </View>
@@ -241,7 +325,10 @@ function RecurringManagerDialog({ open, onOpenChange }: { open: boolean; onOpenC
                 <ThemedText type="small" themeColor="textSecondary">
                   A pagar este mês
                 </ThemedText>
-                <ThemedText type="smallBold" style={{ color: BrandColors.destructive }}>
+                <ThemedText
+                  type="smallBold"
+                  style={{ color: BrandColors.destructive }}
+                >
                   {formatCents(pendingTotal.expense)}
                 </ThemedText>
               </View>
@@ -253,7 +340,10 @@ function RecurringManagerDialog({ open, onOpenChange }: { open: boolean; onOpenC
           ) : recurring && recurring.length > 0 ? (
             <View className="gap-2">
               {recurring.map((item) => (
-                <Card key={item.id} className={!item.active ? 'opacity-50' : undefined}>
+                <Card
+                  key={item.id}
+                  className={!item.active ? 'opacity-50' : undefined}
+                >
                   <View className="flex-row items-center justify-between">
                     <View className="flex-1 gap-0.5 pr-3">
                       <ThemedText type="smallBold" numberOfLines={1}>
@@ -267,14 +357,28 @@ function RecurringManagerDialog({ open, onOpenChange }: { open: boolean; onOpenC
                     <View className="flex-row items-center gap-3">
                       <ThemedText
                         type="smallBold"
-                        style={{ color: item.type === 'expense' ? BrandColors.destructive : BrandColors.success }}>
+                        style={{
+                          color:
+                            item.type === 'expense'
+                              ? BrandColors.destructive
+                              : BrandColors.success,
+                        }}
+                      >
                         {item.type === 'expense' ? '-' : '+'}
                         {formatCents(item.amount)}
                       </ThemedText>
-                      <Pressable onPress={() => setEditingRecurring(item)} hitSlop={8} className="active:opacity-60">
+                      <Pressable
+                        onPress={() => setEditingRecurring(item)}
+                        hitSlop={8}
+                        className="active:opacity-60"
+                      >
                         <PencilIcon size={18} color={theme.textSecondary} />
                       </Pressable>
-                      <Pressable onPress={() => handleDelete(item)} hitSlop={8} className="active:opacity-60">
+                      <Pressable
+                        onPress={() => handleDelete(item)}
+                        hitSlop={8}
+                        className="active:opacity-60"
+                      >
                         <TrashIcon size={18} color={BrandColors.destructive} />
                       </Pressable>
                     </View>
@@ -299,13 +403,19 @@ function RecurringManagerDialog({ open, onOpenChange }: { open: boolean; onOpenC
         </DialogContent>
       </Dialog>
 
-      <Dialog open={Boolean(editingRecurring)} onOpenChange={(open) => !open && setEditingRecurring(null)}>
+      <Dialog
+        open={Boolean(editingRecurring)}
+        onOpenChange={(open) => !open && setEditingRecurring(null)}
+      >
         <DialogContent className="w-full max-w-sm">
           <DialogHeader>
             <DialogTitle>Editar recorrência</DialogTitle>
           </DialogHeader>
           {editingRecurring && (
-            <CreateRecurringForm recurring={editingRecurring} onDone={() => setEditingRecurring(null)} />
+            <CreateRecurringForm
+              recurring={editingRecurring}
+              onDone={() => setEditingRecurring(null)}
+            />
           )}
         </DialogContent>
       </Dialog>
@@ -319,7 +429,8 @@ export default function TransactionsScreen() {
   const theme = useTheme();
   const [createOpen, setCreateOpen] = useState(false);
   const [recurringManagerOpen, setRecurringManagerOpen] = useState(false);
-  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
+  const [editingTransaction, setEditingTransaction] =
+    useState<Transaction | null>(null);
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
@@ -335,13 +446,21 @@ export default function TransactionsScreen() {
     return () => clearTimeout(timer);
   }, [search]);
 
-  const { data: workspaces } = useQuery({ queryKey: ['workspaces'], queryFn: workspaceApi.listMine });
+  const { data: workspaces } = useQuery({
+    queryKey: ['workspaces'],
+    queryFn: workspaceApi.listMine,
+  });
   const activeWorkspace = workspaces?.find((w) => w.id === workspaceId);
 
   const now = new Date();
   const { data: summary } = useQuery({
     queryKey: ['summary', workspaceId, now.getFullYear(), now.getMonth() + 1],
-    queryFn: () => summaryApi.getMonthly(workspaceId!, now.getFullYear(), now.getMonth() + 1),
+    queryFn: () =>
+      summaryApi.getMonthly(
+        workspaceId!,
+        now.getFullYear(),
+        now.getMonth() + 1
+      ),
     enabled: Boolean(workspaceId),
   });
 
@@ -362,13 +481,22 @@ export default function TransactionsScreen() {
 
   const isoFrom = dateFrom ? formatIsoDate(dateFrom) : undefined;
   const isoTo = dateTo ? formatIsoDate(dateTo) : undefined;
-  const hasAdvancedFilters = Boolean(accountFilter || cardFilter || isoFrom || isoTo);
+  const hasAdvancedFilters = Boolean(
+    accountFilter || cardFilter || isoFrom || isoTo
+  );
 
   const { data: transactions, isLoading } = useQuery({
     queryKey: [
       'transactions',
       workspaceId,
-      { q: debouncedSearch, categoryId: categoryFilter, accountId: accountFilter, cardId: cardFilter, from: isoFrom, to: isoTo },
+      {
+        q: debouncedSearch,
+        categoryId: categoryFilter,
+        accountId: accountFilter,
+        cardId: cardFilter,
+        from: isoFrom,
+        to: isoTo,
+      },
     ],
     queryFn: () =>
       transactionsApi.list(workspaceId!, {
@@ -384,23 +512,30 @@ export default function TransactionsScreen() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (transactionId: string) => transactionsApi.delete(workspaceId!, transactionId),
+    mutationFn: (transactionId: string) =>
+      transactionsApi.delete(workspaceId!, transactionId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['transactions', workspaceId] });
+      queryClient.invalidateQueries({
+        queryKey: ['transactions', workspaceId],
+      });
       queryClient.invalidateQueries({ queryKey: ['summary', workspaceId] });
       setEditingTransaction(null);
     },
   });
 
   const handleDelete = (transaction: Transaction) => {
-    Alert.alert('Excluir transação', `Excluir "${transaction.description}"? Essa ação pode ser desfeita depois.`, [
-      { text: 'Cancelar', style: 'cancel' },
-      {
-        text: 'Excluir',
-        style: 'destructive',
-        onPress: () => deleteMutation.mutate(transaction.id),
-      },
-    ]);
+    Alert.alert(
+      'Excluir transação',
+      `Excluir "${transaction.description}"? Essa ação pode ser desfeita depois.`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Excluir',
+          style: 'destructive',
+          onPress: () => deleteMutation.mutate(transaction.id),
+        },
+      ]
+    );
   };
 
   const categoryOptions = [
@@ -424,8 +559,18 @@ export default function TransactionsScreen() {
   };
 
   const { data: pending } = useQuery({
-    queryKey: ['recurring-pending', workspaceId, now.getFullYear(), now.getMonth() + 1],
-    queryFn: () => recurringApi.listPending(workspaceId!, now.getFullYear(), now.getMonth() + 1),
+    queryKey: [
+      'recurring-pending',
+      workspaceId,
+      now.getFullYear(),
+      now.getMonth() + 1,
+    ],
+    queryFn: () =>
+      recurringApi.listPending(
+        workspaceId!,
+        now.getFullYear(),
+        now.getMonth() + 1
+      ),
     enabled: Boolean(workspaceId),
   });
 
@@ -434,15 +579,23 @@ export default function TransactionsScreen() {
       <View className="w-full flex-row items-start justify-between px-4">
         {activeWorkspace && (
           <HeaderChip onPress={() => router.push('/workspaces')}>
-            <Text className="text-[10px] font-normal leading-tight text-foreground">{activeWorkspace.name}</Text>
+            <Text className="text-[10px] font-normal leading-tight text-foreground">
+              {activeWorkspace.name}
+            </Text>
             <CaretDownIcon size={16} color={theme.textSecondary} />
           </HeaderChip>
         )}
         <View className="flex-row items-center gap-4">
-          <HeaderChip onPress={() => setRecurringManagerOpen(true)} accessibilityLabel="Recorrências">
+          <HeaderChip
+            onPress={() => setRecurringManagerOpen(true)}
+            accessibilityLabel="Recorrências"
+          >
             <RepeatIcon size={16} color={theme.textSecondary} />
           </HeaderChip>
-          <HeaderChip onPress={() => router.push('/transactions/trash')} accessibilityLabel="Transações arquivadas">
+          <HeaderChip
+            onPress={() => router.push('/transactions/trash')}
+            accessibilityLabel="Transações arquivadas"
+          >
             <TrashIcon size={16} color={theme.textSecondary} />
           </HeaderChip>
         </View>
@@ -459,7 +612,9 @@ export default function TransactionsScreen() {
               placeholder="Buscar por descrição"
               value={search}
               onChangeText={setSearch}
-              leadingIcon={<MagnifyingGlassIcon size={18} color={theme.textSecondary} />}
+              leadingIcon={
+                <MagnifyingGlassIcon size={18} color={theme.textSecondary} />
+              }
             />
             <HeaderChip
               className="h-12 w-12 rounded-lg"
@@ -467,13 +622,18 @@ export default function TransactionsScreen() {
                 setSearchOpen(false);
                 setSearch('');
               }}
-              accessibilityLabel="Fechar busca">
+              accessibilityLabel="Fechar busca"
+            >
               <XIcon size={16} color={theme.textSecondary} />
             </HeaderChip>
           </>
         ) : (
           <>
-            <HeaderChip className="h-12 w-12 rounded-lg" onPress={() => setSearchOpen(true)} accessibilityLabel="Buscar por descrição">
+            <HeaderChip
+              className="h-12 w-12 rounded-lg"
+              onPress={() => setSearchOpen(true)}
+              accessibilityLabel="Buscar por descrição"
+            >
               <MagnifyingGlassIcon size={16} color={theme.textSecondary} />
             </HeaderChip>
             <Select
@@ -483,9 +643,17 @@ export default function TransactionsScreen() {
               value={categoryFilter}
               onValueChange={setCategoryFilter}
             />
-            <HeaderChip className="h-12 w-12 rounded-lg" onPress={() => setFiltersOpen((prev) => !prev)} accessibilityLabel="Mais filtros">
+            <HeaderChip
+              className="h-12 w-12 rounded-lg"
+              onPress={() => setFiltersOpen((prev) => !prev)}
+              accessibilityLabel="Mais filtros"
+            >
               {hasAdvancedFilters ? (
-                <FunnelXIcon size={16} weight="fill" color={BrandColors.primary} />
+                <FunnelXIcon
+                  size={16}
+                  weight="fill"
+                  color={BrandColors.primary}
+                />
               ) : (
                 <FunnelIcon size={16} color={theme.textSecondary} />
               )}
@@ -497,13 +665,23 @@ export default function TransactionsScreen() {
       {filtersOpen && (
         <View className="w-full px-4">
           <View className="w-full gap-2.5 rounded bg-primary/5 p-2">
-            <Text className="text-[10px] font-bold leading-tight text-foreground">Filtros</Text>
+            <Text className="text-[10px] font-bold leading-tight text-foreground">
+              Filtros
+            </Text>
             <View className="w-full flex-row items-center justify-between">
-              <Text className="text-[10px] font-medium leading-tight text-foreground">Período e conta/cartão</Text>
+              <Text className="text-[10px] font-medium leading-tight text-foreground">
+                Período e conta/cartão
+              </Text>
               {hasAdvancedFilters && (
-                <Pressable onPress={clearAdvancedFilters} hitSlop={8} className="flex-row items-center gap-1 active:opacity-60">
+                <Pressable
+                  onPress={clearAdvancedFilters}
+                  hitSlop={8}
+                  className="flex-row items-center gap-1 active:opacity-60"
+                >
                   <XIcon size={12} color={theme.textSecondary} />
-                  <Text className="text-[10px] font-normal leading-tight text-muted-foreground">Limpar</Text>
+                  <Text className="text-[10px] font-normal leading-tight text-muted-foreground">
+                    Limpar
+                  </Text>
                 </Pressable>
               )}
             </View>
@@ -545,7 +723,9 @@ export default function TransactionsScreen() {
 
       {pending && pending.length > 0 && (
         <View className="w-full gap-2 px-4">
-          <Text className="text-[10px] font-semibold leading-tight text-foreground">Recorrências pendentes deste mês</Text>
+          <Text className="text-[10px] font-semibold leading-tight text-foreground">
+            Recorrências pendentes deste mês
+          </Text>
         </View>
       )}
       {pending?.map((occurrence) => (
@@ -578,8 +758,13 @@ export default function TransactionsScreen() {
           <View className="h-12 w-12 items-center justify-center rounded-full bg-primary/10">
             <ReceiptIcon size={22} color={BrandColors.primary} />
           </View>
-          <Text className="text-[10px] font-semibold leading-tight text-foreground">Nenhuma transação ainda</Text>
-          <Text className="text-[10px] font-normal leading-tight text-muted-foreground" style={{ textAlign: 'center' }}>
+          <Text className="text-[10px] font-semibold leading-tight text-foreground">
+            Nenhuma transação ainda
+          </Text>
+          <Text
+            className="text-[10px] font-normal leading-tight text-muted-foreground"
+            style={{ textAlign: 'center' }}
+          >
             Lançamentos de contas e cartões deste workspace aparecem aqui.
           </Text>
         </View>
@@ -594,9 +779,15 @@ export default function TransactionsScreen() {
         </DialogContent>
       </Dialog>
 
-      <RecurringManagerDialog open={recurringManagerOpen} onOpenChange={setRecurringManagerOpen} />
+      <RecurringManagerDialog
+        open={recurringManagerOpen}
+        onOpenChange={setRecurringManagerOpen}
+      />
 
-      <Dialog open={Boolean(editingTransaction)} onOpenChange={(open) => !open && setEditingTransaction(null)}>
+      <Dialog
+        open={Boolean(editingTransaction)}
+        onOpenChange={(open) => !open && setEditingTransaction(null)}
+      >
         <DialogContent className="w-full max-w-sm">
           <DialogHeader>
             <DialogTitle>Editar transação</DialogTitle>
@@ -615,7 +806,8 @@ export default function TransactionsScreen() {
         onPress={() => setCreateOpen(true)}
         accessibilityRole="button"
         accessibilityLabel="Nova transação"
-        className="absolute bottom-24 right-4 h-[42px] w-[42px] items-center justify-center rounded-lg bg-primary active:opacity-80">
+        className="absolute bottom-24 right-4 h-[42px] w-[42px] items-center justify-center rounded-lg bg-primary active:opacity-80"
+      >
         <PlusIcon size={16} color="#FFFFFF" weight="bold" />
       </Pressable>
     </Screen>

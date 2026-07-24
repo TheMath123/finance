@@ -4,7 +4,7 @@ import type {
   WorkspacePlan,
   WorkspaceRole,
   WorkspaceType,
-} from "@finance/shared";
+} from '@finance/shared';
 
 export interface Workspace {
   id: string;

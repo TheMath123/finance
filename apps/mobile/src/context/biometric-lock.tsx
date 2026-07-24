@@ -1,5 +1,12 @@
 import * as LocalAuthentication from 'expo-local-authentication';
-import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
+import {
+  createContext,
+  type ReactNode,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import { AppState, type AppStateStatus } from 'react-native';
 
 import { biometricStore } from '@/lib/secure-store';
@@ -25,7 +32,9 @@ interface BiometricLockContextValue {
   unlock: () => Promise<boolean>;
 }
 
-const BiometricLockContext = createContext<BiometricLockContextValue | null>(null);
+const BiometricLockContext = createContext<BiometricLockContextValue | null>(
+  null
+);
 
 export function BiometricLockProvider({ children }: { children: ReactNode }) {
   const [available, setAvailable] = useState(false);
@@ -56,17 +65,24 @@ export function BiometricLockProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    const subscription = AppState.addEventListener('change', (nextState: AppStateStatus) => {
-      if (!enabled) return;
-      if (nextState === 'background' || nextState === 'inactive') {
-        backgroundedAt.current = Date.now();
-        return;
+    const subscription = AppState.addEventListener(
+      'change',
+      (nextState: AppStateStatus) => {
+        if (!enabled) return;
+        if (nextState === 'background' || nextState === 'inactive') {
+          backgroundedAt.current = Date.now();
+          return;
+        }
+        if (nextState === 'active' && backgroundedAt.current) {
+          if (
+            Date.now() - backgroundedAt.current >
+            BACKGROUND_LOCK_THRESHOLD_MS
+          )
+            setLocked(true);
+          backgroundedAt.current = null;
+        }
       }
-      if (nextState === 'active' && backgroundedAt.current) {
-        if (Date.now() - backgroundedAt.current > BACKGROUND_LOCK_THRESHOLD_MS) setLocked(true);
-        backgroundedAt.current = null;
-      }
-    });
+    );
     return () => subscription.remove();
   }, [enabled]);
 
@@ -77,13 +93,17 @@ export function BiometricLockProvider({ children }: { children: ReactNode }) {
   };
 
   const unlock = async () => {
-    const result = await LocalAuthentication.authenticateAsync({ promptMessage: 'Desbloquear o app' });
+    const result = await LocalAuthentication.authenticateAsync({
+      promptMessage: 'Desbloquear o app',
+    });
     if (result.success) setLocked(false);
     return result.success;
   };
 
   return (
-    <BiometricLockContext.Provider value={{ available, enabled, locked, ready, setEnabled, unlock }}>
+    <BiometricLockContext.Provider
+      value={{ available, enabled, locked, ready, setEnabled, unlock }}
+    >
       {children}
     </BiometricLockContext.Provider>
   );
@@ -91,6 +111,9 @@ export function BiometricLockProvider({ children }: { children: ReactNode }) {
 
 export function useBiometricLock() {
   const context = useContext(BiometricLockContext);
-  if (!context) throw new Error('useBiometricLock precisa estar dentro de <BiometricLockProvider>');
+  if (!context)
+    throw new Error(
+      'useBiometricLock precisa estar dentro de <BiometricLockProvider>'
+    );
   return context;
 }

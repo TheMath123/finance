@@ -1,16 +1,16 @@
-import { left, right, type Either } from "@finance/shared";
-import type { RecurrenceFrequency, TransactionType } from "@finance/shared";
-import type { RecurringTransaction } from "../../../domain/entities/recurring-transaction";
-import type { Actor, UseCaseDeps } from "../../deps";
-import type { RecurringError } from "./errors";
-import { validateRefs, validateRule } from "./shared";
+import type { RecurrenceFrequency, TransactionType } from '@finance/shared';
+import { type Either, left, right } from '@finance/shared';
+import type { RecurringTransaction } from '../../../domain/entities/recurring-transaction';
+import type { Actor, UseCaseDeps } from '../../deps';
+import type { RecurringError } from './errors';
+import { validateRefs, validateRule } from './shared';
 
 export interface CreateRecurringInput {
   description: string;
   amount: number;
   type: TransactionType;
   /** Transferência recorrente fica fora do M1 (schema não tem conta destino). */
-  method: "pix" | "debit" | "cash" | "credit";
+  method: 'pix' | 'debit' | 'cash' | 'credit';
   categoryId: string;
   accountId?: string;
   cardId?: string;
@@ -23,9 +23,9 @@ export interface CreateRecurringInput {
 export async function createRecurring(
   deps: UseCaseDeps,
   actor: Actor,
-  input: CreateRecurringInput,
+  input: CreateRecurringInput
 ): Promise<Either<RecurringError, RecurringTransaction>> {
-  if (!validateRule(input)) return left("invalid_rule");
+  if (!validateRule(input)) return left('invalid_rule');
   const refError = await validateRefs(deps.repos, actor.workspaceId, input);
   if (refError) return left(refError);
 
@@ -34,8 +34,8 @@ export async function createRecurring(
     await repos.audit.record({
       workspaceId: actor.workspaceId,
       userId: actor.userId,
-      action: "create",
-      entity: "recurring_transaction",
+      action: 'create',
+      entity: 'recurring_transaction',
       entityId: row.id,
     });
     return row;

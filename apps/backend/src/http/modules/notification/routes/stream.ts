@@ -1,7 +1,7 @@
-import { Elysia } from "elysia";
-import type { AppDeps } from "../../../deps";
-import { fail } from "../../../http-error";
-import { requireAuthenticated } from "../../../guards";
+import { Elysia } from 'elysia';
+import type { AppDeps } from '../../../deps';
+import { requireAuthenticated } from '../../../guards';
+import { fail } from '../../../http-error';
 
 const HEARTBEAT_MS = 25_000;
 
@@ -14,7 +14,7 @@ const HEARTBEAT_MS = 25_000;
  * consegue mandar headers custom num EventSource, diferente do browser).
  */
 export const notificationStreamRoute = (deps: AppDeps) =>
-  new Elysia().get("/notifications/stream", async ({ request, set }) => {
+  new Elysia().get('/notifications/stream', async ({ request, set }) => {
     const auth = await requireAuthenticated(deps, request);
     if (!auth.ok) return fail(set, auth.error);
 
@@ -26,7 +26,9 @@ export const notificationStreamRoute = (deps: AppDeps) =>
         let closed = false;
         const send = (message: unknown) => {
           if (closed) return;
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify(message)}\n\n`));
+          controller.enqueue(
+            encoder.encode(`data: ${JSON.stringify(message)}\n\n`)
+          );
         };
         const unsubscribe = deps.notificationBus.subscribe(userId, send);
         const heartbeat = setInterval(() => {
@@ -45,15 +47,15 @@ export const notificationStreamRoute = (deps: AppDeps) =>
             // já fechado do outro lado — sem problema.
           }
         };
-        request.signal.addEventListener("abort", cleanup);
+        request.signal.addEventListener('abort', cleanup);
       },
     });
 
     return new Response(stream, {
       headers: {
-        "Content-Type": "text/event-stream",
-        "Cache-Control": "no-cache",
-        Connection: "keep-alive",
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        Connection: 'keep-alive',
       },
     });
   });

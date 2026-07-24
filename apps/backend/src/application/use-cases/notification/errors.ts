@@ -1,1 +1,1 @@
-export type NotificationError = "notification_not_found";
+export type NotificationError = 'notification_not_found';

@@ -1,6 +1,6 @@
-import { uploadAttachment } from "../attachment";
-import type { UseCaseDeps } from "../../deps";
-import type { WhatsAppReply } from "./handle-inbound-message";
+import type { UseCaseDeps } from '../../deps';
+import { uploadAttachment } from '../attachment';
+import type { WhatsAppReply } from './handle-inbound-message';
 
 export interface InboundWhatsAppImage {
   from: string;
@@ -20,14 +20,14 @@ const ASSOCIATION_WINDOW_MS = 5 * 60_000;
  * segunda simplesmente troca a primeira, sem lógica especial).
  */
 export async function handleInboundWhatsAppImage(
-  deps: Pick<UseCaseDeps, "repos" | "storage">,
-  image: InboundWhatsAppImage,
+  deps: Pick<UseCaseDeps, 'repos' | 'storage'>,
+  image: InboundWhatsAppImage
 ): Promise<WhatsAppReply> {
   const user = await deps.repos.user.findByPhone(image.from);
   if (!user) {
     return {
       to: image.from,
-      body: "Esse número ainda não está vinculado a nenhuma conta. Abra o app, vá em Perfil > WhatsApp e gere um código de vínculo.",
+      body: 'Esse número ainda não está vinculado a nenhuma conta. Abra o app, vá em Perfil > WhatsApp e gere um código de vínculo.',
     };
   }
 
@@ -35,35 +35,46 @@ export async function handleInboundWhatsAppImage(
   if (!workspaceId) {
     return {
       to: image.from,
-      body: "Sua conta ainda não tem um workspace padrão configurado. Abra o app pra concluir seu cadastro.",
+      body: 'Sua conta ainda não tem um workspace padrão configurado. Abra o app pra concluir seu cadastro.',
     };
   }
 
   const since = new Date(Date.now() - ASSOCIATION_WINDOW_MS);
-  const recent = await deps.repos.transaction.findMostRecentByCreator(workspaceId, user.id, since);
+  const recent = await deps.repos.transaction.findMostRecentByCreator(
+    workspaceId,
+    user.id,
+    since
+  );
   if (!recent) {
     return {
       to: image.from,
-      body: "Não encontrei nenhuma transação recente pra anexar essa foto. Manda o valor/descrição da despesa primeiro.",
+      body: 'Não encontrei nenhuma transação recente pra anexar essa foto. Manda o valor/descrição da despesa primeiro.',
     };
   }
 
   const result = await uploadAttachment(
     deps,
-    { userId: user.id, workspaceId, role: "member" },
+    { userId: user.id, workspaceId, role: 'member' },
     recent.id,
-    { buffer: image.buffer, contentType: image.mimeType, size: image.buffer.byteLength },
+    {
+      buffer: image.buffer,
+      contentType: image.mimeType,
+      size: image.buffer.byteLength,
+    }
   );
 
   if (!result.ok) {
     const body =
-      result.error === "invalid_file_type"
-        ? "Esse tipo de arquivo não é aceito como comprovante — manda uma foto (jpg, png ou webp)."
-        : result.error === "file_too_large"
-          ? "Essa foto é grande demais (limite de 5MB) — tenta mandar com menos qualidade."
-          : "Não consegui anexar a foto — tenta de novo ou anexa pelo app.";
+      result.error === 'invalid_file_type'
+        ? 'Esse tipo de arquivo não é aceito como comprovante — manda uma foto (jpg, png ou webp).'
+        : result.error === 'file_too_large'
+          ? 'Essa foto é grande demais (limite de 5MB) — tenta mandar com menos qualidade.'
+          : 'Não consegui anexar a foto — tenta de novo ou anexa pelo app.';
     return { to: image.from, body };
   }
 
-  return { to: image.from, body: `Comprovante anexado em "${recent.description}".` };
+  return {
+    to: image.from,
+    body: `Comprovante anexado em "${recent.description}".`,
+  };
 }

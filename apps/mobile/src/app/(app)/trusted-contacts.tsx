@@ -19,22 +19,30 @@ export default function TrustedContactsScreen() {
 
   const remove = useMutation({
     mutationFn: (id: string) => transferApi.removeTrustedContact(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['trusted-contacts'] }),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ['trusted-contacts'] }),
     onError: (error) =>
-      Alert.alert('Erro', error instanceof ApiError ? error.message : 'Não foi possível remover.'),
+      Alert.alert(
+        'Erro',
+        error instanceof ApiError ? error.message : 'Não foi possível remover.'
+      ),
   });
 
   return (
     <Screen className="gap-6">
       <View className="flex-row items-center gap-3">
-        <Pressable onPress={() => router.back()} hitSlop={8} className="active:opacity-60">
+        <Pressable
+          onPress={() => router.back()}
+          hitSlop={8}
+          className="active:opacity-60"
+        >
           <ArrowLeftIcon size={22} />
         </Pressable>
         <ThemedText type="subtitle">Contatos confiáveis</ThemedText>
       </View>
       <ThemedText type="small" themeColor="textSecondary">
-        Transferências de contatos confiáveis entram direto na conta escolhida, sem precisar aceitar uma por
-        uma.
+        Transferências de contatos confiáveis entram direto na conta escolhida,
+        sem precisar aceitar uma por uma.
       </ThemedText>
 
       {isLoading ? (
@@ -42,12 +50,18 @@ export default function TrustedContactsScreen() {
       ) : contacts && contacts.length > 0 ? (
         <View className="gap-3">
           {contacts.map((contact) => (
-            <Card key={contact.id} className="flex-row items-center justify-between">
-              <ThemedText type="smallBold">{contact.trustedUserName}</ThemedText>
+            <Card
+              key={contact.id}
+              className="flex-row items-center justify-between"
+            >
+              <ThemedText type="smallBold">
+                {contact.trustedUserName}
+              </ThemedText>
               <Pressable
                 onPress={() => remove.mutate(contact.id)}
                 hitSlop={8}
-                className="p-1 active:opacity-60">
+                className="p-1 active:opacity-60"
+              >
                 <TrashIcon size={18} color="#DC2626" />
               </Pressable>
             </Card>

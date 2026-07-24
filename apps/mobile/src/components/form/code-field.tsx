@@ -1,8 +1,12 @@
-import { useController, type Control, type FieldValues, type Path } from 'react-hook-form';
-
+import {
+  type Control,
+  type FieldValues,
+  type Path,
+  useController,
+} from 'react-hook-form';
+import { View } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { Input } from '@/components/ui/input';
-import { View } from 'react-native';
 
 export interface CodeFieldProps<T extends FieldValues> {
   control: Control<T>;
@@ -16,7 +20,12 @@ export interface CodeFieldProps<T extends FieldValues> {
  * Campo do código de 6 dígitos (reset de senha): só aceita dígitos, corta em 6
  * caracteres — não dá pra digitar/colar nada além do código.
  */
-export function CodeField<T extends FieldValues>({ control, name, label, onComplete }: CodeFieldProps<T>) {
+export function CodeField<T extends FieldValues>({
+  control,
+  name,
+  label,
+  onComplete,
+}: CodeFieldProps<T>) {
   const { field, fieldState } = useController({ control, name });
 
   const handleChangeText = (text: string) => {
@@ -36,7 +45,11 @@ export function CodeField<T extends FieldValues>({ control, name, label, onCompl
         keyboardType="number-pad"
         maxLength={6}
         placeholder="000000"
-        style={{ letterSpacing: 4, textAlign: 'center', fontVariant: ['tabular-nums'] }}
+        style={{
+          letterSpacing: 4,
+          textAlign: 'center',
+          fontVariant: ['tabular-nums'],
+        }}
       />
       {fieldState.error?.message && (
         <ThemedText type="small" style={{ color: '#DC2626' }}>

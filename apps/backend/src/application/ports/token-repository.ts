@@ -1,13 +1,24 @@
-import type { AuthToken, AuthTokenPurpose, RefreshToken } from "../../domain/entities/tokens";
+import type {
+  AuthToken,
+  AuthTokenPurpose,
+  RefreshToken,
+} from '../../domain/entities/tokens';
 
 export interface TokenRepository {
-  createRefresh(data: { userId: string; tokenHash: string; expiresAt: Date }): Promise<void>;
+  createRefresh(data: {
+    userId: string;
+    tokenHash: string;
+    expiresAt: Date;
+  }): Promise<void>;
   findRefreshByHash(tokenHash: string): Promise<RefreshToken | undefined>;
   deleteRefreshById(id: string): Promise<void>;
   deleteRefreshByHash(tokenHash: string): Promise<void>;
   deleteAllRefreshByUser(userId: string): Promise<void>;
   /** Troca de senha no perfil: revoga todas as sessões, exceto a que fez o pedido. */
-  deleteAllRefreshByUserExcept(userId: string, keepTokenHash: string): Promise<void>;
+  deleteAllRefreshByUserExcept(
+    userId: string,
+    keepTokenHash: string
+  ): Promise<void>;
 
   createAuthToken(data: {
     userId: string;
@@ -16,7 +27,10 @@ export interface TokenRepository {
     expiresAt: Date;
   }): Promise<void>;
   /** Não usado e não expirado. */
-  findValidAuthToken(purpose: AuthTokenPurpose, tokenHash: string): Promise<AuthToken | undefined>;
+  findValidAuthToken(
+    purpose: AuthTokenPurpose,
+    tokenHash: string
+  ): Promise<AuthToken | undefined>;
   /**
    * Igual acima, mas escopado por usuário — obrigatório pro código de reset de senha
    * (6 dígitos): o hash sozinho não é globalmente único, então sem o userId a busca
@@ -25,8 +39,11 @@ export interface TokenRepository {
   findValidAuthTokenForUser(
     userId: string,
     purpose: AuthTokenPurpose,
-    tokenHash: string,
+    tokenHash: string
   ): Promise<AuthToken | undefined>;
   markAuthTokenUsed(id: string): Promise<void>;
-  deleteUnusedAuthTokens(userId: string, purpose: AuthTokenPurpose): Promise<void>;
+  deleteUnusedAuthTokens(
+    userId: string,
+    purpose: AuthTokenPurpose
+  ): Promise<void>;
 }

@@ -1,11 +1,11 @@
-import { DEFAULT_CATEGORIES } from "@finance/db";
-import { left, right, type Either } from "@finance/shared";
-import type { User } from "../../../domain/entities/user";
-import type { UseCaseDeps } from "../../deps";
-import { isUniqueConstraintError } from "../../errors";
-import { VERIFY_EMAIL_TOKEN_TTL_MS } from "../../../infra/security/jose-token-service";
-import type { AuthError } from "./errors";
-import { issueSession, type AuthSession } from "./session";
+import { DEFAULT_CATEGORIES } from '@finance/db';
+import { type Either, left, right } from '@finance/shared';
+import type { User } from '../../../domain/entities/user';
+import { VERIFY_EMAIL_TOKEN_TTL_MS } from '../../../infra/security/jose-token-service';
+import type { UseCaseDeps } from '../../deps';
+import { isUniqueConstraintError } from '../../errors';
+import type { AuthError } from './errors';
+import { type AuthSession, issueSession } from './session';
 
 export interface RegisterInput {
   name: string;
@@ -15,10 +15,10 @@ export interface RegisterInput {
 
 export async function register(
   deps: UseCaseDeps,
-  input: RegisterInput,
+  input: RegisterInput
 ): Promise<Either<AuthError, AuthSession>> {
   const existing = await deps.repos.user.findByEmail(input.email);
-  if (existing) return left("email_taken");
+  if (existing) return left('email_taken');
 
   const passwordHash = await deps.hasher.hash(input.password);
 
@@ -33,9 +33,16 @@ export async function register(
         termsVersion: deps.termsVersion,
       });
 
-      const workspace = await repos.workspace.create({ name: "Pessoal", type: "personal" });
+      const workspace = await repos.workspace.create({
+        name: 'Pessoal',
+        type: 'personal',
+      });
       await repos.user.setDefaultWorkspace(user.id, workspace.id);
-      await repos.workspace.addMember({ workspaceId: workspace.id, userId: user.id, role: "owner" });
+      await repos.workspace.addMember({
+        workspaceId: workspace.id,
+        userId: user.id,
+        role: 'owner',
+      });
       await repos.category.createMany(
         workspace.id,
         DEFAULT_CATEGORIES.map((c) => ({
@@ -44,16 +51,19 @@ export async function register(
           color: c.color,
           isFallback: c.isFallback ?? false,
           isDefault: true,
-        })),
+        }))
       );
 
       // Banco + conta padrão — usuário começa com algo pra lançar transação sem
       // precisar cadastrar banco/conta manualmente primeiro.
-      const bank = await repos.bank.create(workspace.id, { name: "Minha carteira", bankCode: "other" });
+      const bank = await repos.bank.create(workspace.id, {
+        name: 'Minha carteira',
+        bankCode: 'other',
+      });
       await repos.account.create(workspace.id, {
-        name: "Conta principal",
+        name: 'Conta principal',
         bankId: bank.id,
-        type: "checking",
+        type: 'checking',
         initialBalance: 0,
       });
 
@@ -61,7 +71,7 @@ export async function register(
     });
   } catch (error) {
     // Corrida: dois registros simultâneos do mesmo e-mail — o unique index decide
-    if (isUniqueConstraintError(error)) return left("email_taken");
+    if (isUniqueConstraintError(error)) return left('email_taken');
     throw error;
   }
   const { user, workspaceId } = created;
@@ -69,11 +79,11 @@ export async function register(
   const verify = deps.tokens.generateOpaque();
   await deps.repos.token.createAuthToken({
     userId: user.id,
-    purpose: "email_verification",
+    purpose: 'email_verification',
     tokenHash: verify.hash,
     expiresAt: new Date(Date.now() + VERIFY_EMAIL_TOKEN_TTL_MS),
   });
-  await deps.dispatch("email.verify-email", {
+  await deps.dispatch('email.verify-email', {
     to: user.email,
     name: user.name,
     code: verify.raw,

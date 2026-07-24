@@ -1,4 +1,4 @@
-import type { InterUserTransferStatus } from "@finance/shared";
+import type { InterUserTransferStatus } from '@finance/shared';
 
 export interface InterUserTransfer {
   id: string;

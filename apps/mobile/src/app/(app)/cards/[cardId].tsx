@@ -15,7 +15,12 @@ import { PayInvoiceForm } from '@/components/forms/pay-invoice-form';
 import { ThemedText } from '@/components/themed-text';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Screen } from '@/components/ui/screen';
 import { useSession } from '@/context/session';
 import { accountsApi } from '@/lib/accounts-api';
@@ -78,7 +83,10 @@ export default function CardDetailScreen() {
       queryClient.invalidateQueries({ queryKey: ['cards', workspaceId] });
     },
     onError: (error) => {
-      Alert.alert('Não foi possível', error instanceof ApiError ? error.message : 'Erro inesperado');
+      Alert.alert(
+        'Não foi possível',
+        error instanceof ApiError ? error.message : 'Erro inesperado'
+      );
     },
   });
 
@@ -89,14 +97,21 @@ export default function CardDetailScreen() {
       router.back();
     },
     onError: (error) => {
-      Alert.alert('Não foi possível excluir', error instanceof ApiError ? error.message : 'Erro inesperado');
+      Alert.alert(
+        'Não foi possível excluir',
+        error instanceof ApiError ? error.message : 'Erro inesperado'
+      );
     },
   });
 
   const confirmDelete = () => {
     Alert.alert('Excluir cartão', `Deseja excluir "${cardItem?.name}"?`, [
       { text: 'Cancelar', style: 'cancel' },
-      { text: 'Excluir', style: 'destructive', onPress: () => deleteMutation.mutate() },
+      {
+        text: 'Excluir',
+        style: 'destructive',
+        onPress: () => deleteMutation.mutate(),
+      },
     ]);
   };
 
@@ -106,7 +121,8 @@ export default function CardDetailScreen() {
         <View className="flex-row items-center gap-3">
           <Pressable
             onPress={() => router.back()}
-            className="h-9 w-9 items-center justify-center rounded-full bg-primary/10 active:opacity-70">
+            className="h-9 w-9 items-center justify-center rounded-full bg-primary/10 active:opacity-70"
+          >
             <ArrowLeftIcon size={18} color="#2563EB" />
           </Pressable>
           <ThemedText type="subtitle">{cardItem?.name ?? 'Cartão'}</ThemedText>
@@ -115,13 +131,15 @@ export default function CardDetailScreen() {
           <View className="flex-row items-center gap-2">
             <Pressable
               onPress={() => setEditing((value) => !value)}
-              className="h-8 w-8 items-center justify-center rounded-full bg-primary/10 active:opacity-70">
+              className="h-8 w-8 items-center justify-center rounded-full bg-primary/10 active:opacity-70"
+            >
               <PencilIcon size={16} color="#2563EB" />
             </Pressable>
             <Pressable
               onPress={() => archiveMutation.mutate()}
               disabled={archiveMutation.isPending}
-              className="h-8 w-8 items-center justify-center rounded-full bg-primary/10 active:opacity-70">
+              className="h-8 w-8 items-center justify-center rounded-full bg-primary/10 active:opacity-70"
+            >
               {cardItem.archivedAt ? (
                 <ArrowCounterClockwiseIcon size={16} color="#2563EB" />
               ) : (
@@ -131,7 +149,8 @@ export default function CardDetailScreen() {
             <Pressable
               onPress={confirmDelete}
               disabled={deleteMutation.isPending}
-              className="h-8 w-8 items-center justify-center rounded-full bg-destructive/10 active:opacity-70">
+              className="h-8 w-8 items-center justify-center rounded-full bg-destructive/10 active:opacity-70"
+            >
               <TrashIcon size={16} color="#DC2626" />
             </Pressable>
           </View>
@@ -155,16 +174,23 @@ export default function CardDetailScreen() {
               <View className="flex-row items-center justify-between">
                 <View>
                   <ThemedText type="smallBold">
-                    {MONTH_LABELS[invoice.monthReference - 1]}/{invoice.yearReference}
+                    {MONTH_LABELS[invoice.monthReference - 1]}/
+                    {invoice.yearReference}
                   </ThemedText>
                   <ThemedText type="small" themeColor="textSecondary">
                     {STATUS_LABELS[invoice.effectiveStatus]}
                   </ThemedText>
                 </View>
-                <ThemedText type="smallBold">{formatCents(invoice.total)}</ThemedText>
+                <ThemedText type="smallBold">
+                  {formatCents(invoice.total)}
+                </ThemedText>
               </View>
               {invoice.effectiveStatus !== 'paid' && (
-                <Button variant="outline" size="sm" onPress={() => setPayingInvoiceId(invoice.id)}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onPress={() => setPayingInvoiceId(invoice.id)}
+                >
                   Pagar
                 </Button>
               )}
@@ -179,7 +205,10 @@ export default function CardDetailScreen() {
         )}
       </View>
 
-      <Dialog open={payingInvoiceId !== null} onOpenChange={(open) => !open && setPayingInvoiceId(null)}>
+      <Dialog
+        open={payingInvoiceId !== null}
+        onOpenChange={(open) => !open && setPayingInvoiceId(null)}
+      >
         <DialogContent className="w-full max-w-sm">
           <DialogHeader>
             <DialogTitle>Pagar fatura</DialogTitle>

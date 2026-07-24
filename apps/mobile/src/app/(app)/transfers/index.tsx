@@ -12,12 +12,14 @@ import { Screen } from '@/components/ui/screen';
 import { Select, type SelectOption } from '@/components/ui/select';
 import { ApiError } from '@/lib/api-client';
 import { formatCents } from '@/lib/money';
-import { transferApi, type PendingTransfer } from '@/lib/transfer-api';
+import { type PendingTransfer, transferApi } from '@/lib/transfer-api';
 
 function MutationError({ error }: { error: unknown }) {
   return (
     <ThemedText type="small" style={{ color: '#DC2626' }}>
-      {error instanceof ApiError ? error.message : 'Erro inesperado, tenta de novo.'}
+      {error instanceof ApiError
+        ? error.message
+        : 'Erro inesperado, tenta de novo.'}
     </ThemedText>
   );
 }
@@ -45,7 +47,8 @@ function PendingTransferCard({
   };
 
   const accept = useMutation({
-    mutationFn: () => transferApi.accept(transfer.id, { accountId, markTrusted }),
+    mutationFn: () =>
+      transferApi.accept(transfer.id, { accountId, markTrusted }),
     onSuccess: invalidate,
   });
   const reject = useMutation({
@@ -71,23 +74,36 @@ function PendingTransferCard({
         value={accountId}
         onValueChange={setAccountId}
       />
-      <Pressable onPress={() => setMarkTrusted((v) => !v)} className="flex-row items-center gap-2">
+      <Pressable
+        onPress={() => setMarkTrusted((v) => !v)}
+        className="flex-row items-center gap-2"
+      >
         <Checkbox checked={markTrusted} onCheckedChange={setMarkTrusted} />
-        <ThemedText type="small">Confiar em quem enviou — próximas entram automático</ThemedText>
+        <ThemedText type="small">
+          Confiar em quem enviou — próximas entram automático
+        </ThemedText>
       </Pressable>
       <View className="flex-row gap-2">
-        <Button className="flex-1" variant="outline" loading={reject.isPending} onPress={() => reject.mutate()}>
+        <Button
+          className="flex-1"
+          variant="outline"
+          loading={reject.isPending}
+          onPress={() => reject.mutate()}
+        >
           Recusar
         </Button>
         <Button
           className="flex-1"
           disabled={!accountId}
           loading={accept.isPending}
-          onPress={() => accept.mutate()}>
+          onPress={() => accept.mutate()}
+        >
           Aceitar
         </Button>
       </View>
-      {(accept.isError || reject.isError) && <MutationError error={accept.error ?? reject.error} />}
+      {(accept.isError || reject.isError) && (
+        <MutationError error={accept.error ?? reject.error} />
+      )}
     </Card>
   );
 }
@@ -110,7 +126,11 @@ export default function PendingTransfersScreen() {
   return (
     <Screen className="gap-6 pb-28">
       <View className="flex-row items-center gap-3">
-        <Pressable onPress={() => router.back()} hitSlop={8} className="active:opacity-60">
+        <Pressable
+          onPress={() => router.back()}
+          hitSlop={8}
+          className="active:opacity-60"
+        >
           <ArrowLeftIcon size={22} />
         </Pressable>
         <ThemedText type="subtitle">Transferências pendentes</ThemedText>
@@ -121,7 +141,11 @@ export default function PendingTransfersScreen() {
       ) : pending && pending.length > 0 ? (
         <View className="gap-3">
           {pending.map((transfer) => (
-            <PendingTransferCard key={transfer.id} transfer={transfer} accountOptions={accountOptions} />
+            <PendingTransferCard
+              key={transfer.id}
+              transfer={transfer}
+              accountOptions={accountOptions}
+            />
           ))}
         </View>
       ) : (

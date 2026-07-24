@@ -1,4 +1,8 @@
-import type { TransactionMethod, TransactionSource, TransactionType } from "@finance/shared";
+import type {
+  TransactionMethod,
+  TransactionSource,
+  TransactionType,
+} from '@finance/shared';
 
 export interface Transaction {
   id: string;

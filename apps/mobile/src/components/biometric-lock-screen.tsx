@@ -1,11 +1,10 @@
 import { LockKeyIcon } from 'phosphor-react-native';
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';
-
-import { useBiometricLock } from '@/context/biometric-lock';
 import { ThemedText } from '@/components/themed-text';
 import { Button } from '@/components/ui/button';
 import { Screen } from '@/components/ui/screen';
+import { useBiometricLock } from '@/context/biometric-lock';
 
 /** Tela cheia exibida por cima do app quando travado (M2-12) — não substitui login, só uma trava a mais sobre a sessão. */
 export function BiometricLockScreen() {
@@ -36,7 +35,11 @@ export function BiometricLockScreen() {
       </View>
       <View className="items-center gap-1">
         <ThemedText type="subtitle">App travado</ThemedText>
-        <ThemedText type="small" themeColor="textSecondary" style={{ textAlign: 'center' }}>
+        <ThemedText
+          type="small"
+          themeColor="textSecondary"
+          style={{ textAlign: 'center' }}
+        >
           {failed
             ? 'Não foi possível confirmar sua identidade. Tente de novo.'
             : 'Confirme sua identidade pra continuar.'}

@@ -1,26 +1,40 @@
-import type { InvoiceStatus } from "@finance/shared";
-import type { CardInvoice } from "../../domain/entities/card";
-import type { InvoicePeriod } from "../../domain/services/invoice-rules";
+import type { InvoiceStatus } from '@finance/shared';
+import type { CardInvoice } from '../../domain/entities/card';
+import type { InvoicePeriod } from '../../domain/services/invoice-rules';
 
 export interface InvoiceRepository {
-  findInWorkspace(workspaceId: string, invoiceId: string): Promise<CardInvoice | undefined>;
+  findInWorkspace(
+    workspaceId: string,
+    invoiceId: string
+  ): Promise<CardInvoice | undefined>;
   findById(invoiceId: string): Promise<CardInvoice | undefined>;
   /** Criação lazy por competência (única por cartão+período; tolera corrida). */
-  getOrCreate(workspaceId: string, cardId: string, period: InvoicePeriod): Promise<CardInvoice>;
+  getOrCreate(
+    workspaceId: string,
+    cardId: string,
+    period: InvoicePeriod
+  ): Promise<CardInvoice>;
   listByCard(cardId: string): Promise<CardInvoice[]>;
   setStatus(invoiceId: string, status: InvoiceStatus): Promise<void>;
   /** Condicional (`WHERE status <> 'paid'`) — `undefined` se outra chamada já marcou paga primeiro (corrida). */
-  markPaid(invoiceId: string, paymentTransactionId: string): Promise<CardInvoice | undefined>;
+  markPaid(
+    invoiceId: string,
+    paymentTransactionId: string
+  ): Promise<CardInvoice | undefined>;
   /** Total derivado: Σ despesas − Σ receitas das transações não deletadas. */
   total(invoiceId: string): Promise<number>;
   /** Σ dos totais das faturas não pagas (limite disponível derivado). */
   unpaidTotalByCard(cardId: string): Promise<number>;
   listUnpaidWithDue(
-    workspaceId: string,
+    workspaceId: string
   ): Promise<{ id: string; month: number; year: number; dueDay: number }[]>;
   deleteByCard(cardId: string): Promise<void>;
   /** Sweep de notificação (sistema inteiro, não por workspace) — fatura ainda `open` cujo cartão já tem `closingDay`. */
-  listAllOpen(): Promise<{ invoice: CardInvoice; closingDay: number; cardName: string }[]>;
+  listAllOpen(): Promise<
+    { invoice: CardInvoice; closingDay: number; cardName: string }[]
+  >;
   /** Sweep de notificação — fatura `closed` (não paga) cujo cartão já tem `dueDay`. */
-  listAllClosedUnpaid(): Promise<{ invoice: CardInvoice; dueDay: number; cardName: string }[]>;
+  listAllClosedUnpaid(): Promise<
+    { invoice: CardInvoice; dueDay: number; cardName: string }[]
+  >;
 }

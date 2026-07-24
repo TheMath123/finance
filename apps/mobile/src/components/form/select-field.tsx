@@ -1,4 +1,9 @@
-import { useController, type Control, type FieldValues, type Path } from 'react-hook-form';
+import {
+  type Control,
+  type FieldValues,
+  type Path,
+  useController,
+} from 'react-hook-form';
 import { View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';

@@ -1,7 +1,7 @@
-import { and, eq, ne } from "drizzle-orm";
-import { expenseSplits, splitShares, transactions, users } from "@finance/db";
-import type { SplitShareRepository } from "../../../application/ports/split-share-repository";
-import type { DbHandle } from "../handle";
+import { expenseSplits, splitShares, transactions, users } from '@finance/db';
+import { and, eq, ne } from 'drizzle-orm';
+import type { SplitShareRepository } from '../../../application/ports/split-share-repository';
+import type { DbHandle } from '../handle';
 
 export function createSplitShareRepository(db: DbHandle): SplitShareRepository {
   return {
@@ -9,15 +9,22 @@ export function createSplitShareRepository(db: DbHandle): SplitShareRepository {
       if (shares.length === 0) return [];
       return db.insert(splitShares).values(shares).returning();
     },
-    findById: (id) => db.query.splitShares.findFirst({ where: eq(splitShares.id, id) }),
-    listBySplit: (splitId) => db.query.splitShares.findMany({ where: eq(splitShares.splitId, splitId) }),
+    findById: (id) =>
+      db.query.splitShares.findFirst({ where: eq(splitShares.id, id) }),
+    listBySplit: (splitId) =>
+      db.query.splitShares.findMany({
+        where: eq(splitShares.splitId, splitId),
+      }),
     async updateStatus(id, fromStatus, toStatus, reimbursementTransactionId) {
       // Condicional (WHERE status=fromStatus) — fecha a corrida de duas chamadas
       // paralelas (duplo toque/retry) confirmarem/marcarem pago o mesmo share
       // duas vezes (auditoria 2026-07-19). undefined = já mudou de estado.
       const [row] = await db
         .update(splitShares)
-        .set({ status: toStatus, ...(reimbursementTransactionId ? { reimbursementTransactionId } : {}) })
+        .set({
+          status: toStatus,
+          ...(reimbursementTransactionId ? { reimbursementTransactionId } : {}),
+        })
         .where(and(eq(splitShares.id, id), eq(splitShares.status, fromStatus)))
         .returning();
       return row;
@@ -34,9 +41,17 @@ export function createSplitShareRepository(db: DbHandle): SplitShareRepository {
         })
         .from(splitShares)
         .innerJoin(expenseSplits, eq(splitShares.splitId, expenseSplits.id))
-        .innerJoin(transactions, eq(expenseSplits.transactionId, transactions.id))
+        .innerJoin(
+          transactions,
+          eq(expenseSplits.transactionId, transactions.id)
+        )
         .innerJoin(users, eq(expenseSplits.createdBy, users.id))
-        .where(and(eq(splitShares.participantUserId, userId), ne(splitShares.status, "confirmed")));
+        .where(
+          and(
+            eq(splitShares.participantUserId, userId),
+            ne(splitShares.status, 'confirmed')
+          )
+        );
       return rows;
     },
     async listOwedToCreator(creatorId) {
@@ -53,16 +68,25 @@ export function createSplitShareRepository(db: DbHandle): SplitShareRepository {
         })
         .from(splitShares)
         .innerJoin(expenseSplits, eq(splitShares.splitId, expenseSplits.id))
-        .innerJoin(transactions, eq(expenseSplits.transactionId, transactions.id))
+        .innerJoin(
+          transactions,
+          eq(expenseSplits.transactionId, transactions.id)
+        )
         .leftJoin(users, eq(splitShares.participantUserId, users.id))
-        .where(and(eq(expenseSplits.createdBy, creatorId), ne(splitShares.status, "confirmed")));
+        .where(
+          and(
+            eq(expenseSplits.createdBy, creatorId),
+            ne(splitShares.status, 'confirmed')
+          )
+        );
       return rows.map((r) => ({
         shareId: r.shareId,
         splitId: r.splitId,
         amount: r.amount,
         status: r.status,
         transactionDescription: r.transactionDescription,
-        participantName: r.participantUserName ?? r.participantName ?? "Desconhecido",
+        participantName:
+          r.participantUserName ?? r.participantName ?? 'Desconhecido',
         participantUserId: r.participantUserId,
       }));
     },

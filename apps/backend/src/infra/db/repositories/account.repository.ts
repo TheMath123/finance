@@ -1,7 +1,7 @@
-import { and, eq, inArray, isNull, or } from "drizzle-orm";
-import { bankAccounts, transactions, workspaceMembers } from "@finance/db";
-import type { AccountRepository } from "../../../application/ports/account-repository";
-import type { DbHandle } from "../handle";
+import { bankAccounts, workspaceMembers } from '@finance/db';
+import { and, eq, inArray, isNull } from 'drizzle-orm';
+import type { AccountRepository } from '../../../application/ports/account-repository';
+import type { DbHandle } from '../handle';
 
 export function createAccountRepository(db: DbHandle): AccountRepository {
   return {
@@ -10,24 +10,32 @@ export function createAccountRepository(db: DbHandle): AccountRepository {
         .insert(bankAccounts)
         .values({ ...data, workspaceId })
         .returning();
-      if (!row) throw new Error("falha ao criar conta");
+      if (!row) throw new Error('falha ao criar conta');
       return row;
     },
     findInWorkspace: (workspaceId, accountId) =>
       db.query.bankAccounts.findFirst({
-        where: and(eq(bankAccounts.id, accountId), eq(bankAccounts.workspaceId, workspaceId)),
+        where: and(
+          eq(bankAccounts.id, accountId),
+          eq(bankAccounts.workspaceId, workspaceId)
+        ),
       }),
-    findById: (accountId) => db.query.bankAccounts.findFirst({ where: eq(bankAccounts.id, accountId) }),
+    findById: (accountId) =>
+      db.query.bankAccounts.findFirst({
+        where: eq(bankAccounts.id, accountId),
+      }),
     findActiveInWorkspace: (workspaceId, accountId) =>
       db.query.bankAccounts.findFirst({
         where: and(
           eq(bankAccounts.id, accountId),
           eq(bankAccounts.workspaceId, workspaceId),
-          isNull(bankAccounts.archivedAt),
+          isNull(bankAccounts.archivedAt)
         ),
       }),
     listByWorkspace: (workspaceId) =>
-      db.query.bankAccounts.findMany({ where: eq(bankAccounts.workspaceId, workspaceId) }),
+      db.query.bankAccounts.findMany({
+        where: eq(bankAccounts.workspaceId, workspaceId),
+      }),
     async listActiveForUser(userId) {
       const memberships = await db.query.workspaceMembers.findMany({
         where: eq(workspaceMembers.userId, userId),
@@ -36,7 +44,10 @@ export function createAccountRepository(db: DbHandle): AccountRepository {
       if (workspaceIds.length === 0) return [];
 
       const rows = await db.query.bankAccounts.findMany({
-        where: and(inArray(bankAccounts.workspaceId, workspaceIds), isNull(bankAccounts.archivedAt)),
+        where: and(
+          inArray(bankAccounts.workspaceId, workspaceIds),
+          isNull(bankAccounts.archivedAt)
+        ),
         with: { workspace: true },
       });
       return rows.map((row) => ({
@@ -51,7 +62,7 @@ export function createAccountRepository(db: DbHandle): AccountRepository {
         .set(patch)
         .where(eq(bankAccounts.id, accountId))
         .returning();
-      if (!row) throw new Error("falha ao atualizar conta");
+      if (!row) throw new Error('falha ao atualizar conta');
       return row;
     },
     async setArchived(accountId, archived) {
@@ -60,7 +71,7 @@ export function createAccountRepository(db: DbHandle): AccountRepository {
         .set({ archivedAt: archived ? new Date() : null })
         .where(eq(bankAccounts.id, accountId))
         .returning();
-      if (!row) throw new Error("falha ao arquivar conta");
+      if (!row) throw new Error('falha ao arquivar conta');
       return row;
     },
     async delete(accountId) {

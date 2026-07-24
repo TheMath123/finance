@@ -8,7 +8,10 @@ import { TextField } from '@/components/form/text-field';
 import { ThemedText } from '@/components/themed-text';
 import { Button } from '@/components/ui/button';
 import { ApiError } from '@/lib/api-client';
-import { createInviteSchema, type CreateInviteInput } from '@/lib/schemas/workspace';
+import {
+  type CreateInviteInput,
+  createInviteSchema,
+} from '@/lib/schemas/workspace';
 import { workspaceApi } from '@/lib/workspace-api';
 
 const ROLE_OPTIONS = [
@@ -22,7 +25,10 @@ interface CreateInviteFormProps {
   onDone: () => void;
 }
 
-export function CreateInviteForm({ workspaceId, onDone }: CreateInviteFormProps) {
+export function CreateInviteForm({
+  workspaceId,
+  onDone,
+}: CreateInviteFormProps) {
   const queryClient = useQueryClient();
   const { control, handleSubmit } = useForm<CreateInviteInput>({
     resolver: zodResolver(createInviteSchema),
@@ -31,9 +37,12 @@ export function CreateInviteForm({ workspaceId, onDone }: CreateInviteFormProps)
   });
 
   const mutation = useMutation({
-    mutationFn: (input: CreateInviteInput) => workspaceApi.createInvite(workspaceId, input),
+    mutationFn: (input: CreateInviteInput) =>
+      workspaceApi.createInvite(workspaceId, input),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['workspace-invites', workspaceId] });
+      queryClient.invalidateQueries({
+        queryKey: ['workspace-invites', workspaceId],
+      });
       onDone();
     },
   });
@@ -58,10 +67,15 @@ export function CreateInviteForm({ workspaceId, onDone }: CreateInviteFormProps)
       />
       {mutation.isError && (
         <ThemedText type="small" style={{ color: '#DC2626' }}>
-          {mutation.error instanceof ApiError ? mutation.error.message : 'Erro inesperado'}
+          {mutation.error instanceof ApiError
+            ? mutation.error.message
+            : 'Erro inesperado'}
         </ThemedText>
       )}
-      <Button loading={mutation.isPending} onPress={handleSubmit((input) => mutation.mutate(input))}>
+      <Button
+        loading={mutation.isPending}
+        onPress={handleSubmit((input) => mutation.mutate(input))}
+      >
         Enviar convite
       </Button>
     </View>

@@ -1,7 +1,16 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import {
+  createContext,
+  type ReactNode,
+  useContext,
+  useEffect,
+  useState,
+} from 'react';
 
-import { authApi, type AuthSession } from '@/lib/auth-api';
-import { registerForPushNotifications, unregisterCurrentPushToken } from '@/lib/push-notifications';
+import { type AuthSession, authApi } from '@/lib/auth-api';
+import {
+  registerForPushNotifications,
+  unregisterCurrentPushToken,
+} from '@/lib/push-notifications';
 import { tokenStore, workspaceStore } from '@/lib/secure-store';
 
 interface SessionContextValue {
@@ -75,7 +84,16 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   return (
     <SessionContext.Provider
-      value={{ user, workspaceId, isLoading, signIn, signOut, refreshUser, switchWorkspace }}>
+      value={{
+        user,
+        workspaceId,
+        isLoading,
+        signIn,
+        signOut,
+        refreshUser,
+        switchWorkspace,
+      }}
+    >
       {children}
     </SessionContext.Provider>
   );
@@ -83,6 +101,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
 export function useSession() {
   const context = useContext(SessionContext);
-  if (!context) throw new Error('useSession precisa estar dentro de <SessionProvider>');
+  if (!context)
+    throw new Error('useSession precisa estar dentro de <SessionProvider>');
   return context;
 }

@@ -1,7 +1,11 @@
-import { z } from "zod";
+import { z } from 'zod';
 
-export const workspaceParamsSchema = z.object({ workspaceId: z.string().uuid() });
-export const cardParamsSchema = workspaceParamsSchema.extend({ cardId: z.string().uuid() });
+export const workspaceParamsSchema = z.object({
+  workspaceId: z.string().uuid(),
+});
+export const cardParamsSchema = workspaceParamsSchema.extend({
+  cardId: z.string().uuid(),
+});
 export const invoiceParamsSchema = workspaceParamsSchema.extend({
   invoiceId: z.string().uuid(),
 });
@@ -18,5 +22,5 @@ export const updateCardSchema = createCardSchema.partial();
 export const payInvoiceSchema = z.object({
   accountId: z.string().uuid(),
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  method: z.enum(["pix", "debit"]),
+  method: z.enum(['pix', 'debit']),
 });
