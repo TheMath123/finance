@@ -52,3 +52,46 @@ export interface MeOutput {
 export function me(accessToken: string): Promise<Either<ApiError, MeOutput>> {
 	return apiRequest('/auth/me', { accessToken });
 }
+
+export function updateName(accessToken: string, name: string): Promise<Either<ApiError, unknown>> {
+	return apiRequest('/auth/me', { method: 'PATCH', body: { name }, accessToken });
+}
+
+export function changePassword(
+	accessToken: string,
+	input: { currentPassword: string; newPassword: string; currentRefreshToken?: string }
+): Promise<Either<ApiError, unknown>> {
+	return apiRequest('/auth/me/password', { method: 'POST', body: input, accessToken });
+}
+
+export function requestEmailChange(
+	accessToken: string,
+	input: { newEmail: string; currentPassword: string }
+): Promise<Either<ApiError, unknown>> {
+	return apiRequest('/auth/me/email/request-change', { method: 'POST', body: input, accessToken });
+}
+
+export function confirmEmailChange(
+	accessToken: string,
+	code: string
+): Promise<Either<ApiError, unknown>> {
+	return apiRequest('/auth/me/email/confirm-change', {
+		method: 'POST',
+		body: { code },
+		accessToken
+	});
+}
+
+export function requestAccountDeletion(
+	accessToken: string,
+	password: string
+): Promise<Either<ApiError, unknown>> {
+	return apiRequest('/auth/me/delete/request', { method: 'POST', body: { password }, accessToken });
+}
+
+export function confirmAccountDeletion(
+	accessToken: string,
+	code: string
+): Promise<Either<ApiError, unknown>> {
+	return apiRequest('/auth/me/delete/confirm', { method: 'POST', body: { code }, accessToken });
+}

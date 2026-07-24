@@ -9,7 +9,8 @@
 	const TABS = [
 		{ route: '/more/accounts', label: 'Contas' },
 		{ route: '/more/cards', label: 'Cartões' },
-		{ route: '/more/banks', label: 'Bancos' }
+		{ route: '/more/banks', label: 'Bancos' },
+		{ route: '/more/account', label: 'Conta' }
 	] as const;
 </script>
 
