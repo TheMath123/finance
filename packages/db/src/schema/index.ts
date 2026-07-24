@@ -1,3 +1,4 @@
+export * from './admin-audit-log';
 export * from './audit-log';
 export * from './bank';
 export * from './bank-account';

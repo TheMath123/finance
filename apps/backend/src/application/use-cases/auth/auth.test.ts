@@ -77,6 +77,25 @@ describe('auth: registro', () => {
     expect(jobs.some((j) => j.name === 'email.verify-email')).toBe(true);
   });
 
+  test('nunca cria com platformRole diferente de "user" (superadmin só manual, M4-07)', async () => {
+    const deps = createTestDeps(db);
+    const result = await register(deps, {
+      name: 'Teste',
+      email: uniqueEmail(),
+      password: 'senha-forte-123',
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.user.platformRole).toBe('user');
+
+    const [row] = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, result.value.user.id));
+    expect(row?.platformRole).toBe('user');
+  });
+
   test('cria banco e conta padrão', async () => {
     const deps = createTestDeps(db);
     const email = uniqueEmail();

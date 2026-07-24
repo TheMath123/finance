@@ -3,6 +3,12 @@
  * Popula usuário demo, workspace, banco/conta/cartão, categorias e transações realistas
  * (parceladas, recorrentes, faturas em vários status), conforme o spec.
  * O seed de PRODUÇÃO é outro: só categorias padrão, criadas junto com cada workspace.
+ *
+ * Promoção a superadmin (M4-07, `platformRole`): sempre manual, direto no banco —
+ * nunca existe (nem deve existir) uma rota HTTP que conceda esse papel, exatamente
+ * pra não virar um vetor de escalada de privilégio via API. Pra promover alguém:
+ *
+ *   UPDATE users SET platform_role = 'superadmin' WHERE email = 'alguem@exemplo.com';
  */
 import { eq } from 'drizzle-orm';
 import { createDb } from './client';

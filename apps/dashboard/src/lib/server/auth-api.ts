@@ -1,4 +1,4 @@
-import type { Either } from '@finance/shared';
+import type { Either, PlatformRole } from '@finance/shared';
 
 import { apiRequest, type ApiError } from './api-client';
 
@@ -10,6 +10,7 @@ export interface SessionUser {
 	phone: string | null;
 	emailVerifiedAt: string | null;
 	pendingEmail: string | null;
+	platformRole: PlatformRole;
 }
 
 export interface AuthSession {

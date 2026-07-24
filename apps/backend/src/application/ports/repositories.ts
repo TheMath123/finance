@@ -1,4 +1,5 @@
 import type { AccountRepository } from './account-repository';
+import type { AdminAuditRecorder } from './admin-audit-recorder';
 import type { AuditRecorder } from './audit-recorder';
 import type { BankRepository } from './bank-repository';
 import type { CardRepository } from './card-repository';
@@ -33,6 +34,7 @@ export interface Repositories {
   transaction: TransactionRepository;
   recurring: RecurringRepository;
   audit: AuditRecorder;
+  adminAudit: AdminAuditRecorder;
   notification: NotificationRepository;
   notificationPreference: NotificationPreferenceRepository;
   pushToken: PushTokenRepository;

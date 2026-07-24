@@ -11,7 +11,7 @@ const USER_RATE_WINDOW_MS = 60_000;
 
 /** Autentica o Bearer token (usuário logado, sem exigir papel em workspace). */
 export async function requireAuthenticated(
-  deps: AppDeps,
+  deps: Pick<AppDeps, 'tokens'>,
   request: Request
 ): Promise<Either<HttpError, { userId: string }>> {
   const header = request.headers.get('authorization');
@@ -78,4 +78,45 @@ export async function requireWorkspaceRole(
     });
   }
   return right({ userId: auth.value.userId, workspaceId, role });
+}
+
+/**
+ * Autentica e exige `platformRole === "superadmin"` (área administrativa, M4-07).
+ * Sem membership de workspace envolvida — superadmin administra a plataforma,
+ * nunca os dados financeiros dos usuários (spec, LGPD).
+ */
+export async function requireSuperadmin(
+  deps: Pick<AppDeps, 'tokens' | 'repos' | 'rateLimiter' | 'logger'>,
+  request: Request
+): Promise<Either<HttpError, { userId: string }>> {
+  const auth = await requireAuthenticated(deps, request);
+  if (!auth.ok) return auth;
+
+  if (
+    await deps.rateLimiter.isLimited(
+      `admin:${auth.value.userId}`,
+      USER_RATE_MAX,
+      USER_RATE_WINDOW_MS
+    )
+  ) {
+    deps.logger.log('rate_limited', {
+      scopeKey: 'admin',
+      userId: auth.value.userId,
+    });
+    return left({
+      status: 429,
+      code: 'rate_limited',
+      message: 'Muitas requisições. Aguarde um instante.',
+    });
+  }
+
+  const user = await deps.repos.user.findById(auth.value.userId);
+  if (!user || user.platformRole !== 'superadmin') {
+    return left({
+      status: 403,
+      code: 'forbidden',
+      message: 'Acesso restrito a administradores da plataforma.',
+    });
+  }
+  return right({ userId: auth.value.userId });
 }

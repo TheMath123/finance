@@ -1,6 +1,7 @@
 import type { Repositories } from '../../../application/ports/repositories';
 import type { DbHandle } from '../handle';
 import { createAccountRepository } from './account.repository';
+import { createAdminAuditRecorder } from './admin-audit.repository';
 import { createAuditRecorder } from './audit.repository';
 import { createBankRepository } from './bank.repository';
 import { createCardRepository } from './card.repository';
@@ -36,6 +37,7 @@ export function createRepositories(db: DbHandle): Repositories {
     transaction: createTransactionRepository(db),
     recurring: createRecurringRepository(db),
     audit: createAuditRecorder(db),
+    adminAudit: createAdminAuditRecorder(db),
     notification: createNotificationRepository(db),
     notificationPreference: createNotificationPreferenceRepository(db),
     pushToken: createPushTokenRepository(db),

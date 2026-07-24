@@ -11,6 +11,7 @@ export interface MeOutput {
     emailVerifiedAt: string | null;
     /** E-mail novo aguardando confirmação por código (troca de e-mail no perfil), se houver. */
     pendingEmail: string | null;
+    platformRole: import('@finance/shared').PlatformRole;
   };
   defaultWorkspaceId: string;
 }
@@ -32,6 +33,7 @@ export async function me(
         ? user.emailVerifiedAt.toISOString()
         : null,
       pendingEmail: user.pendingEmail,
+      platformRole: user.platformRole,
     },
     defaultWorkspaceId: user.defaultWorkspaceId,
   });

@@ -10,6 +10,7 @@ export interface AuthSession {
     phone: string | null;
     emailVerifiedAt: string | null;
     pendingEmail: string | null;
+    platformRole: import('@finance/shared').PlatformRole;
   };
   defaultWorkspaceId: string;
   accessToken: string;
@@ -38,6 +39,7 @@ export async function issueSession(
         ? user.emailVerifiedAt.toISOString()
         : null,
       pendingEmail: user.pendingEmail,
+      platformRole: user.platformRole,
     },
     defaultWorkspaceId: workspaceId,
     accessToken: await deps.tokens.signAccess(user.id),
