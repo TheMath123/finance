@@ -1,12 +1,14 @@
 import { useQueries, useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import { ArrowsClockwiseIcon, CaretDownIcon, TrendUpIcon, TrendDownIcon } from 'phosphor-react-native';
-import { ActivityIndicator, Pressable, View } from 'react-native';
+import { CaretDownIcon, CaretRightIcon } from 'phosphor-react-native';
+import { ActivityIndicator, View } from 'react-native';
 
-import { ThemedText } from '@/components/themed-text';
-import { Card } from '@/components/ui/card';
+import { BalanceOverview } from '@/components/finance/balance-overview';
+import { HeaderChip } from '@/components/finance/header-chip';
 import { Screen } from '@/components/ui/screen';
+import { Text } from '@/components/ui/text';
 import { useSession } from '@/context/session';
+import { useTheme } from '@/hooks/use-theme';
 import { cardsApi } from '@/lib/cards-api';
 import { useRecurringPendingTotal } from '@/lib/hooks/use-recurring-pending-total';
 import { formatCents } from '@/lib/money';
@@ -57,8 +59,24 @@ function nextMonth(year: number, month: number): { year: number; month: number }
   return month === 12 ? { year: year + 1, month: 1 } : { year, month: month + 1 };
 }
 
+/** Linha com divisor no topo (label + valor + descrição opcional) — mesmo padrão flat dos 3 blocos da Home no Figma, sem Card/borda ao redor. */
+function SummaryListRow({ label, value, description }: { label: string; value: React.ReactNode; description?: string }) {
+  const theme = useTheme();
+  return (
+    <View className="w-full flex-row items-start justify-center border-t border-foreground/10 px-4 pt-4">
+      <View className="flex-1 gap-2.5">
+        <Text className="text-[10px] font-normal leading-tight text-foreground">{label}</Text>
+        <Text className="text-[20px] font-medium leading-tight text-foreground">{value}</Text>
+        {description && <Text className="text-[10px] font-normal leading-tight text-muted-foreground">{description}</Text>}
+      </View>
+      <CaretRightIcon size={14} weight="bold" color={theme.textSecondary} />
+    </View>
+  );
+}
+
 export default function HomeScreen() {
   const { workspaceId } = useSession();
+  const theme = useTheme();
   const now = new Date();
 
   const { data: summary, isLoading } = useQuery({
@@ -84,120 +102,51 @@ export default function HomeScreen() {
   const activeWorkspace = workspaces?.find((w) => w.id === workspaceId);
 
   return (
-    <Screen className="gap-6 pb-28">
-      {activeWorkspace && (
-        <Pressable
-          onPress={() => router.push('/workspaces')}
-          className="flex-row items-center gap-1.5 self-start active:opacity-70">
-          <ThemedText type="smallBold">{activeWorkspace.name}</ThemedText>
-          <CaretDownIcon size={14} color="#71717a" />
-        </Pressable>
+    <Screen className="gap-4 px-0 pb-28">
+      <View className="px-4">
+        {activeWorkspace && (
+          <HeaderChip onPress={() => router.push('/workspaces')} className="self-start">
+            <Text className="text-[10px] font-normal leading-tight text-foreground">{activeWorkspace.name}</Text>
+            <CaretDownIcon size={16} color={theme.textSecondary} />
+          </HeaderChip>
+        )}
+      </View>
+
+      {isLoading ? (
+        <ActivityIndicator className="ml-4 self-start" />
+      ) : (
+        <BalanceOverview summary={summary} />
       )}
 
-      <View>
-        <ThemedText type="small" themeColor="textSecondary">
-          Saldo disponível
-        </ThemedText>
-        {isLoading ? (
-          <ActivityIndicator className="mt-2 self-start" />
-        ) : (
-          <ThemedText type="title">
-            {formatCents(summary?.projectedAvailable ?? summary?.totalBalance ?? 0)}
-          </ThemedText>
-        )}
-      </View>
+      {nextInvoice ? (
+        <SummaryListRow
+          label={`Próxima fatura - ${nextInvoice.cardName}`}
+          value={formatCents(nextInvoice.total)}
+          description={`Vence em ${nextInvoice.dueDate.toLocaleDateString('pt-BR')}`}
+        />
+      ) : (
+        <SummaryListRow label="Nenhuma fatura este mês" value="—" description="Suas próximas faturas de cartão aparecem aqui." />
+      )}
 
-      <View className="flex-row gap-3">
-        <Card className="flex-1 flex-row items-center gap-3">
-          <View className="h-9 w-9 items-center justify-center rounded-full bg-green-500/15">
-            <TrendUpIcon size={18} color="#16A34A" weight="bold" />
-          </View>
-          <View>
-            <ThemedText type="small" themeColor="textSecondary">
-              Receitas
-            </ThemedText>
-            <ThemedText type="smallBold">{formatCents(summary?.income ?? 0)}</ThemedText>
-          </View>
-        </Card>
+      <SummaryListRow
+        label="Recorrências deste mês"
+        value={
+          recurringPending && recurringPending.count > 0
+            ? formatCents(recurringPending.income - recurringPending.expense)
+            : formatCents(0)
+        }
+        description={
+          recurringPending && recurringPending.count > 0
+            ? `${formatCents(recurringPending.income)} a receber, ${formatCents(recurringPending.expense)} a pagar`
+            : 'Nenhuma recorrência pendente este mês.'
+        }
+      />
 
-        <Card className="flex-1 flex-row items-center gap-3">
-          <View className="h-9 w-9 items-center justify-center rounded-full bg-red-500/15">
-            <TrendDownIcon size={18} color="#DC2626" weight="bold" />
-          </View>
-          <View>
-            <ThemedText type="small" themeColor="textSecondary">
-              Despesas
-            </ThemedText>
-            <ThemedText type="smallBold">{formatCents(summary?.expense ?? 0)}</ThemedText>
-          </View>
-        </Card>
-      </View>
-
-      <Card className="items-center gap-2 py-8">
-        {nextInvoice ? (
-          <>
-            <ThemedText type="small" themeColor="textSecondary">
-              Próxima fatura — {nextInvoice.cardName}
-            </ThemedText>
-            <ThemedText type="subtitle">{formatCents(nextInvoice.total)}</ThemedText>
-            <ThemedText type="small" themeColor="textSecondary">
-              Vence em {nextInvoice.dueDate.toLocaleDateString('pt-BR')}
-            </ThemedText>
-          </>
-        ) : (
-          <>
-            <ThemedText type="smallBold">Nenhuma fatura este mês</ThemedText>
-            <ThemedText type="small" themeColor="textSecondary" style={{ textAlign: 'center' }}>
-              Suas próximas faturas de cartão aparecem aqui.
-            </ThemedText>
-          </>
-        )}
-      </Card>
-
-      <Card className="gap-3">
-        <View className="flex-row items-center gap-2">
-          <ArrowsClockwiseIcon size={18} color="#2563EB" weight="bold" />
-          <ThemedText type="smallBold">Recorrências deste mês</ThemedText>
-        </View>
-        {recurringPending && recurringPending.count > 0 ? (
-          <View className="flex-row gap-3">
-            <View className="flex-1">
-              <ThemedText type="small" themeColor="textSecondary">
-                A receber
-              </ThemedText>
-              <ThemedText type="smallBold" style={{ color: '#16A34A' }}>
-                {formatCents(recurringPending.income)}
-              </ThemedText>
-            </View>
-            <View className="flex-1">
-              <ThemedText type="small" themeColor="textSecondary">
-                A pagar
-              </ThemedText>
-              <ThemedText type="smallBold" style={{ color: '#DC2626' }}>
-                {formatCents(recurringPending.expense)}
-              </ThemedText>
-            </View>
-          </View>
-        ) : (
-          <ThemedText type="small" themeColor="textSecondary">
-            Nenhuma recorrência pendente este mês.
-          </ThemedText>
-        )}
-      </Card>
-
-      <Card className="gap-1">
-        <ThemedText type="small" themeColor="textSecondary">
-          Projeção pra {new Date(nextYear, nextMonthNumber - 1, 1).toLocaleDateString('pt-BR', { month: 'long' })}
-        </ThemedText>
-        {nextSummary?.projectedAvailable != null ? (
-          <ThemedText type="subtitle">{formatCents(nextSummary.projectedAvailable)}</ThemedText>
-        ) : (
-          <ActivityIndicator className="mt-1 self-start" />
-        )}
-        <ThemedText type="small" themeColor="textSecondary">
-          Saldo atual + recorrências previstas − faturas em aberto − estimativa de gasto variável.
-        </ThemedText>
-      </Card>
+      <SummaryListRow
+        label={`Projeção para ${new Date(nextYear, nextMonthNumber - 1, 1).toLocaleDateString('pt-BR', { month: 'long' })}`}
+        value={nextSummary?.projectedAvailable != null ? formatCents(nextSummary.projectedAvailable) : '—'}
+        description="Saldo atual + recorrências previstas − faturas em aberto − estimativa de gasto variável."
+      />
     </Screen>
   );
 }

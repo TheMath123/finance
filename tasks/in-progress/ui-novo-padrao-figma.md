@@ -1,7 +1,7 @@
 # UI — Migração pro novo padrão visual (Figma)
 
-**Status:** 🟡 Em progresso — Fase 1 (fundação) implementada, aguardando o usuário
-conferir no emulador antes da Fase 2.
+**Status:** 🟡 Em progresso — Fases 1 e 2 implementadas, aguardando o usuário
+conferir no emulador antes da Fase 3.
 
 ## Contexto
 
@@ -48,13 +48,63 @@ Plano completo (contexto do Figma, gaps encontrados no código, decisões) em
 
 Typecheck limpo (`bun run --filter=mobile typecheck`).
 
-## Fase 2 — Telas (a fazer)
+## Fase 2 — Telas (feito, refeita depois de feedback do usuário)
 
-- Home (`(tabs)/index.tsx`): restilizar cards existentes com os tokens novos;
-  seletor de workspace vira visualmente uma pílula.
-- Transações (`(tabs)/explore.tsx`): restilizar lista/header/filtros/FAB;
-  `TransactionRow` ganha avatar circular 40px (translúcido teal/verde por
-  tipo) com o ícone da categoria via `resolveCategoryIcon`.
+Primeira versão só recolorira a estrutura já existente das telas (cores novas
+em cima do layout antigo). O usuário apontou que isso fugia bastante do
+layout/estrutura real do Figma — refeito puxando `get_design_context` (código
+de referência + screenshot) de cada node antes de reescrever, em vez de só
+aplicar cor.
+
+Diferenças estruturais reais encontradas (não só de cor):
+- **Tab bar** (`14:65`/`14:127`): só ícone, **sem label de texto** nenhum;
+  barra compacta (58px altura, 42px por ícone, não estica a largura toda);
+  fundo translúcido teal (`bg-primary/10`), sem sombra/borda. Reescrito em
+  `apps/mobile/src/components/app-tabs.tsx`.
+- **Home** (`1:3`/`14:2`) e **Transações** (`30:283`/`33:740`) reaproveitam o
+  **mesmo bloco** "saldo disponível + Receitas/Despesas" — virou componente
+  compartilhado `apps/mobile/src/components/finance/balance-overview.tsx` em
+  vez de duplicar. Receitas/Despesas: cards com **borda** (`border-foreground/10`),
+  **sem** círculo de fundo atrás do ícone (ícone solto). As linhas de
+  "Próxima fatura"/"Recorrências"/"Projeção" na Home **não são `Card`** — são
+  linhas soltas com divisor no topo (`border-t border-foreground/10`) e um
+  ícone de seta (`CaretRightIcon`) no canto, sem caixa/borda ao redor.
+- **Pílulas do cabeçalho** (seletor de workspace, categoria, filtro, recorrências,
+  arquivadas): todas usam a **mesma** instância de componente no Figma
+  (`bg-primary/10`, `rounded` 4px, sem borda) — virou `HeaderChip` compartilhado
+  (`apps/mobile/src/components/finance/header-chip.tsx`), substituindo os
+  botões circulares com borda que eu tinha feito antes.
+- **Card de transação** (`30:57`): não é um `Card` com padding/borda — é uma
+  linha com divisor no topo, igual às da Home. Avatar 40px translúcido
+  (teal/verde conforme despesa/receita) com o ícone da categoria. Ganhou a
+  linha "método/conta • data" (`Cartão Z • 10/07/2026`, `PIX • 18/07/2026`,
+  `Conta A • 24/07/2026`) via `transactionSourceLabel()` (prioriza nome do
+  cartão/conta quando dá pra identificar, senão o método genérico). Valor:
+  só despesa leva `- ` na frente (receita não leva `+`), 14px medium.
+  Parcelado mostra o total da compra + fração acima do valor; split mostra
+  "Dividido" (o Figma mostra uma fração "3/4" que não temos dado equivalente
+  hoje — usei o texto que já existia).
+- **Filtros**: painel reaproveita `Select`/`DatePicker` existentes com
+  `className` sobrescrevendo pra parecer com a pílula do Figma (sem borda
+  visível, fundo translúcido) — **limitação conhecida**: o texto interno
+  desses componentes é fixo (`text-base`, 16px) e não dá pra encolher pra
+  12px via prop sem mexer no componente compartilhado (usado em várias
+  outras telas), então esses campos ficam com o texto um pouco maior que o
+  Figma. Ícone do botão de filtro troca de glyph (`FunnelIcon`/`FunnelXIcon`)
+  em vez de só cor/peso, igual ao Figma.
+- **FAB**: era círculo 56px com sombra — Figma é quadrado arredondado 42px
+  (`rounded-lg`), sem sombra.
+
+**Limitações desta rodada** (bati no limite de chamadas do Figma MCP no plano
+Starter no meio do trabalho):
+- Não confirmei o componente `Button` (node `21:474`) contra o Figma —
+  os tamanhos/variantes atuais (Fase 1) não foram revalidados.
+- Não abri a variante light da tela de Transações (`30:288`/`32:504`)
+  diretamente — assumi o mesmo padrão claro/escuro já confirmado duas vezes
+  na Home (só troca de cor de texto/borda, estrutura idêntica).
+
+Typecheck e lint limpos (`bun run --filter=mobile typecheck`, `bun run lint`
+— nenhum erro novo nos arquivos tocados).
 
 ## Fase 3 — Logo de marca via thesvg (a fazer)
 
@@ -67,4 +117,9 @@ Typecheck limpo (`bun run --filter=mobile typecheck`).
 ## Próximo passo
 
 Nada disto foi visto rodando de verdade ainda — pedir pro usuário conferir a
-Fase 1 no emulador (cores, botões, tab bar) antes de eu seguir pra Fase 2.
+Home e a tela de Transações no emulador (tab bar só com ícone, linhas sem
+Card na Home, avatar+linha de método na lista de transações, painel de
+filtros) antes de eu seguir pra Fase 3 (logo de marca). Se o limite de
+chamadas do Figma MCP já tiver resetado, vale revalidar o `Button` (`21:474`)
+e a variante light da tela de Transações que ficaram sem confirmação direta
+nesta rodada.

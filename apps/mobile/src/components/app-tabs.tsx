@@ -1,13 +1,11 @@
+import { BlurView } from 'expo-blur';
 import type { Href } from 'expo-router';
 import { Tabs, TabList, TabTrigger, TabSlot, TabTriggerSlotProps, TabListProps } from 'expo-router/ui';
 import { BellIcon, HouseIcon, ReceiptIcon, SquaresFourIcon, type IconProps } from 'phosphor-react-native';
 import { type ComponentType } from 'react';
-import { Pressable, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
-import { ThemedText } from './themed-text';
-import { ThemedView } from './themed-view';
-
-import { MaxContentWidth } from '@/constants/theme';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTheme } from '@/hooks/use-theme';
 import { cn } from '@/lib/cn';
 
@@ -15,11 +13,11 @@ import { cn } from '@/lib/cn';
 // tipos do expo-router não expõe esse literal (só "/index", que resolve para
 // +not-found) — daqui o cast explícito.
 const TABS = [
-  { name: 'home', href: '/' as Href, label: 'Início', Icon: HouseIcon },
-  { name: 'explore', href: '/explore' as Href, label: 'Transações', Icon: ReceiptIcon },
-  { name: 'accounts', href: '/accounts' as Href, label: 'Mais', Icon: SquaresFourIcon },
-  { name: 'notifications', href: '/notifications' as Href, label: 'Notificações', Icon: BellIcon },
-] satisfies { name: string; href: Href; label: string; Icon: ComponentType<IconProps> }[];
+  { name: 'home', href: '/' as Href, Icon: HouseIcon },
+  { name: 'explore', href: '/explore' as Href, Icon: ReceiptIcon },
+  { name: 'accounts', href: '/accounts' as Href, Icon: SquaresFourIcon },
+  { name: 'notifications', href: '/notifications' as Href, Icon: BellIcon },
+] satisfies { name: string; href: Href; Icon: ComponentType<IconProps> }[];
 
 export default function AppTabs() {
   return (
@@ -27,9 +25,9 @@ export default function AppTabs() {
       <TabSlot style={{ height: '100%' }} />
       <TabList asChild>
         <CustomTabList>
-          {TABS.map(({ name, href, label, Icon }) => (
+          {TABS.map(({ name, href, Icon }) => (
             <TabTrigger key={name} name={name} href={href} asChild>
-              <TabButton icon={Icon}>{label}</TabButton>
+              <TabButton icon={Icon} />
             </TabTrigger>
           ))}
         </CustomTabList>
@@ -38,12 +36,7 @@ export default function AppTabs() {
   );
 }
 
-function TabButton({
-  children,
-  isFocused,
-  icon: Icon,
-  ...props
-}: TabTriggerSlotProps & { icon: ComponentType<IconProps> }) {
+function TabButton({ isFocused, icon: Icon, ...props }: TabTriggerSlotProps & { icon: ComponentType<IconProps> }) {
   const theme = useTheme();
 
   return (
@@ -51,38 +44,46 @@ function TabButton({
       {...props}
       // TabTrigger (asChild) injeta style={flexDirection:'row', justifyContent:'space-between'}
       // por padrão — sobrepõe o className do NativeWind, então precisa ser cancelado aqui.
-      style={{ flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}
-      className={cn(
-        'flex-1 flex-col items-center justify-center gap-0.5 rounded-lg px-1 py-2 active:opacity-70',
-        isFocused && 'bg-primary',
-      )}
+      style={{ height: '100%', width: 42, alignItems: 'center', justifyContent: 'center' }}
+      className={cn('rounded-lg active:opacity-70', isFocused && 'bg-primary')}
       android_ripple={{ color: 'rgba(0,0,0,0.1)', borderless: false }}>
       <Icon color={isFocused ? '#FFFFFF' : theme.textSecondary} size={16} weight={isFocused ? 'fill' : 'regular'} />
-      <ThemedText
-        type="small"
-        themeColor={isFocused ? undefined : 'textSecondary'}
-        style={[
-          { fontSize: 10, lineHeight: 12, fontWeight: '400' },
-          isFocused ? { color: '#FFFFFF' } : undefined,
-        ]}
-        numberOfLines={1}
-        adjustsFontSizeToFit
-        minimumFontScale={0.8}>
-        {children}
-      </ThemedText>
     </Pressable>
   );
 }
 
 function CustomTabList(props: TabListProps) {
+  const scheme = useColorScheme();
+  const dark = scheme === 'dark';
+
   return (
-    <View {...props} className="absolute bottom-0 w-full flex-row items-center justify-center p-4">
-      <ThemedView
-        type="backgroundElement"
-        className="w-full flex-row justify-between gap-4 rounded-lg border border-border p-2"
-        style={{ maxWidth: MaxContentWidth }}>
-        {props.children}
-      </ThemedView>
+    <View
+      {...props}
+      // TabList (asChild) injeta style={flexDirection:'row', justifyContent:'space-between'} por
+      // padrão — sobrepõe o className do NativeWind (mesmo problema do TabTrigger em TabButton
+      // acima), por isso precisa ser cancelado aqui com um style explícito.
+      style={{
+        position: 'absolute',
+        bottom: 0,
+        width: '100%',
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 16,
+      }}>
+      <View className="overflow-hidden rounded-lg" style={{ height: 58 }}>
+        {/*
+          expo-blur só faz blur de verdade no iOS — no Android (mesmo com blurMethod setado,
+          conforme o próprio README do pacote) o suporte é experimental/instável e pode nem estar
+          presente no binário do Expo Go instalado, então cai num View translúcido simples.
+          Deixando sem blurMethod (default 'none') pra não fingir um efeito que não é garantido: o
+          tint mais forte abaixo (bg-primary/20) é a aproximação honesta pro Android.
+        */}
+        <BlurView intensity={30} tint={dark ? 'dark' : 'light'} style={StyleSheet.absoluteFill} />
+        <View className="flex-row items-center gap-4 bg-primary/20 p-2" style={{ height: 58 }}>
+          {props.children}
+        </View>
+      </View>
     </View>
   );
 }

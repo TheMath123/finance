@@ -1,15 +1,16 @@
+import type { TransactionMethod } from '@finance/shared';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import {
-  ArchiveIcon,
-  ArrowsClockwiseIcon,
+  CaretDownIcon,
   FunnelIcon,
+  FunnelXIcon,
   MagnifyingGlassIcon,
   PencilIcon,
   PlusIcon,
   ReceiptIcon,
+  RepeatIcon,
   TrashIcon,
-  UsersIcon,
   XIcon,
 } from 'phosphor-react-native';
 import { useEffect, useState } from 'react';
@@ -19,6 +20,8 @@ import { formatIsoDate } from '@/components/form/date-field';
 import { CreateRecurringForm } from '@/components/forms/create-recurring-form';
 import { CreateTransactionForm } from '@/components/forms/create-transaction-form';
 import { EditTransactionForm } from '@/components/forms/edit-transaction-form';
+import { BalanceOverview } from '@/components/finance/balance-overview';
+import { HeaderChip } from '@/components/finance/header-chip';
 import { ThemedText } from '@/components/themed-text';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -27,15 +30,22 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Input } from '@/components/ui/input';
 import { Screen } from '@/components/ui/screen';
 import { Select } from '@/components/ui/select';
+import { Text } from '@/components/ui/text';
+import { BrandColors } from '@/constants/theme';
 import { useSession } from '@/context/session';
-import { accountsApi } from '@/lib/accounts-api';
-import { cardsApi } from '@/lib/cards-api';
+import { useTheme } from '@/hooks/use-theme';
+import { accountsApi, type Account } from '@/lib/accounts-api';
+import { cardsApi, type Card as CardAccount } from '@/lib/cards-api';
+import type { Category } from '@/lib/categories-api';
+import { resolveCategoryIcon } from '@/lib/category-icons';
 import { cn } from '@/lib/cn';
 import { useCategories } from '@/lib/hooks/use-categories';
 import { useRecurringPendingTotal } from '@/lib/hooks/use-recurring-pending-total';
 import { formatCents } from '@/lib/money';
 import { recurringApi, type PendingOccurrence, type RecurringTransaction } from '@/lib/recurring-api';
+import { summaryApi } from '@/lib/summary-api';
 import { transactionsApi, type Transaction } from '@/lib/transactions-api';
+import { workspaceApi } from '@/lib/workspace-api';
 
 const ALL_CATEGORIES_VALUE = '';
 const ALL_ACCOUNTS_VALUE = '';
@@ -47,37 +57,87 @@ const FREQUENCY_LABELS: Record<RecurringTransaction['frequency'], string> = {
   yearly: 'Anual',
 };
 
-function TransactionRow({ transaction, onPress }: { transaction: Transaction; onPress: () => void }) {
+const METHOD_LABELS: Record<TransactionMethod, string> = {
+  pix: 'Pix',
+  debit: 'Débito',
+  cash: 'Dinheiro',
+  credit: 'Cartão',
+  transfer: 'Transferência',
+};
+
+/** Como o Figma mostra "Cartão Z"/"Conta A" em vez do método genérico quando dá pra identificar a origem exata. */
+function transactionSourceLabel(
+  transaction: Transaction,
+  cardById: Map<string, CardAccount>,
+  accountById: Map<string, Account>,
+): string {
+  if (transaction.cardId) return cardById.get(transaction.cardId)?.name ?? METHOD_LABELS.credit;
+  if (transaction.method === 'transfer' && transaction.accountId) {
+    return accountById.get(transaction.accountId)?.name ?? METHOD_LABELS.transfer;
+  }
+  return METHOD_LABELS[transaction.method];
+}
+
+/**
+ * Estilo de pílula do Figma aplicado só no `DatePicker` (De/Até): esse componente aplica o
+ * `className` numa única `Pressable`, então dá pra sobrescrever com segurança. O `Select`
+ * (categoria/conta/cartão) aplica o mesmo `className` em dois elementos ao mesmo tempo (a `View`
+ * externa e o `Pressable` interno) — sobrescrever lá duplica padding/fundo e quebra o texto, por
+ * isso os `Select` ficam com a aparência padrão do componente nesta tela.
+ */
+const CHIP_FIELD_CLASSNAME = 'min-h-0 rounded-lg border border-primary/30 bg-transparent px-4 py-2';
+
+function TransactionRow({
+  transaction,
+  category,
+  sourceLabel,
+  onPress,
+}: {
+  transaction: Transaction;
+  category: Category | undefined;
+  sourceLabel: string;
+  onPress: () => void;
+}) {
   const isExpense = transaction.type === 'expense';
   const isInstallment = transaction.installmentTotal !== null;
+  const Icon = resolveCategoryIcon(category?.icon);
+  const accentColor = isExpense ? BrandColors.destructive : BrandColors.success;
 
   return (
-    <Pressable onPress={onPress} className="active:opacity-70">
-      <Card className="flex-row items-center justify-between">
-        <View className="flex-1 gap-0.5 pr-3">
-          <ThemedText type="smallBold" numberOfLines={1}>
+    <Pressable
+      onPress={onPress}
+      className="w-full flex-row gap-2 border-t border-foreground/10 px-4 py-5 active:opacity-70">
+      <View className={cn('h-10 w-10 items-center justify-center rounded-full', isExpense ? 'bg-destructive/10' : 'bg-success/10')}>
+        {/* eslint-disable-next-line react-hooks/static-components -- resolveCategoryIcon escolhe
+            entre ícones Phosphor já existentes (não cria nada novo); trocar de ícone conforme a
+            categoria é intencional e não há estado interno pra perder no componente de ícone. */}
+        <Icon size={16} color={accentColor} />
+      </View>
+      <View className="flex-1 flex-row items-center gap-2.5">
+        <View className="flex-1 gap-2">
+          <Text className="text-[12px] font-normal leading-tight text-foreground" numberOfLines={1}>
             {transaction.description}
-          </ThemedText>
-          <View className="flex-row items-center gap-2">
-            <ThemedText type="small" themeColor="textSecondary">
-              {transaction.date.split('-').reverse().join('/')}
-              {isInstallment ? ` · ${transaction.installmentNumber}/${transaction.installmentTotal}` : ''}
-            </ThemedText>
-            {transaction.hasActiveSplit && (
-              <View className="flex-row items-center gap-1">
-                <UsersIcon size={12} weight="bold" />
-                <ThemedText type="small" themeColor="textSecondary">
-                  Dividido
-                </ThemedText>
-              </View>
-            )}
-          </View>
+          </Text>
+          <Text className="text-[12px] font-normal leading-tight text-muted-foreground" numberOfLines={1}>
+            {sourceLabel} • {transaction.date.split('-').reverse().join('/')}
+          </Text>
         </View>
-        <ThemedText type="smallBold" style={{ color: isExpense ? '#DC2626' : '#16A34A' }}>
-          {isExpense ? '-' : '+'}
-          {formatCents(transaction.amount)}
-        </ThemedText>
-      </Card>
+        <View className="items-end gap-2">
+          {isInstallment && (
+            <Text className="text-[12px] font-normal leading-tight text-muted-foreground" numberOfLines={1}>
+              {formatCents(transaction.amount * (transaction.installmentTotal ?? 1))} • {transaction.installmentNumber}/
+              {transaction.installmentTotal}
+            </Text>
+          )}
+          {!isInstallment && transaction.hasActiveSplit && (
+            <Text className="text-[12px] font-normal leading-tight text-muted-foreground">Dividido</Text>
+          )}
+          <Text className="text-[14px] font-medium leading-tight" style={{ color: accentColor }}>
+            {isExpense ? '- ' : ''}
+            {formatCents(transaction.amount)}
+          </Text>
+        </View>
+      </View>
     </Pressable>
   );
 }
@@ -96,31 +156,30 @@ function PendingOccurrenceRow({ occurrence, workspaceId }: { occurrence: Pending
   });
 
   return (
-    <Card className="flex-row items-center justify-between">
-      <View className="flex-1 gap-0.5 pr-3">
-        <ThemedText type="smallBold" numberOfLines={1}>
+    <View className="w-full flex-row items-center justify-between gap-2 border-t border-foreground/10 px-4 py-5">
+      <View className="flex-1 gap-2 pr-3">
+        <Text className="text-[12px] font-normal leading-tight text-foreground" numberOfLines={1}>
           {occurrence.description}
-        </ThemedText>
+        </Text>
         <View className="flex-row items-center gap-2">
-          <ThemedText type="small" themeColor="textSecondary">
-            {occurrence.date.split('-').reverse().join('/')}
-          </ThemedText>
-          <ThemedText type="smallBold" style={{ color: isExpense ? '#DC2626' : '#16A34A' }}>
-            {isExpense ? '-' : '+'}
+          <Text className="text-[12px] font-normal leading-tight text-muted-foreground">{occurrence.date.split('-').reverse().join('/')}</Text>
+          <Text className="text-[14px] font-medium leading-tight" style={{ color: isExpense ? BrandColors.destructive : BrandColors.success }}>
+            {isExpense ? '- ' : ''}
             {formatCents(occurrence.amount)}
-          </ThemedText>
+          </Text>
         </View>
       </View>
       <Button size="sm" variant="secondary" loading={mutation.isPending} onPress={() => mutation.mutate()}>
         Confirmar
       </Button>
-    </Card>
+    </View>
   );
 }
 
 function RecurringManagerDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const { workspaceId } = useSession();
   const queryClient = useQueryClient();
+  const theme = useTheme();
   const [createOpen, setCreateOpen] = useState(false);
   const [editingRecurring, setEditingRecurring] = useState<RecurringTransaction | null>(null);
 
@@ -174,7 +233,7 @@ function RecurringManagerDialog({ open, onOpenChange }: { open: boolean; onOpenC
                 <ThemedText type="small" themeColor="textSecondary">
                   A receber este mês
                 </ThemedText>
-                <ThemedText type="smallBold" style={{ color: '#16A34A' }}>
+                <ThemedText type="smallBold" style={{ color: BrandColors.success }}>
                   {formatCents(pendingTotal.income)}
                 </ThemedText>
               </View>
@@ -182,7 +241,7 @@ function RecurringManagerDialog({ open, onOpenChange }: { open: boolean; onOpenC
                 <ThemedText type="small" themeColor="textSecondary">
                   A pagar este mês
                 </ThemedText>
-                <ThemedText type="smallBold" style={{ color: '#DC2626' }}>
+                <ThemedText type="smallBold" style={{ color: BrandColors.destructive }}>
                   {formatCents(pendingTotal.expense)}
                 </ThemedText>
               </View>
@@ -206,15 +265,17 @@ function RecurringManagerDialog({ open, onOpenChange }: { open: boolean; onOpenC
                       </ThemedText>
                     </View>
                     <View className="flex-row items-center gap-3">
-                      <ThemedText type="smallBold" style={{ color: item.type === 'expense' ? '#DC2626' : '#16A34A' }}>
+                      <ThemedText
+                        type="smallBold"
+                        style={{ color: item.type === 'expense' ? BrandColors.destructive : BrandColors.success }}>
                         {item.type === 'expense' ? '-' : '+'}
                         {formatCents(item.amount)}
                       </ThemedText>
                       <Pressable onPress={() => setEditingRecurring(item)} hitSlop={8} className="active:opacity-60">
-                        <PencilIcon size={18} color="#71717a" />
+                        <PencilIcon size={18} color={theme.textSecondary} />
                       </Pressable>
                       <Pressable onPress={() => handleDelete(item)} hitSlop={8} className="active:opacity-60">
-                        <TrashIcon size={18} color="#DC2626" />
+                        <TrashIcon size={18} color={BrandColors.destructive} />
                       </Pressable>
                     </View>
                   </View>
@@ -255,11 +316,13 @@ function RecurringManagerDialog({ open, onOpenChange }: { open: boolean; onOpenC
 export default function TransactionsScreen() {
   const { workspaceId } = useSession();
   const queryClient = useQueryClient();
+  const theme = useTheme();
   const [createOpen, setCreateOpen] = useState(false);
   const [recurringManagerOpen, setRecurringManagerOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [searchOpen, setSearchOpen] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState(ALL_CATEGORIES_VALUE);
   const [accountFilter, setAccountFilter] = useState(ALL_ACCOUNTS_VALUE);
   const [cardFilter, setCardFilter] = useState(ALL_CARDS_VALUE);
@@ -272,17 +335,30 @@ export default function TransactionsScreen() {
     return () => clearTimeout(timer);
   }, [search]);
 
+  const { data: workspaces } = useQuery({ queryKey: ['workspaces'], queryFn: workspaceApi.listMine });
+  const activeWorkspace = workspaces?.find((w) => w.id === workspaceId);
+
+  const now = new Date();
+  const { data: summary } = useQuery({
+    queryKey: ['summary', workspaceId, now.getFullYear(), now.getMonth() + 1],
+    queryFn: () => summaryApi.getMonthly(workspaceId!, now.getFullYear(), now.getMonth() + 1),
+    enabled: Boolean(workspaceId),
+  });
+
   const { data: categories } = useCategories(workspaceId);
+  const categoryById = new Map((categories ?? []).map((c) => [c.id, c]));
   const { data: accounts } = useQuery({
     queryKey: ['accounts', workspaceId],
     queryFn: () => accountsApi.list(workspaceId!),
     enabled: Boolean(workspaceId),
   });
+  const accountById = new Map((accounts ?? []).map((a) => [a.id, a]));
   const { data: cards } = useQuery({
     queryKey: ['cards', workspaceId],
     queryFn: () => cardsApi.list(workspaceId!),
     enabled: Boolean(workspaceId),
   });
+  const cardById = new Map((cards ?? []).map((c) => [c.id, c]));
 
   const isoFrom = dateFrom ? formatIsoDate(dateFrom) : undefined;
   const isoTo = dateTo ? formatIsoDate(dateTo) : undefined;
@@ -347,7 +423,6 @@ export default function TransactionsScreen() {
     setDateTo(undefined);
   };
 
-  const now = new Date();
   const { data: pending } = useQuery({
     queryKey: ['recurring-pending', workspaceId, now.getFullYear(), now.getMonth() + 1],
     queryFn: () => recurringApi.listPending(workspaceId!, now.getFullYear(), now.getMonth() + 1),
@@ -355,150 +430,159 @@ export default function TransactionsScreen() {
   });
 
   return (
-    <Screen className="gap-4 pb-28" scroll={false}>
-      <View className="flex-row items-center justify-between">
-        <ThemedText type="subtitle">Transações</ThemedText>
-        <View className="flex-row items-center gap-2">
-          <Pressable
-            onPress={() => router.push('/transactions/trash')}
-            hitSlop={6}
-            accessibilityRole="button"
-            accessibilityLabel="Transações arquivadas"
-            className="h-10 w-10 items-center justify-center rounded-full border border-border bg-muted active:opacity-70">
-            <ArchiveIcon size={18} weight="bold" />
-          </Pressable>
-          <Pressable
-            onPress={() => setRecurringManagerOpen(true)}
-            hitSlop={6}
-            accessibilityRole="button"
-            accessibilityLabel="Recorrências"
-            className="h-10 w-10 items-center justify-center rounded-full border border-border bg-muted active:opacity-70">
-            <ArrowsClockwiseIcon size={18} weight="bold" />
-          </Pressable>
+    <Screen className="gap-4 px-0 pb-0" scroll={false}>
+      <View className="w-full flex-row items-start justify-between px-4">
+        {activeWorkspace && (
+          <HeaderChip onPress={() => router.push('/workspaces')}>
+            <Text className="text-[10px] font-normal leading-tight text-foreground">{activeWorkspace.name}</Text>
+            <CaretDownIcon size={16} color={theme.textSecondary} />
+          </HeaderChip>
+        )}
+        <View className="flex-row items-center gap-4">
+          <HeaderChip onPress={() => setRecurringManagerOpen(true)} accessibilityLabel="Recorrências">
+            <RepeatIcon size={16} color={theme.textSecondary} />
+          </HeaderChip>
+          <HeaderChip onPress={() => router.push('/transactions/trash')} accessibilityLabel="Transações arquivadas">
+            <TrashIcon size={16} color={theme.textSecondary} />
+          </HeaderChip>
         </View>
       </View>
 
-      <Input
-        placeholder="Buscar por descrição"
-        value={search}
-        onChangeText={setSearch}
-        leadingIcon={<MagnifyingGlassIcon size={18} color="#71717a" />}
-      />
+      <BalanceOverview summary={summary} />
 
-      <View className="flex-row items-center gap-2">
-        <Select
-          className="flex-1"
-          placeholder="Todas as categorias"
-          options={categoryOptions}
-          value={categoryFilter}
-          onValueChange={setCategoryFilter}
-        />
-        <Pressable
-          onPress={() => setFiltersOpen((prev) => !prev)}
-          className={cn(
-            'h-12 w-12 items-center justify-center rounded-lg border border-input bg-background active:opacity-70',
-            filtersOpen && 'bg-accent/30',
-          )}
-          accessibilityRole="button"
-          accessibilityLabel="Mais filtros">
-          <FunnelIcon size={18} weight={hasAdvancedFilters ? 'fill' : 'regular'} color={hasAdvancedFilters ? '#2563EB' : '#71717a'} />
-        </Pressable>
+      <View className="w-full flex-row items-center gap-2 px-4">
+        {searchOpen ? (
+          <>
+            <Input
+              autoFocus
+              className="flex-1"
+              placeholder="Buscar por descrição"
+              value={search}
+              onChangeText={setSearch}
+              leadingIcon={<MagnifyingGlassIcon size={18} color={theme.textSecondary} />}
+            />
+            <HeaderChip
+              className="h-12 w-12 rounded-lg"
+              onPress={() => {
+                setSearchOpen(false);
+                setSearch('');
+              }}
+              accessibilityLabel="Fechar busca">
+              <XIcon size={16} color={theme.textSecondary} />
+            </HeaderChip>
+          </>
+        ) : (
+          <>
+            <HeaderChip className="h-12 w-12 rounded-lg" onPress={() => setSearchOpen(true)} accessibilityLabel="Buscar por descrição">
+              <MagnifyingGlassIcon size={16} color={theme.textSecondary} />
+            </HeaderChip>
+            <Select
+              className="flex-1"
+              placeholder="Todas as categorias"
+              options={categoryOptions}
+              value={categoryFilter}
+              onValueChange={setCategoryFilter}
+            />
+            <HeaderChip className="h-12 w-12 rounded-lg" onPress={() => setFiltersOpen((prev) => !prev)} accessibilityLabel="Mais filtros">
+              {hasAdvancedFilters ? (
+                <FunnelXIcon size={16} weight="fill" color={BrandColors.primary} />
+              ) : (
+                <FunnelIcon size={16} color={theme.textSecondary} />
+              )}
+            </HeaderChip>
+          </>
+        )}
       </View>
 
       {filtersOpen && (
-        <View className="gap-2 rounded-lg border border-border bg-muted/40 p-3">
-          <View className="flex-row items-center justify-between">
-            <ThemedText type="smallBold" themeColor="textSecondary">
-              Período e conta/cartão
-            </ThemedText>
-            {hasAdvancedFilters && (
-              <Pressable onPress={clearAdvancedFilters} hitSlop={8} className="flex-row items-center gap-1 active:opacity-60">
-                <XIcon size={12} color="#71717a" />
-                <ThemedText type="small" themeColor="textSecondary">
-                  Limpar
-                </ThemedText>
-              </Pressable>
-            )}
-          </View>
+        <View className="w-full px-4">
+          <View className="w-full gap-2.5 rounded bg-primary/5 p-2">
+            <Text className="text-[10px] font-bold leading-tight text-foreground">Filtros</Text>
+            <View className="w-full flex-row items-center justify-between">
+              <Text className="text-[10px] font-medium leading-tight text-foreground">Período e conta/cartão</Text>
+              {hasAdvancedFilters && (
+                <Pressable onPress={clearAdvancedFilters} hitSlop={8} className="flex-row items-center gap-1 active:opacity-60">
+                  <XIcon size={12} color={theme.textSecondary} />
+                  <Text className="text-[10px] font-normal leading-tight text-muted-foreground">Limpar</Text>
+                </Pressable>
+              )}
+            </View>
 
-          <View className="flex-row gap-2">
-            <View className="flex-1 gap-1">
-              <ThemedText type="small" themeColor="textSecondary">
-                De
-              </ThemedText>
+            <View className="w-full flex-row gap-2.5">
               <DatePicker
-                placeholder="Início"
+                className={cn('flex-1', CHIP_FIELD_CLASSNAME)}
+                placeholder="De"
                 value={dateFrom}
                 onChange={setDateFrom}
                 max={dateTo}
                 formatDate={(d) => d.toLocaleDateString('pt-BR')}
               />
-            </View>
-            <View className="flex-1 gap-1">
-              <ThemedText type="small" themeColor="textSecondary">
-                Até
-              </ThemedText>
               <DatePicker
-                placeholder="Fim"
+                className={cn('flex-1', CHIP_FIELD_CLASSNAME)}
+                placeholder="Até"
                 value={dateTo}
                 onChange={setDateTo}
                 min={dateFrom}
                 formatDate={(d) => d.toLocaleDateString('pt-BR')}
               />
             </View>
-          </View>
 
-          <Select
-            placeholder="Todas as contas"
-            options={accountOptions}
-            value={accountFilter}
-            onValueChange={setAccountFilter}
-          />
-          <Select
-            placeholder="Todos os cartões"
-            options={cardOptions}
-            value={cardFilter}
-            onValueChange={setCardFilter}
-          />
+            <Select
+              placeholder="Todas as contas"
+              options={accountOptions}
+              value={accountFilter}
+              onValueChange={setAccountFilter}
+            />
+            <Select
+              placeholder="Todos os cartões"
+              options={cardOptions}
+              value={cardFilter}
+              onValueChange={setCardFilter}
+            />
+          </View>
         </View>
       )}
 
       {pending && pending.length > 0 && (
-        <View className="gap-2">
-          <ThemedText type="smallBold" themeColor="textSecondary">
-            Recorrências pendentes deste mês
-          </ThemedText>
-          {pending.map((occurrence) => (
-            <PendingOccurrenceRow
-              key={`${occurrence.recurringId}-${occurrence.date}`}
-              occurrence={occurrence}
-              workspaceId={workspaceId!}
-            />
-          ))}
+        <View className="w-full gap-2 px-4">
+          <Text className="text-[10px] font-semibold leading-tight text-foreground">Recorrências pendentes deste mês</Text>
         </View>
       )}
+      {pending?.map((occurrence) => (
+        <PendingOccurrenceRow
+          key={`${occurrence.recurringId}-${occurrence.date}`}
+          occurrence={occurrence}
+          workspaceId={workspaceId!}
+        />
+      ))}
 
       {isLoading ? (
         <ActivityIndicator className="mt-8" />
       ) : transactions && transactions.length > 0 ? (
         <FlatList
+          className="flex-1"
+          contentContainerStyle={{ paddingBottom: 100 }}
           data={transactions}
           keyExtractor={(item) => item.id}
-          contentContainerClassName="gap-2"
           renderItem={({ item }) => (
-            <TransactionRow transaction={item} onPress={() => setEditingTransaction(item)} />
+            <TransactionRow
+              transaction={item}
+              category={categoryById.get(item.categoryId)}
+              sourceLabel={transactionSourceLabel(item, cardById, accountById)}
+              onPress={() => setEditingTransaction(item)}
+            />
           )}
         />
       ) : (
-        <Card className="items-center gap-3 py-10">
+        <View className="mx-4 items-center gap-3 rounded-lg border border-foreground/10 py-10">
           <View className="h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-            <ReceiptIcon size={22} color="#2563EB" />
+            <ReceiptIcon size={22} color={BrandColors.primary} />
           </View>
-          <ThemedText type="smallBold">Nenhuma transação ainda</ThemedText>
-          <ThemedText type="small" themeColor="textSecondary" style={{ textAlign: 'center' }}>
+          <Text className="text-[10px] font-semibold leading-tight text-foreground">Nenhuma transação ainda</Text>
+          <Text className="text-[10px] font-normal leading-tight text-muted-foreground" style={{ textAlign: 'center' }}>
             Lançamentos de contas e cartões deste workspace aparecem aqui.
-          </ThemedText>
-        </Card>
+          </Text>
+        </View>
       )}
 
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
@@ -531,9 +615,8 @@ export default function TransactionsScreen() {
         onPress={() => setCreateOpen(true)}
         accessibilityRole="button"
         accessibilityLabel="Nova transação"
-        className="absolute bottom-24 right-6 h-14 w-14 items-center justify-center rounded-full bg-primary shadow-lg active:opacity-80"
-        style={{ elevation: 4 }}>
-        <PlusIcon size={24} color="#FFFFFF" weight="bold" />
+        className="absolute bottom-24 right-4 h-[42px] w-[42px] items-center justify-center rounded-lg bg-primary active:opacity-80">
+        <PlusIcon size={16} color="#FFFFFF" weight="bold" />
       </Pressable>
     </Screen>
   );

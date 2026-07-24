@@ -26,6 +26,17 @@ export const Colors = {
 
 export type ThemeColor = keyof typeof Colors.light & keyof typeof Colors.dark;
 
+/**
+ * Cores de marca (mesmo hex em light/dark, ao contrário de `Colors`) — usadas em componentes
+ * Phosphor (`color` é uma prop de string, não aceita classe Tailwind), pra não ficar cor solta
+ * inline pelas telas. Mesmos valores dos tokens `primary`/`destructive`/`success` do `global.css`.
+ */
+export const BrandColors = {
+  primary: '#2ec4b6',
+  destructive: '#fb2c36',
+  success: '#00c950',
+} as const;
+
 export const Fonts = Platform.select({
   ios: {
     /** iOS `UIFontDescriptorSystemDesignDefault` */
