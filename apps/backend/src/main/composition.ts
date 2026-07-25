@@ -1,6 +1,7 @@
 import { createDb } from '@finance/db';
 import { createBullMqDispatcher } from '@finance/queues';
 import { createS3Storage } from '@finance/storage';
+import { readDailyTokenBudget } from '../application/services/ai-settings-cache';
 import type { AppDeps } from '../http/deps';
 import { createRedisTokenBudget } from '../infra/ai/redis-token-budget';
 import { createRedisCache } from '../infra/cache/redis-cache';
@@ -21,21 +22,25 @@ import type { Env } from './env';
 export function createAppDeps(env: Env): AppDeps {
   const db = createDb();
   const logger = createLogger(env.LOG_LEVEL);
+  const repos = createRepositories(db);
+  const cache = createRedisCache(env.REDIS_URL);
 
   const dispatcher = createBullMqDispatcher(env.REDIS_URL, (job, error) =>
     logger.error({ scope: 'queues', job, err: error }, 'job_failed')
   );
 
   return {
-    repos: createRepositories(db),
+    repos,
     uow: createUnitOfWork(db),
     hasher: bunPasswordHasher,
     tokens: createTokenService(env.JWT_SECRET),
     dispatch: dispatcher.dispatch,
     logger: createSecurityLogger(logger),
     rateLimiter: createRedisRateLimiter(env.REDIS_URL),
-    tokenBudget: createRedisTokenBudget(env.REDIS_URL),
-    cache: createRedisCache(env.REDIS_URL),
+    tokenBudget: createRedisTokenBudget(env.REDIS_URL, () =>
+      readDailyTokenBudget({ repos, cache })
+    ),
+    cache,
     notificationBus: createRedisNotificationBus(env.REDIS_URL),
     storage: createS3Storage({
       bucket: env.STORAGE_BUCKET,

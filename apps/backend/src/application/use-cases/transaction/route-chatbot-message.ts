@@ -54,9 +54,19 @@ Regras pra "register_transaction":
 
 Nunca invente dados que não estão na mensagem. Respostas objetivas, sem floreio.`;
 
+export interface LayerUsage {
+  /** 1 = roteador barato, 2 = agente analítico. Camada 0 é determinística — nunca aparece aqui. */
+  layer: 1 | 2;
+  inputTokens: number;
+  outputTokens: number;
+}
+
 export interface ChatbotReply {
   body: string;
+  /** Soma de todas as camadas chamadas — o que importa pro orçamento diário. */
   usage: { inputTokens: number; outputTokens: number };
+  /** Quebra por camada (M4-09) — alimenta a métrica de gasto de IA do painel de superadmin. */
+  usageByLayer: LayerUsage[];
 }
 
 async function resolveCategoryId(
@@ -146,12 +156,14 @@ export async function routeChatbotMessage(
     inputTokens: response.usage?.prompt_tokens ?? 0,
     outputTokens: response.usage?.completion_tokens ?? 0,
   };
+  const usageByLayer: LayerUsage[] = [{ layer: 1, ...usage }];
 
   const parsed = response.choices[0]?.message.parsed;
   if (!parsed) {
     return {
       body: 'Não consegui entender essa mensagem. Pode reformular?',
       usage,
+      usageByLayer,
     };
   }
 
@@ -159,6 +171,7 @@ export async function routeChatbotMessage(
     return {
       body: 'Só consigo ajudar com suas finanças por aqui — registrar gastos/receitas ou responder sobre seus dados financeiros.',
       usage,
+      usageByLayer,
     };
   }
 
@@ -174,6 +187,7 @@ export async function routeChatbotMessage(
         inputTokens: usage.inputTokens + analystResult.usage.inputTokens,
         outputTokens: usage.outputTokens + analystResult.usage.outputTokens,
       },
+      usageByLayer: [...usageByLayer, { layer: 2, ...analystResult.usage }],
     };
   }
 
@@ -182,6 +196,7 @@ export async function routeChatbotMessage(
       body:
         parsed.clarification ?? 'Pode dar mais detalhes sobre essa transação?',
       usage,
+      usageByLayer,
     };
   }
 
@@ -201,10 +216,15 @@ export async function routeChatbotMessage(
     return {
       body: `Tenho mais de uma conta/cartão parecido com "${transaction.accountOrCardHint}". Qual deles?`,
       usage,
+      usageByLayer,
     };
   }
   if (!target) {
-    return { body: 'Em qual conta ou cartão foi essa transação?', usage };
+    return {
+      body: 'Em qual conta ou cartão foi essa transação?',
+      usage,
+      usageByLayer,
+    };
   }
 
   const result = await createTransaction(
@@ -227,11 +247,13 @@ export async function routeChatbotMessage(
     return {
       body: 'Não consegui registrar essa transação. Confere os dados no app?',
       usage,
+      usageByLayer,
     };
   }
 
   return {
     body: `Registrado: ${transaction.description} — R$ ${(transaction.amountCents / 100).toFixed(2)}.`,
     usage,
+    usageByLayer,
   };
 }

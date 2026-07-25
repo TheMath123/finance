@@ -1,22 +1,30 @@
 import { Redis } from 'ioredis';
 import type { TokenBudget } from '../../application/ports/token-budget';
 
-/** Generoso o bastante pro uso diário normal, baixo o bastante pra travar um runaway de custo. */
-export const DAILY_TOKEN_BUDGET_PER_USER = 100_000;
-
 function todayIso(): string {
   const now = new Date();
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 }
 
-export function createRedisTokenBudget(redisUrl: string): TokenBudget {
+/**
+ * `getDailyBudget` vem de `readDailyTokenBudget` (application/services) —
+ * lido de `platform_settings` (M4-09, editável pelo superadmin) com cache
+ * curto, em vez do valor fixo que existia aqui antes.
+ */
+export function createRedisTokenBudget(
+  redisUrl: string,
+  getDailyBudget: () => Promise<number>
+): TokenBudget {
   const redis = new Redis(redisUrl);
   const key = (userId: string) => `ai-tokens:${userId}:${todayIso()}`;
 
   return {
     async isOverBudget(userId) {
-      const used = await redis.get(key(userId));
-      return Number(used ?? 0) >= DAILY_TOKEN_BUDGET_PER_USER;
+      const [used, budget] = await Promise.all([
+        redis.get(key(userId)),
+        getDailyBudget(),
+      ]);
+      return Number(used ?? 0) >= budget;
     },
     async recordUsage(userId, tokens) {
       const redisKey = key(userId);

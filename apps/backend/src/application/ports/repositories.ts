@@ -1,15 +1,19 @@
 import type { AccountRepository } from './account-repository';
 import type { AdminAuditRecorder } from './admin-audit-recorder';
+import type { AiSettingsRepository } from './ai-settings-repository';
+import type { AiUsageLogRepository } from './ai-usage-log-repository';
 import type { AuditRecorder } from './audit-recorder';
 import type { BankRepository } from './bank-repository';
 import type { CardRepository } from './card-repository';
 import type { CategoryRepository } from './category-repository';
 import type { DefaultCategoryRepository } from './default-category-repository';
 import type { ExpenseSplitRepository } from './expense-split-repository';
+import type { FeatureFlagRepository } from './feature-flag-repository';
 import type { InterUserTransferRepository } from './inter-user-transfer-repository';
 import type { InvoiceRepository } from './invoice-repository';
 import type { NotificationPreferenceRepository } from './notification-preference-repository';
 import type { NotificationRepository } from './notification-repository';
+import type { PlatformMetricsRepository } from './platform-metrics-repository';
 import type { PushTokenRepository } from './push-token-repository';
 import type { RecurringRepository } from './recurring-repository';
 import type { SplitShareRepository } from './split-share-repository';
@@ -45,4 +49,8 @@ export interface Repositories {
   trustedContact: TrustedContactRepository;
   expenseSplit: ExpenseSplitRepository;
   splitShare: SplitShareRepository;
+  aiSettings: AiSettingsRepository;
+  featureFlag: FeatureFlagRepository;
+  aiUsageLog: AiUsageLogRepository;
+  platformMetrics: PlatformMetricsRepository;
 }

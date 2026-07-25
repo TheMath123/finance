@@ -172,6 +172,17 @@ export async function handleInboundWhatsAppMessage(
       user.id,
       reply.usage.inputTokens + reply.usage.outputTokens
     );
+    // M4-09: log por camada pra métrica de gasto de IA no painel de superadmin.
+    await Promise.all(
+      reply.usageByLayer.map((u) =>
+        deps.repos.aiUsageLog.record({
+          userId: user.id,
+          layer: u.layer,
+          inputTokens: u.inputTokens,
+          outputTokens: u.outputTokens,
+        })
+      )
+    );
     return { to: message.from, body: reply.body };
   } catch {
     const body = await deterministicFallback(

@@ -1,6 +1,8 @@
 import { describe, expect, test } from 'bun:test';
 import { createInMemoryTokenBudget } from './in-memory-token-budget';
-import { DAILY_TOKEN_BUDGET_PER_USER } from './redis-token-budget';
+
+/** Mesmo valor padrão embutido em `createInMemoryTokenBudget` (só pra testes). */
+const DAILY_TOKEN_BUDGET_PER_USER = 100_000;
 
 describe('in-memory token budget', () => {
   test('começa dentro do orçamento', async () => {

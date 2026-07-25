@@ -103,3 +103,81 @@ export function deleteDefaultCategory(
 		accessToken
 	});
 }
+
+/** Espelha AiSettings (backend, ports/ai-settings-repository.ts — singleton). */
+export interface AiSettingsView {
+	id: string;
+	dailyTokenBudgetPerUser: number;
+	updatedAt: string;
+}
+
+export function getAiSettings(accessToken: string): Promise<Either<ApiError, AiSettingsView>> {
+	return apiRequest('/admin/ai-settings', { accessToken });
+}
+
+export function updateAiSettings(
+	accessToken: string,
+	dailyTokenBudgetPerUser: number
+): Promise<Either<ApiError, AiSettingsView>> {
+	return apiRequest('/admin/ai-settings', {
+		method: 'PATCH',
+		body: { dailyTokenBudgetPerUser },
+		accessToken
+	});
+}
+
+/** Espelha FeatureFlag (backend, ports/feature-flag-repository.ts). */
+export interface FeatureFlagView {
+	id: string;
+	key: string;
+	enabled: boolean;
+	description: string | null;
+	createdAt: string;
+	updatedAt: string;
+}
+
+export function listFeatureFlags(
+	accessToken: string
+): Promise<Either<ApiError, FeatureFlagView[]>> {
+	return apiRequest('/admin/feature-flags', { accessToken });
+}
+
+export function upsertFeatureFlag(
+	accessToken: string,
+	key: string,
+	input: { enabled: boolean; description?: string | null }
+): Promise<Either<ApiError, FeatureFlagView>> {
+	return apiRequest(`/admin/feature-flags/${key}`, {
+		method: 'PUT',
+		body: input,
+		accessToken
+	});
+}
+
+export function deleteFeatureFlag(
+	accessToken: string,
+	key: string
+): Promise<Either<ApiError, unknown>> {
+	return apiRequest(`/admin/feature-flags/${key}`, { method: 'DELETE', accessToken });
+}
+
+/** Espelha PlatformMetrics (backend, use-cases/admin/get-platform-metrics.ts). */
+export interface PlatformMetricsView {
+	totalUsers: number;
+	suspendedUsers: number;
+	workspacesByPlan: { plan: string; count: number }[];
+	workspacesByType: { type: string; count: number }[];
+	transactionsThisMonth: number;
+	aiUsageByLayer: {
+		layer: number;
+		callCount: number;
+		totalInputTokens: number;
+		totalOutputTokens: number;
+	}[];
+}
+
+export function getPlatformMetrics(
+	accessToken: string
+): Promise<Either<ApiError, PlatformMetricsView>> {
+	return apiRequest('/admin/metrics', { accessToken });
+}

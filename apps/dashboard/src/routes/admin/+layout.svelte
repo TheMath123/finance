@@ -1,5 +1,8 @@
 <script lang="ts">
 	import ArrowLeftIcon from 'phosphor-svelte/lib/ArrowLeftIcon';
+	import ChartBarIcon from 'phosphor-svelte/lib/ChartBarIcon';
+	import FlagIcon from 'phosphor-svelte/lib/FlagIcon';
+	import SparkleIcon from 'phosphor-svelte/lib/SparkleIcon';
 	import TagIcon from 'phosphor-svelte/lib/TagIcon';
 	import UsersIcon from 'phosphor-svelte/lib/UsersIcon';
 
@@ -10,7 +13,10 @@
 
 	const NAV = [
 		{ route: '/admin/users', label: 'Usuários', icon: UsersIcon },
-		{ route: '/admin/default-categories', label: 'Categorias padrão', icon: TagIcon }
+		{ route: '/admin/default-categories', label: 'Categorias padrão', icon: TagIcon },
+		{ route: '/admin/ai-settings', label: 'Guardrails de IA', icon: SparkleIcon },
+		{ route: '/admin/feature-flags', label: 'Feature flags', icon: FlagIcon },
+		{ route: '/admin/metrics', label: 'Métricas', icon: ChartBarIcon }
 	] as const;
 </script>
 
@@ -25,7 +31,6 @@
 		<p class="mb-1 px-3 text-lg font-semibold text-sidebar-foreground">Admin</p>
 		<p class="mb-4 truncate px-3 text-xs text-muted-foreground">{data.user.name}</p>
 
-		<!-- IA / feature flags / métricas (M4-09) entram aqui quando existirem. -->
 		{#each NAV as item (item.route)}
 			{@const active = page.url.pathname === resolve(item.route)}
 			<a

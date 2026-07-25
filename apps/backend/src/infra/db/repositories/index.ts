@@ -2,16 +2,20 @@ import type { Repositories } from '../../../application/ports/repositories';
 import type { DbHandle } from '../handle';
 import { createAccountRepository } from './account.repository';
 import { createAdminAuditRecorder } from './admin-audit.repository';
+import { createAiSettingsRepository } from './ai-settings.repository';
+import { createAiUsageLogRepository } from './ai-usage-log.repository';
 import { createAuditRecorder } from './audit.repository';
 import { createBankRepository } from './bank.repository';
 import { createCardRepository } from './card.repository';
 import { createCategoryRepository } from './category.repository';
 import { createDefaultCategoryRepository } from './default-category.repository';
 import { createExpenseSplitRepository } from './expense-split.repository';
+import { createFeatureFlagRepository } from './feature-flag.repository';
 import { createInterUserTransferRepository } from './inter-user-transfer.repository';
 import { createInvoiceRepository } from './invoice.repository';
 import { createNotificationRepository } from './notification.repository';
 import { createNotificationPreferenceRepository } from './notification-preference.repository';
+import { createPlatformMetricsRepository } from './platform-metrics.repository';
 import { createPushTokenRepository } from './push-token.repository';
 import { createRecurringRepository } from './recurring.repository';
 import { createSplitShareRepository } from './split-share.repository';
@@ -48,5 +52,9 @@ export function createRepositories(db: DbHandle): Repositories {
     trustedContact: createTrustedContactRepository(db),
     expenseSplit: createExpenseSplitRepository(db),
     splitShare: createSplitShareRepository(db),
+    aiSettings: createAiSettingsRepository(db),
+    featureFlag: createFeatureFlagRepository(db),
+    aiUsageLog: createAiUsageLogRepository(db),
+    platformMetrics: createPlatformMetricsRepository(db),
   };
 }

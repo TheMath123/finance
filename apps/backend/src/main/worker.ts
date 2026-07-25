@@ -5,6 +5,7 @@ import {
   QUEUE_NAME,
 } from '@finance/queues';
 import { createS3Storage } from '@finance/storage';
+import { readDailyTokenBudget } from '../application/services/ai-settings-cache';
 import { runNotificationSweep } from '../application/use-cases/notification';
 import { createRedisTokenBudget } from '../infra/ai/redis-token-budget';
 import { createRedisCache } from '../infra/cache/redis-cache';
@@ -39,12 +40,17 @@ const dispatcher = createBullMqDispatcher(env.REDIS_URL, (job, error) =>
  * de `whatsapp.inbound-image` (M3-05) precisa de `storage` pra gravar o
  * comprovante recebido por foto.
  */
+const repos = createRepositories(db);
+const cache = createRedisCache(env.REDIS_URL);
+
 const deps = {
-  repos: createRepositories(db),
+  repos,
   uow: createUnitOfWork(db),
   rateLimiter: createRedisRateLimiter(env.REDIS_URL),
-  tokenBudget: createRedisTokenBudget(env.REDIS_URL),
-  cache: createRedisCache(env.REDIS_URL),
+  tokenBudget: createRedisTokenBudget(env.REDIS_URL, () =>
+    readDailyTokenBudget({ repos, cache })
+  ),
+  cache,
   notificationBus: createRedisNotificationBus(env.REDIS_URL),
   tokens: createTokenService(env.JWT_SECRET),
   dispatch: dispatcher.dispatch,

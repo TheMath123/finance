@@ -23,3 +23,20 @@ export const createDefaultCategorySchema = z.object({
 
 export const updateDefaultCategorySchema =
   createDefaultCategorySchema.partial();
+
+export const updateAiSettingsSchema = z.object({
+  dailyTokenBudgetPerUser: z.number().int().positive().max(10_000_000),
+});
+
+export const featureFlagParamsSchema = z.object({
+  key: z
+    .string()
+    .min(1)
+    .max(80)
+    .regex(/^[a-z0-9_-]+$/, 'Use só letras minúsculas, números, "_" ou "-".'),
+});
+
+export const upsertFeatureFlagSchema = z.object({
+  enabled: z.boolean(),
+  description: z.string().max(200).nullable().optional(),
+});
