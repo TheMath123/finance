@@ -5,12 +5,25 @@
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
+	import { CATEGORY_ICON_OPTIONS, resolveCategoryIcon } from '$lib/category-icon';
 	import type { DefaultCategoryView } from '$lib/server/admin-api';
 
 	let { data, form } = $props();
 
 	let createOpen = $state(false);
 	let editing = $state<DefaultCategoryView | null>(null);
+	/** Compartilhado entre os dois dialogs (só um fica aberto por vez). */
+	let pickedIcon = $state('');
+
+	function openCreate() {
+		pickedIcon = '';
+		createOpen = true;
+	}
+
+	function openEdit(category: DefaultCategoryView) {
+		pickedIcon = category.icon;
+		editing = category;
+	}
 
 	function closeOnSuccess(close: () => void) {
 		return async ({
@@ -36,14 +49,26 @@
 		<Input id="{prefix}-name" name="name" value={category?.name ?? ''} required />
 	</div>
 	<div class="grid gap-2">
-		<Label for="{prefix}-icon">Ícone (Phosphor, kebab-case)</Label>
-		<Input
-			id="{prefix}-icon"
-			name="icon"
-			value={category?.icon ?? ''}
-			placeholder="shopping-cart"
-			required
-		/>
+		<Label>Ícone</Label>
+		<input type="hidden" name="icon" value={pickedIcon} required />
+		<div
+			class="grid max-h-48 grid-cols-8 gap-1.5 overflow-y-auto rounded-lg border border-foreground/10 p-2"
+		>
+			{#each CATEGORY_ICON_OPTIONS as slug (slug)}
+				{@const OptionIcon = resolveCategoryIcon(slug)}
+				<button
+					type="button"
+					onclick={() => (pickedIcon = slug)}
+					title={slug}
+					class="flex h-9 w-9 items-center justify-center rounded-lg transition-colors {pickedIcon ===
+					slug
+						? 'bg-primary text-primary-foreground'
+						: 'text-muted-foreground hover:bg-primary/10 hover:text-foreground'}"
+				>
+					<OptionIcon size={18} />
+				</button>
+			{/each}
+		</div>
 	</div>
 	<div class="grid gap-2">
 		<Label for="{prefix}-color">Cor</Label>
@@ -64,7 +89,7 @@
 <div class="flex flex-col gap-6">
 	<div class="flex items-center justify-between gap-4">
 		<h1 class="text-xl font-semibold">Categorias padrão</h1>
-		<Button onclick={() => (createOpen = true)}>Adicionar categoria</Button>
+		<Button onclick={openCreate}>Adicionar categoria</Button>
 	</div>
 
 	<p class="text-sm text-muted-foreground">
@@ -78,12 +103,17 @@
 
 	<div class="flex flex-col gap-2">
 		{#each data.categories as category (category.id)}
+			{@const CategoryIcon = resolveCategoryIcon(category.icon)}
 			<div
 				class="flex items-center justify-between gap-4 rounded-lg border border-foreground/10 px-4 py-3"
 			>
 				<div class="flex min-w-0 items-center gap-3">
-					<span class="h-3 w-3 shrink-0 rounded-full" style="background-color: {category.color}"
-					></span>
+					<span
+						class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-white"
+						style="background-color: {category.color}"
+					>
+						<CategoryIcon size={18} weight="fill" />
+					</span>
 					<div class="min-w-0">
 						<p class="truncate text-sm font-medium">
 							{category.name}
@@ -91,11 +121,10 @@
 								<span class="text-xs text-primary">(fallback)</span>
 							{/if}
 						</p>
-						<p class="truncate text-sm text-muted-foreground">{category.icon}</p>
 					</div>
 				</div>
 				<div class="flex shrink-0 items-center gap-2">
-					<Button variant="outline" size="sm" onclick={() => (editing = category)}>Editar</Button>
+					<Button variant="outline" size="sm" onclick={() => openEdit(category)}>Editar</Button>
 					<form method="POST" action="?/remove" use:enhance>
 						<input type="hidden" name="categoryId" value={category.id} />
 						<Button
