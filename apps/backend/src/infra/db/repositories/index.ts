@@ -6,6 +6,7 @@ import { createAuditRecorder } from './audit.repository';
 import { createBankRepository } from './bank.repository';
 import { createCardRepository } from './card.repository';
 import { createCategoryRepository } from './category.repository';
+import { createDefaultCategoryRepository } from './default-category.repository';
 import { createExpenseSplitRepository } from './expense-split.repository';
 import { createInterUserTransferRepository } from './inter-user-transfer.repository';
 import { createInvoiceRepository } from './invoice.repository';
@@ -30,6 +31,7 @@ export function createRepositories(db: DbHandle): Repositories {
     workspace: createWorkspaceRepository(db),
     invite: createWorkspaceInviteRepository(db),
     category: createCategoryRepository(db),
+    defaultCategory: createDefaultCategoryRepository(db),
     bank: createBankRepository(db),
     account: createAccountRepository(db),
     card: createCardRepository(db),

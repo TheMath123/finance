@@ -32,6 +32,8 @@ export const users = pgTable('users', {
   /** Lockout progressivo de login (spec: Rate limiting). */
   failedLoginAttempts: integer('failed_login_attempts').notNull().default(0),
   lockedUntil: timestamp('locked_until', { withTimezone: true }),
+  /** Suspensão administrativa (M4-08, superadmin) — distinto do lockout de senha. */
+  suspendedAt: timestamp('suspended_at', { withTimezone: true }),
   /** Nullable apenas pela ordem de criação (user → workspace → update); a aplicação garante preenchimento. */
   defaultWorkspaceId: uuid('default_workspace_id').references(
     () => workspaces.id

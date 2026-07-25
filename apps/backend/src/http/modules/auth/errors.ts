@@ -37,4 +37,9 @@ export const AUTH_ERRORS: Record<AuthError, HttpError> = {
     code: 'no_pending_email_change',
     message: 'Não há troca de e-mail pendente para confirmar.',
   },
+  account_suspended: {
+    status: 403,
+    code: 'account_suspended',
+    message: 'Sua conta foi suspensa. Entre em contato com o suporte.',
+  },
 };

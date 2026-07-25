@@ -35,6 +35,11 @@ export async function login(
 
   const valid = await deps.hasher.verify(input.password, user.passwordHash);
   if (!valid) {
+    if (user.suspendedAt) {
+      // Senha errada numa conta suspensa: prioriza o erro de credenciais —
+      // não vaza se a conta existe/está suspensa pra quem não sabe a senha.
+      return left('invalid_credentials');
+    }
     const { attempts, lockedUntil, lockMinutes } = nextLockoutState(
       user.failedLoginAttempts,
       now
@@ -58,6 +63,11 @@ export async function login(
   }
 
   if (!user.defaultWorkspaceId) return left('invalid_credentials');
+
+  // Senha certa, mas conta suspensa (M4-08, ação de superadmin) — aqui sim
+  // informa o motivo: quem já provou saber a senha não ganha nenhum dado
+  // novo ao saber que a conta está suspensa.
+  if (user.suspendedAt) return left('account_suspended');
 
   // Sucesso zera o lockout
   if (user.failedLoginAttempts > 0 || user.lockedUntil) {

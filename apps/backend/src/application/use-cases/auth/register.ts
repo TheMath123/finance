@@ -1,4 +1,3 @@
-import { DEFAULT_CATEGORIES } from '@finance/db';
 import { type Either, left, right } from '@finance/shared';
 import type { User } from '../../../domain/entities/user';
 import { VERIFY_EMAIL_TOKEN_TTL_MS } from '../../../infra/security/jose-token-service';
@@ -43,13 +42,14 @@ export async function register(
         userId: user.id,
         role: 'owner',
       });
+      const defaultCategories = await repos.defaultCategory.list();
       await repos.category.createMany(
         workspace.id,
-        DEFAULT_CATEGORIES.map((c) => ({
+        defaultCategories.map((c) => ({
           name: c.name,
           icon: c.icon,
           color: c.color,
-          isFallback: c.isFallback ?? false,
+          isFallback: c.isFallback,
           isDefault: true,
         }))
       );

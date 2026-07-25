@@ -5,6 +5,7 @@ export * from './bank-account';
 export * from './card';
 export * from './card-invoice';
 export * from './category';
+export * from './default-category';
 export * from './enums';
 export * from './expense-split';
 export * from './helpers';

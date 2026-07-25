@@ -37,4 +37,13 @@ export interface UserRepository {
    * `emailVerifiedAt = now()` (o e-mail novo acabou de ser provado pelo código).
    */
   applyEmailChange(userId: string, newEmail: string): Promise<void>;
+  /** Suspensão administrativa (M4-08, superadmin) — bloqueia login até reativar. */
+  suspend(userId: string): Promise<void>;
+  reactivate(userId: string): Promise<void>;
+  /** Listagem paginada pro painel de superadmin — busca por nome ou e-mail. */
+  listAll(params: {
+    search?: string;
+    limit: number;
+    offset: number;
+  }): Promise<{ users: User[]; total: number }>;
 }

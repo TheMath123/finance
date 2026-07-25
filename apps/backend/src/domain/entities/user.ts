@@ -14,6 +14,7 @@ export interface User {
   platformRole: PlatformRole;
   failedLoginAttempts: number;
   lockedUntil: Date | null;
+  suspendedAt: Date | null;
   defaultWorkspaceId: string | null;
   createdAt: Date;
   updatedAt: Date;

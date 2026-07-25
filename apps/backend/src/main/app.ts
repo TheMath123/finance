@@ -3,6 +3,7 @@ import { Elysia } from 'elysia';
 import type { AppDeps } from '../http/deps';
 import { errorHandler } from '../http/error-handler';
 import { accountRoutes } from '../http/modules/account/routes';
+import { adminRoutes } from '../http/modules/admin/routes';
 import { authRoutes } from '../http/modules/auth/routes';
 import { bankRoutes } from '../http/modules/bank/routes';
 import { cardRoutes } from '../http/modules/card/routes';
@@ -39,5 +40,6 @@ export function createApp(deps: AppDeps) {
       .use(whatsappRoutes(deps))
       .use(transferRoutes(deps))
       .use(splitRoutes(deps))
+      .use(adminRoutes(deps))
   );
 }

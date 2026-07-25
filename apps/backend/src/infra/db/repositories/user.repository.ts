@@ -1,5 +1,5 @@
 import { users } from '@finance/db';
-import { eq } from 'drizzle-orm';
+import { count, eq, ilike, or } from 'drizzle-orm';
 import type {
   CreateUserData,
   UserRepository,
@@ -72,6 +72,36 @@ export function createUserRepository(db: DbHandle): UserRepository {
           emailVerifiedAt: new Date(),
         })
         .where(eq(users.id, userId));
+    },
+    async suspend(userId) {
+      await db
+        .update(users)
+        .set({ suspendedAt: new Date() })
+        .where(eq(users.id, userId));
+    },
+    async reactivate(userId) {
+      await db
+        .update(users)
+        .set({ suspendedAt: null })
+        .where(eq(users.id, userId));
+    },
+    async listAll({ search, limit, offset }) {
+      const where = search
+        ? or(
+            ilike(users.name, `%${search}%`),
+            ilike(users.email, `%${search}%`)
+          )
+        : undefined;
+      const [rows, [totalRow]] = await Promise.all([
+        db.query.users.findMany({
+          where,
+          limit,
+          offset,
+          orderBy: (u, { desc }) => [desc(u.createdAt)],
+        }),
+        db.select({ value: count() }).from(users).where(where),
+      ]);
+      return { users: rows, total: totalRow?.value ?? 0 };
     },
   };
 }

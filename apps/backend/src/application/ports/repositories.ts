@@ -4,6 +4,7 @@ import type { AuditRecorder } from './audit-recorder';
 import type { BankRepository } from './bank-repository';
 import type { CardRepository } from './card-repository';
 import type { CategoryRepository } from './category-repository';
+import type { DefaultCategoryRepository } from './default-category-repository';
 import type { ExpenseSplitRepository } from './expense-split-repository';
 import type { InterUserTransferRepository } from './inter-user-transfer-repository';
 import type { InvoiceRepository } from './invoice-repository';
@@ -27,6 +28,7 @@ export interface Repositories {
   workspace: WorkspaceRepository;
   invite: WorkspaceInviteRepository;
   category: CategoryRepository;
+  defaultCategory: DefaultCategoryRepository;
   bank: BankRepository;
   account: AccountRepository;
   card: CardRepository;

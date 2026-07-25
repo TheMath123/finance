@@ -1,4 +1,3 @@
-import { DEFAULT_CATEGORIES } from '@finance/db';
 import { type Either, left, right } from '@finance/shared';
 import type { Workspace } from '../../../domain/entities/workspace';
 import { FREE_PLAN_LIMITS } from '../../../domain/services/plan-limits';
@@ -48,13 +47,14 @@ export async function createWorkspace(
       role: 'owner',
     });
 
+    const defaultCategories = await repos.defaultCategory.list();
     await repos.category.createMany(
       workspace.id,
-      DEFAULT_CATEGORIES.map((c) => ({
+      defaultCategories.map((c) => ({
         name: c.name,
         icon: c.icon,
         color: c.color,
-        isFallback: c.isFallback ?? false,
+        isFallback: c.isFallback,
         isDefault: true,
       }))
     );
