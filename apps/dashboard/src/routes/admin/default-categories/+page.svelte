@@ -14,14 +14,23 @@
 	let editing = $state<DefaultCategoryView | null>(null);
 	/** Compartilhado entre os dois dialogs (só um fica aberto por vez). */
 	let pickedIcon = $state('');
+	let iconSearch = $state('');
+
+	const filteredIcons = $derived(
+		iconSearch.trim()
+			? CATEGORY_ICON_OPTIONS.filter((slug) => slug.includes(iconSearch.trim().toLowerCase()))
+			: CATEGORY_ICON_OPTIONS
+	);
 
 	function openCreate() {
 		pickedIcon = '';
+		iconSearch = '';
 		createOpen = true;
 	}
 
 	function openEdit(category: DefaultCategoryView) {
 		pickedIcon = category.icon;
+		iconSearch = '';
 		editing = category;
 	}
 
@@ -49,12 +58,22 @@
 		<Input id="{prefix}-name" name="name" value={category?.name ?? ''} required />
 	</div>
 	<div class="grid gap-2">
-		<Label>Ícone</Label>
+		<div class="flex items-center justify-between">
+			<Label>Ícone</Label>
+			{#if pickedIcon}
+				<span class="text-xs text-muted-foreground">Selecionado: {pickedIcon}</span>
+			{/if}
+		</div>
 		<input type="hidden" name="icon" value={pickedIcon} required />
+		<Input
+			type="search"
+			placeholder="Buscar ícone (ex.: cart, house, heart...)"
+			bind:value={iconSearch}
+		/>
 		<div
-			class="grid max-h-48 grid-cols-8 gap-1.5 overflow-y-auto rounded-lg border border-foreground/10 p-2"
+			class="grid max-h-64 grid-cols-8 gap-1.5 overflow-y-auto rounded-lg border border-foreground/10 p-2"
 		>
-			{#each CATEGORY_ICON_OPTIONS as slug (slug)}
+			{#each filteredIcons as slug (slug)}
 				{@const OptionIcon = resolveCategoryIcon(slug)}
 				<button
 					type="button"
@@ -67,6 +86,10 @@
 				>
 					<OptionIcon size={18} />
 				</button>
+			{:else}
+				<p class="col-span-8 py-4 text-center text-sm text-muted-foreground">
+					Nenhum ícone encontrado.
+				</p>
 			{/each}
 		</div>
 	</div>

@@ -11,6 +11,13 @@ function toPascalCase(slug: string): string {
 		.join('');
 }
 
+function toKebabCase(pascal: string): string {
+	return pascal
+		.replace(/([a-z0-9])([A-Z])/g, '$1-$2')
+		.replace(/([A-Z]+)([A-Z][a-z])/g, '$1-$2')
+		.toLowerCase();
+}
+
 /**
  * Slugs do seed original (M1) cujo nome não bate 1:1 com o ícone real do
  * Phosphor (ex.: não existe "PartyPopperIcon", o equivalente chama-se
@@ -44,58 +51,16 @@ export function resolveCategoryIcon(icon: string | null | undefined): IconCompon
 }
 
 /**
- * Opções curadas pro picker visual de ícone (categorias padrão do
- * superadmin, M4-08) — todas verificadas contra o pacote instalado, sem
- * cair no fallback genérico.
+ * Todas as ~1500 opções do pacote instalado, derivadas em runtime (não
+ * hardcoded) — cada nome exportado (`AcornIcon`, `ZoomInIcon`, ...) vira um
+ * slug kebab-case, mas só entra na lista se o slug voltar a resolver pro
+ * mesmo componente (`toPascalCase(slug) === nome`) — garante que todo item
+ * do picker realmente renderiza um ícone, nunca o fallback genérico.
  */
-export const CATEGORY_ICON_OPTIONS = [
-	'shopping-cart',
-	'car',
-	'home',
-	'party-popper',
-	'heart-pulse',
-	'graduation-cap',
-	'repeat',
-	'banknote',
-	'circle-ellipsis',
-	'airplane',
-	'bus',
-	'train',
-	'gas-pump',
-	'wrench',
-	'gift',
-	'book-open',
-	'dog',
-	'baby',
-	'first-aid-kit',
-	'pill',
-	'tooth',
-	'hamburger',
-	'coffee',
-	'wine',
-	't-shirt',
-	'wallet',
-	'credit-card',
-	'piggy-bank',
-	'hand-coins',
-	'currency-dollar',
-	'chart-line-up',
-	'briefcase',
-	'laptop',
-	'phone',
-	'wifi-high',
-	'television',
-	'game-controller',
-	'film-strip',
-	'music-notes',
-	'paw-print',
-	'tree',
-	'sun',
-	'umbrella',
-	'scissors',
-	'bank',
-	'cake',
-	'palette',
-	'camera',
-	'book'
-] as const;
+export const CATEGORY_ICON_OPTIONS: string[] = Object.keys(PhosphorIcons)
+	.filter((name) => name.endsWith('Icon'))
+	.map((name) => name.slice(0, -'Icon'.length))
+	.map((base) => ({ base, slug: toKebabCase(base) }))
+	.filter(({ base, slug }) => toPascalCase(slug) === base)
+	.map(({ slug }) => slug)
+	.sort();
