@@ -87,3 +87,19 @@ export async function apiRequestRaw(
 		signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS)
 	});
 }
+
+/**
+ * Variante pra conexões longas (SSE) — sem o timeout de 15s de `apiRequest`
+ * (mataria o stream bem antes do primeiro heartbeat do backend, que manda a
+ * cada 25s). O `signal` do caller deve vir do request original do client, pra
+ * encerrar a conexão upstream assim que o browser desconectar.
+ */
+export async function apiRequestStream(
+	path: string,
+	options: { accessToken?: string; signal?: AbortSignal } = {}
+): Promise<Response> {
+	const headers: Record<string, string> = {};
+	if (options.accessToken) headers.Authorization = `Bearer ${options.accessToken}`;
+
+	return fetch(new URL(path, env.API_URL), { headers, signal: options.signal });
+}

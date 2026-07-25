@@ -1,6 +1,7 @@
 import { redirect } from '@sveltejs/kit';
 
 import { getActiveWorkspaceId } from '$lib/server/active-workspace';
+import * as notificationApi from '$lib/server/notification-api';
 import * as workspaceApi from '$lib/server/workspace-api';
 
 import type { LayoutServerLoad } from './$types';
@@ -15,8 +16,12 @@ export const load: LayoutServerLoad = async ({ locals, cookies }) => {
 
 	const { user, defaultWorkspaceId, accessToken } = locals.session;
 
-	const result = await workspaceApi.listMyWorkspaces(accessToken);
-	const workspaces = result.ok ? result.value : [];
+	const [workspacesResult, notificationsResult] = await Promise.all([
+		workspaceApi.listMyWorkspaces(accessToken),
+		notificationApi.listNotifications(accessToken)
+	]);
+	const workspaces = workspacesResult.ok ? workspacesResult.value : [];
+	const notifications = notificationsResult.ok ? notificationsResult.value : [];
 
 	const requestedId = getActiveWorkspaceId(cookies);
 	const activeWorkspace =
@@ -25,5 +30,5 @@ export const load: LayoutServerLoad = async ({ locals, cookies }) => {
 		workspaces[0] ??
 		null;
 
-	return { user, workspaces, activeWorkspace };
+	return { user, workspaces, activeWorkspace, notifications };
 };

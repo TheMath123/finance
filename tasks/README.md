@@ -129,11 +129,12 @@ nenhuma rota).
 | M4-02 | [Layout base + workspaces (seletor, membros, convites)](done/m4-02-layout-workspaces-dashboard.md) | 🟢 Concluída (2026-07-24, validada pelo usuário) | M4-01 |
 | M4-03 | [CRUD de bancos, contas e cartões](done/m4-03-bancos-contas-cartoes-dashboard.md) | 🟢 Concluída (2026-07-24) | M4-02 |
 | M4-04 | [Transações (listagem, filtros, criar/editar)](done/m4-04-transacoes-dashboard.md) | 🟢 Concluída (2026-07-24, validada pelo usuário) | M4-03 |
-| M4-05 | [Faturas por cartão + visão mensal](in-progress/m4-05-faturas-visao-mensal-dashboard.md) | 🟡 Em andamento | M4-04 |
-| M4-06 | [Configurações de conta](in-progress/m4-06-configuracoes-conta-dashboard.md) | 🟡 Em andamento | M4-01 |
+| M4-05 | [Faturas por cartão + visão mensal](done/m4-05-faturas-visao-mensal-dashboard.md) | 🟢 Concluída (2026-07-24) | M4-04 |
+| M4-06 | [Configurações de conta](done/m4-06-configuracoes-conta-dashboard.md) | 🟢 Concluída (2026-07-24) | M4-01 |
 | M4-07 | [Superadmin: fundação (guard + layout admin)](done/m4-07-superadmin-fundacao.md) | 🟢 Concluída (2026-07-24, validada ponta a ponta) | M4-01 |
 | M4-08 | [Superadmin: usuários + categorias padrão](m4-08-superadmin-usuarios-categorias.md) | 🔵 Backlog | M4-07 |
 | M4-09 | [Superadmin: guardrails de IA, feature flags, métricas](m4-09-superadmin-ia-flags-metricas.md) | 🔵 Backlog | M4-07 |
+| M4-10 | [Notificações no dashboard (paridade com o mobile)](done/m4-10-notificacoes-dashboard.md) | 🟢 Concluída (2026-07-25, validada com SSE real) | M4-01 |
 
 Decisões de arquitetura já identificadas (cada task detalha o porquê):
 CORS precisa ser adicionado ao backend (nunca precisou pra servir só o

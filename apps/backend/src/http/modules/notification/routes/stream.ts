@@ -31,6 +31,10 @@ export const notificationStreamRoute = (deps: AppDeps) =>
           );
         };
         const unsubscribe = deps.notificationBus.subscribe(userId, send);
+        // Bun só libera os headers da resposta quando o primeiro dado é
+        // escrito no stream — sem isto, a conexão fica "pendurada" (sem
+        // headers nem body) até o primeiro heartbeat, até 25s depois.
+        controller.enqueue(encoder.encode(`: connected\n\n`));
         const heartbeat = setInterval(() => {
           if (closed) return;
           controller.enqueue(encoder.encode(`: ping\n\n`));
