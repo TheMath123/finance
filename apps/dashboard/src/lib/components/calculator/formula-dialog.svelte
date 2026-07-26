@@ -5,7 +5,9 @@
 	import XIcon from 'phosphor-svelte/lib/X';
 
 	import { enhance } from '$app/forms';
+	import { invalidateAll } from '$app/navigation';
 
+	import SelectField from '$lib/components/calculator/select-field.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { Input } from '$lib/components/ui/input';
@@ -164,7 +166,12 @@
 		digit: 'bg-muted text-foreground hover:bg-muted/70'
 	};
 
-	/** Reseta o formulário só quando a action salva/edita com sucesso; excluir só recarrega a lista. */
+	/**
+	 * Reseta o formulário só quando a action salva/edita com sucesso; excluir só
+	 * recarrega a lista. `invalidateAll()` explícito além do `update()` — o valor
+	 * salvo (ex.: pinnedTo=home) já chega certo no backend, mas sem isso o widget
+	 * fixado só aparecia depois de um F5 manual na página.
+	 */
 	function afterSubmit({ resetOnSuccess }: { resetOnSuccess: boolean }) {
 		return async ({
 			result,
@@ -175,6 +182,7 @@
 		}) => {
 			if (resetOnSuccess && result.type === 'success') resetForm();
 			await update();
+			await invalidateAll();
 		};
 	}
 </script>
@@ -297,29 +305,31 @@
 
 				<div class="grid grid-cols-2 gap-3">
 					<div class="grid gap-2">
-						<Label for="formula-display-format">Formato</Label>
-						<select
-							id="formula-display-format"
-							name="displayFormat"
-							bind:value={displayFormat}
-							class="h-9 rounded-lg border border-foreground/10 bg-transparent px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-						>
-							<option value="currency">Moeda</option>
-							<option value="number">Número</option>
-						</select>
+						<Label id="formula-display-format-label">Formato</Label>
+						<input type="hidden" name="displayFormat" value={displayFormat} />
+						<SelectField
+							value={displayFormat}
+							onValueChange={(v) => (displayFormat = v as 'currency' | 'number')}
+							ariaLabelledby="formula-display-format-label"
+							options={[
+								{ value: 'currency', label: 'Moeda' },
+								{ value: 'number', label: 'Número' }
+							]}
+						/>
 					</div>
 					<div class="grid gap-2">
-						<Label for="formula-pinned-to">Fixar em</Label>
-						<select
-							id="formula-pinned-to"
-							name="pinnedTo"
-							bind:value={pinnedTo}
-							class="h-9 rounded-lg border border-foreground/10 bg-transparent px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-						>
-							<option value="none">Nenhum</option>
-							<option value="home">Início</option>
-							<option value="transactions">Transações</option>
-						</select>
+						<Label id="formula-pinned-to-label">Fixar em</Label>
+						<input type="hidden" name="pinnedTo" value={pinnedTo} />
+						<SelectField
+							value={pinnedTo}
+							onValueChange={(v) => (pinnedTo = v as 'none' | 'home' | 'transactions')}
+							ariaLabelledby="formula-pinned-to-label"
+							options={[
+								{ value: 'none', label: 'Nenhum' },
+								{ value: 'home', label: 'Início' },
+								{ value: 'transactions', label: 'Transações' }
+							]}
+						/>
 					</div>
 				</div>
 
