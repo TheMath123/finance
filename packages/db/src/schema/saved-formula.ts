@@ -1,5 +1,6 @@
 import { relations } from 'drizzle-orm';
 import {
+  boolean,
   index,
   pgEnum,
   pgTable,
@@ -15,13 +16,6 @@ export const savedFormulaDisplayFormatEnum = pgEnum(
   'saved_formula_display_format',
   ['currency', 'number']
 );
-
-/** Onde a fórmula fica fixada como widget — `none` é criada mas não exibida em nenhuma tela. */
-export const savedFormulaPinnedToEnum = pgEnum('saved_formula_pinned_to', [
-  'none',
-  'home',
-  'transactions',
-]);
 
 export const savedFormulas = pgTable(
   'saved_formulas',
@@ -39,7 +33,9 @@ export const savedFormulas = pgTable(
     displayFormat: savedFormulaDisplayFormatEnum('display_format')
       .notNull()
       .default('currency'),
-    pinnedTo: savedFormulaPinnedToEnum('pinned_to').notNull().default('none'),
+    /** Fixação não é exclusiva — a mesma fórmula pode virar widget nas duas telas ao mesmo tempo. */
+    pinnedHome: boolean('pinned_home').notNull().default(false),
+    pinnedTransactions: boolean('pinned_transactions').notNull().default(false),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },

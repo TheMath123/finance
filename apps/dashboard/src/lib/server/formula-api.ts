@@ -10,7 +10,8 @@ export interface SavedFormulaView {
 	name: string;
 	expression: string;
 	displayFormat: 'currency' | 'number';
-	pinnedTo: 'none' | 'home' | 'transactions';
+	pinnedHome: boolean;
+	pinnedTransactions: boolean;
 	createdAt: string;
 	updatedAt: string;
 }
@@ -25,7 +26,8 @@ export interface SavedFormulaInput {
 	name: string;
 	expression: string;
 	displayFormat: 'currency' | 'number';
-	pinnedTo: 'none' | 'home' | 'transactions';
+	pinnedHome: boolean;
+	pinnedTransactions: boolean;
 }
 
 export interface EvaluatedFormulaView {

@@ -8,10 +8,12 @@
 	import { invalidateAll } from '$app/navigation';
 
 	import SelectField from '$lib/components/calculator/select-field.svelte';
+	import SavedFormulaRow from '$lib/components/calculator/saved-formula-row.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
+	import { Switch } from '$lib/components/ui/switch';
 	import type { FormulaVariableValue } from '$lib/formula-catalog';
 	import { formatReais } from '$lib/money';
 	import type { SavedFormulaView } from '$lib/server/formula-api';
@@ -32,7 +34,9 @@
 	let name = $state('');
 	let expression = $state('');
 	let displayFormat = $state<'currency' | 'number'>('currency');
-	let pinnedTo = $state<'none' | 'home' | 'transactions'>('none');
+	/** Não é exclusivo — a mesma fórmula pode virar widget nas duas telas ao mesmo tempo. */
+	let pinnedHome = $state(false);
+	let pinnedTransactions = $state(false);
 
 	/** Primeiro elemento arrastável do codebase — pointer events manuais, sem lib nova. */
 	let dragOffset = $state({ x: 0, y: 0 });
@@ -83,7 +87,8 @@
 		name = '';
 		expression = '';
 		displayFormat = 'currency';
-		pinnedTo = 'none';
+		pinnedHome = false;
+		pinnedTransactions = false;
 		/** Sem isso, reabrir o dialog reaparecia exatamente de onde foi arrastado da última vez — inclusive fora da tela. */
 		dragOffset = { x: 0, y: 0 };
 	}
@@ -97,7 +102,8 @@
 		name = formula.name;
 		expression = formula.expression;
 		displayFormat = formula.displayFormat;
-		pinnedTo = formula.pinnedTo;
+		pinnedHome = formula.pinnedHome;
+		pinnedTransactions = formula.pinnedTransactions;
 	}
 
 	/** Variáveis são identificadores inteiros — precisam de espaço antes pra não colar num token anterior. */
@@ -169,7 +175,7 @@
 	/**
 	 * Reseta o formulário só quando a action salva/edita com sucesso; excluir só
 	 * recarrega a lista. `invalidateAll()` explícito além do `update()` — o valor
-	 * salvo (ex.: pinnedTo=home) já chega certo no backend, mas sem isso o widget
+	 * salvo (ex.: pinnedHome=true) já chega certo no backend, mas sem isso o widget
 	 * fixado só aparecia depois de um F5 manual na página.
 	 */
 	function afterSubmit({ resetOnSuccess }: { resetOnSuccess: boolean }) {
@@ -303,33 +309,40 @@
 					<Input id="formula-name" name="name" bind:value={name} required maxlength={80} />
 				</div>
 
-				<div class="grid grid-cols-2 gap-3">
-					<div class="grid gap-2">
-						<Label id="formula-display-format-label">Formato</Label>
-						<input type="hidden" name="displayFormat" value={displayFormat} />
-						<SelectField
-							value={displayFormat}
-							onValueChange={(v) => (displayFormat = v as 'currency' | 'number')}
-							ariaLabelledby="formula-display-format-label"
-							options={[
-								{ value: 'currency', label: 'Moeda' },
-								{ value: 'number', label: 'Número' }
-							]}
-						/>
-					</div>
-					<div class="grid gap-2">
-						<Label id="formula-pinned-to-label">Fixar em</Label>
-						<input type="hidden" name="pinnedTo" value={pinnedTo} />
-						<SelectField
-							value={pinnedTo}
-							onValueChange={(v) => (pinnedTo = v as 'none' | 'home' | 'transactions')}
-							ariaLabelledby="formula-pinned-to-label"
-							options={[
-								{ value: 'none', label: 'Nenhum' },
-								{ value: 'home', label: 'Início' },
-								{ value: 'transactions', label: 'Transações' }
-							]}
-						/>
+				<div class="grid gap-2">
+					<Label id="formula-display-format-label">Formato</Label>
+					<input type="hidden" name="displayFormat" value={displayFormat} />
+					<SelectField
+						value={displayFormat}
+						onValueChange={(v) => (displayFormat = v as 'currency' | 'number')}
+						ariaLabelledby="formula-display-format-label"
+						options={[
+							{ value: 'currency', label: 'Moeda' },
+							{ value: 'number', label: 'Número' }
+						]}
+					/>
+				</div>
+
+				<!-- Fixar não é uma escolha única — a mesma fórmula pode virar widget nas duas telas. -->
+				<div class="grid gap-2">
+					<Label>Fixar como widget em</Label>
+					<input type="hidden" name="pinnedHome" value={pinnedHome} />
+					<input type="hidden" name="pinnedTransactions" value={pinnedTransactions} />
+					<div class="flex flex-col gap-1 rounded-lg border border-foreground/10 p-1">
+						<label
+							for="formula-pin-home"
+							class="flex cursor-pointer items-center justify-between rounded-md px-2 py-1.5 text-sm hover:bg-muted/50"
+						>
+							Início
+							<Switch id="formula-pin-home" bind:checked={pinnedHome} />
+						</label>
+						<label
+							for="formula-pin-transactions"
+							class="flex cursor-pointer items-center justify-between rounded-md px-2 py-1.5 text-sm hover:bg-muted/50"
+						>
+							Transações
+							<Switch id="formula-pin-transactions" bind:checked={pinnedTransactions} />
+						</label>
 					</div>
 				</div>
 
@@ -345,26 +358,7 @@
 				<div class="flex flex-col gap-1 border-t border-foreground/10 p-4 pt-3">
 					<p class="text-xs font-medium text-muted-foreground">Fórmulas salvas</p>
 					{#each formulas as formula (formula.id)}
-						<div
-							class="flex items-center justify-between gap-2 rounded-lg border border-foreground/10 px-3 py-2 text-sm"
-						>
-							<span class="truncate">{formula.name}</span>
-							<div class="flex shrink-0 items-center gap-1">
-								<Button type="button" variant="ghost" size="sm" onclick={() => startEdit(formula)}>
-									Editar
-								</Button>
-								<form
-									method="POST"
-									action="?/deleteFormula"
-									use:enhance={() => afterSubmit({ resetOnSuccess: false })}
-								>
-									<input type="hidden" name="formulaId" value={formula.id} />
-									<Button type="submit" variant="ghost" size="sm" class="text-destructive">
-										Excluir
-									</Button>
-								</form>
-							</div>
-						</div>
+						<SavedFormulaRow {formula} onEdit={startEdit} />
 					{/each}
 				</div>
 			{/if}

@@ -19,7 +19,7 @@
 	const catalog = $derived(
 		data.summary ? buildClientFormulaCatalog(data.summary) : { values: {}, variables: [] }
 	);
-	const pinnedFormulas = $derived(data.formulas.filter((f) => f.pinnedTo === 'home'));
+	const pinnedFormulas = $derived(data.formulas.filter((f) => f.pinnedHome));
 
 	const monthLabel = $derived(`${MONTH_NAMES[data.month - 1]} de ${data.year}`);
 

@@ -1,21 +1,20 @@
-import type {
-  SavedFormulaDisplayFormat,
-  SavedFormulaPinnedTo,
-} from '@finance/shared';
+import type { SavedFormulaDisplayFormat } from '@finance/shared';
 import type { SavedFormula } from '../../domain/entities/saved-formula';
 
 export interface SavedFormulaDraft {
   name: string;
   expression: string;
   displayFormat: SavedFormulaDisplayFormat;
-  pinnedTo: SavedFormulaPinnedTo;
+  pinnedHome: boolean;
+  pinnedTransactions: boolean;
 }
 
 export interface SavedFormulaPatch {
   name?: string;
   expression?: string;
   displayFormat?: SavedFormulaDisplayFormat;
-  pinnedTo?: SavedFormulaPinnedTo;
+  pinnedHome?: boolean;
+  pinnedTransactions?: boolean;
 }
 
 export interface SavedFormulaRepository {

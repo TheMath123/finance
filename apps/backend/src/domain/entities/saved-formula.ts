@@ -1,7 +1,4 @@
-import type {
-  SavedFormulaDisplayFormat,
-  SavedFormulaPinnedTo,
-} from '@finance/shared';
+import type { SavedFormulaDisplayFormat } from '@finance/shared';
 
 export interface SavedFormula {
   id: string;
@@ -10,7 +7,9 @@ export interface SavedFormula {
   name: string;
   expression: string;
   displayFormat: SavedFormulaDisplayFormat;
-  pinnedTo: SavedFormulaPinnedTo;
+  /** Fixação não é exclusiva — pode estar em nenhuma, uma ou nas duas telas ao mesmo tempo. */
+  pinnedHome: boolean;
+  pinnedTransactions: boolean;
   createdAt: Date;
   updatedAt: Date;
 }

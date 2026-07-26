@@ -1,7 +1,4 @@
-import {
-  SAVED_FORMULA_DISPLAY_FORMATS,
-  SAVED_FORMULA_PINNED_TO,
-} from '@finance/shared';
+import { SAVED_FORMULA_DISPLAY_FORMATS } from '@finance/shared';
 import { z } from 'zod';
 
 export const workspaceParamsSchema = z.object({
@@ -21,6 +18,7 @@ export const createSavedFormulaSchema = z.object({
   name: z.string().min(1).max(80),
   expression: z.string().min(1).max(500),
   displayFormat: z.enum(SAVED_FORMULA_DISPLAY_FORMATS),
-  pinnedTo: z.enum(SAVED_FORMULA_PINNED_TO),
+  pinnedHome: z.boolean(),
+  pinnedTransactions: z.boolean(),
 });
 export const updateSavedFormulaSchema = createSavedFormulaSchema.partial();

@@ -26,7 +26,7 @@
 
 	let formulaDialogOpen = $state(false);
 	const formulaCatalog = $derived(buildClientFormulaCatalog(data.formulaSummary));
-	const pinnedFormulas = $derived(data.formulas.filter((f) => f.pinnedTo === 'transactions'));
+	const pinnedFormulas = $derived(data.formulas.filter((f) => f.pinnedTransactions));
 
 	const canManage = $derived(data.activeWorkspace?.role !== 'viewer');
 	const archivedView = $derived(data.filters.deletedOnly);

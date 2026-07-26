@@ -1,4 +1,4 @@
-import { SAVED_FORMULA_DISPLAY_FORMATS, SAVED_FORMULA_PINNED_TO } from '@finance/shared';
+import { SAVED_FORMULA_DISPLAY_FORMATS } from '@finance/shared';
 import { z } from 'zod';
 
 /**
@@ -9,5 +9,12 @@ export const savedFormulaSchema = z.object({
 	name: z.string().min(1, 'Informe um nome').max(80),
 	expression: z.string().min(1, 'Escreva uma fórmula'),
 	displayFormat: z.enum(SAVED_FORMULA_DISPLAY_FORMATS),
-	pinnedTo: z.enum(SAVED_FORMULA_PINNED_TO)
+	pinnedHome: z.enum(['true', 'false']).transform((v) => v === 'true'),
+	pinnedTransactions: z.enum(['true', 'false']).transform((v) => v === 'true')
+});
+
+/** Toggle rápido de fixação (pin ao lado da fórmula salva) — não mexe em nome/expressão/formato. */
+export const pinFormulaSchema = z.object({
+	pinnedHome: z.enum(['true', 'false']).transform((v) => v === 'true'),
+	pinnedTransactions: z.enum(['true', 'false']).transform((v) => v === 'true')
 });

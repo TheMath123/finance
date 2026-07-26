@@ -1,0 +1,2 @@
+ALTER TABLE "saved_formulas" ADD COLUMN "pinned_home" boolean DEFAULT false NOT NULL;--> statement-breakpoint
+ALTER TABLE "saved_formulas" ADD COLUMN "pinned_transactions" boolean DEFAULT false NOT NULL;

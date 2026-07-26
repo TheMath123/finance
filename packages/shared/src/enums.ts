@@ -83,11 +83,3 @@ export type SplitShareStatus = (typeof SPLIT_SHARE_STATUSES)[number];
 export const SAVED_FORMULA_DISPLAY_FORMATS = ['currency', 'number'] as const;
 export type SavedFormulaDisplayFormat =
   (typeof SAVED_FORMULA_DISPLAY_FORMATS)[number];
-
-/** Onde a fórmula fica fixada como widget — `none` é criada mas não exibida em nenhuma tela. */
-export const SAVED_FORMULA_PINNED_TO = [
-  'none',
-  'home',
-  'transactions',
-] as const;
-export type SavedFormulaPinnedTo = (typeof SAVED_FORMULA_PINNED_TO)[number];

@@ -2,6 +2,53 @@
 
 **Status:** 🟢 Concluída (2026-07-26, validada ponta a ponta)
 
+## Refinamentos de UX pós-implementação (2026-07-26)
+
+Rodada de ajustes reportados pelo usuário testando a feature de verdade:
+
+- **Visual da calculadora**: overlay próprio sem `backdrop-blur` (o padrão
+  do dialog compartilhado borra e dá um tom azulado no fundo) e teclado
+  numérico com grid 4 colunas — reforça a "cara de calculadora" em vez de
+  um form genérico.
+- **Select nativo quebrado no dark mode**: `color-scheme: dark` via CSS
+  (mesmo aplicado direto no `select`) não bastou — bug de renderização do
+  popup nativo do Chromium/Windows, confirmado em várias rodadas mesmo com
+  o CSS certo. Resolvido substituindo o `<select>` nativo por um
+  `Select.Root`/`Content` do Bits UI (`select-field.svelte`), popup
+  100% HTML/CSS próprio, sem depender do SO.
+- **Dialog preso fora da tela / impossível arrastar**: causa real era
+  estrutural — a técnica `top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2`
+  empurra o conteúdo pra fora do viewport quando ele é mais alto que a
+  tela, independente do drag. Trocado por `inset-4 + margin: auto +
+  max-height: calc(100vh - 2rem)`, que não consegue estourar o viewport
+  por construção; o offset de drag virou `translate(Npx, Npx)` direto.
+- **Widget fixado não aparecia sem F5**: `update()` do `use:enhance` não
+  bastava pra refletir o novo estado nos widgets da Home/Transações —
+  faltava `invalidateAll()` explícito (do `$app/navigation`) no callback
+  de submit do dialog.
+- **Fixação em ambas as telas ao mesmo tempo**: o modelo original
+  (`pinnedTo`: `none`/`home`/`transactions`, escolha única) não permitia
+  a mesma fórmula virar widget na Home E em Transações simultaneamente.
+  Migrado pra duas colunas booleanas independentes,
+  `pinnedHome`/`pinnedTransactions` (duas migrations — `ADD` primeiro,
+  `DROP` da coluna/enum antigos depois — pra evitar o prompt interativo
+  de detecção de rename do `drizzle-kit`, que exige TTY e trava neste
+  ambiente).
+- **Pin ao lado da fórmula salva**: em vez de só alternar via os dois
+  `Switch` dentro do form de criar/editar, cada fórmula na lista
+  "Fórmulas salvas" ganhou um ícone de pin (`PushPinIcon`) que abre um
+  popover com os dois toggles — fixa/desfixa na Home e em Transações sem
+  precisar abrir "Editar". Nova action `pinFormula` (schema Zod dedicado,
+  `pinFormulaSchema`) faz um PATCH parcial só com os dois booleanos,
+  reaproveitando o `PATCH` parcial que o backend já aceitava.
+
+Validado: `tsc --noEmit` (backend/db/formula), `svelte-check` (dashboard,
+0 erros), suíte de testes do backend (8 testes de saved-formula, todos
+verdes), `bun run lint` (Biome), `prettier --check` + `eslint`
+(dashboard), build de produção do dashboard, e smoke test via API direta
+(criar fórmula com `pinnedHome=true`, PATCH `pinnedTransactions=true`,
+confirmar os dois `true` simultaneamente na listagem).
+
 ## Implementação (2026-07-26)
 
 Tudo implementado conforme planejado, com um refinamento sobre o escopo

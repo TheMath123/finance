@@ -1,6 +1,6 @@
 import { type Cookies, fail } from '@sveltejs/kit';
 
-import { savedFormulaSchema } from '$lib/schemas/formula';
+import { pinFormulaSchema, savedFormulaSchema } from '$lib/schemas/formula';
 import { getActiveWorkspaceId } from '$lib/server/active-workspace';
 import * as formulaApi from '$lib/server/formula-api';
 import * as summaryApi from '$lib/server/summary-api';
@@ -53,7 +53,8 @@ export const actions: Actions = {
 			name: form.get('name')?.toString() ?? '',
 			expression: form.get('expression')?.toString() ?? '',
 			displayFormat: form.get('displayFormat')?.toString(),
-			pinnedTo: form.get('pinnedTo')?.toString()
+			pinnedHome: form.get('pinnedHome')?.toString(),
+			pinnedTransactions: form.get('pinnedTransactions')?.toString()
 		});
 		if (!parsed.success) {
 			return fail(400, { message: parsed.error.issues[0]?.message ?? 'Dados inválidos.' });
@@ -78,7 +79,8 @@ export const actions: Actions = {
 			name: form.get('name')?.toString() ?? '',
 			expression: form.get('expression')?.toString() ?? '',
 			displayFormat: form.get('displayFormat')?.toString(),
-			pinnedTo: form.get('pinnedTo')?.toString()
+			pinnedHome: form.get('pinnedHome')?.toString(),
+			pinnedTransactions: form.get('pinnedTransactions')?.toString()
 		});
 		if (!parsed.success) {
 			return fail(400, { message: parsed.error.issues[0]?.message ?? 'Dados inválidos.' });
@@ -104,6 +106,31 @@ export const actions: Actions = {
 			locals.session.accessToken,
 			workspaceId,
 			formulaId
+		);
+		if (!result.ok) return fail(result.error.status || 500, { message: result.error.message });
+		return { success: true };
+	},
+
+	/** Toggle rápido de fixação pelo pin ao lado da fórmula salva — não passa por nome/expressão/formato. */
+	pinFormula: async ({ request, cookies, locals }) => {
+		if (!locals.session) return fail(401, { message: 'Sessão expirada.' });
+		const form = await request.formData();
+		const formulaId = form.get('formulaId')?.toString() ?? '';
+		const workspaceId = resolveWorkspaceId(cookies, locals.session.defaultWorkspaceId);
+
+		const parsed = pinFormulaSchema.safeParse({
+			pinnedHome: form.get('pinnedHome')?.toString(),
+			pinnedTransactions: form.get('pinnedTransactions')?.toString()
+		});
+		if (!parsed.success) {
+			return fail(400, { message: parsed.error.issues[0]?.message ?? 'Dados inválidos.' });
+		}
+
+		const result = await formulaApi.updateFormula(
+			locals.session.accessToken,
+			workspaceId,
+			formulaId,
+			parsed.data
 		);
 		if (!result.ok) return fail(result.error.status || 500, { message: result.error.message });
 		return { success: true };

@@ -79,7 +79,8 @@ describe('saved-formula: criação valida a expressão', () => {
       name: 'Fórmula inválida',
       expression: 'saldo_que_nao_existe + despesas',
       displayFormat: 'currency',
-      pinnedTo: 'none',
+      pinnedHome: false,
+      pinnedTransactions: false,
     });
 
     expect(result.ok).toBe(false);
@@ -94,7 +95,8 @@ describe('saved-formula: criação valida a expressão', () => {
       name: 'Sobra do mês',
       expression: 'receitas - despesas',
       displayFormat: 'currency',
-      pinnedTo: 'home',
+      pinnedHome: true,
+      pinnedTransactions: false,
     });
 
     expect(result.ok).toBe(true);
@@ -111,7 +113,8 @@ describe('saved-formula: limite de plano (free)', () => {
         name: `Fórmula ${i}`,
         expression: 'despesas',
         displayFormat: 'number',
-        pinnedTo: 'none',
+        pinnedHome: false,
+        pinnedTransactions: false,
       });
       expect(result.ok).toBe(true);
     }
@@ -120,7 +123,8 @@ describe('saved-formula: limite de plano (free)', () => {
       name: 'Fórmula 11',
       expression: 'despesas',
       displayFormat: 'number',
-      pinnedTo: 'none',
+      pinnedHome: false,
+      pinnedTransactions: false,
     });
     expect(eleventh.ok).toBe(false);
     if (!eleventh.ok) expect(eleventh.error).toBe('plan_limit_reached');
@@ -141,7 +145,8 @@ describe('saved-formula: avaliação bate com o valor real', () => {
       name: 'Despesas x2',
       expression: 'despesas * 2',
       displayFormat: 'currency',
-      pinnedTo: 'none',
+      pinnedHome: false,
+      pinnedTransactions: false,
     });
     if (!created.ok) throw new Error('fórmula não criada');
 
@@ -160,7 +165,8 @@ describe('saved-formula: avaliação bate com o valor real', () => {
       name: 'Usa disponível projetado',
       expression: 'disponivel_projetado',
       displayFormat: 'currency',
-      pinnedTo: 'none',
+      pinnedHome: false,
+      pinnedTransactions: false,
     });
     expect(created.ok).toBe(true);
     if (!created.ok) throw new Error('fórmula não criada');
@@ -191,7 +197,8 @@ describe('saved-formula: isolamento por workspace', () => {
       name: 'Só do workspace A',
       expression: 'despesas',
       displayFormat: 'number',
-      pinnedTo: 'none',
+      pinnedHome: false,
+      pinnedTransactions: false,
     });
     expect(created.ok).toBe(true);
 
@@ -211,7 +218,8 @@ describe('saved-formula: atualização', () => {
       name: 'Nome original',
       expression: 'despesas',
       displayFormat: 'number',
-      pinnedTo: 'none',
+      pinnedHome: false,
+      pinnedTransactions: false,
     });
     if (!created.ok) throw new Error('fórmula não criada');
 
@@ -247,7 +255,8 @@ describe('saved-formula: exclusão', () => {
       name: 'Vai ser excluída',
       expression: 'despesas',
       displayFormat: 'number',
-      pinnedTo: 'none',
+      pinnedHome: false,
+      pinnedTransactions: false,
     });
     if (!created.ok) throw new Error('fórmula não criada');
 
