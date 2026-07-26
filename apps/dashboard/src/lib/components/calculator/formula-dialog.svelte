@@ -55,15 +55,17 @@
 		let nextY = dragStart.offsetY + (event.clientY - dragStart.y);
 
 		if (contentEl) {
+			// Posição "natural" (sem nenhum deslocamento de arraste aplicado) — a
+			// posição atual já inclui o `dragOffset` corrente, então subtraímos.
 			const rect = contentEl.getBoundingClientRect();
-			const halfW = rect.width / 2;
-			const halfH = rect.height / 2;
-			/** Sempre deixa pelo menos essa faixa do card visível — dá pra pegar o cabeçalho de novo mesmo no limite. */
-			const margin = 48;
-			const maxX = window.innerWidth / 2 - margin + halfW;
-			const minX = margin - window.innerWidth / 2 - halfW;
-			const maxY = window.innerHeight / 2 - margin + halfH;
-			const minY = margin - window.innerHeight / 2 - halfH;
+			const naturalLeft = rect.left - dragOffset.x;
+			const naturalTop = rect.top - dragOffset.y;
+			/** Cantos do card sempre dentro dessa margem da tela — o cabeçalho (topo) nunca fica inalcançável. */
+			const margin = 64;
+			const minX = 0 - naturalLeft;
+			const maxX = window.innerWidth - margin - naturalLeft;
+			const minY = 0 - naturalTop;
+			const maxY = window.innerHeight - margin - naturalTop;
 			nextX = Math.min(maxX, Math.max(minX, nextX));
 			nextY = Math.min(maxY, Math.max(minY, nextY));
 		}
@@ -129,25 +131,25 @@
 
 	/** Grid de 4 colunas — "0" ocupa 2 células, fechando 5 linhas certinhas. */
 	const KEYPAD_KEYS: KeypadKey[] = [
-		{ label: 'C', action: 'clear', kind: 'action' },
 		{ label: '(', action: 'insert', key: '(', kind: 'operator' },
 		{ label: ')', action: 'insert', key: ')', kind: 'operator' },
+		{ label: 'C', action: 'clear', kind: 'action' },
 		{ label: '⌫', action: 'backspace', kind: 'action' },
-		{ label: '÷', action: 'insert', key: '/', kind: 'operator' },
 		{ label: '7', action: 'insert', key: '7', kind: 'digit' },
 		{ label: '8', action: 'insert', key: '8', kind: 'digit' },
 		{ label: '9', action: 'insert', key: '9', kind: 'digit' },
-		{ label: '×', action: 'insert', key: '*', kind: 'operator' },
+		{ label: '÷', action: 'insert', key: '/', kind: 'operator' },
 		{ label: '4', action: 'insert', key: '4', kind: 'digit' },
 		{ label: '5', action: 'insert', key: '5', kind: 'digit' },
 		{ label: '6', action: 'insert', key: '6', kind: 'digit' },
-		{ label: '−', action: 'insert', key: '-', kind: 'operator' },
+		{ label: '×', action: 'insert', key: '*', kind: 'operator' },
 		{ label: '1', action: 'insert', key: '1', kind: 'digit' },
 		{ label: '2', action: 'insert', key: '2', kind: 'digit' },
 		{ label: '3', action: 'insert', key: '3', kind: 'digit' },
-		{ label: '+', action: 'insert', key: '+', kind: 'operator' },
+		{ label: '−', action: 'insert', key: '-', kind: 'operator' },
 		{ label: '0', action: 'insert', key: '0', kind: 'digit', span: 2 },
-		{ label: ',', action: 'insert', key: '.', kind: 'digit' }
+		{ label: ',', action: 'insert', key: '.', kind: 'digit' },
+		{ label: '+', action: 'insert', key: '+', kind: 'operator' }
 	];
 
 	function pressKey(k: KeypadKey) {
@@ -193,8 +195,8 @@
 		/>
 		<DialogPrimitive.Content
 			bind:ref={contentEl}
-			style="transform: translate(calc(-50% + {dragOffset.x}px), calc(-50% + {dragOffset.y}px))"
-			class="fixed top-1/2 left-1/2 z-50 flex max-h-[calc(100vh-2rem)] w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-y-auto rounded-xl bg-popover text-sm text-popover-foreground ring-1 ring-foreground/10 outline-none sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95"
+			style="transform: translate({dragOffset.x}px, {dragOffset.y}px)"
+			class="fixed inset-4 z-50 m-auto flex h-fit max-h-[calc(100vh-2rem)] w-[calc(100%-2rem)] flex-col overflow-y-auto rounded-xl bg-popover text-sm text-popover-foreground ring-1 ring-foreground/10 outline-none sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95"
 		>
 			<!-- Cabeçalho fica `sticky` — mesmo se o conteúdo for mais alto que a tela e
 			     precisar rolar, o cabeçalho (única alça de arraste) nunca some de vista. -->

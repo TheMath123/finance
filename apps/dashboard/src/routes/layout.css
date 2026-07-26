@@ -145,4 +145,10 @@
 	html {
 		@apply font-sans;
 	}
+	/* `color-scheme` herdado de `.dark` nem sempre é suficiente pro Chromium
+	   no Windows recolorir o popup nativo de <select> — declarar direto no
+	   elemento (não só no ancestral) é o jeito confiável de garantir. */
+	.dark select {
+		color-scheme: dark;
+	}
 }
