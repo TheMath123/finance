@@ -147,7 +147,7 @@
 		{ label: '3', action: 'insert', key: '3', kind: 'digit' },
 		{ label: '+', action: 'insert', key: '+', kind: 'operator' },
 		{ label: '0', action: 'insert', key: '0', kind: 'digit', span: 2 },
-		{ label: ',', action: 'insert', key: '.', kind: 'digit' },
+		{ label: ',', action: 'insert', key: '.', kind: 'digit' }
 	];
 
 	function pressKey(k: KeypadKey) {
@@ -194,10 +194,12 @@
 		<DialogPrimitive.Content
 			bind:ref={contentEl}
 			style="transform: translate(calc(-50% + {dragOffset.x}px), calc(-50% + {dragOffset.y}px))"
-			class="fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl bg-popover p-4 text-sm text-popover-foreground ring-1 ring-foreground/10 outline-none sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95"
+			class="fixed top-1/2 left-1/2 z-50 flex max-h-[calc(100vh-2rem)] w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-y-auto rounded-xl bg-popover text-sm text-popover-foreground ring-1 ring-foreground/10 outline-none sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95"
 		>
+			<!-- Cabeçalho fica `sticky` — mesmo se o conteúdo for mais alto que a tela e
+			     precisar rolar, o cabeçalho (única alça de arraste) nunca some de vista. -->
 			<div
-				class="-m-4 mb-0 flex cursor-grab items-center justify-between rounded-t-xl border-b border-foreground/10 p-4 active:cursor-grabbing"
+				class="sticky top-0 z-10 flex shrink-0 cursor-grab items-center justify-between rounded-t-xl border-b border-foreground/10 bg-popover p-4 active:cursor-grabbing"
 				role="button"
 				tabindex="0"
 				aria-label="Arraste para mover a calculadora"
@@ -207,21 +209,21 @@
 				onpointercancel={stopDrag}
 			>
 				<Dialog.Title>Calculadora de fórmulas</Dialog.Title>
+				<DialogPrimitive.Close>
+					{#snippet child({ props })}
+						<Button variant="ghost" size="icon-sm" {...props}>
+							<XIcon />
+							<span class="sr-only">Fechar</span>
+						</Button>
+					{/snippet}
+				</DialogPrimitive.Close>
 			</div>
-			<DialogPrimitive.Close>
-				{#snippet child({ props })}
-					<Button variant="ghost" class="absolute top-2 right-2" size="icon-sm" {...props}>
-						<XIcon />
-						<span class="sr-only">Fechar</span>
-					</Button>
-				{/snippet}
-			</DialogPrimitive.Close>
 
 			<form
 				method="POST"
 				action={editing ? '?/updateFormula' : '?/createFormula'}
 				use:enhance={() => afterSubmit({ resetOnSuccess: true })}
-				class="flex flex-col gap-3"
+				class="flex flex-col gap-3 p-4"
 			>
 				{#if editing}
 					<input type="hidden" name="formulaId" value={editing.id} />
@@ -328,7 +330,7 @@
 			</form>
 
 			{#if formulas.length > 0}
-				<div class="flex flex-col gap-1 border-t border-foreground/10 pt-3">
+				<div class="flex flex-col gap-1 border-t border-foreground/10 p-4 pt-3">
 					<p class="text-xs font-medium text-muted-foreground">Fórmulas salvas</p>
 					{#each formulas as formula (formula.id)}
 						<div
