@@ -12,23 +12,23 @@
 	let { data, children } = $props();
 
 	const NAV = [
-		{ route: '/admin/users', label: 'Usuários', icon: UsersIcon },
-		{ route: '/admin/default-categories', label: 'Categorias padrão', icon: TagIcon },
-		{ route: '/admin/ai-settings', label: 'Guardrails de IA', icon: SparkleIcon },
-		{ route: '/admin/feature-flags', label: 'Feature flags', icon: FlagIcon },
-		{ route: '/admin/metrics', label: 'Métricas', icon: ChartBarIcon }
+		{ route: '/saas/users', label: 'Usuários', icon: UsersIcon },
+		{ route: '/saas/default-categories', label: 'Categorias padrão', icon: TagIcon },
+		{ route: '/saas/ai-settings', label: 'Guardrails de IA', icon: SparkleIcon },
+		{ route: '/saas/feature-flags', label: 'Feature flags', icon: FlagIcon },
+		{ route: '/saas/metrics', label: 'Métricas', icon: ChartBarIcon }
 	] as const;
 </script>
 
 <svelte:head>
-	<title>Admin — Finance</title>
+	<title>SaaS — Finance</title>
 </svelte:head>
 
 <div class="flex min-h-screen">
 	<aside
 		class="hidden w-56 shrink-0 flex-col gap-1 border-r border-foreground/10 bg-sidebar p-4 sm:flex"
 	>
-		<p class="mb-1 px-3 text-lg font-semibold text-sidebar-foreground">Admin</p>
+		<p class="mb-1 px-3 text-lg font-semibold text-sidebar-foreground">SaaS</p>
 		<p class="mb-4 truncate px-3 text-xs text-muted-foreground">{data.user.name}</p>
 
 		{#each NAV as item (item.route)}

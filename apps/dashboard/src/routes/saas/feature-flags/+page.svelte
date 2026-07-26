@@ -25,7 +25,7 @@
 </script>
 
 <svelte:head>
-	<title>Feature flags — Admin</title>
+	<title>Feature flags — SaaS</title>
 </svelte:head>
 
 <div class="flex flex-col gap-6">

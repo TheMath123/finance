@@ -10,7 +10,7 @@
 </script>
 
 <svelte:head>
-	<title>Guardrails de IA — Admin</title>
+	<title>Guardrails de IA — SaaS</title>
 </svelte:head>
 
 <div class="mx-auto flex max-w-lg flex-col gap-6">

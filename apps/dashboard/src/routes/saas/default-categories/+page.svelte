@@ -49,7 +49,7 @@
 </script>
 
 <svelte:head>
-	<title>Categorias padrão — Admin</title>
+	<title>Categorias padrão — SaaS</title>
 </svelte:head>
 
 {#snippet categoryFields(prefix: string, category?: DefaultCategoryView)}

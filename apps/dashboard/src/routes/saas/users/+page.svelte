@@ -10,7 +10,7 @@
 </script>
 
 <svelte:head>
-	<title>Usuários — Admin</title>
+	<title>Usuários — SaaS</title>
 </svelte:head>
 
 <div class="flex flex-col gap-6">

@@ -39,7 +39,7 @@
 </script>
 
 <svelte:head>
-	<title>Métricas — Admin</title>
+	<title>Métricas — SaaS</title>
 </svelte:head>
 
 <div class="mx-auto flex max-w-3xl flex-col gap-6">

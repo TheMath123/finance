@@ -1,4 +1,5 @@
 <script lang="ts">
+	import ShieldCheckIcon from 'phosphor-svelte/lib/ShieldCheckIcon';
 	import UserCircleIcon from 'phosphor-svelte/lib/UserCircleIcon';
 
 	import { resolve } from '$app/paths';
@@ -30,6 +31,15 @@
 	</div>
 	<div class="flex shrink-0 items-center gap-1">
 		<NotificationBell initial={notifications} />
+		{#if user.platformRole === 'superadmin'}
+			<a
+				href={resolve('/saas')}
+				class="flex items-center gap-2 rounded-lg px-2 py-1 text-sm text-muted-foreground transition-colors hover:bg-primary/10 hover:text-foreground"
+			>
+				<ShieldCheckIcon size={18} />
+				<span class="hidden sm:inline">SaaS</span>
+			</a>
+		{/if}
 		<a
 			href={resolve('/account')}
 			class="flex items-center gap-2 rounded-lg px-2 py-1 text-sm text-muted-foreground transition-colors hover:bg-primary/10 hover:text-foreground"
