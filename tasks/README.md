@@ -112,7 +112,8 @@ cadastrado.
 
 ## M4 — Dashboard web (Svelte)
 
-Planejado em 2026-07-24, logo após o fechamento do M3. `spec.md`
+Concluído em 2026-07-25. Planejado em 2026-07-24, logo após o fechamento
+do M3. `spec.md`
 ("Dashboard web") já fecha a stack (Svelte + Bits UI + Tailwind + Zod) e o
 conceito de `platformRole`/superadmin, mas não detalha telas — esta
 quebra em tasks é a especificação real do milestone. Ordem sugerida:

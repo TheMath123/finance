@@ -1,7 +1,6 @@
 # M4-06 — Configurações de conta
 
-**Status:** 🟡 Em andamento — código completo (lint, typecheck e build de
-produção limpos); falta a validação manual do usuário no browser.
+**Status:** 🟢 Concluída (2026-07-24).
 
 ## Contexto
 
