@@ -10,7 +10,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { buildClientFormulaCatalog } from '$lib/formula-catalog';
 	import { MONTH_NAMES } from '$lib/month-names';
-	import { formatCents } from '$lib/money';
+	import { formatCents, formatReais } from '$lib/money';
 
 	let { data } = $props();
 
@@ -158,7 +158,7 @@
 							<p class="mt-1 text-2xl font-semibold">
 								{#if evaluated.ok}
 									{formula.displayFormat === 'currency'
-										? formatCents(evaluated.value)
+										? formatReais(evaluated.value)
 										: evaluated.value}
 								{:else}
 									—

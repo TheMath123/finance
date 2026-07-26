@@ -18,7 +18,7 @@
 	import { Label } from '$lib/components/ui/label';
 	import { buildClientFormulaCatalog } from '$lib/formula-catalog';
 	import { getMerchantLogoUrl } from '$lib/merchant-logo';
-	import { formatCents } from '$lib/money';
+	import { formatCents, formatReais } from '$lib/money';
 	import type { TransactionView } from '$lib/server/transaction-api';
 	import { formatTransactionDate, transactionSourceLabel } from '$lib/transaction-labels';
 
@@ -116,7 +116,7 @@
 					<p class="text-lg font-semibold">
 						{#if evaluated.ok}
 							{formula.displayFormat === 'currency'
-								? formatCents(evaluated.value)
+								? formatReais(evaluated.value)
 								: evaluated.value}
 						{:else}
 							—

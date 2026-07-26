@@ -147,7 +147,8 @@ describe('saved-formula: avaliação bate com o valor real', () => {
 
     const evaluated = await evaluateSavedFormula(deps, actor, created.value.id);
     expect(evaluated.ok).toBe(true);
-    if (evaluated.ok) expect(evaluated.value.value).toBe(40_000);
+    // Variáveis entram em reais (não centavos) — 20.000 centavos = R$200 * 2 = 400.
+    if (evaluated.ok) expect(evaluated.value.value).toBe(400);
   });
 
   test('mês encerrado sem disponível projetado: avaliar nesse mês vira unknown_variable, não quebra', async () => {

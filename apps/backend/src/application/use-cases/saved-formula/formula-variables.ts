@@ -20,6 +20,11 @@ function categoryToken(categoryId: string): string {
 /**
  * Catálogo de variáveis pro mês pedido — mesmos números que a Home do
  * dashboard já mostra (reaproveita `monthlySummary`, sem query nova).
+ *
+ * Valores entram em **reais** (não centavos): números que o usuário digita
+ * na calculadora são naturalmente reais ("8+8" = dezesseis reais) — expor as
+ * variáveis em centavos faria qualquer fórmula que misturasse uma variável
+ * com um literal digitado dar um resultado 100x menor que o esperado.
  */
 export async function buildFormulaCatalog(
   deps: Pick<UseCaseDeps, 'repos' | 'cache'>,
@@ -28,11 +33,14 @@ export async function buildFormulaCatalog(
   month: number
 ): Promise<FormulaCatalog> {
   const summary = await monthlySummary(deps, actor, year, month);
+  const income = summary.income / 100;
+  const expense = summary.expense / 100;
+  const totalBalance = summary.totalBalance / 100;
 
   const values: Record<string, number> = {
-    receitas: summary.income,
-    despesas: summary.expense,
-    saldo: summary.totalBalance,
+    receitas: income,
+    despesas: expense,
+    saldo: totalBalance,
   };
   const variables: FormulaVariable[] = [
     {
@@ -53,7 +61,7 @@ export async function buildFormulaCatalog(
   ];
 
   if (summary.projectedAvailable !== null) {
-    values.disponivel_projetado = summary.projectedAvailable;
+    values.disponivel_projetado = summary.projectedAvailable / 100;
     variables.push({
       token: 'disponivel_projetado',
       label: 'Disponível projetado',
@@ -63,7 +71,7 @@ export async function buildFormulaCatalog(
 
   for (const category of summary.byCategory) {
     const token = categoryToken(category.categoryId);
-    values[token] = category.total;
+    values[token] = category.total / 100;
     variables.push({
       token,
       label: category.name,

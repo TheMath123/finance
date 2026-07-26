@@ -11,6 +11,10 @@
  * (teal #2ec4b6, vermelho #fb2c36, verde #00c950); neutros na escala slate padrão do Tailwind.
  */
 :root {
+	/* Sem isso, o browser sempre desenha popups de controles nativos (select,
+	   date picker, scrollbar) no esquema claro do SO, mesmo com o resto da UI
+	   em dark — o "select bugado" no modo escuro é exatamente essa lacuna. */
+	color-scheme: light;
 	--background: hsl(100 100% 99%); /* #fdfffc */
 	--foreground: hsl(217 33% 17%); /* slate-800 */
 	--card: hsl(100 100% 99%);
@@ -49,6 +53,7 @@
 }
 
 .dark {
+	color-scheme: dark;
 	--background: hsl(208 90% 4%); /* #010b14 */
 	--foreground: hsl(0 0% 100%);
 	--card: hsl(222 47% 11%); /* slate-900 */
