@@ -1,13 +1,25 @@
 <script lang="ts">
+	import { evaluateFormula } from '@finance/formula';
+	import CalculatorIcon from 'phosphor-svelte/lib/Calculator';
 	import CaretLeftIcon from 'phosphor-svelte/lib/CaretLeft';
 	import CaretRightIcon from 'phosphor-svelte/lib/CaretRight';
 
 	import { resolve } from '$app/paths';
 
+	import FormulaDialog from '$lib/components/calculator/formula-dialog.svelte';
+	import { Button } from '$lib/components/ui/button';
+	import { buildClientFormulaCatalog } from '$lib/formula-catalog';
 	import { MONTH_NAMES } from '$lib/month-names';
 	import { formatCents } from '$lib/money';
 
 	let { data } = $props();
+
+	let formulaDialogOpen = $state(false);
+
+	const catalog = $derived(
+		data.summary ? buildClientFormulaCatalog(data.summary) : { values: {}, variables: [] }
+	);
+	const pinnedFormulas = $derived(data.formulas.filter((f) => f.pinnedTo === 'home'));
 
 	const monthLabel = $derived(`${MONTH_NAMES[data.month - 1]} de ${data.year}`);
 
@@ -126,5 +138,43 @@
 				</tbody>
 			</table>
 		</div>
+
+		<div>
+			<div class="mb-3 flex items-center justify-between">
+				<h2 class="text-sm font-medium text-muted-foreground">Fórmulas salvas</h2>
+				<Button variant="outline" size="sm" onclick={() => (formulaDialogOpen = true)}>
+					<CalculatorIcon size={16} />
+					Nova fórmula
+				</Button>
+			</div>
+			{#if pinnedFormulas.length === 0}
+				<p class="text-sm text-muted-foreground">Nenhuma fórmula fixada aqui ainda.</p>
+			{:else}
+				<div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+					{#each pinnedFormulas as formula (formula.id)}
+						{@const evaluated = evaluateFormula(formula.expression, catalog.values)}
+						<div class="rounded-lg border border-foreground/10 p-4">
+							<p class="truncate text-sm text-muted-foreground">{formula.name}</p>
+							<p class="mt-1 text-2xl font-semibold">
+								{#if evaluated.ok}
+									{formula.displayFormat === 'currency'
+										? formatCents(evaluated.value)
+										: evaluated.value}
+								{:else}
+									—
+								{/if}
+							</p>
+						</div>
+					{/each}
+				</div>
+			{/if}
+		</div>
 	{/if}
 </div>
+
+<FormulaDialog
+	bind:open={formulaDialogOpen}
+	variables={catalog.variables}
+	values={catalog.values}
+	formulas={data.formulas}
+/>

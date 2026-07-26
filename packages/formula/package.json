@@ -1,0 +1,19 @@
+{
+  "name": "@finance/formula",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@finance/shared": "workspace:*",
+    "expr-eval": "^2.0.2"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.0"
+  }
+}

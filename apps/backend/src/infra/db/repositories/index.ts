@@ -18,6 +18,7 @@ import { createNotificationPreferenceRepository } from './notification-preferenc
 import { createPlatformMetricsRepository } from './platform-metrics.repository';
 import { createPushTokenRepository } from './push-token.repository';
 import { createRecurringRepository } from './recurring.repository';
+import { createSavedFormulaRepository } from './saved-formula.repository';
 import { createSplitShareRepository } from './split-share.repository';
 import { createTokenRepository } from './token.repository';
 import { createTransactionRepository } from './transaction.repository';
@@ -56,5 +57,6 @@ export function createRepositories(db: DbHandle): Repositories {
     featureFlag: createFeatureFlagRepository(db),
     aiUsageLog: createAiUsageLogRepository(db),
     platformMetrics: createPlatformMetricsRepository(db),
+    savedFormula: createSavedFormulaRepository(db),
   };
 }

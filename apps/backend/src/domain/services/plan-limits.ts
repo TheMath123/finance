@@ -9,4 +9,6 @@ export const FREE_PLAN_LIMITS = {
   maxOwnedSharedWorkspaces: 1,
   /** Quantos membros um workspace free pode ter no total. */
   maxMembersPerWorkspace: 5,
+  /** Quantas fórmulas customizadas (M5-01) um workspace free pode salvar. */
+  maxSavedFormulasPerWorkspace: 10,
 } as const;

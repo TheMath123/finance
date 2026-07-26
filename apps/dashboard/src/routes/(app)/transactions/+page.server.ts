@@ -1,14 +1,23 @@
 import { type Cookies, fail, redirect } from '@sveltejs/kit';
 
 import { parseReaisToCents } from '$lib/money';
+import { savedFormulaSchema } from '$lib/schemas/formula';
 import { transactionEditSchema, transactionFormSchema } from '$lib/schemas/transaction';
 import * as accountApi from '$lib/server/account-api';
 import { getActiveWorkspaceId } from '$lib/server/active-workspace';
 import * as cardApi from '$lib/server/card-api';
 import * as categoryApi from '$lib/server/category-api';
+import * as formulaApi from '$lib/server/formula-api';
+import * as summaryApi from '$lib/server/summary-api';
 import * as transactionApi from '$lib/server/transaction-api';
 
 import type { Actions, PageServerLoad } from './$types';
+
+/** A calculadora usa sempre o mês corrente aqui — a página tem filtro de data livre, não navegação por mês como a Home. */
+function currentYearMonth(): { year: number; month: number } {
+	const now = new Date();
+	return { year: now.getFullYear(), month: now.getMonth() + 1 };
+}
 
 /** Primeiro/último dia do mês atual (YYYY-MM-DD) — default da listagem quando o usuário não escolheu um período. */
 function currentMonthRange(): { from: string; to: string } {
@@ -41,11 +50,14 @@ export const load: PageServerLoad = async ({ parent, locals, url }) => {
 		deletedOnly: url.searchParams.get('deletedOnly') === 'true'
 	};
 
-	const [transactions, categories, accounts, cards] = await Promise.all([
+	const { year, month } = currentYearMonth();
+	const [transactions, categories, accounts, cards, formulas, formulaSummary] = await Promise.all([
 		transactionApi.listTransactions(accessToken, workspaceId, filters),
 		categoryApi.listCategories(accessToken, workspaceId),
 		accountApi.listAccounts(accessToken, workspaceId),
-		cardApi.listCards(accessToken, workspaceId)
+		cardApi.listCards(accessToken, workspaceId),
+		formulaApi.listFormulas(accessToken, workspaceId),
+		summaryApi.getMonthlySummary(accessToken, workspaceId, year, month)
 	]);
 
 	return {
@@ -53,7 +65,19 @@ export const load: PageServerLoad = async ({ parent, locals, url }) => {
 		categories: categories.ok ? categories.value : [],
 		accounts: accounts.ok ? accounts.value : [],
 		cards: cards.ok ? cards.value : [],
-		filters
+		filters,
+		formulas: formulas.ok ? formulas.value : [],
+		formulaSummary: formulaSummary.ok
+			? formulaSummary.value
+			: {
+					year,
+					month,
+					income: 0,
+					expense: 0,
+					byCategory: [],
+					totalBalance: 0,
+					projectedAvailable: null
+				}
 	};
 };
 
@@ -165,6 +189,71 @@ export const actions: Actions = {
 			locals.session.accessToken,
 			workspaceId,
 			transactionId
+		);
+		if (!result.ok) return fail(result.error.status || 500, { message: result.error.message });
+		return { success: true };
+	},
+
+	createFormula: async ({ request, cookies, locals }) => {
+		if (!locals.session) return fail(401, { message: 'Sessão expirada.' });
+		const form = await request.formData();
+		const workspaceId = resolveWorkspaceId(cookies, locals.session.defaultWorkspaceId);
+
+		const parsed = savedFormulaSchema.safeParse({
+			name: form.get('name')?.toString() ?? '',
+			expression: form.get('expression')?.toString() ?? '',
+			displayFormat: form.get('displayFormat')?.toString(),
+			pinnedTo: form.get('pinnedTo')?.toString()
+		});
+		if (!parsed.success) {
+			return fail(400, { message: parsed.error.issues[0]?.message ?? 'Dados inválidos.' });
+		}
+
+		const result = await formulaApi.createFormula(
+			locals.session.accessToken,
+			workspaceId,
+			parsed.data
+		);
+		if (!result.ok) return fail(result.error.status || 500, { message: result.error.message });
+		return { success: true };
+	},
+
+	updateFormula: async ({ request, cookies, locals }) => {
+		if (!locals.session) return fail(401, { message: 'Sessão expirada.' });
+		const form = await request.formData();
+		const formulaId = form.get('formulaId')?.toString() ?? '';
+		const workspaceId = resolveWorkspaceId(cookies, locals.session.defaultWorkspaceId);
+
+		const parsed = savedFormulaSchema.safeParse({
+			name: form.get('name')?.toString() ?? '',
+			expression: form.get('expression')?.toString() ?? '',
+			displayFormat: form.get('displayFormat')?.toString(),
+			pinnedTo: form.get('pinnedTo')?.toString()
+		});
+		if (!parsed.success) {
+			return fail(400, { message: parsed.error.issues[0]?.message ?? 'Dados inválidos.' });
+		}
+
+		const result = await formulaApi.updateFormula(
+			locals.session.accessToken,
+			workspaceId,
+			formulaId,
+			parsed.data
+		);
+		if (!result.ok) return fail(result.error.status || 500, { message: result.error.message });
+		return { success: true };
+	},
+
+	deleteFormula: async ({ request, cookies, locals }) => {
+		if (!locals.session) return fail(401, { message: 'Sessão expirada.' });
+		const form = await request.formData();
+		const formulaId = form.get('formulaId')?.toString() ?? '';
+		const workspaceId = resolveWorkspaceId(cookies, locals.session.defaultWorkspaceId);
+
+		const result = await formulaApi.deleteFormula(
+			locals.session.accessToken,
+			workspaceId,
+			formulaId
 		);
 		if (!result.ok) return fail(result.error.status || 500, { message: result.error.message });
 		return { success: true };

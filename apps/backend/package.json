@@ -16,6 +16,7 @@
     "@elysiajs/cors": "^1.4.2",
     "@finance/db": "workspace:*",
     "@finance/email": "workspace:*",
+    "@finance/formula": "workspace:*",
     "@finance/queues": "workspace:*",
     "@finance/shared": "workspace:*",
     "@finance/storage": "workspace:*",

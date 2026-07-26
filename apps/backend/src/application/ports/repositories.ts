@@ -16,6 +16,7 @@ import type { NotificationRepository } from './notification-repository';
 import type { PlatformMetricsRepository } from './platform-metrics-repository';
 import type { PushTokenRepository } from './push-token-repository';
 import type { RecurringRepository } from './recurring-repository';
+import type { SavedFormulaRepository } from './saved-formula-repository';
 import type { SplitShareRepository } from './split-share-repository';
 import type { TokenRepository } from './token-repository';
 import type { TransactionRepository } from './transaction-repository';
@@ -53,4 +54,5 @@ export interface Repositories {
   featureFlag: FeatureFlagRepository;
   aiUsageLog: AiUsageLogRepository;
   platformMetrics: PlatformMetricsRepository;
+  savedFormula: SavedFormulaRepository;
 }

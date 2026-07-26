@@ -109,6 +109,12 @@ cadastrado.
   validadas em 2026-07-24. Fase 3 (logo de marca via thesvg.org) implementada
   de carona durante o M4 — código pronto, falta validação manual no
   emulador.
+- [M5-01 — Calculadora de fórmulas customizadas (dashboard web)](done/m5-01-calculadora-formulas-dashboard.md):
+  concluída em 2026-07-26 (não é o escopo original de M5 no `spec.md`,
+  que é workspaces corporativos — ficou com esse rótulo desde que virou
+  nota de backlog). Inclui pacote novo `@finance/formula` (parser/
+  avaliador de expressão puro, reaproveitado por backend e dashboard, e
+  futuramente pelo app mobile numa fase 2 ainda não planejada).
 
 ## M4 — Dashboard web (Svelte)
 

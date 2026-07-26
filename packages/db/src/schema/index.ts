@@ -19,6 +19,7 @@ export * from './platform-settings';
 export * from './push-token';
 export * from './recurring-transaction';
 export * from './refresh-token';
+export * from './saved-formula';
 export * from './transaction';
 export * from './trusted-contact';
 export * from './user';

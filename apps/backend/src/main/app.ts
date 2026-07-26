@@ -10,6 +10,7 @@ import { cardRoutes } from '../http/modules/card/routes';
 import { categoryRoutes } from '../http/modules/category/routes';
 import { notificationRoutes } from '../http/modules/notification/routes';
 import { recurringRoutes } from '../http/modules/recurring/routes';
+import { savedFormulaRoutes } from '../http/modules/saved-formula/routes';
 import { splitRoutes } from '../http/modules/split/routes';
 import { summaryRoutes } from '../http/modules/summary/routes';
 import { transactionRoutes } from '../http/modules/transaction/routes';
@@ -40,6 +41,7 @@ export function createApp(deps: AppDeps) {
       .use(whatsappRoutes(deps))
       .use(transferRoutes(deps))
       .use(splitRoutes(deps))
+      .use(savedFormulaRoutes(deps))
       .use(adminRoutes(deps))
   );
 }

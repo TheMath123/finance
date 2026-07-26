@@ -18,6 +18,7 @@
         "@elysiajs/cors": "^1.4.2",
         "@finance/db": "workspace:*",
         "@finance/email": "workspace:*",
+        "@finance/formula": "workspace:*",
         "@finance/queues": "workspace:*",
         "@finance/shared": "workspace:*",
         "@finance/storage": "workspace:*",
@@ -40,6 +41,7 @@
       "name": "@finance/dashboard",
       "version": "0.0.1",
       "dependencies": {
+        "@finance/formula": "workspace:*",
         "@finance/shared": "workspace:*",
         "mode-watcher": "^1.1.0",
         "phosphor-svelte": "^3.1.0",
@@ -167,6 +169,17 @@
         "@types/nodemailer": "^8.0.1",
         "@types/react": "^19.2.17",
         "typescript": "^5.9.0",
+      },
+    },
+    "packages/formula": {
+      "name": "@finance/formula",
+      "version": "0.0.1",
+      "dependencies": {
+        "@finance/shared": "workspace:*",
+        "expr-eval": "^2.0.2",
+      },
+      "devDependencies": {
+        "typescript": "^5.8.0",
       },
     },
     "packages/queues": {
@@ -572,6 +585,8 @@
     "@finance/db": ["@finance/db@workspace:packages/db"],
 
     "@finance/email": ["@finance/email@workspace:packages/email"],
+
+    "@finance/formula": ["@finance/formula@workspace:packages/formula"],
 
     "@finance/queues": ["@finance/queues@workspace:packages/queues"],
 
@@ -1490,6 +1505,8 @@
     "expo-web-browser": ["expo-web-browser@57.0.1", "", { "peerDependencies": { "expo": "*", "react-native": "*" } }, "sha512-akqnOoJRzKXbFbiqTwxnmn8mVoSfPKEBxwDNxQJHAGElgneL28jlEPYaTDpOONz9azPWVfEHZ/i7kqQgN2ExXg=="],
 
     "exponential-backoff": ["exponential-backoff@3.1.3", "", {}, "sha512-ZgEeZXj30q+I0EN+CbSSpIyPaJ5HVQD18Z1m+u1FXbAeT94mr1zw50q4q6jiiC447Nl/YTcIYSAftiGqetwXCA=="],
+
+    "expr-eval": ["expr-eval@2.0.2", "", {}, "sha512-4EMSHGOPSwAfBiibw3ndnP0AvjDWLsMvGOvWEZ2F96IGk0bIVdjQisOHxReSkE13mHcfbuCiXw+G4y0zv6N8Eg=="],
 
     "fast-copy": ["fast-copy@4.0.4", "", {}, "sha512-eVAiWVNPSEGIzDl5yPuLrx8fNMogScXvD9xp1Kzd41FjRIz2I3sSIcxsFeM5EzFfHAfobdvs8ZySffUopljvIA=="],
 

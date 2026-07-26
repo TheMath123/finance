@@ -1,6 +1,8 @@
 <script lang="ts">
+	import { evaluateFormula } from '@finance/formula';
 	import ArchiveIcon from 'phosphor-svelte/lib/ArchiveIcon';
 	import ArrowCounterClockwiseIcon from 'phosphor-svelte/lib/ArrowCounterClockwiseIcon';
+	import CalculatorIcon from 'phosphor-svelte/lib/Calculator';
 	import PencilSimpleIcon from 'phosphor-svelte/lib/PencilSimpleIcon';
 
 	import { enhance } from '$app/forms';
@@ -9,16 +11,22 @@
 	import { SvelteSet, SvelteURLSearchParams } from 'svelte/reactivity';
 
 	import { resolveCategoryIcon } from '$lib/category-icon';
+	import FormulaDialog from '$lib/components/calculator/formula-dialog.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
+	import { buildClientFormulaCatalog } from '$lib/formula-catalog';
 	import { getMerchantLogoUrl } from '$lib/merchant-logo';
 	import { formatCents } from '$lib/money';
 	import type { TransactionView } from '$lib/server/transaction-api';
 	import { formatTransactionDate, transactionSourceLabel } from '$lib/transaction-labels';
 
 	let { data, form } = $props();
+
+	let formulaDialogOpen = $state(false);
+	const formulaCatalog = $derived(buildClientFormulaCatalog(data.formulaSummary));
+	const pinnedFormulas = $derived(data.formulas.filter((f) => f.pinnedTo === 'transactions'));
 
 	const canManage = $derived(data.activeWorkspace?.role !== 'viewer');
 	const archivedView = $derived(data.filters.deletedOnly);
@@ -89,11 +97,35 @@
 			>
 				Exportar CSV
 			</a>
+			<Button variant="outline" onclick={() => (formulaDialogOpen = true)}>
+				<CalculatorIcon size={16} />
+				Calculadora
+			</Button>
 			{#if canManage}
 				<Button onclick={() => (createOpen = true)}>Nova transação</Button>
 			{/if}
 		</div>
 	</div>
+
+	{#if pinnedFormulas.length > 0}
+		<div class="flex flex-wrap gap-3">
+			{#each pinnedFormulas as formula (formula.id)}
+				{@const evaluated = evaluateFormula(formula.expression, formulaCatalog.values)}
+				<div class="rounded-lg border border-foreground/10 px-4 py-2">
+					<p class="text-xs text-muted-foreground">{formula.name}</p>
+					<p class="text-lg font-semibold">
+						{#if evaluated.ok}
+							{formula.displayFormat === 'currency'
+								? formatCents(evaluated.value)
+								: evaluated.value}
+						{:else}
+							—
+						{/if}
+					</p>
+				</div>
+			{/each}
+		</div>
+	{/if}
 
 	<!-- Ativas/Arquivadas são duas listagens separadas (nunca misturadas) — mesmo padrão de abas usado no resto do dashboard. -->
 	<nav class="flex gap-2">
@@ -579,3 +611,10 @@
 		{/if}
 	</Dialog.Content>
 </Dialog.Root>
+
+<FormulaDialog
+	bind:open={formulaDialogOpen}
+	variables={formulaCatalog.variables}
+	values={formulaCatalog.values}
+	formulas={data.formulas}
+/>
