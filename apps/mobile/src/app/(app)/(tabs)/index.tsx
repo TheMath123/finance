@@ -5,6 +5,7 @@ import { ActivityIndicator, View } from 'react-native';
 
 import { BalanceOverview } from '@/components/finance/balance-overview';
 import { HeaderChip } from '@/components/finance/header-chip';
+import { PinnedFormulas } from '@/components/finance/pinned-formulas';
 import { Screen } from '@/components/ui/screen';
 import { Text } from '@/components/ui/text';
 import { useSession } from '@/context/session';
@@ -197,6 +198,8 @@ export default function HomeScreen() {
         }
         description="Saldo atual + recorrências previstas − faturas em aberto − estimativa de gasto variável."
       />
+
+      <PinnedFormulas workspaceId={workspaceId} pinnedField="pinnedHome" />
     </Screen>
   );
 }

@@ -24,6 +24,7 @@ import {
 } from 'react-native';
 import { BalanceOverview } from '@/components/finance/balance-overview';
 import { HeaderChip } from '@/components/finance/header-chip';
+import { PinnedFormulas } from '@/components/finance/pinned-formulas';
 import { formatIsoDate } from '@/components/form/date-field';
 import { CreateRecurringForm } from '@/components/forms/create-recurring-form';
 import { CreateTransactionForm } from '@/components/forms/create-transaction-form';
@@ -749,6 +750,11 @@ export default function TransactionsScreen() {
           workspaceId={workspaceId!}
         />
       ))}
+
+      <PinnedFormulas
+        workspaceId={workspaceId}
+        pinnedField="pinnedTransactions"
+      />
 
       {isLoading ? (
         <ActivityIndicator className="mt-8" />

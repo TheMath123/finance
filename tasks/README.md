@@ -114,7 +114,12 @@ cadastrado.
   que é workspaces corporativos — ficou com esse rótulo desde que virou
   nota de backlog). Inclui pacote novo `@finance/formula` (parser/
   avaliador de expressão puro, reaproveitado por backend e dashboard, e
-  futuramente pelo app mobile numa fase 2 ainda não planejada).
+  agora também pelo app mobile).
+- [M5-01b — Calculadora de fórmulas customizadas (app mobile)](done/m5-01b-calculadora-formulas-mobile.md):
+  fase 2 do M5-01, concluída em 2026-07-28. Mesmo `@finance/formula`,
+  teclado numérico on-screen (sem digitação livre, diferente do
+  dashboard), tela própria `/formulas` + widget de fórmulas fixadas na
+  Home e em Transações.
 
 ## M4 — Dashboard web (Svelte)
 

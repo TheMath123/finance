@@ -4,6 +4,7 @@
   "version": "1.0.0",
   "dependencies": {
     "@expo/ui": "~57.0.7",
+    "@finance/formula": "workspace:*",
     "@finance/shared": "workspace:*",
     "@hookform/resolvers": "^5.4.0",
     "@rn-primitives/checkbox": "^1.5.2",

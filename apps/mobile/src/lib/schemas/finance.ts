@@ -1,6 +1,7 @@
 import {
   ACCOUNT_TYPES,
   RECURRENCE_FREQUENCIES,
+  SAVED_FORMULA_DISPLAY_FORMATS,
   TRANSACTION_METHODS,
   TRANSACTION_TYPES,
 } from '@finance/shared';
@@ -122,3 +123,15 @@ export const acceptTransferSchema = z.object({
   markTrusted: z.boolean().optional(),
 });
 export type AcceptTransferInput = z.infer<typeof acceptTransferSchema>;
+
+/** Não é uma escolha única — a mesma fórmula pode virar widget na Home E em Transações ao mesmo tempo. */
+export const savedFormulaSchema = z.object({
+  name: z.string().min(1, 'Informe o nome').max(80),
+  expression: z.string().min(1, 'Monte uma expressão').max(500),
+  displayFormat: z.enum(SAVED_FORMULA_DISPLAY_FORMATS, {
+    error: 'Selecione o formato',
+  }),
+  pinnedHome: z.boolean(),
+  pinnedTransactions: z.boolean(),
+});
+export type SavedFormulaInput = z.infer<typeof savedFormulaSchema>;
