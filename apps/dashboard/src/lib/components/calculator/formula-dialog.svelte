@@ -231,7 +231,7 @@
 		<DialogPrimitive.Content
 			bind:ref={contentEl}
 			style="transform: translate({dragOffset.x}px, {dragOffset.y}px)"
-			class="fixed inset-4 z-50 m-auto flex h-fit max-h-[calc(100vh-2rem)] w-[calc(100%-2rem)] flex-col overflow-y-auto rounded-xl bg-popover text-sm text-popover-foreground ring-1 ring-foreground/10 outline-none sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95"
+			class="fixed inset-4 z-50 m-auto flex h-fit max-h-[calc(100vh-2rem)] w-[calc(100%-2rem)] flex-col overflow-y-auto rounded-xl bg-popover text-sm text-popover-foreground ring-1 ring-foreground/10 outline-none sm:max-w-sm md:max-w-3xl data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95"
 		>
 			<!-- Cabeçalho fica `sticky` — mesmo se o conteúdo for mais alto que a tela e
 			     precisar rolar, o cabeçalho (única alça de arraste) nunca some de vista. -->
@@ -260,95 +260,106 @@
 				method="POST"
 				action={editing ? '?/updateFormula' : '?/createFormula'}
 				use:enhance={() => afterSubmit({ resetOnSuccess: true })}
-				class="flex flex-col gap-3 p-4"
+				class="flex flex-col gap-4 p-4"
 			>
 				{#if editing}
 					<input type="hidden" name="formulaId" value={editing.id} />
 				{/if}
 
-				<!-- "Tela" da calculadora: fórmula + resultado, monoespaçado, alinhado à direita. -->
-				<div class="rounded-lg bg-muted/50 p-3 text-right">
-					<input
-						id="formula-expression"
-						name="expression"
-						bind:value={expression}
-						required
-						placeholder="0"
-						class="w-full bg-transparent text-right font-mono text-lg outline-none placeholder:text-muted-foreground"
-					/>
-					<p class="mt-1 truncate font-mono text-xs text-muted-foreground">
-						{#if preview}
-							{#if preview.ok}
-								= {displayFormat === 'currency' ? formatReais(preview.value) : preview.value}
-							{:else}
-								fórmula inválida
-							{/if}
-						{:else}
-							&nbsp;
-						{/if}
-					</p>
-				</div>
-
-				<!-- Teclado numérico — mesma sensação de calculadora de verdade, além das variáveis. -->
-				<div class="grid grid-cols-4 gap-1.5">
-					{#each KEYPAD_KEYS as k (k.label)}
-						<button
-							type="button"
-							class="flex items-center justify-center rounded-lg py-2 text-sm font-medium transition-colors {KEY_STYLES[
-								k.kind
-							]} {k.span === 2 ? 'col-span-2' : ''}"
-							onclick={() => pressKey(k)}
-							aria-label={k.action === 'backspace' ? 'Apagar último caractere' : undefined}
-						>
-							{#if k.action === 'backspace'}
-								<BackspaceIcon size={16} />
-							{:else}
-								{k.label}
-							{/if}
-						</button>
-					{/each}
-				</div>
-
-				<div class="grid gap-2">
-					<p class="text-xs font-medium text-muted-foreground">Variáveis</p>
-					{#each groupedVariables as { group, items } (group)}
-						<div class="grid gap-1">
-							<p class="text-[11px] font-medium text-muted-foreground/70">
-								{GROUP_LABELS[group]}
+				<!-- Calculadora (tela+teclado, coluna fixa) e variáveis (painel largo e rolável) lado a
+				     lado a partir de md — evita que o catálogo estendido (conta/cartão/método) deixe o
+				     dialog gigante na vertical; em telas estreitas cai pra empilhado normal. -->
+				<div class="flex flex-col gap-4 md:flex-row md:items-start">
+					<div class="flex flex-col gap-3 md:w-64 md:shrink-0">
+						<!-- "Tela" da calculadora: fórmula + resultado, monoespaçado, alinhado à direita. -->
+						<div class="rounded-lg bg-muted/50 p-3 text-right">
+							<input
+								id="formula-expression"
+								name="expression"
+								bind:value={expression}
+								required
+								placeholder="0"
+								class="w-full bg-transparent text-right font-mono text-lg outline-none placeholder:text-muted-foreground"
+							/>
+							<p class="mt-1 truncate font-mono text-xs text-muted-foreground">
+								{#if preview}
+									{#if preview.ok}
+										= {displayFormat === 'currency' ? formatReais(preview.value) : preview.value}
+									{:else}
+										fórmula inválida
+									{/if}
+								{:else}
+									&nbsp;
+								{/if}
 							</p>
-							<div class="flex flex-wrap gap-1.5">
-								{#each items as variable (variable.token)}
-									<button
-										type="button"
-										class="max-w-[9.5rem] truncate rounded-full border border-foreground/10 px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-primary/10 hover:text-foreground"
-										title="{variable.label} — {variable.description}"
-										onclick={() => insertVariable(variable.token)}
-									>
-										{variable.label}
-									</button>
-								{/each}
-							</div>
 						</div>
-					{/each}
+
+						<!-- Teclado numérico — mesma sensação de calculadora de verdade, além das variáveis. -->
+						<div class="grid grid-cols-4 gap-1.5">
+							{#each KEYPAD_KEYS as k (k.label)}
+								<button
+									type="button"
+									class="flex items-center justify-center rounded-lg py-2 text-sm font-medium transition-colors {KEY_STYLES[
+										k.kind
+									]} {k.span === 2 ? 'col-span-2' : ''}"
+									onclick={() => pressKey(k)}
+									aria-label={k.action === 'backspace' ? 'Apagar último caractere' : undefined}
+								>
+									{#if k.action === 'backspace'}
+										<BackspaceIcon size={16} />
+									{:else}
+										{k.label}
+									{/if}
+								</button>
+							{/each}
+						</div>
+					</div>
+
+					<div
+						class="grid gap-2 border-t border-foreground/10 pt-3 md:max-h-[24rem] md:flex-1 md:overflow-y-auto md:border-t-0 md:border-l md:pt-0 md:pl-4"
+					>
+						<p class="text-xs font-medium text-muted-foreground">Variáveis</p>
+						{#each groupedVariables as { group, items } (group)}
+							<div class="grid gap-1">
+								<p class="text-[11px] font-medium text-muted-foreground/70">
+									{GROUP_LABELS[group]}
+								</p>
+								<div class="flex flex-wrap gap-1.5">
+									{#each items as variable (variable.token)}
+										<button
+											type="button"
+											class="max-w-[9.5rem] truncate rounded-full border border-foreground/10 px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-primary/10 hover:text-foreground"
+											title="{variable.label} — {variable.description}"
+											onclick={() => insertVariable(variable.token)}
+										>
+											{variable.label}
+										</button>
+									{/each}
+								</div>
+							</div>
+						{/each}
+					</div>
 				</div>
 
-				<div class="grid gap-2">
-					<Label for="formula-name">Nome</Label>
-					<Input id="formula-name" name="name" bind:value={name} required maxlength={80} />
-				</div>
+				<div class="grid gap-3 sm:grid-cols-2">
+					<div class="grid gap-2">
+						<Label for="formula-name">Nome</Label>
+						<Input id="formula-name" name="name" bind:value={name} required maxlength={80} />
+					</div>
 
-				<div class="grid gap-2">
-					<Label id="formula-display-format-label">Formato</Label>
-					<input type="hidden" name="displayFormat" value={displayFormat} />
-					<SelectField
-						value={displayFormat}
-						onValueChange={(v) => (displayFormat = v as 'currency' | 'number')}
-						ariaLabelledby="formula-display-format-label"
-						options={[
-							{ value: 'currency', label: 'Moeda' },
-							{ value: 'number', label: 'Número' }
-						]}
-					/>
+					<div class="grid gap-2">
+						<Label id="formula-display-format-label">Formato</Label>
+						<input type="hidden" name="displayFormat" value={displayFormat} />
+						<SelectField
+							value={displayFormat}
+							onValueChange={(v) => (displayFormat = v as 'currency' | 'number')}
+							ariaLabelledby="formula-display-format-label"
+							options={[
+								{ value: 'currency', label: 'Moeda' },
+								{ value: 'number', label: 'Número' }
+							]}
+						/>
+					</div>
 				</div>
 
 				<!-- Fixar não é uma escolha única — a mesma fórmula pode virar widget nas duas telas. -->
@@ -356,7 +367,9 @@
 					<Label>Fixar como widget em</Label>
 					<input type="hidden" name="pinnedHome" value={pinnedHome} />
 					<input type="hidden" name="pinnedTransactions" value={pinnedTransactions} />
-					<div class="flex flex-col gap-1 rounded-lg border border-foreground/10 p-1">
+					<div
+						class="grid grid-cols-1 gap-1 rounded-lg border border-foreground/10 p-1 sm:grid-cols-2"
+					>
 						<label
 							for="formula-pin-home"
 							class="flex cursor-pointer items-center justify-between rounded-md px-2 py-1.5 text-sm hover:bg-muted/50"
@@ -385,9 +398,11 @@
 			{#if formulas.length > 0}
 				<div class="flex flex-col gap-1 border-t border-foreground/10 p-4 pt-3">
 					<p class="text-xs font-medium text-muted-foreground">Fórmulas salvas</p>
-					{#each formulas as formula (formula.id)}
-						<SavedFormulaRow {formula} onEdit={startEdit} />
-					{/each}
+					<div class="grid gap-1 md:grid-cols-2">
+						{#each formulas as formula (formula.id)}
+							<SavedFormulaRow {formula} onEdit={startEdit} />
+						{/each}
+					</div>
 				</div>
 			{/if}
 		</DialogPrimitive.Content>

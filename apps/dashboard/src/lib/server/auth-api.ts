@@ -96,3 +96,24 @@ export function confirmAccountDeletion(
 ): Promise<Either<ApiError, unknown>> {
 	return apiRequest('/auth/me/delete/confirm', { method: 'POST', body: { code }, accessToken });
 }
+
+export function forgotPassword(input: {
+	email: string;
+}): Promise<Either<ApiError, { message: string }>> {
+	return apiRequest('/auth/forgot-password', { method: 'POST', body: input });
+}
+
+export function verifyResetCode(input: {
+	email: string;
+	code: string;
+}): Promise<Either<ApiError, { message: string }>> {
+	return apiRequest('/auth/verify-reset-code', { method: 'POST', body: input });
+}
+
+export function resetPassword(input: {
+	email: string;
+	code: string;
+	password: string;
+}): Promise<Either<ApiError, { message: string }>> {
+	return apiRequest('/auth/reset-password', { method: 'POST', body: input });
+}

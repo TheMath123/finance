@@ -134,6 +134,46 @@ Nenhuma — é o ponto de partida do M4.
 Verificado: `bun run typecheck` (8/8 pacotes), `bun run lint` e
 `bun run build` (adapter-node) limpos.
 
+## Complemento: recuperação de senha (2026-07-29)
+
+Gap percebido pelo usuário testando o dashboard: o backend já expõe
+`/auth/forgot-password`, `/auth/verify-reset-code` e `/auth/reset-password`
+(mesmo fluxo usado pelo app mobile — `forgot-password.tsx` →
+`reset-password.tsx` → `new-password.tsx`), mas o dashboard só tinha
+`login`/`register`/`logout`. Implementado espelhando exatamente o fluxo do
+mobile, adaptado pra rotas SvelteKit (query string em vez de route params
+do Expo Router pra carregar e-mail/código entre os 3 passos):
+
+- `lib/schemas/auth.ts`: `forgotPasswordSchema`, `verifyResetCodeSchema`
+  (código de 6 dígitos), `newPasswordSchema` (com `refine` de confirmação).
+- `lib/server/auth-api.ts`: `forgotPassword`, `verifyResetCode`,
+  `resetPassword`.
+- Três rotas novas: `/forgot-password` (e-mail → redireciona pro passo 2
+  com o e-mail na query), `/reset-password` (e-mail+código, com botão
+  "Reenviar código" via `fetch` direto pra `?/resend`, sem navegar) e
+  `/new-password` (exige e-mail+código na query — `load` redireciona de
+  volta pro passo 2 se faltar algum).
+- Link "Esqueci minha senha" adicionado no cabeçalho do campo de senha da
+  tela de login.
+
+**Bug real encontrado e corrigido durante a validação**: a rota
+`/reset-password` tinha uma action `default` (verificar código) e uma
+action nomeada `resend` (reenviar) no mesmo arquivo — SvelteKit **proíbe**
+misturar `default` com actions nomeadas no mesmo `+page.server.ts`
+("When using named actions, the default action cannot be used"), o que
+quebrava com **500 em qualquer submit** (só não aparecia no `svelte-check`
+porque é uma regra de runtime, não de tipo). Só foi pego rodando um smoke
+test real via `curl` contra o dev server — corrigido renomeando a action
+principal pra `verify` (`action="?/verify"` no form).
+
+Validado: `svelte-check` (0 erros), `prettier --check` + `eslint` (0
+problemas), build de produção limpo, e smoke test via `curl` cobrindo os 5
+caminhos principais (e-mail/código inválidos, código correto rejeitado
+pelo backend, reenvio, guarda de `/new-password` sem query, senhas não
+coincidindo) — todos retornando o `fail`/`redirect` esperado, sem erro 500.
+Não foi possível validar o fluxo 100% ponta a ponta com um código real
+(sem acesso à caixa de e-mail do Resend nesta sessão).
+
 ## Critério de conclusão
 
 Login funcionando ponta a ponta contra o backend real (mesmo usuário do

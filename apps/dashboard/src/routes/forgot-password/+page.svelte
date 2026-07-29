@@ -13,14 +13,14 @@
 </script>
 
 <svelte:head>
-	<title>Entrar — Finance</title>
+	<title>Esqueci minha senha — Finance</title>
 </svelte:head>
 
 <div class="flex min-h-screen items-center justify-center p-4">
 	<Card.Root class="w-full max-w-sm">
 		<Card.Header>
-			<Card.Title>Entrar</Card.Title>
-			<Card.Description>Acesse o dashboard com a mesma conta do app.</Card.Description>
+			<Card.Title>Esqueci minha senha</Card.Title>
+			<Card.Description>Informe seu e-mail para receber o código de redefinição.</Card.Description>
 		</Card.Header>
 		<Card.Content>
 			<form
@@ -48,46 +48,18 @@
 						<p class="text-sm text-destructive">{form.errors.email}</p>
 					{/if}
 				</div>
-				<div class="grid gap-2">
-					<div class="flex items-center justify-between">
-						<Label for="password">Senha</Label>
-
-					</div>
-					<Input
-						id="password"
-						name="password"
-						type="password"
-						autocomplete="current-password"
-						required
-					/>
-					{#if form?.errors?.password}
-						<p class="text-sm text-destructive">{form.errors.password}</p>
-					{/if}
-					<a
-						href={resolve('/forgot-password')}
-						class="text-xs text-primary underline-offset-4 hover:underline"
-					>
-						Esqueci minha senha
-					</a>
-				</div>
-				{#if form?.message}
-					<p class="text-sm text-destructive">{form.message}</p>
-				{/if}
 				<Button type="submit" disabled={submitting}>
-					{submitting ? 'Entrando…' : 'Entrar'}
+					{submitting ? 'Enviando…' : 'Enviar código de redefinição'}
 				</Button>
-
 			</form>
 		</Card.Content>
 		<Card.Footer>
 			<p class="text-sm text-muted-foreground">
-				Não tem conta?
-				<a href={resolve('/register')} class="text-primary underline-offset-4 hover:underline"
-					>Criar conta</a
-				>
+				Lembrou a senha?
+				<a href={resolve('/login')} class="text-primary underline-offset-4 hover:underline">
+					Voltar para o login
+				</a>
 			</p>
-
-
 		</Card.Footer>
 	</Card.Root>
 </div>
