@@ -1,3 +1,4 @@
+import type { TransactionMethod } from '@finance/shared';
 import type { Actor, UseCaseDeps } from '../../deps';
 import { listPendingOccurrences } from '../recurring/list-pending-occurrences';
 import { estimateVariableExpense } from './estimate-variable-expense';
@@ -9,6 +10,11 @@ export interface CategorySummary {
   total: number;
 }
 
+export interface MethodSummary {
+  method: TransactionMethod;
+  total: number;
+}
+
 export interface MonthlySummary {
   year: number;
   month: number;
@@ -17,6 +23,8 @@ export interface MonthlySummary {
   /** Despesas do mês por competência (inclui compras no crédito pela data da compra). */
   expense: number;
   byCategory: CategorySummary[];
+  /** Despesas do mês por método de pagamento (sem `transfer` — movimentação neutra, não despesa). Usado pelo catálogo de variáveis da calculadora (M5-01c). */
+  byMethod: MethodSummary[];
   /** Σ saldos derivados de todas as contas, hoje. */
   totalBalance: number;
   /**
@@ -56,6 +64,11 @@ export async function monthlySummary(
     to
   );
   const byCategory = await deps.repos.transaction.expenseByCategory(
+    actor.workspaceId,
+    from,
+    to
+  );
+  const byMethod = await deps.repos.transaction.expenseByMethod(
     actor.workspaceId,
     from,
     to
@@ -140,6 +153,7 @@ export async function monthlySummary(
     income: totals.income,
     expense: totals.expense,
     byCategory: byCategory.sort((a, b) => b.total - a.total),
+    byMethod,
     totalBalance,
     projectedAvailable,
   };

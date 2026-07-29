@@ -25,8 +25,39 @@ export async function updateSavedFormula(
     if (!evaluated.ok) return left(evaluated.error.type);
   }
 
+  // Pin/despin muda a ordem: virar `true` manda pro fim da fila do widget
+  // correspondente; virar `false` zera a posição (evita reaparecer numa
+  // posição antiga obsoleta se for refixada depois). Ficar `true`→`true`
+  // (ex.: PATCH só de nome) não mexe na ordem já existente.
+  const orderPatch: SavedFormulaPatch = {};
+  if (
+    patch.pinnedHome !== undefined &&
+    patch.pinnedHome !== existing.pinnedHome
+  ) {
+    orderPatch.homeOrder = patch.pinnedHome
+      ? (await deps.repos.savedFormula.maxOrder(
+          actor.workspaceId,
+          'homeOrder'
+        )) + 1
+      : null;
+  }
+  if (
+    patch.pinnedTransactions !== undefined &&
+    patch.pinnedTransactions !== existing.pinnedTransactions
+  ) {
+    orderPatch.transactionsOrder = patch.pinnedTransactions
+      ? (await deps.repos.savedFormula.maxOrder(
+          actor.workspaceId,
+          'transactionsOrder'
+        )) + 1
+      : null;
+  }
+
   const updated = await deps.uow.run(async (repos) => {
-    const formula = await repos.savedFormula.update(formulaId, patch);
+    const formula = await repos.savedFormula.update(formulaId, {
+      ...patch,
+      ...orderPatch,
+    });
     await repos.audit.record({
       workspaceId: actor.workspaceId,
       userId: actor.userId,

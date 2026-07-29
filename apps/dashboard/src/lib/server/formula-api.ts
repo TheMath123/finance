@@ -12,6 +12,9 @@ export interface SavedFormulaView {
 	displayFormat: 'currency' | 'number';
 	pinnedHome: boolean;
 	pinnedTransactions: boolean;
+	/** Ordem de exibição do widget fixado (drag-and-drop, M5-01c) — null quando não fixada naquela tela. */
+	homeOrder: number | null;
+	transactionsOrder: number | null;
 	createdAt: string;
 	updatedAt: string;
 }
@@ -91,6 +94,19 @@ export function evaluateFormula(
 	formulaId: string
 ): Promise<Either<ApiError, EvaluatedFormulaView>> {
 	return apiRequest(`/workspaces/${workspaceId}/saved-formulas/${formulaId}/evaluate`, {
+		accessToken
+	});
+}
+
+export function reorderFormulas(
+	accessToken: string,
+	workspaceId: string,
+	field: 'home' | 'transactions',
+	formulaIds: string[]
+): Promise<Either<ApiError, SavedFormulaView[]>> {
+	return apiRequest(`/workspaces/${workspaceId}/saved-formulas/reorder`, {
+		method: 'PATCH',
+		body: { field, formulaIds },
 		accessToken
 	});
 }

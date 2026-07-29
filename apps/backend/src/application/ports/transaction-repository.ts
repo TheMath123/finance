@@ -105,6 +105,12 @@ export interface TransactionRepository {
   ): Promise<
     { categoryId: string; name: string; color: string; total: number }[]
   >;
+  /** Igual a `expenseByCategory`, mas agrupado por método de pagamento (sem `transfer` — movimentação neutra, não despesa). */
+  expenseByMethod(
+    workspaceId: string,
+    from: string,
+    to: string
+  ): Promise<{ method: TransactionMethod; total: number }[]>;
   /**
    * Igual a `expenseByCategory`, mas só o que é "variável" de verdade —
    * exclui parcelas (`installmentGroupId`) e recorrências (`recurringId`),

@@ -2,6 +2,7 @@ import { relations } from 'drizzle-orm';
 import {
   boolean,
   index,
+  integer,
   pgEnum,
   pgTable,
   text,
@@ -36,6 +37,9 @@ export const savedFormulas = pgTable(
     /** Fixação não é exclusiva — a mesma fórmula pode virar widget nas duas telas ao mesmo tempo. */
     pinnedHome: boolean('pinned_home').notNull().default(false),
     pinnedTransactions: boolean('pinned_transactions').notNull().default(false),
+    /** Ordem de exibição do widget fixado (drag-and-drop, M5-01c) — null quando não fixada naquela tela; reseta ao despin/repin. */
+    homeOrder: integer('home_order'),
+    transactionsOrder: integer('transactions_order'),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },

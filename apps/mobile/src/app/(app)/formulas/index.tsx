@@ -13,7 +13,9 @@ import { ThemedText } from '@/components/themed-text';
 import { Card } from '@/components/ui/card';
 import { Screen } from '@/components/ui/screen';
 import { useSession } from '@/context/session';
+import { accountsApi } from '@/lib/accounts-api';
 import { ApiError } from '@/lib/api-client';
+import { cardsApi } from '@/lib/cards-api';
 import { formulaApi, type SavedFormula } from '@/lib/formula-api';
 import { buildClientFormulaCatalog } from '@/lib/formula-catalog';
 import { formatCents } from '@/lib/money';
@@ -96,8 +98,18 @@ export default function FormulasScreen() {
       ),
     enabled: Boolean(workspaceId),
   });
+  const { data: accounts } = useQuery({
+    queryKey: ['accounts', workspaceId],
+    queryFn: () => accountsApi.list(workspaceId!),
+    enabled: Boolean(workspaceId),
+  });
+  const { data: cards } = useQuery({
+    queryKey: ['cards', workspaceId],
+    queryFn: () => cardsApi.list(workspaceId!),
+    enabled: Boolean(workspaceId),
+  });
   const { values } = summary
-    ? buildClientFormulaCatalog(summary)
+    ? buildClientFormulaCatalog(summary, accounts, cards)
     : { values: {} };
 
   const deleteMutation = useMutation({

@@ -5,6 +5,7 @@ import { deleteSavedFormulaRoute } from './delete-saved-formula';
 import { evaluateSavedFormulaRoute } from './evaluate-saved-formula';
 import { listFormulaVariablesRoute } from './list-formula-variables';
 import { listSavedFormulasRoute } from './list-saved-formulas';
+import { reorderSavedFormulasRoute } from './reorder-saved-formulas';
 import { updateSavedFormulaRoute } from './update-saved-formula';
 
 export function savedFormulaRoutes(deps: AppDeps) {
@@ -12,6 +13,7 @@ export function savedFormulaRoutes(deps: AppDeps) {
     .use(listFormulaVariablesRoute(deps))
     .use(listSavedFormulasRoute(deps))
     .use(createSavedFormulaRoute(deps))
+    .use(reorderSavedFormulasRoute(deps))
     .use(updateSavedFormulaRoute(deps))
     .use(deleteSavedFormulaRoute(deps))
     .use(evaluateSavedFormulaRoute(deps));

@@ -3,7 +3,9 @@
 	import CalculatorIcon from 'phosphor-svelte/lib/Calculator';
 	import CaretLeftIcon from 'phosphor-svelte/lib/CaretLeft';
 	import CaretRightIcon from 'phosphor-svelte/lib/CaretRight';
+	import { dndzone } from 'svelte-dnd-action';
 
+	import { invalidateAll } from '$app/navigation';
 	import { resolve } from '$app/paths';
 
 	import FormulaDialog from '$lib/components/calculator/formula-dialog.svelte';
@@ -11,15 +13,44 @@
 	import { buildClientFormulaCatalog } from '$lib/formula-catalog';
 	import { MONTH_NAMES } from '$lib/month-names';
 	import { formatCents, formatReais } from '$lib/money';
+	import type { SavedFormulaView } from '$lib/server/formula-api';
 
 	let { data } = $props();
 
 	let formulaDialogOpen = $state(false);
 
 	const catalog = $derived(
-		data.summary ? buildClientFormulaCatalog(data.summary) : { values: {}, variables: [] }
+		data.summary
+			? buildClientFormulaCatalog(data.summary, data.accounts, data.cards)
+			: { values: {}, variables: [] }
 	);
-	const pinnedFormulas = $derived(data.formulas.filter((f) => f.pinnedHome));
+
+	/**
+	 * `$derived` gravável (Svelte 5) — o `dndzone` reatribui esse array
+	 * localmente durante o arraste (`consider`), antes de persistir de
+	 * verdade no `finalize`; reatribuir só "sobrescreve" até `data.formulas`
+	 * mudar de novo (ex.: após o `invalidateAll()` do finalize).
+	 */
+	let pinnedFormulas = $derived(
+		data.formulas
+			.filter((f) => f.pinnedHome)
+			.sort((a, b) => (a.homeOrder ?? Infinity) - (b.homeOrder ?? Infinity))
+	);
+
+	function handleConsider(event: CustomEvent<{ items: SavedFormulaView[] }>) {
+		pinnedFormulas = event.detail.items;
+	}
+	async function handleFinalize(event: CustomEvent<{ items: SavedFormulaView[] }>) {
+		pinnedFormulas = event.detail.items;
+		await fetch('?/reorderFormulas', {
+			method: 'POST',
+			body: new URLSearchParams({
+				field: 'home',
+				formulaIds: JSON.stringify(pinnedFormulas.map((f) => f.id))
+			})
+		});
+		await invalidateAll();
+	}
 
 	const monthLabel = $derived(`${MONTH_NAMES[data.month - 1]} de ${data.year}`);
 
@@ -150,10 +181,18 @@
 			{#if pinnedFormulas.length === 0}
 				<p class="text-sm text-muted-foreground">Nenhuma fórmula fixada aqui ainda.</p>
 			{:else}
-				<div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+				<!-- Arrastável (svelte-dnd-action) — solta reordena de verdade via action `reorderFormulas`. -->
+				<div
+					class="grid grid-cols-2 gap-3 sm:grid-cols-4"
+					use:dndzone={{ items: pinnedFormulas, flipDurationMs: 150 }}
+					onconsider={handleConsider}
+					onfinalize={handleFinalize}
+				>
 					{#each pinnedFormulas as formula (formula.id)}
 						{@const evaluated = evaluateFormula(formula.expression, catalog.values)}
-						<div class="rounded-lg border border-foreground/10 p-4">
+						<div
+							class="cursor-grab rounded-lg border border-foreground/10 p-4 active:cursor-grabbing"
+						>
 							<p class="truncate text-sm text-muted-foreground">{formula.name}</p>
 							<p class="mt-1 text-2xl font-semibold">
 								{#if evaluated.ok}

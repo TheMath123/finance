@@ -2,6 +2,7 @@ import { evaluateFormula } from '@finance/formula';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { BackspaceIcon } from 'phosphor-react-native';
+import { useMemo } from 'react';
 import { useController, useForm } from 'react-hook-form';
 import { Pressable, View } from 'react-native';
 
@@ -12,16 +13,37 @@ import { ThemedText } from '@/components/themed-text';
 import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
 import { useSession } from '@/context/session';
+import { accountsApi } from '@/lib/accounts-api';
 import { ApiError } from '@/lib/api-client';
+import { cardsApi } from '@/lib/cards-api';
 import { cn } from '@/lib/cn';
 import { formulaApi, type SavedFormula } from '@/lib/formula-api';
-import { buildClientFormulaCatalog } from '@/lib/formula-catalog';
+import {
+  buildClientFormulaCatalog,
+  type FormulaVariableGroup,
+  type FormulaVariableValue,
+} from '@/lib/formula-catalog';
 import { formatCents } from '@/lib/money';
 import {
   type SavedFormulaInput,
   savedFormulaSchema,
 } from '@/lib/schemas/finance';
 import { summaryApi } from '@/lib/summary-api';
+
+const GROUP_LABELS: Record<FormulaVariableGroup, string> = {
+  summary: 'Resumo do mês',
+  category: 'Por categoria',
+  account: 'Por conta',
+  card: 'Por cartão',
+  method: 'Por método de pagamento',
+};
+const GROUP_ORDER: FormulaVariableGroup[] = [
+  'summary',
+  'category',
+  'account',
+  'card',
+  'method',
+];
 
 const DISPLAY_FORMAT_OPTIONS = [
   { label: 'Moeda', value: 'currency' },
@@ -114,10 +136,34 @@ export function FormulaForm({
       ),
     enabled: Boolean(workspaceId),
   });
+  const { data: accounts } = useQuery({
+    queryKey: ['accounts', workspaceId],
+    queryFn: () => accountsApi.list(workspaceId!),
+    enabled: Boolean(workspaceId),
+  });
+  const { data: cards } = useQuery({
+    queryKey: ['cards', workspaceId],
+    queryFn: () => cardsApi.list(workspaceId!),
+    enabled: Boolean(workspaceId),
+  });
 
   const { values, variables } = summary
-    ? buildClientFormulaCatalog(summary)
+    ? buildClientFormulaCatalog(summary, accounts, cards)
     : { values: {}, variables: [] };
+
+  /** Grupos rotulados em vez de uma lista plana — o catálogo estendido (conta/cartão/método) fica difícil de escanear sem isso. */
+  const groupedVariables = useMemo(() => {
+    const byGroup = new Map<FormulaVariableGroup, FormulaVariableValue[]>();
+    for (const variable of variables) {
+      const list = byGroup.get(variable.group) ?? [];
+      list.push(variable);
+      byGroup.set(variable.group, list);
+    }
+    return GROUP_ORDER.filter((group) => byGroup.has(group)).map((group) => ({
+      group,
+      items: byGroup.get(group) ?? [],
+    }));
+  }, [variables]);
 
   const { control, handleSubmit, watch, setValue } = useForm<SavedFormulaInput>(
     {
@@ -230,21 +276,35 @@ export function FormulaForm({
         ))}
       </View>
 
-      <View className="gap-1.5">
+      <View className="gap-2">
         <ThemedText type="small" themeColor="textSecondary">
           Variáveis
         </ThemedText>
-        <View className="flex-row flex-wrap gap-1.5">
-          {variables.map((variable) => (
-            <Pressable
-              key={variable.token}
-              onPress={() => insertVariable(variable.token)}
-              className="rounded-full border border-border px-2.5 py-1.5 active:opacity-70"
-            >
-              <ThemedText type="small">{variable.label}</ThemedText>
-            </Pressable>
-          ))}
-        </View>
+        {groupedVariables.map(({ group, items }) => (
+          <View key={group} className="gap-1">
+            <Text className="text-[11px] text-muted-foreground">
+              {GROUP_LABELS[group]}
+            </Text>
+            <View className="flex-row flex-wrap gap-1.5">
+              {items.map((variable) => (
+                <Pressable
+                  key={variable.token}
+                  onPress={() => insertVariable(variable.token)}
+                  className="max-w-[150px] rounded-full border border-border px-2.5 py-1.5 active:opacity-70"
+                  accessibilityLabel={`${variable.label}: ${variable.description}`}
+                >
+                  <Text
+                    className="text-foreground"
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
+                  >
+                    {variable.label}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+        ))}
       </View>
 
       <TextField

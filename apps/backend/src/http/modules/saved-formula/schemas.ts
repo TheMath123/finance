@@ -22,3 +22,8 @@ export const createSavedFormulaSchema = z.object({
   pinnedTransactions: z.boolean(),
 });
 export const updateSavedFormulaSchema = createSavedFormulaSchema.partial();
+
+export const reorderSavedFormulasSchema = z.object({
+  field: z.enum(['home', 'transactions']),
+  formulaIds: z.array(z.string().uuid()).min(1),
+});

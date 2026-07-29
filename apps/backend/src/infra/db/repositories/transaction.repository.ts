@@ -234,6 +234,26 @@ export function createTransactionRepository(
         .groupBy(transactions.categoryId, categories.name, categories.color);
       return rows.map((r) => ({ ...r, total: Number(r.total) }));
     },
+    async expenseByMethod(workspaceId, from, to) {
+      const rows = await db
+        .select({
+          method: transactions.method,
+          total: sql<string>`SUM(${transactions.amount})`,
+        })
+        .from(transactions)
+        .where(
+          and(
+            eq(transactions.workspaceId, workspaceId),
+            isNull(transactions.deletedAt),
+            eq(transactions.type, 'expense'),
+            sql`${transactions.method} <> 'transfer'`,
+            gte(transactions.date, from),
+            lte(transactions.date, to)
+          )
+        )
+        .groupBy(transactions.method);
+      return rows.map((r) => ({ ...r, total: Number(r.total) }));
+    },
     async variableExpenseByCategory(workspaceId, from, to) {
       const rows = await db
         .select({

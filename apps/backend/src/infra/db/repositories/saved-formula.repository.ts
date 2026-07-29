@@ -45,5 +45,16 @@ export function createSavedFormulaRepository(
         .where(eq(savedFormulas.workspaceId, workspaceId));
       return row?.count ?? 0;
     },
+    async maxOrder(workspaceId, field) {
+      const column =
+        field === 'homeOrder'
+          ? savedFormulas.homeOrder
+          : savedFormulas.transactionsOrder;
+      const [row] = await db
+        .select({ max: sql<number | null>`MAX(${column})` })
+        .from(savedFormulas)
+        .where(eq(savedFormulas.workspaceId, workspaceId));
+      return row?.max ?? -1;
+    },
   };
 }

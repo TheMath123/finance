@@ -10,6 +10,12 @@ export interface CategorySummary {
 	total: number;
 }
 
+/** Espelha MethodSummary (backend, use-cases/summary/monthly-summary.ts). */
+export interface MethodSummary {
+	method: 'pix' | 'debit' | 'cash' | 'credit' | 'transfer';
+	total: number;
+}
+
 /** Espelha MonthlySummary (backend, use-cases/summary/monthly-summary.ts). */
 export interface MonthlySummary {
 	year: number;
@@ -17,6 +23,7 @@ export interface MonthlySummary {
 	income: number;
 	expense: number;
 	byCategory: CategorySummary[];
+	byMethod: MethodSummary[];
 	totalBalance: number;
 	projectedAvailable: number | null;
 }

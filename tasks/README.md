@@ -120,6 +120,13 @@ cadastrado.
   teclado numérico on-screen (sem digitação livre, diferente do
   dashboard), tela própria `/formulas` + widget de fórmulas fixadas na
   Home e em Transações.
+- [M5-01c — Calculadora: catálogo estendido, exibição agrupada e reorder](done/m5-01c-calculadora-catalogo-reorder.md):
+  concluída em 2026-07-28. Variáveis por conta/cartão/método de pagamento,
+  chips agrupados e truncados (dashboard + mobile), e reorder por
+  drag-and-drop dos widgets fixados (`svelte-dnd-action` no dashboard,
+  `react-native-draggable-flatlist` no mobile). Smoke test manual e
+  validação do drag na Home mobile (lista aninhada em ScrollView) ainda
+  pendentes de verificação hands-on.
 
 ## M4 — Dashboard web (Svelte)
 

@@ -15,7 +15,12 @@ export interface SavedFormulaPatch {
   displayFormat?: SavedFormulaDisplayFormat;
   pinnedHome?: boolean;
   pinnedTransactions?: boolean;
+  /** Ordem do widget fixado (drag-and-drop, M5-01c) — null desfixa a ordem (ex.: ao despin). */
+  homeOrder?: number | null;
+  transactionsOrder?: number | null;
 }
+
+export type SavedFormulaOrderField = 'homeOrder' | 'transactionsOrder';
 
 export interface SavedFormulaRepository {
   create(
@@ -31,4 +36,6 @@ export interface SavedFormulaRepository {
   update(formulaId: string, patch: SavedFormulaPatch): Promise<SavedFormula>;
   delete(formulaId: string): Promise<void>;
   countByWorkspace(workspaceId: string): Promise<number>;
+  /** Maior valor de `homeOrder`/`transactionsOrder` já usado no workspace, ou -1 se nenhuma fórmula fixada tiver ordem ainda — próxima posição é o retorno + 1. */
+  maxOrder(workspaceId: string, field: SavedFormulaOrderField): Promise<number>;
 }

@@ -18,3 +18,19 @@ export const pinFormulaSchema = z.object({
 	pinnedHome: z.enum(['true', 'false']).transform((v) => v === 'true'),
 	pinnedTransactions: z.enum(['true', 'false']).transform((v) => v === 'true')
 });
+
+/** Reorder dos widgets fixados (drag-and-drop) — `formulaIds` chega como JSON stringificado no FormData. */
+export const reorderFormulasSchema = z.object({
+	field: z.enum(['home', 'transactions']),
+	formulaIds: z
+		.string()
+		.transform((v, ctx) => {
+			try {
+				return JSON.parse(v) as unknown;
+			} catch {
+				ctx.addIssue({ code: 'custom', message: 'Lista de fórmulas inválida.' });
+				return z.NEVER;
+			}
+		})
+		.pipe(z.array(z.string().uuid()).min(1))
+});

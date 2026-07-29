@@ -10,6 +10,9 @@ export interface SavedFormula {
   displayFormat: 'currency' | 'number';
   pinnedHome: boolean;
   pinnedTransactions: boolean;
+  /** Ordem de exibição do widget fixado (drag-and-drop, M5-01c) — null quando não fixada naquela tela. */
+  homeOrder: number | null;
+  transactionsOrder: number | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -51,4 +54,18 @@ export const formulaApi = {
     apiRequest<void>(`/workspaces/${workspaceId}/saved-formulas/${formulaId}`, {
       method: 'DELETE',
     }),
+
+  /** Reorder dos widgets fixados via drag-and-drop (react-native-draggable-flatlist). */
+  reorder: (
+    workspaceId: string,
+    field: 'home' | 'transactions',
+    formulaIds: string[]
+  ) =>
+    apiRequest<SavedFormula[]>(
+      `/workspaces/${workspaceId}/saved-formulas/reorder`,
+      {
+        method: 'PATCH',
+        body: { field, formulaIds },
+      }
+    ),
 };

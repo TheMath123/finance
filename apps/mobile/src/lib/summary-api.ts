@@ -7,12 +7,18 @@ export interface CategorySummary {
   total: number;
 }
 
+export interface MethodSummary {
+  method: 'pix' | 'debit' | 'cash' | 'credit' | 'transfer';
+  total: number;
+}
+
 export interface MonthlySummary {
   year: number;
   month: number;
   income: number;
   expense: number;
   byCategory: CategorySummary[];
+  byMethod: MethodSummary[];
   totalBalance: number;
   projectedAvailable: number | null;
 }

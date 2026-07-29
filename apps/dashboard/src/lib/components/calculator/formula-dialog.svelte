@@ -14,7 +14,7 @@
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
 	import { Switch } from '$lib/components/ui/switch';
-	import type { FormulaVariableValue } from '$lib/formula-catalog';
+	import type { FormulaVariableGroup, FormulaVariableValue } from '$lib/formula-catalog';
 	import { formatReais } from '$lib/money';
 	import type { SavedFormulaView } from '$lib/server/formula-api';
 
@@ -128,6 +128,27 @@
 		if (!expression.trim()) return null;
 		return evaluateFormula(expression, values);
 	});
+
+	/**
+	 * Chips agrupados (em vez de uma lista plana) — com o catálogo estendido
+	 * (conta/cartão/método, M5-01c) a lista cresce bastante e ficava difícil
+	 * de escanear; cada chip também trunca o rótulo (nome de categoria/conta/
+	 * cartão pode ser longo) mantendo o nome completo no `title`.
+	 */
+	const GROUP_LABELS: Record<FormulaVariableGroup, string> = {
+		summary: 'Resumo do mês',
+		category: 'Por categoria',
+		account: 'Por conta',
+		card: 'Por cartão',
+		method: 'Por método de pagamento'
+	};
+	const GROUP_ORDER: FormulaVariableGroup[] = ['summary', 'category', 'account', 'card', 'method'];
+	const groupedVariables = $derived(
+		GROUP_ORDER.map((group) => ({
+			group,
+			items: variables.filter((variable) => variable.group === group)
+		})).filter(({ items }) => items.length > 0)
+	);
 
 	type KeypadKey = {
 		label: string;
@@ -288,20 +309,27 @@
 					{/each}
 				</div>
 
-				<div class="grid gap-1.5">
+				<div class="grid gap-2">
 					<p class="text-xs font-medium text-muted-foreground">Variáveis</p>
-					<div class="flex flex-wrap gap-1.5">
-						{#each variables as variable (variable.token)}
-							<button
-								type="button"
-								class="rounded-full border border-foreground/10 px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-primary/10 hover:text-foreground"
-								title={variable.description}
-								onclick={() => insertVariable(variable.token)}
-							>
-								{variable.label}
-							</button>
-						{/each}
-					</div>
+					{#each groupedVariables as { group, items } (group)}
+						<div class="grid gap-1">
+							<p class="text-[11px] font-medium text-muted-foreground/70">
+								{GROUP_LABELS[group]}
+							</p>
+							<div class="flex flex-wrap gap-1.5">
+								{#each items as variable (variable.token)}
+									<button
+										type="button"
+										class="max-w-[9.5rem] truncate rounded-full border border-foreground/10 px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-primary/10 hover:text-foreground"
+										title="{variable.label} — {variable.description}"
+										onclick={() => insertVariable(variable.token)}
+									>
+										{variable.label}
+									</button>
+								{/each}
+							</div>
+						</div>
+					{/each}
 				</div>
 
 				<div class="grid gap-2">

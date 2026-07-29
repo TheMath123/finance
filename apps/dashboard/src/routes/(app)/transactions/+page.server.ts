@@ -1,7 +1,7 @@
 import { type Cookies, fail, redirect } from '@sveltejs/kit';
 
 import { parseReaisToCents } from '$lib/money';
-import { pinFormulaSchema, savedFormulaSchema } from '$lib/schemas/formula';
+import { pinFormulaSchema, reorderFormulasSchema, savedFormulaSchema } from '$lib/schemas/formula';
 import { transactionEditSchema, transactionFormSchema } from '$lib/schemas/transaction';
 import * as accountApi from '$lib/server/account-api';
 import { getActiveWorkspaceId } from '$lib/server/active-workspace';
@@ -75,6 +75,7 @@ export const load: PageServerLoad = async ({ parent, locals, url }) => {
 					income: 0,
 					expense: 0,
 					byCategory: [],
+					byMethod: [],
 					totalBalance: 0,
 					projectedAvailable: null
 				}
@@ -281,6 +282,30 @@ export const actions: Actions = {
 			workspaceId,
 			formulaId,
 			parsed.data
+		);
+		if (!result.ok) return fail(result.error.status || 500, { message: result.error.message });
+		return { success: true };
+	},
+
+	/** Reorder dos widgets fixados via drag-and-drop (svelte-dnd-action). */
+	reorderFormulas: async ({ request, cookies, locals }) => {
+		if (!locals.session) return fail(401, { message: 'Sessão expirada.' });
+		const form = await request.formData();
+		const workspaceId = resolveWorkspaceId(cookies, locals.session.defaultWorkspaceId);
+
+		const parsed = reorderFormulasSchema.safeParse({
+			field: form.get('field')?.toString(),
+			formulaIds: form.get('formulaIds')?.toString() ?? '[]'
+		});
+		if (!parsed.success) {
+			return fail(400, { message: parsed.error.issues[0]?.message ?? 'Dados inválidos.' });
+		}
+
+		const result = await formulaApi.reorderFormulas(
+			locals.session.accessToken,
+			workspaceId,
+			parsed.data.field,
+			parsed.data.formulaIds
 		);
 		if (!result.ok) return fail(result.error.status || 500, { message: result.error.message });
 		return { success: true };

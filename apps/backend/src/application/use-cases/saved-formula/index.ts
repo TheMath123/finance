@@ -5,7 +5,14 @@ export {
   type EvaluatedFormula,
   evaluateSavedFormula,
 } from './evaluate-saved-formula';
-export type { FormulaVariable } from './formula-variables';
+export type {
+  FormulaVariable,
+  FormulaVariableGroup,
+} from './formula-variables';
 export { listFormulaVariables } from './list-formula-variables';
 export { listSavedFormulas } from './list-saved-formulas';
+export {
+  type ReorderField,
+  reorderSavedFormulas,
+} from './reorder-saved-formulas';
 export { updateSavedFormula } from './update-saved-formula';

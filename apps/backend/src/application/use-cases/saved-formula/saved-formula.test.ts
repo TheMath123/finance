@@ -6,12 +6,14 @@ import { createDb, type Db } from '@finance/db';
 import { createTestDeps } from '../../../test/deps';
 import type { Actor } from '../../deps';
 import { register } from '../auth';
+import { createCard } from '../card';
 import { createTransaction } from '../transaction';
 import {
   createSavedFormula,
   deleteSavedFormula,
   evaluateSavedFormula,
   listSavedFormulas,
+  reorderSavedFormulas,
   updateSavedFormula,
 } from '.';
 
@@ -243,6 +245,248 @@ describe('saved-formula: atualização', () => {
     const list = await listSavedFormulas(deps, actor);
     const stillValid = list.find((f) => f.id === created.value.id);
     expect(stillValid?.expression).toBe('despesas + receitas');
+  });
+});
+
+describe('saved-formula: catálogo estendido (conta, cartão, método)', () => {
+  test('saldo por conta aparece no catálogo e some quando a conta é arquivada', async () => {
+    const deps = createTestDeps(db);
+    const actor = await newOwnerActor();
+    const accounts = await deps.repos.account.listByWorkspace(
+      actor.workspaceId
+    );
+    const account = accounts[0];
+    if (!account) throw new Error('conta padrão do seed não encontrada');
+
+    const { year, month } = currentPeriod();
+    const date = `${year}-${String(month).padStart(2, '0')}-10`;
+    await seedExpense(deps, actor, 10_000, date);
+
+    const token = `saldo_conta_${account.id.replaceAll('-', '')}`;
+    const created = await createSavedFormula(deps, actor, {
+      name: 'Saldo da conta',
+      expression: token,
+      displayFormat: 'currency',
+      pinnedHome: false,
+      pinnedTransactions: false,
+    });
+    expect(created.ok).toBe(true);
+    if (!created.ok) throw new Error('fórmula não criada');
+
+    const evaluated = await evaluateSavedFormula(deps, actor, created.value.id);
+    expect(evaluated.ok).toBe(true);
+    // initialBalance=0 (seed) − 100,00 (despesa) = −100,00.
+    if (evaluated.ok) expect(evaluated.value.value).toBe(-100);
+
+    await deps.repos.account.setArchived(account.id, true);
+    const afterArchive = await evaluateSavedFormula(
+      deps,
+      actor,
+      created.value.id
+    );
+    expect(afterArchive.ok).toBe(false);
+    if (!afterArchive.ok) expect(afterArchive.error).toBe('unknown_variable');
+  });
+
+  test('fatura em aberto por cartão aparece no catálogo e some quando o cartão é arquivado', async () => {
+    const deps = createTestDeps(db);
+    const actor = await newOwnerActor();
+
+    const card = await createCard(deps, actor, {
+      name: 'Cartão de teste',
+      bankCode: 'other',
+      limit: 500_000,
+      closingDay: 10,
+      dueDay: 20,
+    });
+    if (!card.ok) throw new Error('cartão não criado');
+
+    const categories = await deps.repos.category.listByWorkspace(
+      actor.workspaceId
+    );
+    const category = categories.find((c) => !c.isFallback) ?? categories[0];
+    if (!category) throw new Error('categoria não encontrada');
+
+    const { year, month } = currentPeriod();
+    const date = `${year}-${String(month).padStart(2, '0')}-05`;
+    const tx = await createTransaction(deps, actor, {
+      description: 'Compra no crédito',
+      amount: 25_000,
+      type: 'expense',
+      method: 'credit',
+      date,
+      categoryId: category.id,
+      cardId: card.value.id,
+    });
+    expect(tx.ok).toBe(true);
+
+    const token = `fatura_cartao_${card.value.id.replaceAll('-', '')}`;
+    const created = await createSavedFormula(deps, actor, {
+      name: 'Fatura do cartão',
+      expression: token,
+      displayFormat: 'currency',
+      pinnedHome: false,
+      pinnedTransactions: false,
+    });
+    expect(created.ok).toBe(true);
+    if (!created.ok) throw new Error('fórmula não criada');
+
+    const evaluated = await evaluateSavedFormula(deps, actor, created.value.id);
+    expect(evaluated.ok).toBe(true);
+    if (evaluated.ok) expect(evaluated.value.value).toBe(250);
+
+    await deps.repos.card.setArchived(card.value.id, true);
+    const afterArchive = await evaluateSavedFormula(
+      deps,
+      actor,
+      created.value.id
+    );
+    expect(afterArchive.ok).toBe(false);
+    if (!afterArchive.ok) expect(afterArchive.error).toBe('unknown_variable');
+  });
+
+  test('despesa por método de pagamento soma certo', async () => {
+    const deps = createTestDeps(db);
+    const actor = await newOwnerActor();
+    const { year, month } = currentPeriod();
+    const date = `${year}-${String(month).padStart(2, '0')}-12`;
+
+    // seedExpense sempre lança via método pix.
+    await seedExpense(deps, actor, 8_000, date);
+
+    const created = await createSavedFormula(deps, actor, {
+      name: 'Despesa via Pix',
+      expression: 'despesa_metodo_pix',
+      displayFormat: 'currency',
+      pinnedHome: false,
+      pinnedTransactions: false,
+    });
+    expect(created.ok).toBe(true);
+    if (!created.ok) throw new Error('fórmula não criada');
+
+    const evaluated = await evaluateSavedFormula(deps, actor, created.value.id);
+    expect(evaluated.ok).toBe(true);
+    if (evaluated.ok) expect(evaluated.value.value).toBe(80);
+  });
+});
+
+describe('saved-formula: pin atribui ordem automaticamente', () => {
+  test('cada nova fórmula fixada entra ao fim da fila (0, 1, 2, ...)', async () => {
+    const deps = createTestDeps(db);
+    const actor = await newOwnerActor();
+
+    const created: { id: string; homeOrder: number | null }[] = [];
+    for (let i = 0; i < 3; i++) {
+      const result = await createSavedFormula(deps, actor, {
+        name: `Fixada ${i}`,
+        expression: 'despesas',
+        displayFormat: 'number',
+        pinnedHome: true,
+        pinnedTransactions: false,
+      });
+      if (!result.ok) throw new Error('fórmula não criada');
+      created.push(result.value);
+    }
+    expect(created.map((f) => f.homeOrder)).toEqual([0, 1, 2]);
+  });
+
+  test('despin zera a ordem; repin manda pro fim da fila (não repete a posição antiga)', async () => {
+    const deps = createTestDeps(db);
+    const actor = await newOwnerActor();
+
+    const first = await createSavedFormula(deps, actor, {
+      name: 'Primeira',
+      expression: 'despesas',
+      displayFormat: 'number',
+      pinnedHome: true,
+      pinnedTransactions: false,
+    });
+    if (!first.ok) throw new Error('fórmula não criada');
+    expect(first.value.homeOrder).toBe(0);
+
+    const second = await createSavedFormula(deps, actor, {
+      name: 'Segunda',
+      expression: 'despesas',
+      displayFormat: 'number',
+      pinnedHome: true,
+      pinnedTransactions: false,
+    });
+    if (!second.ok) throw new Error('fórmula não criada');
+    expect(second.value.homeOrder).toBe(1);
+
+    const unpinned = await updateSavedFormula(deps, actor, first.value.id, {
+      pinnedHome: false,
+    });
+    expect(unpinned.ok).toBe(true);
+    if (unpinned.ok) expect(unpinned.value.homeOrder).toBeNull();
+
+    const repinned = await updateSavedFormula(deps, actor, first.value.id, {
+      pinnedHome: true,
+    });
+    expect(repinned.ok).toBe(true);
+    // Volta pro fim da fila (depois da "Segunda", que ficou com order=1) — não repete o antigo 0.
+    if (repinned.ok) expect(repinned.value.homeOrder).toBe(2);
+  });
+});
+
+describe('saved-formula: reorder de widgets fixados', () => {
+  test('reorder persiste a sequência certa', async () => {
+    const deps = createTestDeps(db);
+    const actor = await newOwnerActor();
+
+    const created: { id: string }[] = [];
+    for (let i = 0; i < 3; i++) {
+      const result = await createSavedFormula(deps, actor, {
+        name: `Fixada ${i}`,
+        expression: 'despesas',
+        displayFormat: 'number',
+        pinnedHome: true,
+        pinnedTransactions: false,
+      });
+      if (!result.ok) throw new Error('fórmula não criada');
+      created.push(result.value);
+    }
+
+    const reversed = [created[2]!.id, created[1]!.id, created[0]!.id];
+    const reordered = await reorderSavedFormulas(deps, actor, 'home', reversed);
+    expect(reordered.ok).toBe(true);
+
+    const list = await listSavedFormulas(deps, actor);
+    const byId = new Map(list.map((f) => [f.id, f]));
+    expect(byId.get(created[2]!.id)?.homeOrder).toBe(0);
+    expect(byId.get(created[1]!.id)?.homeOrder).toBe(1);
+    expect(byId.get(created[0]!.id)?.homeOrder).toBe(2);
+  });
+
+  test('reorder rejeita id de fórmula que não pertence ao workspace/campo pedido', async () => {
+    const deps = createTestDeps(db);
+    const actorA = await newOwnerActor();
+    const actorB = await newOwnerActor();
+
+    const ownFormula = await createSavedFormula(deps, actorA, {
+      name: 'Minha fórmula',
+      expression: 'despesas',
+      displayFormat: 'number',
+      pinnedHome: true,
+      pinnedTransactions: false,
+    });
+    if (!ownFormula.ok) throw new Error('fórmula não criada');
+
+    const otherFormula = await createSavedFormula(deps, actorB, {
+      name: 'Fórmula de outro workspace',
+      expression: 'despesas',
+      displayFormat: 'number',
+      pinnedHome: true,
+      pinnedTransactions: false,
+    });
+    if (!otherFormula.ok) throw new Error('fórmula não criada');
+
+    const result = await reorderSavedFormulas(deps, actorA, 'home', [
+      ownFormula.value.id,
+      otherFormula.value.id,
+    ]);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toBe('formula_not_found');
   });
 });
 

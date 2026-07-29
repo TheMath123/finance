@@ -4,8 +4,10 @@
 	import ArrowCounterClockwiseIcon from 'phosphor-svelte/lib/ArrowCounterClockwiseIcon';
 	import CalculatorIcon from 'phosphor-svelte/lib/Calculator';
 	import PencilSimpleIcon from 'phosphor-svelte/lib/PencilSimpleIcon';
+	import { dndzone } from 'svelte-dnd-action';
 
 	import { enhance } from '$app/forms';
+	import { invalidateAll } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import { SvelteSet, SvelteURLSearchParams } from 'svelte/reactivity';
@@ -19,14 +21,38 @@
 	import { buildClientFormulaCatalog } from '$lib/formula-catalog';
 	import { getMerchantLogoUrl } from '$lib/merchant-logo';
 	import { formatCents, formatReais } from '$lib/money';
+	import type { SavedFormulaView } from '$lib/server/formula-api';
 	import type { TransactionView } from '$lib/server/transaction-api';
 	import { formatTransactionDate, transactionSourceLabel } from '$lib/transaction-labels';
 
 	let { data, form } = $props();
 
 	let formulaDialogOpen = $state(false);
-	const formulaCatalog = $derived(buildClientFormulaCatalog(data.formulaSummary));
-	const pinnedFormulas = $derived(data.formulas.filter((f) => f.pinnedTransactions));
+	const formulaCatalog = $derived(
+		buildClientFormulaCatalog(data.formulaSummary, data.accounts, data.cards)
+	);
+
+	/** `$derived` gravável (Svelte 5) — `dndzone` reatribui localmente durante o arraste, antes do `finalize` persistir. */
+	let pinnedFormulas = $derived(
+		data.formulas
+			.filter((f) => f.pinnedTransactions)
+			.sort((a, b) => (a.transactionsOrder ?? Infinity) - (b.transactionsOrder ?? Infinity))
+	);
+
+	function handlePinnedConsider(event: CustomEvent<{ items: SavedFormulaView[] }>) {
+		pinnedFormulas = event.detail.items;
+	}
+	async function handlePinnedFinalize(event: CustomEvent<{ items: SavedFormulaView[] }>) {
+		pinnedFormulas = event.detail.items;
+		await fetch('?/reorderFormulas', {
+			method: 'POST',
+			body: new URLSearchParams({
+				field: 'transactions',
+				formulaIds: JSON.stringify(pinnedFormulas.map((f) => f.id))
+			})
+		});
+		await invalidateAll();
+	}
 
 	const canManage = $derived(data.activeWorkspace?.role !== 'viewer');
 	const archivedView = $derived(data.filters.deletedOnly);
@@ -108,10 +134,18 @@
 	</div>
 
 	{#if pinnedFormulas.length > 0}
-		<div class="flex flex-wrap gap-3">
+		<!-- Arrastável (svelte-dnd-action) — solta reordena de verdade via action `reorderFormulas`. -->
+		<div
+			class="flex flex-wrap gap-3"
+			use:dndzone={{ items: pinnedFormulas, flipDurationMs: 150 }}
+			onconsider={handlePinnedConsider}
+			onfinalize={handlePinnedFinalize}
+		>
 			{#each pinnedFormulas as formula (formula.id)}
 				{@const evaluated = evaluateFormula(formula.expression, formulaCatalog.values)}
-				<div class="rounded-lg border border-foreground/10 px-4 py-2">
+				<div
+					class="cursor-grab rounded-lg border border-foreground/10 px-4 py-2 active:cursor-grabbing"
+				>
 					<p class="text-xs text-muted-foreground">{formula.name}</p>
 					<p class="text-lg font-semibold">
 						{#if evaluated.ok}
