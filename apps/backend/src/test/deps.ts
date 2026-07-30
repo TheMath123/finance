@@ -1,6 +1,7 @@
-import type { Db } from '@finance/db';
+import { type Db, plans } from '@finance/db';
 import type { JobName, JobPayloads } from '@finance/queues';
 import { createInMemoryStorage } from '@finance/storage';
+import { eq } from 'drizzle-orm';
 import type { UseCaseDeps } from '../application/deps';
 import { createInMemoryTokenBudget } from '../infra/ai/in-memory-token-budget';
 import { createInMemoryCache } from '../infra/cache/in-memory-cache';
@@ -34,4 +35,14 @@ export function createTestDeps(
     storage: createInMemoryStorage(),
     termsVersion: 'test',
   };
+}
+
+/** Plano `free`/`premium` sempre existe (semeado pela migration do M5-02) — testes só precisam do id. */
+export async function getTestPlanId(
+  db: Db,
+  key: 'free' | 'premium' = 'free'
+): Promise<string> {
+  const [plan] = await db.select().from(plans).where(eq(plans.key, key));
+  if (!plan) throw new Error(`plano de teste "${key}" não encontrado`);
+  return plan.id;
 }

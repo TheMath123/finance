@@ -16,7 +16,7 @@ import {
   workspaces,
 } from '@finance/db';
 import { occurrencesInMonth } from '../../../domain/services/occurrence-rules';
-import { createTestDeps } from '../../../test/deps';
+import { createTestDeps, getTestPlanId } from '../../../test/deps';
 import type { Actor, UseCaseDeps } from '../../deps';
 import { monthlySummary } from '../summary/monthly-summary';
 import { confirmOccurrence } from './confirm-occurrence';
@@ -60,9 +60,10 @@ beforeAll(async () => {
       termsVersion: 'test',
     })
     .returning();
+  const planId = await getTestPlanId(db);
   const [workspace] = await db
     .insert(workspaces)
-    .values({ name: 'Recorrências', type: 'personal' })
+    .values({ name: 'Recorrências', type: 'personal', planId })
     .returning();
   if (!user || !workspace) throw new Error('setup falhou');
   await db

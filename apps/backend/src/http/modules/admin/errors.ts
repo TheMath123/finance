@@ -23,4 +23,19 @@ export const ADMIN_ERRORS: Record<AdminError, HttpError> = {
     message:
       'Não é possível excluir a categoria fallback — marque outra como fallback antes.',
   },
+  plan_key_taken: {
+    status: 409,
+    code: 'plan_key_taken',
+    message: 'Já existe um plano com essa chave.',
+  },
+  plan_not_found: {
+    status: 404,
+    code: 'plan_not_found',
+    message: 'Plano não encontrado.',
+  },
+  workspace_not_found: {
+    status: 404,
+    code: 'workspace_not_found',
+    message: 'Workspace não encontrado.',
+  },
 };

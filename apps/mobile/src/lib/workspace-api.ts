@@ -1,7 +1,6 @@
 import type {
   AuditAction,
   InviteRole,
-  WorkspacePlan,
   WorkspaceRole,
   WorkspaceType,
 } from '@finance/shared';
@@ -13,10 +12,16 @@ export interface WorkspaceInfo {
   id: string;
   name: string;
   type: WorkspaceType;
-  plan: WorkspacePlan;
+  /** M5-02: FK pra tabela `plans` — sem tier fixo em enum mais. */
+  planId: string;
 }
 
-export interface WorkspaceSummary extends WorkspaceInfo {
+/** Vem de `listMyWorkspaces` (seletor) — `plan` aqui é a `key` do plano (ex. "free"/"premium"), não o id. */
+export interface WorkspaceSummary {
+  id: string;
+  name: string;
+  type: WorkspaceType;
+  plan: string;
   role: WorkspaceRole;
 }
 

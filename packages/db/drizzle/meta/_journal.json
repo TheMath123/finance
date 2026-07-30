@@ -169,6 +169,20 @@
       "when": 1785364748877,
       "tag": "0023_naive_franklin_richards",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1785372289269,
+      "tag": "0024_military_mariko_yashida",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1785372336603,
+      "tag": "0025_complex_the_twelve",
+      "breakpoints": true
     }
   ]
 }

@@ -13,6 +13,7 @@ import type { InterUserTransferRepository } from './inter-user-transfer-reposito
 import type { InvoiceRepository } from './invoice-repository';
 import type { NotificationPreferenceRepository } from './notification-preference-repository';
 import type { NotificationRepository } from './notification-repository';
+import type { PlanRepository } from './plan-repository';
 import type { PlatformMetricsRepository } from './platform-metrics-repository';
 import type { PushTokenRepository } from './push-token-repository';
 import type { RecurringRepository } from './recurring-repository';
@@ -55,4 +56,5 @@ export interface Repositories {
   aiUsageLog: AiUsageLogRepository;
   platformMetrics: PlatformMetricsRepository;
   savedFormula: SavedFormulaRepository;
+  plan: PlanRepository;
 }

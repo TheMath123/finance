@@ -1,6 +1,8 @@
 <script lang="ts">
 	import ArrowLeftIcon from 'phosphor-svelte/lib/ArrowLeftIcon';
+	import BuildingsIcon from 'phosphor-svelte/lib/BuildingsIcon';
 	import ChartBarIcon from 'phosphor-svelte/lib/ChartBarIcon';
+	import CreditCardIcon from 'phosphor-svelte/lib/CreditCardIcon';
 	import FlagIcon from 'phosphor-svelte/lib/FlagIcon';
 	import SparkleIcon from 'phosphor-svelte/lib/SparkleIcon';
 	import TagIcon from 'phosphor-svelte/lib/TagIcon';
@@ -13,6 +15,8 @@
 
 	const NAV = [
 		{ route: '/saas/users', label: 'Usuários', icon: UsersIcon },
+		{ route: '/saas/workspaces', label: 'Workspaces', icon: BuildingsIcon },
+		{ route: '/saas/plans', label: 'Planos', icon: CreditCardIcon },
 		{ route: '/saas/default-categories', label: 'Categorias padrão', icon: TagIcon },
 		{ route: '/saas/ai-settings', label: 'Guardrails de IA', icon: SparkleIcon },
 		{ route: '/saas/feature-flags', label: 'Feature flags', icon: FlagIcon },

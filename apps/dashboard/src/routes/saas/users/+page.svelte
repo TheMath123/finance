@@ -44,6 +44,13 @@
 						{/if}
 					</p>
 					<p class="truncate text-sm text-muted-foreground">{user.email}</p>
+					{#if user.planName}
+						<span
+							class="mt-0.5 inline-block rounded-full bg-foreground/5 px-2 py-0.5 text-xs text-muted-foreground"
+						>
+							{user.planName}
+						</span>
+					{/if}
 				</div>
 				<div class="flex shrink-0 items-center gap-2">
 					{#if user.suspendedAt}

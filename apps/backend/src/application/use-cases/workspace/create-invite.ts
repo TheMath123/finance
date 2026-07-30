@@ -1,7 +1,6 @@
 import type { InviteRole } from '@finance/shared';
 import { type Either, left, right } from '@finance/shared';
 import type { WorkspaceInvite } from '../../../domain/entities/workspace';
-import { FREE_PLAN_LIMITS } from '../../../domain/services/plan-limits';
 import type { Actor, UseCaseDeps } from '../../deps';
 import { createNotification } from '../notification';
 import type { WorkspaceError } from './errors';
@@ -36,13 +35,15 @@ export async function createInvite(
     }
   }
 
-  // Enforcement de plano (M2-03): free = no máximo 5 membros por workspace.
-  // Reforçado de novo no aceite (accept-invite.ts) — vários convites pendentes
-  // podem ser aceitos em paralelo depois deste check.
+  // Enforcement de plano (M2-03, migrado pro M5-02): limite de membros vem
+  // do plano real do workspace. Reforçado de novo no aceite
+  // (accept-invite.ts) — vários convites pendentes podem ser aceitos em
+  // paralelo depois deste check.
   const workspace = await deps.repos.workspace.findById(actor.workspaceId);
-  if (workspace?.plan === 'free') {
+  if (workspace) {
+    const plan = await deps.repos.plan.findById(workspace.planId);
     const members = await deps.repos.workspace.listMembers(actor.workspaceId);
-    if (members.length >= FREE_PLAN_LIMITS.maxMembersPerWorkspace) {
+    if (plan && members.length >= plan.limits.maxMembersPerWorkspace) {
       return left('plan_limit_reached');
     }
   }

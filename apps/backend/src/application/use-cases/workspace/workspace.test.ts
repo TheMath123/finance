@@ -16,7 +16,11 @@ import {
 } from '@finance/db';
 import { eq } from 'drizzle-orm';
 import type { Workspace } from '../../../domain/entities/workspace';
-import { createTestDeps, type DispatchedJob } from '../../../test/deps';
+import {
+  createTestDeps,
+  type DispatchedJob,
+  getTestPlanId,
+} from '../../../test/deps';
 import type { Actor, UseCaseDeps } from '../../deps';
 import {
   confirmAccountDeletion,
@@ -555,7 +559,7 @@ describe('workspace: enforcement de plano free (M2-03)', () => {
     if (!sixthInvite.ok) expect(sixthInvite.error).toBe('plan_limit_reached');
   });
 
-  test('premium: sem limite de workspace nem de membros', async () => {
+  test('premium: limites maiores (5 workspaces, 20 membros) que o free', async () => {
     const deps = createTestDeps(db);
     const { actor } = await newOwnerActor();
 
@@ -564,13 +568,15 @@ describe('workspace: enforcement de plano free (M2-03)', () => {
       actor.userId,
       'Família Premium 1'
     );
+    const premiumPlanId = await getTestPlanId(db, 'premium');
     await db
       .update(workspaces)
-      .set({ plan: 'premium' })
+      .set({ planId: premiumPlanId })
       .where(eq(workspaces.id, first.id));
 
     // Mesmo já possuindo um workspace compartilhado, criar outro só é bloqueado
-    // se o EXISTENTE ainda contar como free — depois do upgrade, não conta mais.
+    // se o EXISTENTE ainda contar pro limite do plano free — depois do
+    // upgrade, o limite (bem maior) do premium é que passa a valer.
     const second = await createWorkspace(deps, actor.userId, {
       name: 'Família Premium 2',
     });

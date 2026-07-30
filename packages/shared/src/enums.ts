@@ -8,8 +8,22 @@ export type PlatformRole = (typeof PLATFORM_ROLES)[number];
 export const WORKSPACE_TYPES = ['personal', 'family', 'business'] as const;
 export type WorkspaceType = (typeof WORKSPACE_TYPES)[number];
 
-export const WORKSPACE_PLANS = ['free', 'premium'] as const;
-export type WorkspacePlan = (typeof WORKSPACE_PLANS)[number];
+export const BILLING_INTERVALS = ['day', 'week', 'month', 'year'] as const;
+export type BillingInterval = (typeof BILLING_INTERVALS)[number];
+
+/**
+ * Limites de plano (M5-02) — antes hardcoded em `FREE_PLAN_LIMITS`, agora
+ * dado real da tabela `plans`. Mesmos 3 campos de sempre; `jsonb` no schema
+ * pra permitir novos limites/tiers sem migration.
+ */
+export interface PlanLimits {
+  /** Quantos workspaces compartilhados (family/business) um usuário pode possuir (ser owner). */
+  maxOwnedSharedWorkspaces: number;
+  /** Quantos membros um workspace desse plano pode ter no total. */
+  maxMembersPerWorkspace: number;
+  /** Quantas fórmulas customizadas (M5-01) um workspace desse plano pode salvar. */
+  maxSavedFormulasPerWorkspace: number;
+}
 
 export const WORKSPACE_ROLES = ['owner', 'admin', 'member', 'viewer'] as const;
 export type WorkspaceRole = (typeof WORKSPACE_ROLES)[number];

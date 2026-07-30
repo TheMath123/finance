@@ -1,6 +1,5 @@
 import { type Either, left, right } from '@finance/shared';
 import type { Workspace } from '../../../domain/entities/workspace';
-import { FREE_PLAN_LIMITS } from '../../../domain/services/plan-limits';
 import type { UseCaseDeps } from '../../deps';
 import type { WorkspaceError } from './errors';
 
@@ -15,24 +14,30 @@ export interface CreateWorkspaceInput {
  * numa tela vazia"): categorias padrão + banco/conta zerados, pra já dar pra
  * lançar transação sem cadastro manual antes.
  *
- * Enforcement de plano (M2-03): free = no máximo 1 workspace compartilhado
- * por usuário (contando só os que ele possui/criou — ser convidado pro
- * workspace de outra pessoa não consome a cota). Workspace novo sempre nasce
- * `free` (não existe fluxo de criar já `premium` — cobrança é milestone futuro).
+ * Enforcement de plano (M2-03, migrado pro M5-02): limite vem do plano
+ * atual de cada workspace já possuído (dado real da tabela `plans`, não
+ * mais constante hardcoded). Workspace novo sempre nasce no plano `free`
+ * (não existe fluxo de criar já num plano pago — cobrança é milestone
+ * futuro, M5-03).
  */
 export async function createWorkspace(
   deps: UseCaseDeps,
   userId: string,
   input: CreateWorkspaceInput
 ): Promise<Either<WorkspaceError, Workspace>> {
+  const freePlan = await deps.repos.plan.findByKey('free');
+  if (!freePlan) throw new Error('plano free não encontrado');
+
   const memberships = await deps.repos.workspace.listByUser(userId);
-  const ownedSharedFree = memberships.filter(
+  const ownedSharedOnFreePlan = memberships.filter(
     (m) =>
       m.role === 'owner' &&
       m.workspace.type !== 'personal' &&
-      m.workspace.plan === 'free'
+      m.workspace.planId === freePlan.id
   );
-  if (ownedSharedFree.length >= FREE_PLAN_LIMITS.maxOwnedSharedWorkspaces) {
+  if (
+    ownedSharedOnFreePlan.length >= freePlan.limits.maxOwnedSharedWorkspaces
+  ) {
     return left('plan_limit_reached');
   }
 
@@ -40,6 +45,7 @@ export async function createWorkspace(
     const workspace = await repos.workspace.create({
       name: input.name,
       type: 'family',
+      planId: freePlan.id,
     });
     await repos.workspace.addMember({
       workspaceId: workspace.id,

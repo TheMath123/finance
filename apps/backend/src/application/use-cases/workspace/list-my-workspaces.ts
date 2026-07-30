@@ -14,11 +14,13 @@ export async function listMyWorkspaces(
   userId: string
 ): Promise<WorkspaceSummary[]> {
   const memberships = await deps.repos.workspace.listByUser(userId);
+  const plans = await deps.repos.plan.list();
+  const planKeyById = new Map(plans.map((p) => [p.id, p.key]));
   return memberships.map((m) => ({
     id: m.workspace.id,
     name: m.workspace.name,
     type: m.workspace.type,
-    plan: m.workspace.plan,
+    plan: planKeyById.get(m.workspace.planId) ?? 'free',
     role: m.role,
   }));
 }

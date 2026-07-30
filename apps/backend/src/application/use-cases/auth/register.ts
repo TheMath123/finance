@@ -21,6 +21,9 @@ export async function register(
 
   const passwordHash = await deps.hasher.hash(input.password);
 
+  const freePlan = await deps.repos.plan.findByKey('free');
+  if (!freePlan) throw new Error('plano free não encontrado');
+
   let created: { user: User; workspaceId: string };
   try {
     created = await deps.uow.run(async (repos) => {
@@ -35,6 +38,7 @@ export async function register(
       const workspace = await repos.workspace.create({
         name: 'Pessoal',
         type: 'personal',
+        planId: freePlan.id,
       });
       await repos.user.setDefaultWorkspace(user.id, workspace.id);
       await repos.workspace.addMember({

@@ -19,6 +19,7 @@ import {
   cardInvoices,
   cards,
   categories,
+  plans,
   recurringTransactions,
   transactions,
   users,
@@ -57,6 +58,46 @@ async function seed() {
     cost: 12,
   });
 
+  // M5-02: planId agora é NOT NULL em workspaces — precisa existir antes de
+  // criar qualquer workspace. Seed de PRODUÇÃO segue o mesmo princípio
+  // (planos nascem junto com a plataforma, não são criados sob demanda).
+  let [freePlan] = await db.select().from(plans).where(eq(plans.key, 'free'));
+  if (!freePlan) {
+    const inserted = await db
+      .insert(plans)
+      .values([
+        {
+          key: 'free',
+          name: 'Free',
+          priceCents: 0,
+          billingIntervalUnit: 'month',
+          billingIntervalCount: 1,
+          limits: {
+            maxOwnedSharedWorkspaces: 1,
+            maxMembersPerWorkspace: 5,
+            maxSavedFormulasPerWorkspace: 10,
+          },
+          sortOrder: 0,
+        },
+        {
+          key: 'premium',
+          name: 'Premium',
+          priceCents: 4990,
+          billingIntervalUnit: 'month',
+          billingIntervalCount: 1,
+          limits: {
+            maxOwnedSharedWorkspaces: 5,
+            maxMembersPerWorkspace: 20,
+            maxSavedFormulasPerWorkspace: 50,
+          },
+          sortOrder: 1,
+        },
+      ])
+      .returning();
+    freePlan = inserted.find((p) => p.key === 'free');
+  }
+  if (!freePlan) throw new Error('falha ao semear plano free');
+
   const [user] = await db
     .insert(users)
     .values({
@@ -72,7 +113,7 @@ async function seed() {
 
   const [workspace] = await db
     .insert(workspaces)
-    .values({ name: 'Pessoal', type: 'personal' })
+    .values({ name: 'Pessoal', type: 'personal', planId: freePlan.id })
     .returning();
   if (!workspace) throw new Error('falha ao criar workspace');
 

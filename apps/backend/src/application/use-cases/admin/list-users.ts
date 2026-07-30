@@ -10,6 +10,8 @@ export interface AdminUserView {
   emailVerifiedAt: string | null;
   suspendedAt: string | null;
   createdAt: string;
+  /** Plano do workspace pessoal (`defaultWorkspaceId`) — null se o usuário ainda não tiver um (não deveria acontecer pós-registro). */
+  planName: string | null;
 }
 
 export interface ListUsersOutput {
@@ -29,8 +31,19 @@ export async function listUsers(
   input: ListUsersInput
 ): Promise<ListUsersOutput> {
   const { users, total } = await deps.repos.user.listAll(input);
+
+  const plans = await deps.repos.plan.list();
+  const plansById = new Map(plans.map((p) => [p.id, p]));
+  const workspaces = await Promise.all(
+    users.map((u) =>
+      u.defaultWorkspaceId
+        ? deps.repos.workspace.findById(u.defaultWorkspaceId)
+        : undefined
+    )
+  );
+
   return {
-    users: users.map((u) => ({
+    users: users.map((u, i) => ({
       id: u.id,
       name: u.name,
       email: u.email,
@@ -41,6 +54,7 @@ export async function listUsers(
         : null,
       suspendedAt: u.suspendedAt ? u.suspendedAt.toISOString() : null,
       createdAt: u.createdAt.toISOString(),
+      planName: plansById.get(workspaces[i]?.planId ?? '')?.name ?? null,
     })),
     total,
   };

@@ -127,6 +127,14 @@ cadastrado.
   `react-native-draggable-flatlist` no mobile). Smoke test manual e
   validação do drag na Home mobile (lista aninhada em ScrollView) ainda
   pendentes de verificação hands-on.
+- [M5-02 — Planos, preços, limites e controle de assinatura por workspace](done/m5-02-planos-precos-limites.md):
+  concluída em 2026-07-30, validada ponta a ponta com curl real. Gap
+  registrado desde o fechamento do M4 (plano era só um enum decorativo sem
+  preço/limite real) — virou tabela `plans` editável pelo superadmin
+  (preço, intervalo de cobrança configurável, limites, features por plano),
+  substituindo `FREE_PLAN_LIMITS` hardcoded nos 4 pontos de enforcement.
+  Controle manual de plano por workspace (`/saas/workspaces`) e visão do
+  plano por usuário (`/saas/users`) — sem Stripe ainda (fase 2 é M5-03).
 
 ## M4 — Dashboard web (Svelte)
 

@@ -12,6 +12,7 @@ export interface AdminUserView {
 	emailVerifiedAt: string | null;
 	suspendedAt: string | null;
 	createdAt: string;
+	planName: string | null;
 }
 
 export interface ListUsersOutput {
@@ -180,4 +181,108 @@ export function getPlatformMetrics(
 	accessToken: string
 ): Promise<Either<ApiError, PlatformMetricsView>> {
 	return apiRequest('/admin/metrics', { accessToken });
+}
+
+/** Espelha PlanLimits (@finance/shared) e Plan (backend, ports/plan-repository.ts). */
+export interface PlanLimitsView {
+	maxOwnedSharedWorkspaces: number;
+	maxMembersPerWorkspace: number;
+	maxSavedFormulasPerWorkspace: number;
+}
+
+export interface PlanView {
+	id: string;
+	key: string;
+	name: string;
+	description: string | null;
+	priceCents: number;
+	billingIntervalUnit: 'day' | 'week' | 'month' | 'year';
+	billingIntervalCount: number;
+	limits: PlanLimitsView;
+	features: string[];
+	isActive: boolean;
+	sortOrder: number;
+	createdAt: string;
+	updatedAt: string;
+}
+
+export interface PlanInput {
+	key: string;
+	name: string;
+	description?: string | null;
+	priceCents: number;
+	billingIntervalUnit: 'day' | 'week' | 'month' | 'year';
+	billingIntervalCount: number;
+	limits: PlanLimitsView;
+	features: string[];
+}
+
+export function listPlans(accessToken: string): Promise<Either<ApiError, PlanView[]>> {
+	return apiRequest('/admin/plans', { accessToken });
+}
+
+export function createPlan(
+	accessToken: string,
+	input: PlanInput
+): Promise<Either<ApiError, PlanView>> {
+	return apiRequest('/admin/plans', { method: 'POST', body: input, accessToken });
+}
+
+export function updatePlan(
+	accessToken: string,
+	id: string,
+	input: Partial<Omit<PlanInput, 'key'>>
+): Promise<Either<ApiError, PlanView>> {
+	return apiRequest(`/admin/plans/${id}`, { method: 'PATCH', body: input, accessToken });
+}
+
+export function deactivatePlan(
+	accessToken: string,
+	id: string
+): Promise<Either<ApiError, PlanView>> {
+	return apiRequest(`/admin/plans/${id}/deactivate`, { method: 'POST', accessToken });
+}
+
+export function activatePlan(accessToken: string, id: string): Promise<Either<ApiError, PlanView>> {
+	return apiRequest(`/admin/plans/${id}/activate`, { method: 'POST', accessToken });
+}
+
+/** Espelha AdminWorkspaceView (backend, use-cases/admin/list-workspaces.ts). */
+export interface AdminWorkspaceView {
+	id: string;
+	name: string;
+	type: 'personal' | 'family' | 'business';
+	plan: PlanView;
+	memberCount: number;
+	ownerName: string | null;
+	ownerEmail: string | null;
+	createdAt: string;
+}
+
+export interface ListWorkspacesOutput {
+	workspaces: AdminWorkspaceView[];
+	total: number;
+}
+
+export function listWorkspaces(
+	accessToken: string,
+	params: { search?: string; limit: number; offset: number }
+): Promise<Either<ApiError, ListWorkspacesOutput>> {
+	const query = new URLSearchParams();
+	if (params.search) query.set('search', params.search);
+	query.set('limit', String(params.limit));
+	query.set('offset', String(params.offset));
+	return apiRequest(`/admin/workspaces?${query}`, { accessToken });
+}
+
+export function setWorkspacePlan(
+	accessToken: string,
+	workspaceId: string,
+	planId: string
+): Promise<Either<ApiError, AdminWorkspaceView>> {
+	return apiRequest(`/admin/workspaces/${workspaceId}/plan`, {
+		method: 'PATCH',
+		body: { planId },
+		accessToken
+	});
 }

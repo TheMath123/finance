@@ -1,7 +1,6 @@
 import { evaluateFormula } from '@finance/formula';
 import { type Either, left, right } from '@finance/shared';
 import type { SavedFormula } from '../../../domain/entities/saved-formula';
-import { FREE_PLAN_LIMITS } from '../../../domain/services/plan-limits';
 import type { Actor, UseCaseDeps } from '../../deps';
 import type {
   SavedFormulaDraft,
@@ -15,13 +14,20 @@ export async function createSavedFormula(
   actor: Actor,
   input: SavedFormulaDraft
 ): Promise<Either<SavedFormulaError, SavedFormula>> {
+  // M5-02: antes só checava esse limite quando o workspace estava no plano
+  // `free` (checagem `plan === 'free'`) — qualquer outro plano ficava sem
+  // limite nenhum, nunca de propósito. Agora sempre consulta o limite real
+  // do plano atual, seja ele qual for.
   const workspace = await deps.repos.workspace.findById(actor.workspaceId);
-  if (workspace?.plan === 'free') {
-    const count = await deps.repos.savedFormula.countByWorkspace(
-      actor.workspaceId
-    );
-    if (count >= FREE_PLAN_LIMITS.maxSavedFormulasPerWorkspace) {
-      return left('plan_limit_reached');
+  if (workspace) {
+    const plan = await deps.repos.plan.findById(workspace.planId);
+    if (plan) {
+      const count = await deps.repos.savedFormula.countByWorkspace(
+        actor.workspaceId
+      );
+      if (count >= plan.limits.maxSavedFormulasPerWorkspace) {
+        return left('plan_limit_reached');
+      }
     }
   }
 

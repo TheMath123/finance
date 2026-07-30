@@ -15,6 +15,7 @@ export * from './inter-user-transfer';
 export * from './notification';
 export * from './notification-preference';
 export * from './password-reset-token';
+export * from './plan';
 export * from './platform-settings';
 export * from './push-token';
 export * from './recurring-transaction';

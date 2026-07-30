@@ -14,8 +14,16 @@ import {
 } from './feature-flags';
 import { listUsersRoute } from './list-users';
 import { getPlatformMetricsRoute } from './metrics';
+import {
+  activatePlanRoute,
+  createPlanRoute,
+  deactivatePlanRoute,
+  listPlansRoute,
+  updatePlanRoute,
+} from './plans';
 import { reactivateUserRoute } from './reactivate-user';
 import { suspendUserRoute } from './suspend-user';
+import { listWorkspacesRoute, setWorkspacePlanRoute } from './workspaces';
 
 export function adminRoutes(deps: AppDeps) {
   return new Elysia()
@@ -31,5 +39,12 @@ export function adminRoutes(deps: AppDeps) {
     .use(listFeatureFlagsRoute(deps))
     .use(upsertFeatureFlagRoute(deps))
     .use(deleteFeatureFlagRoute(deps))
-    .use(getPlatformMetricsRoute(deps));
+    .use(getPlatformMetricsRoute(deps))
+    .use(listPlansRoute(deps))
+    .use(createPlanRoute(deps))
+    .use(updatePlanRoute(deps))
+    .use(deactivatePlanRoute(deps))
+    .use(activatePlanRoute(deps))
+    .use(listWorkspacesRoute(deps))
+    .use(setWorkspacePlanRoute(deps));
 }

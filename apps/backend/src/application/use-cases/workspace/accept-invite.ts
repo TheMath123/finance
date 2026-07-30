@@ -1,5 +1,4 @@
 import { type Either, left, right } from '@finance/shared';
-import { FREE_PLAN_LIMITS } from '../../../domain/services/plan-limits';
 import type { UseCaseDeps } from '../../deps';
 import { isUniqueConstraintError } from '../../errors';
 import type { WorkspaceError } from './errors';
@@ -46,11 +45,12 @@ export async function acceptInvite(
   );
   if (!existingRole) {
     const workspace = await deps.repos.workspace.findById(invite.workspaceId);
-    if (workspace?.plan === 'free') {
+    if (workspace) {
+      const plan = await deps.repos.plan.findById(workspace.planId);
       const members = await deps.repos.workspace.listMembers(
         invite.workspaceId
       );
-      if (members.length >= FREE_PLAN_LIMITS.maxMembersPerWorkspace) {
+      if (plan && members.length >= plan.limits.maxMembersPerWorkspace) {
         return left('plan_limit_reached');
       }
     }

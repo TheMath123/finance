@@ -15,6 +15,7 @@ import { createInterUserTransferRepository } from './inter-user-transfer.reposit
 import { createInvoiceRepository } from './invoice.repository';
 import { createNotificationRepository } from './notification.repository';
 import { createNotificationPreferenceRepository } from './notification-preference.repository';
+import { createPlanRepository } from './plan.repository';
 import { createPlatformMetricsRepository } from './platform-metrics.repository';
 import { createPushTokenRepository } from './push-token.repository';
 import { createRecurringRepository } from './recurring.repository';
@@ -58,5 +59,6 @@ export function createRepositories(db: DbHandle): Repositories {
     aiUsageLog: createAiUsageLogRepository(db),
     platformMetrics: createPlatformMetricsRepository(db),
     savedFormula: createSavedFormulaRepository(db),
+    plan: createPlanRepository(db),
   };
 }

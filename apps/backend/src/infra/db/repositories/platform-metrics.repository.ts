@@ -1,5 +1,5 @@
-import { transactions, users, workspaces } from '@finance/db';
-import { and, count, gte, isNotNull, isNull, lte } from 'drizzle-orm';
+import { plans, transactions, users, workspaces } from '@finance/db';
+import { and, count, eq, gte, isNotNull, isNull, lte } from 'drizzle-orm';
 import type { PlatformMetricsRepository } from '../../../application/ports/platform-metrics-repository';
 import type { DbHandle } from '../handle';
 
@@ -33,9 +33,10 @@ export function createPlatformMetricsRepository(
           .from(users)
           .where(isNotNull(users.suspendedAt)),
         db
-          .select({ plan: workspaces.plan, count: count() })
+          .select({ plan: plans.key, count: count() })
           .from(workspaces)
-          .groupBy(workspaces.plan),
+          .innerJoin(plans, eq(workspaces.planId, plans.id))
+          .groupBy(plans.key),
         db
           .select({ type: workspaces.type, count: count() })
           .from(workspaces)

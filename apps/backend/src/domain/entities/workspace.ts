@@ -1,7 +1,6 @@
 import type {
   InviteRole,
   InviteStatus,
-  WorkspacePlan,
   WorkspaceRole,
   WorkspaceType,
 } from '@finance/shared';
@@ -10,7 +9,8 @@ export interface Workspace {
   id: string;
   name: string;
   type: WorkspaceType;
-  plan: WorkspacePlan;
+  /** M5-02: FK pra `plans` — ver `application/ports/plan-repository.ts`. */
+  planId: string;
   createdAt: Date;
   updatedAt: Date;
 }

@@ -16,7 +16,7 @@ import {
   workspaceMembers,
   workspaces,
 } from '@finance/db';
-import { createTestDeps } from '../../../test/deps';
+import { createTestDeps, getTestPlanId } from '../../../test/deps';
 import type { Actor, UseCaseDeps } from '../../deps';
 import { estimateVariableExpense } from './estimate-variable-expense';
 
@@ -46,9 +46,10 @@ async function newWorkspace(): Promise<{
       termsVersion: 'test',
     })
     .returning();
+  const planId = await getTestPlanId(db);
   const [workspace] = await db
     .insert(workspaces)
-    .values({ name: 'Gasto Variável', type: 'personal' })
+    .values({ name: 'Gasto Variável', type: 'personal', planId })
     .returning();
   if (!user || !workspace) throw new Error('setup falhou');
   await db

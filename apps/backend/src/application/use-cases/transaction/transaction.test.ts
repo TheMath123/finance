@@ -24,7 +24,7 @@ import {
   competencePeriod,
   splitInstallments,
 } from '../../../domain/services/invoice-rules';
-import { createTestDeps } from '../../../test/deps';
+import { createTestDeps, getTestPlanId } from '../../../test/deps';
 import type { Actor, UseCaseDeps } from '../../deps';
 import { listInvoices } from '../card/list-invoices';
 import { payInvoice } from '../card/pay-invoice';
@@ -69,9 +69,10 @@ beforeAll(async () => {
       termsVersion: 'test',
     })
     .returning();
+  const planId = await getTestPlanId(db);
   const [workspace] = await db
     .insert(workspaces)
-    .values({ name: 'Domínio', type: 'personal' })
+    .values({ name: 'Domínio', type: 'personal', planId })
     .returning();
   if (!user || !workspace) throw new Error('setup falhou');
   await db
