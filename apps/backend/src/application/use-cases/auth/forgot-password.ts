@@ -6,13 +6,24 @@ export interface ForgotPasswordInput {
   email: string;
 }
 
+/** Intervalo mínimo entre dois pedidos pro mesmo e-mail — evita que o botão "reenviar" (dashboard/mobile) spamme a caixa de entrada da vítima. */
+const FORGOT_PASSWORD_COOLDOWN_MS = 10 * 60 * 1000;
+
 /** Sempre retorna sucesso — não revela se o e-mail existe (OWASP). */
 export async function forgotPassword(
   deps: UseCaseDeps,
   input: ForgotPasswordInput
 ): Promise<Either<never, null>> {
-  // Limite por e-mail ALVO (anti flood na vítima) — silencioso: resposta continua genérica
-  if (await deps.rateLimiter.isLimited(`forgot:${input.email}`, 3, 3_600_000)) {
+  // Limite por e-mail ALVO (anti flood na vítima) — silencioso: resposta continua genérica.
+  // `max: 1` na janela = cooldown de verdade (não só um teto de N por hora que
+  // ainda deixaria disparar várias em sequência rápida).
+  if (
+    await deps.rateLimiter.isLimited(
+      `forgot:${input.email}`,
+      1,
+      FORGOT_PASSWORD_COOLDOWN_MS
+    )
+  ) {
     deps.logger.log('forgot_password_throttled');
     return right(null);
   }

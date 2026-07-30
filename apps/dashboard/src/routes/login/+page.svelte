@@ -51,7 +51,6 @@
 				<div class="grid gap-2">
 					<div class="flex items-center justify-between">
 						<Label for="password">Senha</Label>
-
 					</div>
 					<Input
 						id="password"
@@ -76,7 +75,6 @@
 				<Button type="submit" disabled={submitting}>
 					{submitting ? 'Entrando…' : 'Entrar'}
 				</Button>
-
 			</form>
 		</Card.Content>
 		<Card.Footer>
@@ -86,8 +84,6 @@
 					>Criar conta</a
 				>
 			</p>
-
-
 		</Card.Footer>
 	</Card.Root>
 </div>

@@ -48,6 +48,9 @@
 						<p class="text-sm text-destructive">{form.errors.email}</p>
 					{/if}
 				</div>
+				{#if form?.message}
+					<p class="text-sm text-destructive">{form.message}</p>
+				{/if}
 				<Button type="submit" disabled={submitting}>
 					{submitting ? 'Enviando…' : 'Enviar código de redefinição'}
 				</Button>

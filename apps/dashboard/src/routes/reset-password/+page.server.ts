@@ -50,7 +50,13 @@ export const actions: Actions = {
 		const parsed = forgotPasswordSchema.safeParse(raw);
 		if (!parsed.success) return fail(400, { message: 'Informe um e-mail válido.' });
 
-		await authApi.forgotPassword(parsed.data);
+		// Mesma lógica do /forgot-password: só um erro de verdade (ex.: 429 por
+		// IP) chega como `!result.ok` — o cooldown por e-mail fica silencioso
+		// de propósito (OWASP).
+		const result = await authApi.forgotPassword(parsed.data);
+		if (!result.ok) {
+			return fail(result.error.status || 500, { message: result.error.message });
+		}
 		return { resent: true };
 	}
 };

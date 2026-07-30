@@ -22,10 +22,17 @@ export const actions: Actions = {
 			return fail(400, { email: raw.email, errors });
 		}
 
-		// Resposta do backend é sempre genérica (OWASP: não revela se o e-mail
-		// existe) — seguimos pro próximo passo do fluxo do mesmo jeito, exista
-		// ou não a conta.
-		await authApi.forgotPassword(parsed.data);
+		// O use-case sempre responde sucesso genérico (OWASP: não revela se o
+		// e-mail existe, nem se o cooldown de 10min por e-mail bloqueou o envio)
+		// — só um erro de verdade chega aqui como `!result.ok` (ex.: 429 de
+		// limite por IP, que é seguro de revelar por não depender do e-mail alvo).
+		const result = await authApi.forgotPassword(parsed.data);
+		if (!result.ok) {
+			return fail(result.error.status || 500, {
+				email: raw.email,
+				message: result.error.message
+			});
+		}
 		redirect(303, `/reset-password?email=${encodeURIComponent(parsed.data.email)}`);
 	}
 };

@@ -174,6 +174,43 @@ coincidindo) — todos retornando o `fail`/`redirect` esperado, sem erro 500.
 Não foi possível validar o fluxo 100% ponta a ponta com um código real
 (sem acesso à caixa de e-mail do Resend nesta sessão).
 
+### Guardrails de e-mail (2026-07-29, mesmo dia)
+
+Usuário pediu limite pra não deixar reenviar o e-mail de reset "na hora"
+(cooldown de 10min) e perguntou sobre bloqueio de tentativas/IP. Levantamento
+mostrou que **a maior parte já existia** antes desta sessão, só não documentada
+junto do fluxo novo do dashboard:
+
+- **Por IP** (`http/modules/auth/routes/index.ts`, tabela `RATE_LIMITS`):
+  já cobre `forgot-password` (5/h), `verify-reset-code` e `reset-password`
+  (10/min cada) — devolve 429 com `retry-after`.
+- **Por tentativa de código** (`verify-reset-code.ts`/`reset-password.ts`):
+  já cobre com a mesma chave `reset-code:<email>` (5 tentativas/15min) —
+  protege o código de 6 dígitos de força bruta.
+- **Faltava**: `forgot-password.ts` só tinha um teto solto de "3 por hora"
+  (`isLimited(key, 3, 3_600_000)`), que deixava disparar 3 e-mails em
+  sequência rápida antes de qualquer bloqueio. Trocado por um cooldown de
+  verdade — `isLimited(key, 1, 10 * 60 * 1000)` (`max: 1` na janela = só
+  libera de novo depois de 10min, não um teto de N no total).
+
+Esse cooldown quebrou um teste existente (`auth.test.ts`, "fluxo completo")
+que chamava `forgotPassword` duas vezes pro mesmo e-mail (uma antes de
+verificar o e-mail, só pra provar que não envia; outra depois, pro fluxo de
+verdade) — a segunda caía no cooldown da primeira. Corrigido separando em
+dois testes independentes (cada um com seu próprio e-mail único), mais um
+teste novo dedicado ao cooldown em si.
+
+Dashboard também ganhou tratamento pro 429 por IP nas duas rotas que chamam
+`forgotPassword` (`/forgot-password` e o `resend` de `/reset-password`) —
+antes ignoravam o retorno e sempre seguiam como se tivesse dado certo; agora
+um erro de verdade (IP limitado) aparece pro usuário. O cooldown por e-mail
+continua silencioso de propósito (o use-case sempre responde sucesso
+genérico ali — é a mesma regra OWASP de não revelar se o e-mail existe).
+
+Validado: suíte completa de `auth.test.ts` (26 testes, 0 falhas, incluindo
+os 2 novos), `svelte-check`/`eslint`/`prettier`/build do dashboard limpos,
+`bun run lint` do monorepo limpo.
+
 ## Critério de conclusão
 
 Login funcionando ponta a ponta contra o backend real (mesmo usuário do

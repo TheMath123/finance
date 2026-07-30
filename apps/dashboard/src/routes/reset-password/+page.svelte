@@ -19,12 +19,18 @@
 		if (!email) return;
 		resending = true;
 		resendMessage = null;
-		await fetch('?/resend', {
+		const response = await fetch('?/resend', {
 			method: 'POST',
 			body: new URLSearchParams({ email })
 		});
 		resending = false;
-		resendMessage = 'Novo código enviado — confira seu e-mail.';
+		// `response.ok` já basta pra distinguir sucesso de erro real (ex.: 429 por
+		// IP) — o cooldown por e-mail continua indistinguível de sucesso de
+		// propósito (OWASP), então não dá (nem deve) mostrar mensagem diferente
+		// pra esse caso especificamente.
+		resendMessage = response.ok
+			? 'Novo código enviado — confira seu e-mail.'
+			: 'Não foi possível reenviar agora. Tente novamente em alguns minutos.';
 	}
 </script>
 

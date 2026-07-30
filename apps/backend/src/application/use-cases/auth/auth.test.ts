@@ -219,12 +219,6 @@ describe('auth: verificação de e-mail e reset de senha', () => {
     });
     if (!session.ok) throw new Error('registro falhou');
 
-    // forgot antes de verificar e-mail: resposta genérica, MAS sem e-mail enviado
-    await forgotPassword(deps, { email });
-    expect(jobs.filter((j) => j.name === 'email.password-reset')).toHaveLength(
-      0
-    );
-
     // verifica o e-mail com o token capturado do job
     const verifyJob = jobs.find((j) => j.name === 'email.verify-email');
     if (!verifyJob) throw new Error('job de verificação não disparado');
@@ -292,6 +286,54 @@ describe('auth: verificação de e-mail e reset de senha', () => {
       password: '12345678',
     });
     expect(result.ok).toBe(false);
+  });
+
+  test('forgot-password numa conta não verificada responde genérico, mas não envia e-mail', async () => {
+    const jobs: DispatchedJob[] = [];
+    const deps = createTestDeps(db, jobs);
+    const email = uniqueEmail();
+
+    const session = await register(deps, {
+      name: 'Não verificado',
+      email,
+      password: 'senha-original-123',
+    });
+    if (!session.ok) throw new Error('registro falhou');
+
+    const result = await forgotPassword(deps, { email });
+    expect(result.ok).toBe(true);
+    expect(jobs.filter((j) => j.name === 'email.password-reset')).toHaveLength(
+      0
+    );
+  });
+
+  test('forgot-password: segundo pedido pro mesmo e-mail dentro do cooldown de 10min não envia outro e-mail', async () => {
+    const jobs: DispatchedJob[] = [];
+    const deps = createTestDeps(db, jobs);
+    const email = uniqueEmail();
+
+    const session = await register(deps, {
+      name: 'Cooldown',
+      email,
+      password: 'senha-original-123',
+    });
+    if (!session.ok) throw new Error('registro falhou');
+    const verifyJob = jobs.find((j) => j.name === 'email.verify-email');
+    if (!verifyJob) throw new Error('job de verificação não disparado');
+    const verifyToken = (verifyJob.payload as { code: string }).code;
+    expect((await verifyEmail(deps, { token: verifyToken })).ok).toBe(true);
+
+    await forgotPassword(deps, { email });
+    expect(jobs.filter((j) => j.name === 'email.password-reset')).toHaveLength(
+      1
+    );
+
+    // Pedido imediato seguinte cai no cooldown — resposta continua genérica,
+    // mas nenhum e-mail novo é disparado (evita spammar a caixa da vítima).
+    await forgotPassword(deps, { email });
+    expect(jobs.filter((j) => j.name === 'email.password-reset')).toHaveLength(
+      1
+    );
   });
 });
 
