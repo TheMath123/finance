@@ -1,4 +1,4 @@
-import { BILLING_INTERVALS } from '@finance/shared';
+import { BILLING_INTERVALS, PAYMENT_METHODS } from '@finance/shared';
 import { z } from 'zod';
 
 export const userParamsSchema = z.object({
@@ -7,6 +7,11 @@ export const userParamsSchema = z.object({
 
 export const planParamsSchema = z.object({
   id: z.string().uuid(),
+});
+
+export const planPriceParamsSchema = z.object({
+  id: z.string().uuid(),
+  priceId: z.string().uuid(),
 });
 
 export const workspaceParamsSchema = z.object({
@@ -33,17 +38,31 @@ export const createPlanSchema = z.object({
     .regex(/^[a-z0-9_-]+$/, 'Use só letras minúsculas, números, "_" ou "-".'),
   name: z.string().min(1).max(80),
   description: z.string().max(300).nullable().optional(),
-  priceCents: z.number().int().min(0),
-  billingIntervalUnit: z.enum(BILLING_INTERVALS),
-  billingIntervalCount: z.number().int().min(1).max(36),
+  trialDays: z.number().int().min(0).max(365),
   limits: planLimitsSchema,
   features: z.array(z.string().min(1).max(80)).default([]),
 });
 
 export const updatePlanSchema = createPlanSchema.omit({ key: true }).partial();
 
+export const createPlanPriceSchema = z.object({
+  billingIntervalUnit: z.enum(BILLING_INTERVALS),
+  billingIntervalCount: z.number().int().min(1).max(36),
+  priceCents: z.number().int().min(0),
+  maxInstallments: z.number().int().min(1).max(12).default(1),
+  paymentMethods: z
+    .array(z.enum(PAYMENT_METHODS))
+    .min(1)
+    .default([...PAYMENT_METHODS]),
+  isDefault: z.boolean().default(false),
+  sortOrder: z.number().int().min(0).default(0),
+});
+
+export const updatePlanPriceSchema = createPlanPriceSchema.partial();
+
 export const setWorkspacePlanSchema = z.object({
   planId: z.string().uuid(),
+  planPriceId: z.string().uuid().optional(),
 });
 
 export const defaultCategoryParamsSchema = z.object({

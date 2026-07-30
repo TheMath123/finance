@@ -1,7 +1,7 @@
 import { relations } from 'drizzle-orm';
-import { pgEnum, pgTable, text, uuid } from 'drizzle-orm/pg-core';
+import { pgEnum, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 import { createdAt, id, updatedAt } from './helpers';
-import { plans } from './plan';
+import { planPrices, plans } from './plan';
 import { workspaceInvites } from './workspace-invite';
 import { workspaceMembers } from './workspace-member';
 
@@ -19,6 +19,12 @@ export const workspaces = pgTable('workspaces', {
   planId: uuid('plan_id')
     .notNull()
     .references(() => plans.id),
+  /** M5-03: qual opção de cobrança (recorrência) do plano atual — nullable, exibição usa o preço default do plano se vazio. */
+  planPriceId: uuid('plan_price_id').references(() => planPrices.id, {
+    onDelete: 'set null',
+  }),
+  /** M5-03: nulo = sem trial ativo; no passado = trial expirado (checks de limite/feature caem pro plano free — `resolveEffectivePlan`). */
+  trialEndsAt: timestamp('trial_ends_at', { withTimezone: true }),
   createdAt: createdAt(),
   updatedAt: updatedAt(),
 });
@@ -27,6 +33,10 @@ export const workspacesRelations = relations(workspaces, ({ one, many }) => ({
   plan: one(plans, {
     fields: [workspaces.planId],
     references: [plans.id],
+  }),
+  planPrice: one(planPrices, {
+    fields: [workspaces.planPriceId],
+    references: [planPrices.id],
   }),
   members: many(workspaceMembers),
   invites: many(workspaceInvites),

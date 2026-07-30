@@ -16,14 +16,21 @@ import { listUsersRoute } from './list-users';
 import { getPlatformMetricsRoute } from './metrics';
 import {
   activatePlanRoute,
+  addPlanPriceRoute,
   createPlanRoute,
   deactivatePlanRoute,
+  deletePlanPriceRoute,
   listPlansRoute,
+  updatePlanPriceRoute,
   updatePlanRoute,
 } from './plans';
 import { reactivateUserRoute } from './reactivate-user';
 import { suspendUserRoute } from './suspend-user';
-import { listWorkspacesRoute, setWorkspacePlanRoute } from './workspaces';
+import {
+  confirmWorkspacePaymentRoute,
+  listWorkspacesRoute,
+  setWorkspacePlanRoute,
+} from './workspaces';
 
 export function adminRoutes(deps: AppDeps) {
   return new Elysia()
@@ -45,6 +52,10 @@ export function adminRoutes(deps: AppDeps) {
     .use(updatePlanRoute(deps))
     .use(deactivatePlanRoute(deps))
     .use(activatePlanRoute(deps))
+    .use(addPlanPriceRoute(deps))
+    .use(updatePlanPriceRoute(deps))
+    .use(deletePlanPriceRoute(deps))
     .use(listWorkspacesRoute(deps))
-    .use(setWorkspacePlanRoute(deps));
+    .use(setWorkspacePlanRoute(deps))
+    .use(confirmWorkspacePaymentRoute(deps));
 }

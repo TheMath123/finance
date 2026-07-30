@@ -6,12 +6,14 @@
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
 	import { formatCents } from '$lib/money';
-	import type { PlanView } from '$lib/server/admin-api';
+	import type { PaymentMethod, PlanPriceView, PlanView } from '$lib/server/admin-api';
 
 	let { data, form } = $props();
 
 	let createOpen = $state(false);
 	let editing = $state<PlanView | null>(null);
+	let priceDialogPlan = $state<PlanView | null>(null);
+	let editingPrice = $state<PlanPriceView | null>(null);
 
 	const INTERVAL_LABELS: Record<string, string> = {
 		day: 'dia',
@@ -19,6 +21,27 @@
 		month: 'mês',
 		year: 'ano'
 	};
+
+	const INTERVAL_LABELS_PLURAL: Record<string, string> = {
+		day: 'dias',
+		week: 'semanas',
+		month: 'meses',
+		year: 'anos'
+	};
+
+	const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
+		credit_card: 'Cartão de crédito',
+		debit_card: 'Cartão de débito',
+		pix: 'Pix'
+	};
+
+	function priceLabel(price: PlanPriceView): string {
+		const interval =
+			price.billingIntervalCount > 1
+				? `a cada ${price.billingIntervalCount} ${INTERVAL_LABELS_PLURAL[price.billingIntervalUnit]}`
+				: INTERVAL_LABELS[price.billingIntervalUnit];
+		return `${formatCents(price.priceCents)} / ${interval}`;
+	}
 
 	function closeOnSuccess(close: () => void) {
 		return async ({
@@ -31,6 +54,16 @@
 			if (result.type === 'success') close();
 			await update();
 		};
+	}
+
+	function openAddPrice(plan: PlanView) {
+		priceDialogPlan = plan;
+		editingPrice = null;
+	}
+
+	function openEditPrice(plan: PlanView, price: PlanPriceView) {
+		priceDialogPlan = plan;
+		editingPrice = price;
 	}
 </script>
 
@@ -51,12 +84,13 @@
 			<Input id="name" name="name" value={plan?.name ?? ''} required />
 		</div>
 		<div class="grid gap-2">
-			<Label for="price">Preço (R$)</Label>
+			<Label for="trialDays">Dias de trial (0 = sem trial)</Label>
 			<Input
-				id="price"
-				name="price"
-				value={plan ? (plan.priceCents / 100).toFixed(2).replace('.', ',') : ''}
-				placeholder="0,00"
+				id="trialDays"
+				name="trialDays"
+				type="number"
+				min="0"
+				value={plan?.trialDays ?? 0}
 				required
 			/>
 		</div>
@@ -64,33 +98,6 @@
 	<div class="grid gap-2">
 		<Label for="description">Descrição</Label>
 		<Input id="description" name="description" value={plan?.description ?? ''} />
-	</div>
-	<div class="grid gap-3 sm:grid-cols-2">
-		<div class="grid gap-2">
-			<Label for="billingIntervalUnit">Intervalo de cobrança</Label>
-			<select
-				id="billingIntervalUnit"
-				name="billingIntervalUnit"
-				value={plan?.billingIntervalUnit ?? 'month'}
-				class="h-9 rounded-lg border border-foreground/10 bg-background px-3 text-sm"
-			>
-				<option value="day">Dia</option>
-				<option value="week">Semana</option>
-				<option value="month">Mês</option>
-				<option value="year">Ano</option>
-			</select>
-		</div>
-		<div class="grid gap-2">
-			<Label for="billingIntervalCount">A cada quantos</Label>
-			<Input
-				id="billingIntervalCount"
-				name="billingIntervalCount"
-				type="number"
-				min="1"
-				value={plan?.billingIntervalCount ?? 1}
-				required
-			/>
-		</div>
 	</div>
 	<div class="grid gap-2 rounded-lg border border-foreground/10 p-3">
 		<p class="text-xs font-medium text-muted-foreground">Limites</p>
@@ -130,15 +137,101 @@
 			</div>
 		</div>
 	</div>
-	<div class="grid gap-2">
-		<Label for="features">Features liberadas (separadas por vírgula)</Label>
-		<Input
-			id="features"
-			name="features"
-			value={plan?.features.join(', ') ?? ''}
-			placeholder="ai_chat, csv_export"
-		/>
+	<div class="grid gap-2 rounded-lg border border-foreground/10 p-3">
+		<p class="text-xs font-medium text-muted-foreground">
+			Features liberadas (baseado nas feature flags cadastradas)
+		</p>
+		{#if data.featureFlags.length === 0}
+			<p class="text-xs text-muted-foreground">
+				Nenhuma feature flag cadastrada ainda — crie em "Feature flags" antes de travar por plano.
+			</p>
+		{/if}
+		<div class="grid gap-1 sm:grid-cols-2">
+			{#each data.featureFlags as flag (flag.key)}
+				<label class="flex items-center gap-2 text-sm">
+					<input
+						type="checkbox"
+						name="features"
+						value={flag.key}
+						checked={plan?.features.includes(flag.key) ?? false}
+					/>
+					{flag.key}
+				</label>
+			{/each}
+		</div>
 	</div>
+{/snippet}
+
+{#snippet priceFields(price?: PlanPriceView)}
+	<div class="grid gap-3 sm:grid-cols-2">
+		<div class="grid gap-2">
+			<Label for="billingIntervalUnit">Intervalo</Label>
+			<select
+				id="billingIntervalUnit"
+				name="billingIntervalUnit"
+				value={price?.billingIntervalUnit ?? 'month'}
+				class="h-9 rounded-lg border border-foreground/10 bg-background px-3 text-sm"
+			>
+				<option value="day">Dia</option>
+				<option value="week">Semana</option>
+				<option value="month">Mês</option>
+				<option value="year">Ano</option>
+			</select>
+		</div>
+		<div class="grid gap-2">
+			<Label for="billingIntervalCount">A cada quantos</Label>
+			<Input
+				id="billingIntervalCount"
+				name="billingIntervalCount"
+				type="number"
+				min="1"
+				value={price?.billingIntervalCount ?? 1}
+				required
+			/>
+		</div>
+	</div>
+	<div class="grid gap-3 sm:grid-cols-2">
+		<div class="grid gap-2">
+			<Label for="priceCents">Preço (R$)</Label>
+			<Input
+				id="priceCents"
+				name="priceCents"
+				value={price ? (price.priceCents / 100).toFixed(2).replace('.', ',') : ''}
+				placeholder="0,00"
+				required
+			/>
+		</div>
+		<div class="grid gap-2">
+			<Label for="maxInstallments">Parcelas máx. (cartão)</Label>
+			<Input
+				id="maxInstallments"
+				name="maxInstallments"
+				type="number"
+				min="1"
+				max="12"
+				value={price?.maxInstallments ?? 1}
+				required
+			/>
+		</div>
+	</div>
+	<div class="grid gap-1">
+		<Label class="text-xs">Métodos de pagamento aceitos</Label>
+		{#each Object.entries(PAYMENT_METHOD_LABELS) as [value, label] (value)}
+			<label class="flex items-center gap-2 text-sm">
+				<input
+					type="checkbox"
+					name="paymentMethods"
+					{value}
+					checked={price?.paymentMethods.includes(value as PaymentMethod) ?? true}
+				/>
+				{label}
+			</label>
+		{/each}
+	</div>
+	<label class="flex items-center gap-2 text-sm">
+		<input type="checkbox" name="isDefault" checked={price?.isDefault ?? false} />
+		Opção padrão (pré-selecionada)
+	</label>
 {/snippet}
 
 <div class="flex flex-col gap-6">
@@ -167,13 +260,49 @@
 								<span class="text-xs text-destructive">(inativo)</span>
 							{/if}
 						</p>
-						<p class="text-sm text-muted-foreground">
-							{formatCents(plan.priceCents)} / {INTERVAL_LABELS[plan.billingIntervalUnit]}
-							{plan.billingIntervalCount > 1 ? `(a cada ${plan.billingIntervalCount})` : ''}
-						</p>
+						{#if plan.trialDays > 0}
+							<p class="text-xs text-primary">{plan.trialDays} dias de trial</p>
+						{/if}
 					</div>
 					<Button variant="outline" size="sm" onclick={() => (editing = plan)}>Editar</Button>
 				</div>
+
+				<div class="flex flex-col gap-1">
+					{#each plan.prices as price (price.id)}
+						<div
+							class="flex items-center justify-between gap-2 rounded-md bg-foreground/5 px-2 py-1 text-xs"
+						>
+							<span>
+								{priceLabel(price)}
+								{#if price.isDefault}<span class="text-primary">(padrão)</span>{/if}
+							</span>
+							<div class="flex shrink-0 gap-1">
+								<button
+									type="button"
+									class="text-muted-foreground underline"
+									onclick={() => openEditPrice(plan, price)}
+								>
+									editar
+								</button>
+								<form method="POST" action="?/deletePrice" use:enhance>
+									<input type="hidden" name="planId" value={plan.id} />
+									<input type="hidden" name="priceId" value={price.id} />
+									<button type="submit" class="text-destructive underline">excluir</button>
+								</form>
+							</div>
+						</div>
+					{:else}
+						<p class="text-xs text-muted-foreground">Nenhuma opção de cobrança ainda.</p>
+					{/each}
+					<button
+						type="button"
+						class="self-start text-xs text-primary underline"
+						onclick={() => openAddPrice(plan)}
+					>
+						+ Adicionar preço
+					</button>
+				</div>
+
 				<div class="flex flex-wrap gap-1 text-xs text-muted-foreground">
 					<span class="rounded-full bg-foreground/5 px-2 py-0.5">
 						{plan.limits.maxOwnedSharedWorkspaces} workspace(s)
@@ -241,6 +370,38 @@
 				{@render planFields(editing)}
 				<Dialog.Footer>
 					<Button type="submit">Salvar</Button>
+				</Dialog.Footer>
+			</form>
+		{/if}
+	</Dialog.Content>
+</Dialog.Root>
+
+<Dialog.Root
+	open={priceDialogPlan !== null}
+	onOpenChange={(open) => !open && (priceDialogPlan = null)}
+>
+	<Dialog.Content>
+		<Dialog.Header>
+			<Dialog.Title>{editingPrice ? 'Editar preço' : 'Adicionar preço'}</Dialog.Title>
+		</Dialog.Header>
+		{#if priceDialogPlan}
+			<form
+				method="POST"
+				action={editingPrice ? '?/updatePrice' : '?/addPrice'}
+				class="grid gap-4"
+				use:enhance={() =>
+					closeOnSuccess(() => {
+						priceDialogPlan = null;
+						editingPrice = null;
+					})}
+			>
+				<input type="hidden" name="planId" value={priceDialogPlan.id} />
+				{#if editingPrice}
+					<input type="hidden" name="priceId" value={editingPrice.id} />
+				{/if}
+				{@render priceFields(editingPrice ?? undefined)}
+				<Dialog.Footer>
+					<Button type="submit">{editingPrice ? 'Salvar' : 'Adicionar'}</Button>
 				</Dialog.Footer>
 			</form>
 		{/if}

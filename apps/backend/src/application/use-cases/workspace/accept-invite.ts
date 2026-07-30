@@ -1,4 +1,5 @@
 import { type Either, left, right } from '@finance/shared';
+import { resolveEffectivePlan } from '../../../domain/services/resolve-effective-plan';
 import type { UseCaseDeps } from '../../deps';
 import { isUniqueConstraintError } from '../../errors';
 import type { WorkspaceError } from './errors';
@@ -46,7 +47,7 @@ export async function acceptInvite(
   if (!existingRole) {
     const workspace = await deps.repos.workspace.findById(invite.workspaceId);
     if (workspace) {
-      const plan = await deps.repos.plan.findById(workspace.planId);
+      const plan = await resolveEffectivePlan(deps, workspace);
       const members = await deps.repos.workspace.listMembers(
         invite.workspaceId
       );

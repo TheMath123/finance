@@ -4,6 +4,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { Input } from '$lib/components/ui/input';
+	import { formatCents } from '$lib/money';
 	import type { AdminWorkspaceView } from '$lib/server/admin-api';
 
 	let { data, form } = $props();
@@ -11,6 +12,7 @@
 	const totalPages = $derived(Math.max(1, Math.ceil(data.total / data.pageSize)));
 
 	let changingPlan = $state<AdminWorkspaceView | null>(null);
+	let selectedPlanId = $state('');
 
 	const INTERVAL_LABELS: Record<string, string> = {
 		day: 'dia',
@@ -18,6 +20,33 @@
 		month: 'mês',
 		year: 'ano'
 	};
+
+	const INTERVAL_LABELS_PLURAL: Record<string, string> = {
+		day: 'dias',
+		week: 'semanas',
+		month: 'meses',
+		year: 'anos'
+	};
+
+	const selectedPlanPrices = $derived(
+		data.plans.find((p) => p.id === selectedPlanId)?.prices ?? []
+	);
+
+	function recurrenceLabel(workspace: AdminWorkspaceView): string {
+		if (!workspace.planPrice) return workspace.plan.name;
+		const interval =
+			workspace.planPrice.billingIntervalCount > 1
+				? `a cada ${workspace.planPrice.billingIntervalCount} ${INTERVAL_LABELS_PLURAL[workspace.planPrice.billingIntervalUnit]}`
+				: INTERVAL_LABELS[workspace.planPrice.billingIntervalUnit];
+		return `${workspace.plan.name} — ${interval}`;
+	}
+
+	function trialLabel(trialEndsAt: string): string {
+		const date = new Date(trialEndsAt);
+		const isExpired = date.getTime() < Date.now();
+		const formatted = date.toLocaleDateString('pt-BR');
+		return isExpired ? `trial venceu em ${formatted}` : `trial até ${formatted}`;
+	}
 
 	function closeOnSuccess(close: () => void) {
 		return async ({
@@ -30,6 +59,11 @@
 			if (result.type === 'success') close();
 			await update();
 		};
+	}
+
+	function openChangePlan(workspace: AdminWorkspaceView) {
+		changingPlan = workspace;
+		selectedPlanId = workspace.plan.id;
 	}
 </script>
 
@@ -66,10 +100,19 @@
 					</p>
 				</div>
 				<div class="flex shrink-0 items-center gap-2">
+					{#if workspace.trialEndsAt}
+						<span class="rounded-full bg-primary/10 px-2 py-1 text-xs text-primary">
+							{trialLabel(workspace.trialEndsAt)}
+						</span>
+						<form method="POST" action="?/confirmPayment" use:enhance>
+							<input type="hidden" name="workspaceId" value={workspace.id} />
+							<Button type="submit" variant="outline" size="sm">Confirmar pagamento</Button>
+						</form>
+					{/if}
 					<span class="rounded-full bg-foreground/5 px-2 py-1 text-xs text-muted-foreground">
-						{workspace.plan.name} / {INTERVAL_LABELS[workspace.plan.billingIntervalUnit]}
+						{recurrenceLabel(workspace)}
 					</span>
-					<Button variant="outline" size="sm" onclick={() => (changingPlan = workspace)}>
+					<Button variant="outline" size="sm" onclick={() => openChangePlan(workspace)}>
 						Mudar plano
 					</Button>
 				</div>
@@ -115,16 +158,28 @@
 				<input type="hidden" name="workspaceId" value={changingPlan.id} />
 				<select
 					name="planId"
+					bind:value={selectedPlanId}
 					class="h-9 rounded-lg border border-foreground/10 bg-background px-3 text-sm"
 				>
 					{#each data.plans as plan (plan.id)}
-						<option value={plan.id} selected={plan.id === changingPlan.plan.id}>
-							{plan.name} — {plan.priceCents === 0
-								? 'grátis'
-								: `R$ ${(plan.priceCents / 100).toFixed(2)}`}
+						<option value={plan.id}>
+							{plan.name}
+							{plan.trialDays > 0 ? `(trial ${plan.trialDays}d)` : ''}
 						</option>
 					{/each}
 				</select>
+				{#if selectedPlanPrices.length > 0}
+					<select
+						name="planPriceId"
+						class="h-9 rounded-lg border border-foreground/10 bg-background px-3 text-sm"
+					>
+						{#each selectedPlanPrices as price (price.id)}
+							<option value={price.id} selected={price.isDefault}>
+								{formatCents(price.priceCents)} / {INTERVAL_LABELS[price.billingIntervalUnit]}
+							</option>
+						{/each}
+					</select>
+				{/if}
 				<Dialog.Footer>
 					<Button type="submit">Salvar</Button>
 				</Dialog.Footer>

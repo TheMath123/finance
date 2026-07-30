@@ -1,28 +1,55 @@
-import type { BillingInterval, PlanLimits } from '@finance/shared';
+import type {
+  BillingInterval,
+  PaymentMethod,
+  PlanLimits,
+} from '@finance/shared';
+
+export interface PlanPrice {
+  id: string;
+  planId: string;
+  billingIntervalUnit: BillingInterval;
+  billingIntervalCount: number;
+  priceCents: number;
+  maxInstallments: number;
+  paymentMethods: PaymentMethod[];
+  isDefault: boolean;
+  sortOrder: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface PlanPriceInput {
+  billingIntervalUnit: BillingInterval;
+  billingIntervalCount: number;
+  priceCents: number;
+  maxInstallments: number;
+  paymentMethods: PaymentMethod[];
+  isDefault: boolean;
+  sortOrder: number;
+}
 
 export interface Plan {
   id: string;
   key: string;
   name: string;
   description: string | null;
-  priceCents: number;
-  billingIntervalUnit: BillingInterval;
-  billingIntervalCount: number;
+  /** M5-03: dias de acesso completo ao plano antes de, sem confirmação de pagamento, cair pro free (0 = sem trial). */
+  trialDays: number;
   limits: PlanLimits;
   features: string[];
   isActive: boolean;
   sortOrder: number;
   createdAt: Date;
   updatedAt: Date;
+  /** M5-03: opções de cobrança do plano (mensal/semestral/anual etc.) — sempre ao menos 1. */
+  prices: PlanPrice[];
 }
 
 export interface PlanInput {
   key: string;
   name: string;
   description?: string | null;
-  priceCents: number;
-  billingIntervalUnit: BillingInterval;
-  billingIntervalCount: number;
+  trialDays: number;
   limits: PlanLimits;
   features: string[];
 }
@@ -37,4 +64,14 @@ export interface PlanRepository {
   setActive(id: string, isActive: boolean): Promise<Plan>;
   /** Quantos workspaces estão nesse plano — usado pra decidir se dá pra desativar sem impacto visível. */
   countWorkspacesUsingPlan(id: string): Promise<number>;
+  addPrice(planId: string, data: PlanPriceInput): Promise<PlanPrice>;
+  updatePrice(
+    priceId: string,
+    patch: Partial<PlanPriceInput>
+  ): Promise<PlanPrice>;
+  deletePrice(priceId: string): Promise<void>;
+  findPriceById(priceId: string): Promise<PlanPrice | undefined>;
+  /** Zera `isDefault` de todas as outras prices do plano — usado ao marcar uma nova price como default. */
+  clearDefaultPrice(planId: string, exceptPriceId?: string): Promise<void>;
+  countPricesForPlan(planId: string): Promise<number>;
 }

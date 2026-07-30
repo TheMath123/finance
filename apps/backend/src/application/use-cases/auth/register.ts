@@ -23,6 +23,8 @@ export async function register(
 
   const freePlan = await deps.repos.plan.findByKey('free');
   if (!freePlan) throw new Error('plano free não encontrado');
+  const freePlanPrice =
+    freePlan.prices.find((p) => p.isDefault) ?? freePlan.prices[0];
 
   let created: { user: User; workspaceId: string };
   try {
@@ -39,6 +41,7 @@ export async function register(
         name: 'Pessoal',
         type: 'personal',
         planId: freePlan.id,
+        planPriceId: freePlanPrice?.id,
       });
       await repos.user.setDefaultWorkspace(user.id, workspace.id);
       await repos.workspace.addMember({

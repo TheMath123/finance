@@ -1,5 +1,6 @@
 import { Elysia } from 'elysia';
 import {
+  confirmWorkspacePayment,
   listWorkspaces,
   setWorkspacePlan,
 } from '../../../../application/use-cases/admin';
@@ -37,7 +38,25 @@ export const setWorkspacePlanRoute = (deps: AppDeps) =>
         deps,
         auth.value.userId,
         p.value.workspaceId,
-        input.value.planId
+        input.value.planId,
+        input.value.planPriceId
+      );
+      return respond(set, result, ADMIN_ERRORS, 200);
+    }
+  );
+
+export const confirmWorkspacePaymentRoute = (deps: AppDeps) =>
+  new Elysia().post(
+    '/admin/workspaces/:workspaceId/confirm-payment',
+    async ({ request, params, set }) => {
+      const p = validateParams(workspaceParamsSchema, params);
+      if (!p.ok) return fail(set, p.error);
+      const auth = await requireSuperadmin(deps, request);
+      if (!auth.ok) return fail(set, auth.error);
+      const result = await confirmWorkspacePayment(
+        deps,
+        auth.value.userId,
+        p.value.workspaceId
       );
       return respond(set, result, ADMIN_ERRORS, 200);
     }

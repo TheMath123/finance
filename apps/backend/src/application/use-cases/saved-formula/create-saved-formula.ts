@@ -1,6 +1,7 @@
 import { evaluateFormula } from '@finance/formula';
 import { type Either, left, right } from '@finance/shared';
 import type { SavedFormula } from '../../../domain/entities/saved-formula';
+import { resolveEffectivePlan } from '../../../domain/services/resolve-effective-plan';
 import type { Actor, UseCaseDeps } from '../../deps';
 import type {
   SavedFormulaDraft,
@@ -17,10 +18,10 @@ export async function createSavedFormula(
   // M5-02: antes só checava esse limite quando o workspace estava no plano
   // `free` (checagem `plan === 'free'`) — qualquer outro plano ficava sem
   // limite nenhum, nunca de propósito. Agora sempre consulta o limite real
-  // do plano atual, seja ele qual for.
+  // do plano efetivo (M5-03: cai pro free se o trial já venceu).
   const workspace = await deps.repos.workspace.findById(actor.workspaceId);
   if (workspace) {
-    const plan = await deps.repos.plan.findById(workspace.planId);
+    const plan = await resolveEffectivePlan(deps, workspace);
     if (plan) {
       const count = await deps.repos.savedFormula.countByWorkspace(
         actor.workspaceId

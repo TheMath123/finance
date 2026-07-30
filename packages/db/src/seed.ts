@@ -19,6 +19,7 @@ import {
   cardInvoices,
   cards,
   categories,
+  planPrices,
   plans,
   recurringTransactions,
   transactions,
@@ -61,6 +62,9 @@ async function seed() {
   // M5-02: planId agora é NOT NULL em workspaces — precisa existir antes de
   // criar qualquer workspace. Seed de PRODUÇÃO segue o mesmo princípio
   // (planos nascem junto com a plataforma, não são criados sob demanda).
+  // M5-03: preço deixou de ser coluna do plano — cada plano ganha N linhas
+  // em `plan_prices` (ex.: "premium" com mensal/semestral/anual, exemplo
+  // completo pedido pelo usuário tipo "Started").
   let [freePlan] = await db.select().from(plans).where(eq(plans.key, 'free'));
   if (!freePlan) {
     const inserted = await db
@@ -69,9 +73,7 @@ async function seed() {
         {
           key: 'free',
           name: 'Free',
-          priceCents: 0,
-          billingIntervalUnit: 'month',
-          billingIntervalCount: 1,
+          trialDays: 0,
           limits: {
             maxOwnedSharedWorkspaces: 1,
             maxMembersPerWorkspace: 5,
@@ -82,9 +84,7 @@ async function seed() {
         {
           key: 'premium',
           name: 'Premium',
-          priceCents: 4990,
-          billingIntervalUnit: 'month',
-          billingIntervalCount: 1,
+          trialDays: 7,
           limits: {
             maxOwnedSharedWorkspaces: 5,
             maxMembersPerWorkspace: 20,
@@ -95,8 +95,52 @@ async function seed() {
       ])
       .returning();
     freePlan = inserted.find((p) => p.key === 'free');
+    const premiumPlan = inserted.find((p) => p.key === 'premium');
+    if (!premiumPlan) throw new Error('falha ao semear plano premium');
+
+    await db.insert(planPrices).values([
+      {
+        planId: freePlan!.id,
+        billingIntervalUnit: 'month',
+        billingIntervalCount: 1,
+        priceCents: 0,
+        maxInstallments: 1,
+        isDefault: true,
+        sortOrder: 0,
+      },
+      {
+        planId: premiumPlan.id,
+        billingIntervalUnit: 'month',
+        billingIntervalCount: 1,
+        priceCents: 4990,
+        maxInstallments: 1,
+        isDefault: true,
+        sortOrder: 0,
+      },
+      {
+        planId: premiumPlan.id,
+        billingIntervalUnit: 'month',
+        billingIntervalCount: 6,
+        priceCents: 26990, // ~10% de desconto vs 6x mensal
+        maxInstallments: 6,
+        sortOrder: 1,
+      },
+      {
+        planId: premiumPlan.id,
+        billingIntervalUnit: 'year',
+        billingIntervalCount: 1,
+        priceCents: 47990, // ~20% de desconto vs 12x mensal
+        maxInstallments: 12,
+        sortOrder: 2,
+      },
+    ]);
   }
   if (!freePlan) throw new Error('falha ao semear plano free');
+
+  const [freePlanPrice] = await db
+    .select()
+    .from(planPrices)
+    .where(eq(planPrices.planId, freePlan.id));
 
   const [user] = await db
     .insert(users)
@@ -113,7 +157,12 @@ async function seed() {
 
   const [workspace] = await db
     .insert(workspaces)
-    .values({ name: 'Pessoal', type: 'personal', planId: freePlan.id })
+    .values({
+      name: 'Pessoal',
+      type: 'personal',
+      planId: freePlan.id,
+      planPriceId: freePlanPrice?.id,
+    })
     .returning();
   if (!workspace) throw new Error('falha ao criar workspace');
 

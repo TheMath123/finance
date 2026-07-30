@@ -88,10 +88,10 @@ export function createWorkspaceRepository(db: DbHandle): WorkspaceRepository {
     async delete(workspaceId) {
       await db.delete(workspaces).where(eq(workspaces.id, workspaceId));
     },
-    async updatePlan(workspaceId, planId) {
+    async updatePlan(workspaceId, patch) {
       const [row] = await db
         .update(workspaces)
-        .set({ planId })
+        .set(patch)
         .where(eq(workspaces.id, workspaceId))
         .returning();
       if (!row) throw new Error('falha ao atualizar plano do workspace');
@@ -105,7 +105,7 @@ export function createWorkspaceRepository(db: DbHandle): WorkspaceRepository {
           limit,
           offset,
           orderBy: (w, { desc }) => [desc(w.createdAt)],
-          with: { plan: true },
+          with: { plan: { with: { prices: true } }, planPrice: true },
         }),
         db.select({ value: count() }).from(workspaces).where(where),
       ]);

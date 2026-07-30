@@ -11,6 +11,10 @@ export type WorkspaceType = (typeof WORKSPACE_TYPES)[number];
 export const BILLING_INTERVALS = ['day', 'week', 'month', 'year'] as const;
 export type BillingInterval = (typeof BILLING_INTERVALS)[number];
 
+/** Métodos de pagamento aceitos por opção de preço (M5-03) — só metadado hoje, sem gateway real integrado. */
+export const PAYMENT_METHODS = ['credit_card', 'debit_card', 'pix'] as const;
+export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
+
 /**
  * Limites de plano (M5-02) — antes hardcoded em `FREE_PLAN_LIMITS`, agora
  * dado real da tabela `plans`. Mesmos 3 campos de sempre; `jsonb` no schema

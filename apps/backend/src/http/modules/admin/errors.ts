@@ -38,4 +38,24 @@ export const ADMIN_ERRORS: Record<AdminError, HttpError> = {
     code: 'workspace_not_found',
     message: 'Workspace não encontrado.',
   },
+  unknown_feature_key: {
+    status: 422,
+    code: 'unknown_feature_key',
+    message: 'Uma ou mais features não existem como feature flag cadastrada.',
+  },
+  plan_price_interval_taken: {
+    status: 409,
+    code: 'plan_price_interval_taken',
+    message: 'Esse plano já tem uma opção de cobrança com esse intervalo.',
+  },
+  plan_price_not_found: {
+    status: 404,
+    code: 'plan_price_not_found',
+    message: 'Opção de cobrança não encontrada.',
+  },
+  plan_price_required: {
+    status: 409,
+    code: 'plan_price_required',
+    message: 'O plano precisa ter ao menos uma opção de cobrança.',
+  },
 };

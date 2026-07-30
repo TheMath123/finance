@@ -1,6 +1,6 @@
 import type { WorkspaceRole, WorkspaceType } from '@finance/shared';
 import type { Workspace } from '../../domain/entities/workspace';
-import type { Plan } from './plan-repository';
+import type { Plan, PlanPrice } from './plan-repository';
 
 export interface WorkspaceMemberView {
   userId: string;
@@ -10,10 +10,16 @@ export interface WorkspaceMemberView {
 }
 
 export interface AdminWorkspaceRow {
-  workspace: Workspace & { plan: Plan };
+  workspace: Workspace & { plan: Plan; planPrice: PlanPrice | null };
   memberCount: number;
   ownerName: string | null;
   ownerEmail: string | null;
+}
+
+export interface WorkspacePlanPatch {
+  planId: string;
+  planPriceId: string | null;
+  trialEndsAt: Date | null;
 }
 
 export interface WorkspaceRepository {
@@ -21,6 +27,7 @@ export interface WorkspaceRepository {
     name: string;
     type: WorkspaceType;
     planId: string;
+    planPriceId?: string;
   }): Promise<Workspace>;
   findById(workspaceId: string): Promise<Workspace | undefined>;
   update(workspaceId: string, patch: { name: string }): Promise<Workspace>;
@@ -54,5 +61,8 @@ export interface WorkspaceRepository {
     limit: number;
     offset: number;
   }): Promise<{ workspaces: AdminWorkspaceRow[]; total: number }>;
-  updatePlan(workspaceId: string, planId: string): Promise<Workspace>;
+  updatePlan(
+    workspaceId: string,
+    patch: WorkspacePlanPatch
+  ): Promise<Workspace>;
 }

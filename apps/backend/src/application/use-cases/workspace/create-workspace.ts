@@ -41,11 +41,15 @@ export async function createWorkspace(
     return left('plan_limit_reached');
   }
 
+  const freePlanPrice =
+    freePlan.prices.find((p) => p.isDefault) ?? freePlan.prices[0];
+
   const workspace = await deps.uow.run(async (repos) => {
     const workspace = await repos.workspace.create({
       name: input.name,
       type: 'family',
       planId: freePlan.id,
+      planPriceId: freePlanPrice?.id,
     });
     await repos.workspace.addMember({
       workspaceId: workspace.id,

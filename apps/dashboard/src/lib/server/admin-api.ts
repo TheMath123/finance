@@ -190,18 +190,44 @@ export interface PlanLimitsView {
 	maxSavedFormulasPerWorkspace: number;
 }
 
+export type PaymentMethod = 'credit_card' | 'debit_card' | 'pix';
+
+/** Espelha PlanPrice (backend, ports/plan-repository.ts) — M5-03: opção de cobrança de um plano. */
+export interface PlanPriceView {
+	id: string;
+	planId: string;
+	billingIntervalUnit: 'day' | 'week' | 'month' | 'year';
+	billingIntervalCount: number;
+	priceCents: number;
+	maxInstallments: number;
+	paymentMethods: PaymentMethod[];
+	isDefault: boolean;
+	sortOrder: number;
+	createdAt: string;
+	updatedAt: string;
+}
+
+export interface PlanPriceInput {
+	billingIntervalUnit: 'day' | 'week' | 'month' | 'year';
+	billingIntervalCount: number;
+	priceCents: number;
+	maxInstallments: number;
+	paymentMethods: PaymentMethod[];
+	isDefault: boolean;
+	sortOrder: number;
+}
+
 export interface PlanView {
 	id: string;
 	key: string;
 	name: string;
 	description: string | null;
-	priceCents: number;
-	billingIntervalUnit: 'day' | 'week' | 'month' | 'year';
-	billingIntervalCount: number;
+	trialDays: number;
 	limits: PlanLimitsView;
 	features: string[];
 	isActive: boolean;
 	sortOrder: number;
+	prices: PlanPriceView[];
 	createdAt: string;
 	updatedAt: string;
 }
@@ -210,9 +236,7 @@ export interface PlanInput {
 	key: string;
 	name: string;
 	description?: string | null;
-	priceCents: number;
-	billingIntervalUnit: 'day' | 'week' | 'month' | 'year';
-	billingIntervalCount: number;
+	trialDays: number;
 	limits: PlanLimitsView;
 	features: string[];
 }
@@ -247,12 +271,50 @@ export function activatePlan(accessToken: string, id: string): Promise<Either<Ap
 	return apiRequest(`/admin/plans/${id}/activate`, { method: 'POST', accessToken });
 }
 
+export function addPlanPrice(
+	accessToken: string,
+	planId: string,
+	input: PlanPriceInput
+): Promise<Either<ApiError, PlanPriceView>> {
+	return apiRequest(`/admin/plans/${planId}/prices`, {
+		method: 'POST',
+		body: input,
+		accessToken
+	});
+}
+
+export function updatePlanPrice(
+	accessToken: string,
+	planId: string,
+	priceId: string,
+	input: Partial<PlanPriceInput>
+): Promise<Either<ApiError, PlanPriceView>> {
+	return apiRequest(`/admin/plans/${planId}/prices/${priceId}`, {
+		method: 'PATCH',
+		body: input,
+		accessToken
+	});
+}
+
+export function deletePlanPrice(
+	accessToken: string,
+	planId: string,
+	priceId: string
+): Promise<Either<ApiError, unknown>> {
+	return apiRequest(`/admin/plans/${planId}/prices/${priceId}`, {
+		method: 'DELETE',
+		accessToken
+	});
+}
+
 /** Espelha AdminWorkspaceView (backend, use-cases/admin/list-workspaces.ts). */
 export interface AdminWorkspaceView {
 	id: string;
 	name: string;
 	type: 'personal' | 'family' | 'business';
 	plan: PlanView;
+	planPrice: PlanPriceView | null;
+	trialEndsAt: string | null;
 	memberCount: number;
 	ownerName: string | null;
 	ownerEmail: string | null;
@@ -278,11 +340,22 @@ export function listWorkspaces(
 export function setWorkspacePlan(
 	accessToken: string,
 	workspaceId: string,
-	planId: string
+	planId: string,
+	planPriceId?: string
 ): Promise<Either<ApiError, AdminWorkspaceView>> {
 	return apiRequest(`/admin/workspaces/${workspaceId}/plan`, {
 		method: 'PATCH',
-		body: { planId },
+		body: { planId, planPriceId },
+		accessToken
+	});
+}
+
+export function confirmWorkspacePayment(
+	accessToken: string,
+	workspaceId: string
+): Promise<Either<ApiError, AdminWorkspaceView>> {
+	return apiRequest(`/admin/workspaces/${workspaceId}/confirm-payment`, {
+		method: 'POST',
 		accessToken
 	});
 }

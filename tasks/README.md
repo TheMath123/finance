@@ -135,6 +135,15 @@ cadastrado.
   substituindo `FREE_PLAN_LIMITS` hardcoded nos 4 pontos de enforcement.
   Controle manual de plano por workspace (`/saas/workspaces`) e visão do
   plano por usuário (`/saas/users`) — sem Stripe ainda (fase 2 é M5-03).
+- [M5-03 — Preços múltiplos por plano, trial e feature-lock unificado com feature flags](done/m5-03-precos-multiplos-trial-feature-flags.md):
+  concluída em 2026-07-30, validada ponta a ponta com curl real. Um plano
+  passou a ter N opções de cobrança (`plan_prices`: mensal/semestral/anual,
+  cada uma com preço/parcelamento/métodos aceitos), trial configurável por
+  plano (`trialDays`, baseado só em tempo — sem job, cai pro free quando
+  vence) e `plans.features` passou a exigir chaves existentes em
+  `feature_flags` (unifica os dois vocabulários). Autoatendimento (usuário
+  comum trocar o próprio plano) documentado à parte, sem implementar
+  (M5-04). Ainda sem Stripe.
 
 ## M4 — Dashboard web (Svelte)
 

@@ -1,6 +1,7 @@
 import type { InviteRole } from '@finance/shared';
 import { type Either, left, right } from '@finance/shared';
 import type { WorkspaceInvite } from '../../../domain/entities/workspace';
+import { resolveEffectivePlan } from '../../../domain/services/resolve-effective-plan';
 import type { Actor, UseCaseDeps } from '../../deps';
 import { createNotification } from '../notification';
 import type { WorkspaceError } from './errors';
@@ -41,7 +42,7 @@ export async function createInvite(
   // paralelo depois deste check.
   const workspace = await deps.repos.workspace.findById(actor.workspaceId);
   if (workspace) {
-    const plan = await deps.repos.plan.findById(workspace.planId);
+    const plan = await resolveEffectivePlan(deps, workspace);
     const members = await deps.repos.workspace.listMembers(actor.workspaceId);
     if (plan && members.length >= plan.limits.maxMembersPerWorkspace) {
       return left('plan_limit_reached');

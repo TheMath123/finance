@@ -8,33 +8,43 @@ import type { Actions, PageServerLoad } from './$types';
 export const load: PageServerLoad = async ({ locals }) => {
 	if (!locals.session) redirect(303, '/login');
 
-	const result = await adminApi.listPlans(locals.session.accessToken);
-	return { plans: result.ok ? result.value : [] };
+	const [plansResult, flagsResult] = await Promise.all([
+		adminApi.listPlans(locals.session.accessToken),
+		adminApi.listFeatureFlags(locals.session.accessToken)
+	]);
+	return {
+		plans: plansResult.ok ? plansResult.value : [],
+		featureFlags: flagsResult.ok ? flagsResult.value : []
+	};
 };
 
-function parseFeatures(raw: string): string[] {
-	return raw
-		.split(',')
-		.map((f) => f.trim())
-		.filter((f) => f.length > 0);
-}
-
 function parsePlanFields(form: FormData): Omit<adminApi.PlanInput, 'key'> {
-	const priceCents = parseReaisToCents(form.get('price')?.toString() ?? '') ?? 0;
 	return {
 		name: form.get('name')?.toString().trim() ?? '',
 		description: form.get('description')?.toString().trim() || null,
-		priceCents,
-		billingIntervalUnit:
-			(form.get('billingIntervalUnit')?.toString() as adminApi.PlanInput['billingIntervalUnit']) ??
-			'month',
-		billingIntervalCount: Number(form.get('billingIntervalCount') ?? 1),
+		trialDays: Number(form.get('trialDays') ?? 0),
 		limits: {
 			maxOwnedSharedWorkspaces: Number(form.get('maxOwnedSharedWorkspaces') ?? 0),
 			maxMembersPerWorkspace: Number(form.get('maxMembersPerWorkspace') ?? 1),
 			maxSavedFormulasPerWorkspace: Number(form.get('maxSavedFormulasPerWorkspace') ?? 0)
 		},
-		features: parseFeatures(form.get('features')?.toString() ?? '')
+		features: form.getAll('features').map((f) => f.toString())
+	};
+}
+
+function parsePlanPriceFields(form: FormData): adminApi.PlanPriceInput {
+	return {
+		billingIntervalUnit: form
+			.get('billingIntervalUnit')
+			?.toString() as adminApi.PlanPriceInput['billingIntervalUnit'],
+		billingIntervalCount: Number(form.get('billingIntervalCount') ?? 1),
+		priceCents: parseReaisToCents(form.get('priceCents')?.toString() ?? '') ?? 0,
+		maxInstallments: Number(form.get('maxInstallments') ?? 1),
+		paymentMethods: form
+			.getAll('paymentMethods')
+			.map((m) => m.toString()) as adminApi.PaymentMethod[],
+		isDefault: form.get('isDefault') === 'on',
+		sortOrder: Number(form.get('sortOrder') ?? 0)
 	};
 }
 
@@ -79,6 +89,45 @@ export const actions: Actions = {
 		const id = form.get('id')?.toString() ?? '';
 
 		const result = await adminApi.activatePlan(locals.session.accessToken, id);
+		if (!result.ok) return fail(result.error.status || 500, { message: result.error.message });
+		return { success: true };
+	},
+
+	addPrice: async ({ request, locals }) => {
+		if (!locals.session) redirect(303, '/login');
+		const form = await request.formData();
+		const planId = form.get('planId')?.toString() ?? '';
+		const input = parsePlanPriceFields(form);
+
+		const result = await adminApi.addPlanPrice(locals.session.accessToken, planId, input);
+		if (!result.ok) return fail(result.error.status || 500, { message: result.error.message });
+		return { success: true };
+	},
+
+	updatePrice: async ({ request, locals }) => {
+		if (!locals.session) redirect(303, '/login');
+		const form = await request.formData();
+		const planId = form.get('planId')?.toString() ?? '';
+		const priceId = form.get('priceId')?.toString() ?? '';
+		const input = parsePlanPriceFields(form);
+
+		const result = await adminApi.updatePlanPrice(
+			locals.session.accessToken,
+			planId,
+			priceId,
+			input
+		);
+		if (!result.ok) return fail(result.error.status || 500, { message: result.error.message });
+		return { success: true };
+	},
+
+	deletePrice: async ({ request, locals }) => {
+		if (!locals.session) redirect(303, '/login');
+		const form = await request.formData();
+		const planId = form.get('planId')?.toString() ?? '';
+		const priceId = form.get('priceId')?.toString() ?? '';
+
+		const result = await adminApi.deletePlanPrice(locals.session.accessToken, planId, priceId);
 		if (!result.ok) return fail(result.error.status || 500, { message: result.error.message });
 		return { success: true };
 	}

@@ -11,6 +11,10 @@ export interface Workspace {
   type: WorkspaceType;
   /** M5-02: FK pra `plans` — ver `application/ports/plan-repository.ts`. */
   planId: string;
+  /** M5-03: qual opção de cobrança (recorrência) do plano atual — nullable, exibição usa o preço default do plano se vazio. */
+  planPriceId: string | null;
+  /** M5-03: nulo = sem trial ativo; no passado = trial expirado (`resolveEffectivePlan` cai pro free). */
+  trialEndsAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }

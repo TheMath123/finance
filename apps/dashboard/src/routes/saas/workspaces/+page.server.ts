@@ -37,8 +37,24 @@ export const actions: Actions = {
 		const form = await request.formData();
 		const workspaceId = form.get('workspaceId')?.toString() ?? '';
 		const planId = form.get('planId')?.toString() ?? '';
+		const planPriceId = form.get('planPriceId')?.toString() || undefined;
 
-		const result = await adminApi.setWorkspacePlan(locals.session.accessToken, workspaceId, planId);
+		const result = await adminApi.setWorkspacePlan(
+			locals.session.accessToken,
+			workspaceId,
+			planId,
+			planPriceId
+		);
+		if (!result.ok) return fail(result.error.status || 500, { message: result.error.message });
+		return { success: true };
+	},
+
+	confirmPayment: async ({ request, locals }) => {
+		if (!locals.session) redirect(303, '/login');
+		const form = await request.formData();
+		const workspaceId = form.get('workspaceId')?.toString() ?? '';
+
+		const result = await adminApi.confirmWorkspacePayment(locals.session.accessToken, workspaceId);
 		if (!result.ok) return fail(result.error.status || 500, { message: result.error.message });
 		return { success: true };
 	}
