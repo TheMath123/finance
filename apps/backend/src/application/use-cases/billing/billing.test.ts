@@ -2,9 +2,10 @@
  * M5-05 — checkout/portal do Stripe (com gateway fake, sem chave real) e
  * sincronização de estado de assinatura a partir de eventos de webhook.
  */
-import { describe, expect, test } from 'bun:test';
+import { afterAll, describe, expect, test } from 'bun:test';
 import { createDb, type Db } from '@finance/db';
 import { resolveEffectivePlan } from '../../../domain/services/resolve-effective-plan';
+import { cleanupTestPlans } from '../../../test/cleanup-test-plans';
 import { createTestDeps } from '../../../test/deps';
 import {
   activatePlan,
@@ -22,6 +23,10 @@ const uniquePlanKey = () =>
   `test-billing-plan-${crypto.randomUUID().slice(0, 8)}`;
 
 const db: Db = createDb();
+
+afterAll(async () => {
+  await cleanupTestPlans(db, ['test-billing-plan-'], ['test-billing-']);
+});
 
 async function registerOwner(deps: ReturnType<typeof createTestDeps>) {
   const result = await register(deps, {
@@ -118,6 +123,32 @@ describe('billing: checkout e portal (gateway fake)', () => {
     });
     expect(badPrice.ok).toBe(false);
     if (!badPrice.ok) expect(badPrice.error).toBe('plan_price_not_found');
+  });
+
+  test('startCheckout recusa novo checkout quando workspace já tem assinatura ativa', async () => {
+    const deps = createTestDeps(db);
+    const owner = await registerOwner(deps);
+    const { planId, planPriceId } = await createTestPlanWithPrice(
+      deps,
+      owner.userId
+    );
+
+    await syncStripeWebhookEvent(deps, {
+      id: `evt_${crypto.randomUUID()}`,
+      type: 'checkout.session.completed',
+      workspaceId: owner.workspaceId,
+      customerId: `cus_already_${crypto.randomUUID()}`,
+      subscriptionId: `sub_already_${crypto.randomUUID()}`,
+    });
+
+    const result = await startCheckout(deps, owner, {
+      planId,
+      planPriceId,
+      successUrl: 'https://app.test/success',
+      cancelUrl: 'https://app.test/cancel',
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toBe('already_subscribed');
   });
 
   test('startBillingPortal recusa workspace sem assinatura (sem stripeCustomerId)', async () => {

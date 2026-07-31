@@ -26,6 +26,7 @@
 	};
 
 	const hasSubscription = $derived(data.billing?.hasStripeCustomer ?? false);
+	const currentPlanId = $derived(data.billing?.plan.id ?? null);
 
 	// Free não entra aqui — segue representado só no card de status acima. Catálogo pago
 	// confirmado em no máximo 3 planos, por isso a grade de cards (não dropdown) abaixo.
@@ -96,35 +97,50 @@
 				</p>
 			</Card.Content>
 			{#if hasSubscription}
-				<Card.Footer>
+				<Card.Footer class="flex flex-col items-start gap-2">
 					<form method="POST" action="?/portal" use:enhance>
 						<Button type="submit" class="min-h-11">Gerenciar assinatura</Button>
 					</form>
+					<p class="text-xs text-muted-foreground">
+						Trocar de plano ou voltar pro Free se faz cancelando a assinatura por ali. Cancelamento
+						não tem reembolso, exceto dentro dos primeiros 7 dias após a assinatura.
+					</p>
 				</Card.Footer>
 			{/if}
 		</Card.Root>
 	{/if}
 
-	{#if !hasSubscription && paidPlans.length > 0}
+	{#if paidPlans.length > 0}
 		<div class="flex flex-col gap-3">
 			<div>
-				<h2 class="text-base font-semibold">Assinar um plano</h2>
+				<h2 class="text-base font-semibold">
+					{hasSubscription ? 'Planos disponíveis' : 'Assinar um plano'}
+				</h2>
 				<p class="text-sm text-muted-foreground">
-					Escolha um plano pago pra desbloquear mais limites.
+					{hasSubscription
+						? 'Pra trocar de plano ou cancelar, use "Gerenciar assinatura" acima.'
+						: 'Escolha um plano pago pra desbloquear mais limites.'}
 				</p>
 			</div>
 			<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
 				{#each paidPlans as plan (plan.id)}
 					{@const price = selectedPrice(plan)}
-					<Card.Root class="flex flex-col">
+					{@const isCurrentPlan = plan.id === currentPlanId}
+					{@const locked = hasSubscription}
+					<Card.Root class="flex flex-col {isCurrentPlan ? 'ring-2 ring-primary' : ''}">
 						<Card.Header>
-							<Card.Title>{plan.name}</Card.Title>
+							<Card.Title class="flex items-center gap-2">
+								{plan.name}
+								{#if isCurrentPlan}
+									<Badge>Plano atual</Badge>
+								{/if}
+							</Card.Title>
 							{#if plan.description}
 								<Card.Description>{plan.description}</Card.Description>
 							{/if}
 						</Card.Header>
 						<Card.Content class="flex flex-1 flex-col gap-4">
-							{#if plan.trialDays > 0}
+							{#if plan.trialDays > 0 && !hasSubscription}
 								<Badge variant="secondary" class="w-fit">{plan.trialDays} dias grátis</Badge>
 							{/if}
 
@@ -151,7 +167,7 @@
 								<input type="hidden" name="planPriceId" value={price?.id ?? ''} />
 
 								{#if plan.prices.length > 1}
-									<fieldset class="flex flex-col gap-1.5">
+									<fieldset class="flex flex-col gap-1.5" disabled={locked}>
 										<legend class="mb-0.5 text-xs font-medium text-muted-foreground">
 											Cobrança
 										</legend>
@@ -164,13 +180,16 @@
 														id={inputId}
 														name={`price-group-${plan.id}`}
 														class="peer sr-only"
+														disabled={locked}
 														checked={candidate.id ===
 															(selectedPriceByPlan[plan.id] ?? defaultPriceId(plan))}
 														onchange={() => (selectedPriceByPlan[plan.id] = candidate.id)}
 													/>
 													<label
 														for={inputId}
-														class="flex min-h-11 cursor-pointer items-center rounded-lg border border-foreground/10 px-3 text-sm transition-colors peer-checked:border-primary peer-checked:bg-primary/10 peer-checked:text-primary peer-focus-visible:ring-2 peer-focus-visible:ring-ring"
+														class="flex min-h-11 items-center rounded-lg border border-foreground/10 px-3 text-sm transition-colors peer-checked:border-primary peer-checked:bg-primary/10 peer-checked:text-primary peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-disabled:cursor-not-allowed peer-disabled:opacity-50 {locked
+															? ''
+															: 'cursor-pointer'}"
 													>
 														{priceLabel(candidate)}
 													</label>
@@ -182,7 +201,9 @@
 									<p class="text-2xl font-semibold">{priceLabel(price)}</p>
 								{/if}
 
-								<Button type="submit" class="min-h-11 w-full" disabled={!price}>Assinar</Button>
+								<Button type="submit" class="min-h-11 w-full" disabled={!price || locked}>
+									{isCurrentPlan ? 'Plano atual' : 'Assinar'}
+								</Button>
 							</form>
 						</Card.Content>
 					</Card.Root>

@@ -31,6 +31,16 @@ export async function startCheckout(
   const workspace = await deps.repos.workspace.findById(actor.workspaceId);
   if (!workspace) return left('plan_not_found');
 
+  // Troca/cancelamento de assinatura já ativa passa pelo Customer Portal
+  // (start-billing-portal), nunca por um novo checkout — evita o workspace
+  // acabar com duas assinaturas simultâneas no Stripe.
+  if (
+    workspace.stripeCustomerId &&
+    ['trialing', 'active', 'past_due'].includes(workspace.subscriptionStatus)
+  ) {
+    return left('already_subscribed');
+  }
+
   const user = await deps.repos.user.findById(actor.userId);
   if (!user) return left('plan_not_found');
 

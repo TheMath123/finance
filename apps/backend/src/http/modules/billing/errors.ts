@@ -17,4 +17,10 @@ export const BILLING_ERRORS: Record<BillingError, HttpError> = {
     code: 'no_active_subscription',
     message: 'Este workspace ainda não tem assinatura ativa.',
   },
+  already_subscribed: {
+    status: 409,
+    code: 'already_subscribed',
+    message:
+      'Este workspace já tem uma assinatura ativa. Use o Customer Portal pra trocar de plano ou cancelar.',
+  },
 };

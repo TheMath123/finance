@@ -5,9 +5,10 @@
  * feature_flags, trial baseado em tempo (fallback pro free quando vence) e
  * confirmação manual de pagamento.
  */
-import { beforeAll, describe, expect, test } from 'bun:test';
+import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
 import { adminAuditLogs, createDb, type Db, workspaces } from '@finance/db';
 import { eq } from 'drizzle-orm';
+import { cleanupTestPlans } from '../../../test/cleanup-test-plans';
 import { createTestDeps } from '../../../test/deps';
 import { register } from '../auth';
 import { createSavedFormula } from '../saved-formula/create-saved-formula';
@@ -33,6 +34,10 @@ let db: Db;
 
 beforeAll(() => {
   db = createDb();
+});
+
+afterAll(async () => {
+  await cleanupTestPlans(db, ['test-plan-'], ['test-plans-']);
 });
 
 async function registerAdmin(
