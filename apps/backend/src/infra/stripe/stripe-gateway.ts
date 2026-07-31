@@ -61,7 +61,11 @@ export function createStripeGateway(): PaymentGateway {
         customer: input.customerId,
         customer_email: input.customerId ? undefined : input.customerEmail,
         line_items: [{ price: input.priceId, quantity: 1 }],
-        payment_method_types: ['card', 'pix'],
+        // Sem `payment_method_types` fixo de propósito: o Stripe recomenda
+        // deixar os métodos configurados no Dashboard (Settings > Payment
+        // methods) decidirem, em vez de listar no código — evita quebrar o
+        // checkout inteiro quando um método (ex. pix) ainda não foi ativado
+        // na conta.
         subscription_data:
           input.trialDays > 0
             ? { trial_period_days: input.trialDays }
