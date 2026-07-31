@@ -12,15 +12,19 @@ export function isTrialExpired(
 }
 
 /**
- * Plano que efetivamente vale pros checks de limite/feature — cai pro plano
- * `free` automaticamente quando o trial do workspace já venceu (M5-03),
- * sem depender de job/cron nem de saber status real de pagamento (isso é
- * escopo de uma integração de gateway futura, fora daqui).
+ * Plano que efetivamente vale pros checks de limite/feature. M5-05: um
+ * cancelamento real via Stripe (`subscriptionStatus === 'canceled'`) tem
+ * prioridade sobre o trial baseado em tempo do M5-03 — este último continua
+ * valendo pra trial atribuído manualmente pelo superadmin, sem Stripe
+ * envolvido. Nenhum dos dois caminhos depende de job/cron.
  */
 export async function resolveEffectivePlan(
   deps: Pick<UseCaseDeps, 'repos'>,
-  workspace: Pick<Workspace, 'planId' | 'trialEndsAt'>
+  workspace: Pick<Workspace, 'planId' | 'trialEndsAt' | 'subscriptionStatus'>
 ): Promise<Plan | undefined> {
+  if (workspace.subscriptionStatus === 'canceled') {
+    return deps.repos.plan.findByKey('free');
+  }
   if (isTrialExpired(workspace)) return deps.repos.plan.findByKey('free');
   return deps.repos.plan.findById(workspace.planId);
 }
@@ -32,7 +36,7 @@ export async function resolveEffectivePlan(
  */
 export async function hasFeatureAccess(
   deps: Pick<UseCaseDeps, 'repos'>,
-  workspace: Pick<Workspace, 'planId' | 'trialEndsAt'>,
+  workspace: Pick<Workspace, 'planId' | 'trialEndsAt' | 'subscriptionStatus'>,
   featureKey: string
 ): Promise<boolean> {
   const plan = await resolveEffectivePlan(deps, workspace);

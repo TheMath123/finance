@@ -11,6 +11,7 @@ import { createInMemoryNotificationBus } from '../infra/realtime/in-memory-notif
 import { bunPasswordHasher } from '../infra/security/bun-password-hasher';
 import { createInMemoryRateLimiter } from '../infra/security/in-memory-rate-limiter';
 import { createTokenService } from '../infra/security/jose-token-service';
+import { createFakePaymentGateway } from '../infra/stripe/fake-payment-gateway';
 
 export type DispatchedJob = { name: JobName; payload: JobPayloads[JobName] };
 
@@ -33,6 +34,7 @@ export function createTestDeps(
     cache: createInMemoryCache(),
     notificationBus: createInMemoryNotificationBus(),
     storage: createInMemoryStorage(),
+    payments: createFakePaymentGateway(),
     termsVersion: 'test',
   };
 }

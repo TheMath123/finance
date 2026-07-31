@@ -10,6 +10,7 @@
 		{ route: '/workspace/invites', label: 'Convites' },
 		{ route: '/workspace/my-invites', label: 'Meus convites' },
 		{ route: '/workspace/activity', label: 'Atividade' },
+		{ route: '/workspace/plan', label: 'Assinatura' },
 		{ route: '/workspace/settings', label: 'Configurações' }
 	] as const;
 </script>

@@ -144,6 +144,16 @@ cadastrado.
   `feature_flags` (unifica os dois vocabulários). Autoatendimento (usuário
   comum trocar o próprio plano) documentado à parte, sem implementar
   (M5-04). Ainda sem Stripe.
+- [M5-05 — Integração Stripe (checkout + Customer Portal) e autoatendimento de plano](done/m5-05-integracao-stripe.md):
+  concluída em 2026-07-31, validada ponta a ponta contra backend + dashboard
+  rodando. Absorveu o M5-04 (autoatendimento) junto — Stripe Checkout
+  hospedado pra assinar, Stripe Customer Portal hospedado pra trocar/
+  cancelar/atualizar cartão (sem UI customizada). Webhook sincroniza
+  `subscriptionStatus`/trial/período pago; `resolveEffectivePlan` agora
+  também cai pro free quando a assinatura é cancelada de verdade via
+  Stripe, além do trial baseado em tempo do M5-03. **Smoke test com Stripe
+  de verdade (conta ainda não existe) fica pendente** — todo o resto foi
+  validado com um gateway fake.
 
 ## M4 — Dashboard web (Svelte)
 

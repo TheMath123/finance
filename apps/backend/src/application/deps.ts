@@ -4,6 +4,7 @@ import type { Cache } from './ports/cache';
 import type { SecurityLogger } from './ports/logger';
 import type { NotificationBus } from './ports/notification-bus';
 import type { PasswordHasher } from './ports/password-hasher';
+import type { PaymentGateway } from './ports/payment-gateway';
 import type { RateLimiter } from './ports/rate-limiter';
 import type { Repositories } from './ports/repositories';
 import type { TokenBudget } from './ports/token-budget';
@@ -27,6 +28,8 @@ export interface UseCaseDeps {
   storage: Storage;
   /** Fan-out em tempo real (SSE) de notificações novas — ver `createNotification`. */
   notificationBus: NotificationBus;
+  /** Gateway de pagamento (M5-05, Stripe) — checkout, portal de cobrança, tradução de webhook. */
+  payments: PaymentGateway;
   termsVersion: string;
 }
 

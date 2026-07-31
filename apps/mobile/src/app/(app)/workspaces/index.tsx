@@ -5,6 +5,7 @@ import {
   CaretRightIcon,
   CheckCircleIcon,
   ClockCounterClockwiseIcon,
+  CreditCardIcon,
   PencilSimpleIcon,
   PlusIcon,
   UsersIcon,
@@ -165,6 +166,22 @@ export default function WorkspacesScreen() {
                   </View>
                   <CaretRightIcon size={14} color="#71717a" />
                 </Pressable>
+                {canManage && (
+                  <Pressable
+                    onPress={() =>
+                      router.push(`/workspaces/${workspace.id}/plan`)
+                    }
+                    className="flex-row items-center justify-between border-t border-border pt-3"
+                  >
+                    <View className="flex-row items-center gap-2">
+                      <CreditCardIcon size={16} color="#71717a" />
+                      <ThemedText type="small" themeColor="textSecondary">
+                        Assinatura
+                      </ThemedText>
+                    </View>
+                    <CaretRightIcon size={14} color="#71717a" />
+                  </Pressable>
+                )}
               </Card>
             );
           })}

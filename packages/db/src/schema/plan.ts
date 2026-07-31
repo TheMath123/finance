@@ -47,6 +47,8 @@ export const plans = pgTable('plans', {
   name: text('name').notNull(),
   description: text('description'),
   trialDays: integer('trial_days').notNull().default(0),
+  /** M5-05: id do Product no Stripe — criado lazy no primeiro checkout desse plano (nunca em massa). */
+  stripeProductId: text('stripe_product_id'),
   limits: jsonb('limits').$type<PlanLimits>().notNull(),
   features: jsonb('features').$type<string[]>().notNull().default([]),
   isActive: boolean('is_active').notNull().default(true),
@@ -82,6 +84,8 @@ export const planPrices = pgTable(
       .default(['credit_card', 'debit_card', 'pix']),
     isDefault: boolean('is_default').notNull().default(false),
     sortOrder: integer('sort_order').notNull().default(0),
+    /** M5-05: id do Price no Stripe — criado lazy no primeiro checkout dessa opção de preço. */
+    stripePriceId: text('stripe_price_id'),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },

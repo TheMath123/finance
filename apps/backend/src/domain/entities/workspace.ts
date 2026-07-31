@@ -1,6 +1,7 @@
 import type {
   InviteRole,
   InviteStatus,
+  SubscriptionStatus,
   WorkspaceRole,
   WorkspaceType,
 } from '@finance/shared';
@@ -15,6 +16,12 @@ export interface Workspace {
   planPriceId: string | null;
   /** M5-03: nulo = sem trial ativo; no passado = trial expirado (`resolveEffectivePlan` cai pro free). */
   trialEndsAt: Date | null;
+  /** M5-05 — campos de assinatura real via Stripe (nulos = nunca assinou via gateway). */
+  stripeCustomerId: string | null;
+  stripeSubscriptionId: string | null;
+  subscriptionStatus: SubscriptionStatus;
+  cancelAtPeriodEnd: boolean;
+  currentPeriodEndsAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }

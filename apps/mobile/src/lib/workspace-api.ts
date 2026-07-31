@@ -74,6 +74,62 @@ export interface AuditLogView {
   userName: string | null;
 }
 
+/** M5-05 — autoatendimento (M5-04): assinar/gerenciar plano via Stripe Checkout/Customer Portal. */
+export interface PlanLimitsView {
+  maxOwnedSharedWorkspaces: number;
+  maxMembersPerWorkspace: number;
+  maxSavedFormulasPerWorkspace: number;
+}
+
+export type PaymentMethod = 'credit_card' | 'debit_card' | 'pix';
+
+export interface PlanPriceView {
+  id: string;
+  planId: string;
+  billingIntervalUnit: 'day' | 'week' | 'month' | 'year';
+  billingIntervalCount: number;
+  priceCents: number;
+  maxInstallments: number;
+  paymentMethods: PaymentMethod[];
+  isDefault: boolean;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PlanView {
+  id: string;
+  key: string;
+  name: string;
+  description: string | null;
+  trialDays: number;
+  limits: PlanLimitsView;
+  features: string[];
+  isActive: boolean;
+  sortOrder: number;
+  prices: PlanPriceView[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type SubscriptionStatus =
+  | 'none'
+  | 'trialing'
+  | 'active'
+  | 'past_due'
+  | 'canceled'
+  | 'incomplete';
+
+export interface BillingStatusView {
+  plan: PlanView;
+  planPrice: PlanPriceView | null;
+  subscriptionStatus: SubscriptionStatus;
+  trialEndsAt: string | null;
+  cancelAtPeriodEnd: boolean;
+  currentPeriodEndsAt: string | null;
+  hasStripeCustomer: boolean;
+}
+
 export const workspaceApi = {
   listMine: () => apiRequest<WorkspaceSummary[]>('/workspaces'),
 
@@ -127,4 +183,29 @@ export const workspaceApi = {
   /** CSV de transações do workspace (M2-11, portabilidade LGPD) — exige papel admin/owner. */
   exportTransactionsCsv: (workspaceId: string) =>
     apiRequestText(`/workspaces/${workspaceId}/export.csv`),
+
+  listAvailablePlans: () => apiRequest<PlanView[]>('/plans'),
+
+  getBillingStatus: (workspaceId: string) =>
+    apiRequest<BillingStatusView>(`/workspaces/${workspaceId}/billing`),
+
+  startCheckout: (
+    workspaceId: string,
+    input: {
+      planId: string;
+      planPriceId: string;
+      successUrl: string;
+      cancelUrl: string;
+    }
+  ) =>
+    apiRequest<{ checkoutUrl: string }>(
+      `/workspaces/${workspaceId}/billing/checkout`,
+      { method: 'POST', body: input }
+    ),
+
+  startBillingPortal: (workspaceId: string, returnUrl: string) =>
+    apiRequest<{ portalUrl: string }>(
+      `/workspaces/${workspaceId}/billing/portal`,
+      { method: 'POST', body: { returnUrl } }
+    ),
 };

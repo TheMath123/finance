@@ -165,3 +165,89 @@ export function listActivity(
 		accessToken
 	});
 }
+
+/** M5-05 — autoatendimento (M5-04): assinar/gerenciar plano via Stripe Checkout/Customer Portal. */
+export interface PlanLimitsView {
+	maxOwnedSharedWorkspaces: number;
+	maxMembersPerWorkspace: number;
+	maxSavedFormulasPerWorkspace: number;
+}
+
+export type PaymentMethod = 'credit_card' | 'debit_card' | 'pix';
+
+export interface PlanPriceView {
+	id: string;
+	planId: string;
+	billingIntervalUnit: 'day' | 'week' | 'month' | 'year';
+	billingIntervalCount: number;
+	priceCents: number;
+	maxInstallments: number;
+	paymentMethods: PaymentMethod[];
+	isDefault: boolean;
+	sortOrder: number;
+	createdAt: string;
+	updatedAt: string;
+}
+
+export interface PlanView {
+	id: string;
+	key: string;
+	name: string;
+	description: string | null;
+	trialDays: number;
+	limits: PlanLimitsView;
+	features: string[];
+	isActive: boolean;
+	sortOrder: number;
+	prices: PlanPriceView[];
+	createdAt: string;
+	updatedAt: string;
+}
+
+export type SubscriptionStatus =
+	'none' | 'trialing' | 'active' | 'past_due' | 'canceled' | 'incomplete';
+
+export interface BillingStatusView {
+	plan: PlanView;
+	planPrice: PlanPriceView | null;
+	subscriptionStatus: SubscriptionStatus;
+	trialEndsAt: string | null;
+	cancelAtPeriodEnd: boolean;
+	currentPeriodEndsAt: string | null;
+	hasStripeCustomer: boolean;
+}
+
+export function listAvailablePlans(accessToken: string): Promise<Either<ApiError, PlanView[]>> {
+	return apiRequest('/plans', { accessToken });
+}
+
+export function getBillingStatus(
+	accessToken: string,
+	workspaceId: string
+): Promise<Either<ApiError, BillingStatusView>> {
+	return apiRequest(`/workspaces/${workspaceId}/billing`, { accessToken });
+}
+
+export function startCheckout(
+	accessToken: string,
+	workspaceId: string,
+	input: { planId: string; planPriceId: string; successUrl: string; cancelUrl: string }
+): Promise<Either<ApiError, { checkoutUrl: string }>> {
+	return apiRequest(`/workspaces/${workspaceId}/billing/checkout`, {
+		method: 'POST',
+		body: input,
+		accessToken
+	});
+}
+
+export function startBillingPortal(
+	accessToken: string,
+	workspaceId: string,
+	returnUrl: string
+): Promise<Either<ApiError, { portalUrl: string }>> {
+	return apiRequest(`/workspaces/${workspaceId}/billing/portal`, {
+		method: 'POST',
+		body: { returnUrl },
+		accessToken
+	});
+}

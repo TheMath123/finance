@@ -14,6 +14,8 @@ export interface PlanPrice {
   paymentMethods: PaymentMethod[];
   isDefault: boolean;
   sortOrder: number;
+  /** M5-05 — id do Price no Stripe, sincronizado lazy (nulo até o primeiro checkout). */
+  stripePriceId: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -35,6 +37,8 @@ export interface Plan {
   description: string | null;
   /** M5-03: dias de acesso completo ao plano antes de, sem confirmação de pagamento, cair pro free (0 = sem trial). */
   trialDays: number;
+  /** M5-05 — id do Product no Stripe, sincronizado lazy (nulo até o primeiro checkout desse plano). */
+  stripeProductId: string | null;
   limits: PlanLimits;
   features: string[];
   isActive: boolean;
@@ -74,4 +78,11 @@ export interface PlanRepository {
   /** Zera `isDefault` de todas as outras prices do plano — usado ao marcar uma nova price como default. */
   clearDefaultPrice(planId: string, exceptPriceId?: string): Promise<void>;
   countPricesForPlan(planId: string): Promise<number>;
+  /** M5-05 — grava o id sincronizado lazy no Stripe (nunca vem do CRUD admin, por isso separado de `update`/`updatePrice`). */
+  setStripeProductId(planId: string, stripeProductId: string): Promise<void>;
+  setStripePriceId(priceId: string, stripePriceId: string): Promise<void>;
+  /** M5-05 — usado pelo webhook pra mapear o `price.id` do Stripe de volta pro nosso plan_price (troca de plano via Customer Portal). */
+  findPriceByStripePriceId(
+    stripePriceId: string
+  ): Promise<PlanPrice | undefined>;
 }

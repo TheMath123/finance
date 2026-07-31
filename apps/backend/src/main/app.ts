@@ -6,6 +6,7 @@ import { accountRoutes } from '../http/modules/account/routes';
 import { adminRoutes } from '../http/modules/admin/routes';
 import { authRoutes } from '../http/modules/auth/routes';
 import { bankRoutes } from '../http/modules/bank/routes';
+import { billingRoutes } from '../http/modules/billing/routes';
 import { cardRoutes } from '../http/modules/card/routes';
 import { categoryRoutes } from '../http/modules/category/routes';
 import { notificationRoutes } from '../http/modules/notification/routes';
@@ -30,6 +31,7 @@ export function createApp(deps: AppDeps) {
       .get('/health', () => ({ status: 'ok' }))
       .use(authRoutes(deps))
       .use(workspaceRoutes(deps))
+      .use(billingRoutes(deps))
       .use(bankRoutes(deps))
       .use(accountRoutes(deps))
       .use(cardRoutes(deps))

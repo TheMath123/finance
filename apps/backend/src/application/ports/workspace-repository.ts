@@ -1,4 +1,8 @@
-import type { WorkspaceRole, WorkspaceType } from '@finance/shared';
+import type {
+  SubscriptionStatus,
+  WorkspaceRole,
+  WorkspaceType,
+} from '@finance/shared';
 import type { Workspace } from '../../domain/entities/workspace';
 import type { Plan, PlanPrice } from './plan-repository';
 
@@ -20,6 +24,18 @@ export interface WorkspacePlanPatch {
   planId: string;
   planPriceId: string | null;
   trialEndsAt: Date | null;
+}
+
+/** M5-05 — patch de sincronização de estado de assinatura, vindo do webhook do Stripe (distinto de `WorkspacePlanPatch`, que é atribuição manual do superadmin). */
+export interface WorkspaceSubscriptionPatch {
+  stripeCustomerId?: string;
+  stripeSubscriptionId?: string;
+  subscriptionStatus?: SubscriptionStatus;
+  planId?: string;
+  planPriceId?: string | null;
+  trialEndsAt?: Date | null;
+  currentPeriodEndsAt?: Date;
+  cancelAtPeriodEnd?: boolean;
 }
 
 export interface WorkspaceRepository {
@@ -64,5 +80,14 @@ export interface WorkspaceRepository {
   updatePlan(
     workspaceId: string,
     patch: WorkspacePlanPatch
+  ): Promise<Workspace>;
+  /** M5-05 — id de customer/subscription do Stripe. */
+  findByStripeCustomerId(customerId: string): Promise<Workspace | undefined>;
+  findByStripeSubscriptionId(
+    subscriptionId: string
+  ): Promise<Workspace | undefined>;
+  updateSubscriptionState(
+    workspaceId: string,
+    patch: WorkspaceSubscriptionPatch
   ): Promise<Workspace>;
 }

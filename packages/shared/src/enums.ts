@@ -16,6 +16,21 @@ export const PAYMENT_METHODS = ['credit_card', 'debit_card', 'pix'] as const;
 export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
 
 /**
+ * Status de assinatura real (M5-05, Stripe) — subconjunto dos status do
+ * Stripe relevantes pro sistema. `none` = nunca assinou via gateway (só
+ * plano/trial atribuído manualmente pelo superadmin, M5-02/M5-03).
+ */
+export const SUBSCRIPTION_STATUSES = [
+  'none',
+  'trialing',
+  'active',
+  'past_due',
+  'canceled',
+  'incomplete',
+] as const;
+export type SubscriptionStatus = (typeof SUBSCRIPTION_STATUSES)[number];
+
+/**
  * Limites de plano (M5-02) — antes hardcoded em `FREE_PLAN_LIMITS`, agora
  * dado real da tabela `plans`. Mesmos 3 campos de sempre; `jsonb` no schema
  * pra permitir novos limites/tiers sem migration.

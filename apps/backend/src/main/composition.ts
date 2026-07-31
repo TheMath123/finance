@@ -13,6 +13,7 @@ import { createRedisNotificationBus } from '../infra/realtime/redis-notification
 import { bunPasswordHasher } from '../infra/security/bun-password-hasher';
 import { createTokenService } from '../infra/security/jose-token-service';
 import { createRedisRateLimiter } from '../infra/security/redis-rate-limiter';
+import { createStripeGateway } from '../infra/stripe/stripe-gateway';
 import type { Env } from './env';
 
 /**
@@ -50,6 +51,7 @@ export function createAppDeps(env: Env): AppDeps {
       endpoint: env.STORAGE_ENDPOINT,
       forcePathStyle: env.STORAGE_FORCE_PATH_STYLE,
     }),
+    payments: createStripeGateway(),
     termsVersion: env.TERMS_VERSION,
     trustProxy: env.TRUST_PROXY,
     dashboardOrigin: env.DASHBOARD_ORIGIN,

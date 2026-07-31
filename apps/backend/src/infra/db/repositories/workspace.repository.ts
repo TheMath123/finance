@@ -97,6 +97,23 @@ export function createWorkspaceRepository(db: DbHandle): WorkspaceRepository {
       if (!row) throw new Error('falha ao atualizar plano do workspace');
       return row;
     },
+    findByStripeCustomerId: (customerId) =>
+      db.query.workspaces.findFirst({
+        where: eq(workspaces.stripeCustomerId, customerId),
+      }),
+    findByStripeSubscriptionId: (subscriptionId) =>
+      db.query.workspaces.findFirst({
+        where: eq(workspaces.stripeSubscriptionId, subscriptionId),
+      }),
+    async updateSubscriptionState(workspaceId, patch) {
+      const [row] = await db
+        .update(workspaces)
+        .set(patch)
+        .where(eq(workspaces.id, workspaceId))
+        .returning();
+      if (!row) throw new Error('falha ao atualizar assinatura do workspace');
+      return row;
+    },
     async listAllForAdmin({ search, limit, offset }) {
       const where = search ? ilike(workspaces.name, `%${search}%`) : undefined;
       const [rows, [totalRow]] = await Promise.all([

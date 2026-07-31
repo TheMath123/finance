@@ -126,5 +126,21 @@ export function createPlanRepository(db: DbHandle): PlanRepository {
         .where(eq(planPrices.planId, planId));
       return row?.count ?? 0;
     },
+    async setStripeProductId(planId, stripeProductId) {
+      await db
+        .update(plans)
+        .set({ stripeProductId })
+        .where(eq(plans.id, planId));
+    },
+    async setStripePriceId(priceId, stripePriceId) {
+      await db
+        .update(planPrices)
+        .set({ stripePriceId })
+        .where(eq(planPrices.id, priceId));
+    },
+    findPriceByStripePriceId: (stripePriceId) =>
+      db.query.planPrices.findFirst({
+        where: eq(planPrices.stripePriceId, stripePriceId),
+      }),
   };
 }
