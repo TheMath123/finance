@@ -23,7 +23,7 @@ export function createFakePaymentGateway(): PaymentGateway {
     async createBillingPortalSession(input) {
       return { url: `https://fake-portal.test/${input.customerId}` };
     },
-    constructEvent(): PaymentEvent {
+    async constructEvent(): Promise<PaymentEvent> {
       throw new Error(
         'FakePaymentGateway.constructEvent não é suportado — construa o PaymentEvent diretamente nos testes.'
       );

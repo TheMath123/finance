@@ -31,8 +31,16 @@ export interface PaymentGateway {
     customerId: string;
     returnUrl: string;
   }): Promise<{ url: string }>;
-  /** Lança erro em assinatura inválida — nunca retorna um evento não confiável. */
-  constructEvent(rawBody: string, signature: string | null): PaymentEvent;
+  /**
+   * Lança erro em assinatura inválida — nunca retorna um evento não
+   * confiável. Assíncrono porque o Bun não expõe crypto síncrono pro SDK do
+   * Stripe (SubtleCrypto é async-only) — `constructEvent` síncrono lança
+   * `CryptoProviderOnlySupportsAsyncError` em runtime.
+   */
+  constructEvent(
+    rawBody: string,
+    signature: string | null
+  ): Promise<PaymentEvent>;
 }
 
 export type PaymentEvent =

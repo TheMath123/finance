@@ -18,7 +18,10 @@
     "db:migrate": "bun --cwd=packages/db run migrate",
     "db:seed": "bun --cwd=packages/db run seed",
     "db:studio": "bun --cwd=packages/db run studio",
-    "worker": "bun --cwd=apps/backend run worker"
+    "worker": "bun --cwd=apps/backend run worker",
+    "tunnel:open": "bun scripts/tunnel/open.ts",
+    "tunnel:status": "bun scripts/tunnel/status.ts",
+    "tunnel:close": "bun scripts/tunnel/close.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.15",

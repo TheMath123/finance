@@ -14,9 +14,9 @@ export const stripeWebhookRoute = (deps: AppDeps) =>
     const raw = await request.text();
     const signature = request.headers.get('stripe-signature');
 
-    let event: ReturnType<AppDeps['payments']['constructEvent']>;
+    let event: Awaited<ReturnType<AppDeps['payments']['constructEvent']>>;
     try {
-      event = deps.payments.constructEvent(raw, signature);
+      event = await deps.payments.constructEvent(raw, signature);
     } catch (error) {
       deps.httpLogger.warn(
         { scope: 'stripe', err: error },

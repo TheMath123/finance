@@ -86,8 +86,8 @@ export function createStripeGateway(): PaymentGateway {
       return { url: session.url };
     },
 
-    constructEvent(rawBody, signature): PaymentEvent {
-      const event = client().webhooks.constructEvent(
+    async constructEvent(rawBody, signature): Promise<PaymentEvent> {
+      const event = await client().webhooks.constructEventAsync(
         rawBody,
         signature ?? '',
         loadStripeEnv().STRIPE_WEBHOOK_SECRET
