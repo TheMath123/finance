@@ -1,4 +1,5 @@
 <script lang="ts">
+	import CreditCardIcon from 'phosphor-svelte/lib/CreditCardIcon';
 	import ShieldCheckIcon from 'phosphor-svelte/lib/ShieldCheckIcon';
 	import UserCircleIcon from 'phosphor-svelte/lib/UserCircleIcon';
 
@@ -30,6 +31,13 @@
 		<WorkspaceSwitcher {workspaces} {activeWorkspace} />
 	</div>
 	<div class="flex shrink-0 items-center gap-1">
+		<a
+			href={resolve('/workspace/plan')}
+			class="flex items-center gap-2 rounded-lg px-2 py-1 text-sm text-muted-foreground transition-colors hover:bg-primary/10 hover:text-foreground"
+		>
+			<CreditCardIcon size={18} />
+			<span class="hidden sm:inline">Plano</span>
+		</a>
 		<NotificationBell initial={notifications} />
 		{#if user.platformRole === 'superadmin'}
 			<a

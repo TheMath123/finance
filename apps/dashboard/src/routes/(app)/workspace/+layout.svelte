@@ -5,10 +5,10 @@
 	let { children } = $props();
 
 	// resolve() inline no template (regra svelte/no-navigation-without-resolve).
+	// "Convites" foi absorvida na aba Membros; "Meus convites" só é acessada via
+	// clique na notificação de convite (notificationTargetRoute), sem aba própria.
 	const TABS = [
 		{ route: '/workspace/members', label: 'Membros' },
-		{ route: '/workspace/invites', label: 'Convites' },
-		{ route: '/workspace/my-invites', label: 'Meus convites' },
 		{ route: '/workspace/activity', label: 'Atividade' },
 		{ route: '/workspace/plan', label: 'Assinatura' },
 		{ route: '/workspace/settings', label: 'Configurações' }
