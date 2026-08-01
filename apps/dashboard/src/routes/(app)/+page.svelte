@@ -15,7 +15,7 @@
 	import { formatCents, formatReais } from '$lib/money';
 	import type { SavedFormulaView } from '$lib/server/formula-api';
 
-	let { data } = $props();
+	let { data, form } = $props();
 
 	let formulaDialogOpen = $state(false);
 
@@ -216,4 +216,5 @@
 	variables={catalog.variables}
 	values={catalog.values}
 	formulas={data.formulas}
+	{form}
 />

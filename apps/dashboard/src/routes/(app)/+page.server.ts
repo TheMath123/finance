@@ -72,7 +72,12 @@ export const actions: Actions = {
 			workspaceId,
 			parsed.data
 		);
-		if (!result.ok) return fail(result.error.status || 500, { message: result.error.message });
+		if (!result.ok) {
+			return fail(result.error.status || 500, {
+				message: result.error.message,
+				code: result.error.code
+			});
+		}
 		return { success: true };
 	},
 

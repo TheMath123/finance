@@ -6,6 +6,7 @@
 
 	import { enhance } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
+	import { resolve } from '$app/paths';
 
 	import SelectField from '$lib/components/calculator/select-field.svelte';
 	import SavedFormulaRow from '$lib/components/calculator/saved-formula-row.svelte';
@@ -22,13 +23,17 @@
 		open = $bindable(false),
 		variables,
 		values,
-		formulas
+		formulas,
+		form
 	}: {
 		open: boolean;
 		variables: FormulaVariableValue[];
 		values: Record<string, number>;
 		formulas: SavedFormulaView[];
+		form?: { message?: string; code?: string } | null;
 	} = $props();
+
+	const limitReached = $derived(form?.code === 'plan_limit_reached');
 
 	let editing = $state<SavedFormulaView | null>(null);
 	let name = $state('');
@@ -386,6 +391,19 @@
 						</label>
 					</div>
 				</div>
+
+				{#if limitReached}
+					<div
+						class="flex flex-col items-start justify-between gap-2 rounded-lg bg-destructive/10 px-3 py-2.5 text-sm text-destructive sm:flex-row sm:items-center"
+					>
+						<span>Limite de fórmulas salvas do seu plano atingido.</span>
+						<Button href={resolve('/workspace/plan')} size="sm" variant="destructive">
+							Fazer upgrade do plano
+						</Button>
+					</div>
+				{:else if form?.message}
+					<p class="text-sm text-destructive">{form.message}</p>
+				{/if}
 
 				<Dialog.Footer>
 					{#if editing}
