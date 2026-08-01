@@ -34,6 +34,10 @@ export const updateTransactionSchema = z.object({
   cardId: z.string().uuid().optional(),
 });
 
+export const updateInstallmentTotalSchema = z.object({
+  newTotalAmount: z.number().int().positive(),
+});
+
 export const listTransactionsSchema = z.object({
   from: dateSchema.optional(),
   to: dateSchema.optional(),

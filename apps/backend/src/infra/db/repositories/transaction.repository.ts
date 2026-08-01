@@ -38,6 +38,7 @@ export function createTransactionRepository(
     listByGroup: (installmentGroupId) =>
       db.query.transactions.findMany({
         where: eq(transactions.installmentGroupId, installmentGroupId),
+        orderBy: asc(transactions.installmentNumber),
       }),
     async update(id, patch) {
       const [row] = await db

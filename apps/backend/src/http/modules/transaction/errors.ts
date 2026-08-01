@@ -38,6 +38,17 @@ export const TRANSACTION_ERRORS: Record<TransactionError, HttpError> = {
     code: 'installment_field_locked',
     message: 'Valor e data de parcela são travados; edite descrição/categoria.',
   },
+  not_installment_purchase: {
+    status: 400,
+    code: 'not_installment_purchase',
+    message: 'Essa transação não é uma compra parcelada.',
+  },
+  total_below_paid_amount: {
+    status: 409,
+    code: 'total_below_paid_amount',
+    message:
+      'O novo valor total é menor do que o já pago nas parcelas anteriores.',
+  },
 };
 
 export const ATTACHMENT_ERRORS: Record<AttachmentError, HttpError> = {

@@ -93,6 +93,15 @@ export const transactions = pgTable(
     uniqueIndex('transactions_recurring_date_unique_idx')
       .on(t.recurringId, t.date)
       .where(sql`${t.recurringId} IS NOT NULL`),
+    /**
+     * Sem índice, listByGroup (usado por delete e por edição de valor total
+     * parcelado) fazia sequential scan pra achar as parcelas do grupo —
+     * coluna majoritariamente null (só parcelamento tem grupo), por isso
+     * parcial.
+     */
+    index('transactions_installment_group_idx')
+      .on(t.installmentGroupId)
+      .where(sql`${t.installmentGroupId} IS NOT NULL`),
   ]
 );
 

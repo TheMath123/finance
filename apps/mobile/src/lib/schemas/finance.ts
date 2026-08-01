@@ -66,6 +66,13 @@ export const editTransactionSchema = z.object({
 });
 export type EditTransactionInput = z.infer<typeof editTransactionSchema>;
 
+/** Edita o valor TOTAL de uma compra parcelada — redivide só entre as parcelas ainda não pagas. */
+export const installmentTotalSchema = z.object({
+  /** Centavos (integer) — mesmo formato da API, nunca reais/float. */
+  newTotalAmount: z.number().int().positive('Informe um valor maior que zero'),
+});
+export type InstallmentTotalInput = z.infer<typeof installmentTotalSchema>;
+
 export const cardSchema = z.object({
   name: z.string().min(1, 'Informe o nome').max(80),
   bankCode: z.string().min(1, 'Selecione o banco'),

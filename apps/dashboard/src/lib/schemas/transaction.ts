@@ -43,3 +43,7 @@ export const transactionEditSchema = z.object({
 	accountId: z.string().optional(),
 	cardId: z.string().optional()
 });
+
+export const installmentTotalSchema = z.object({
+	newTotalAmount: z.number().int().positive('Informe um valor maior que zero')
+});

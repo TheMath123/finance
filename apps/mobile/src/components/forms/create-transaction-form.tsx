@@ -16,6 +16,7 @@ import { accountsApi } from '@/lib/accounts-api';
 import { ApiError } from '@/lib/api-client';
 import { cardsApi } from '@/lib/cards-api';
 import { useCategories } from '@/lib/hooks/use-categories';
+import { formatCents, splitInstallmentsPreview } from '@/lib/money';
 import {
   type TransactionInput,
   transactionSchema,
@@ -86,6 +87,14 @@ export function CreateTransactionForm({ onDone }: { onDone: () => void }) {
 
   const method = useWatch({ control, name: 'method' });
   const isCredit = method === 'credit';
+  const amount = useWatch({ control, name: 'amount' });
+  const installments = useWatch({ control, name: 'installments' });
+
+  const installmentCount = Number(installments ?? '1');
+  const installmentPreview =
+    isCredit && installmentCount > 1 && amount > 0
+      ? splitInstallmentsPreview(amount, installmentCount)
+      : null;
 
   // Ao trocar de método, limpa o campo do "modo" anterior — crédito manda cardId
   // (nunca accountId), os demais mandam accountId (nunca cardId); a API rejeita
@@ -173,6 +182,15 @@ export function CreateTransactionForm({ onDone }: { onDone: () => void }) {
             placeholder="Selecione as parcelas"
             options={INSTALLMENT_OPTIONS}
           />
+          {installmentPreview && (
+            <ThemedText type="small">
+              {installmentPreview.length}x de{' '}
+              {formatCents(installmentPreview[1] ?? installmentPreview[0]!)}
+              {installmentPreview[0] !==
+                (installmentPreview[1] ?? installmentPreview[0]) &&
+                ` — 1ª parcela ${formatCents(installmentPreview[0]!)}`}
+            </ThemedText>
+          )}
         </>
       ) : (
         <SelectField

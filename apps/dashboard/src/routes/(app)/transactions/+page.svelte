@@ -20,7 +20,7 @@
 	import { Label } from '$lib/components/ui/label';
 	import { buildClientFormulaCatalog } from '$lib/formula-catalog';
 	import { getMerchantLogoUrl } from '$lib/merchant-logo';
-	import { formatCents, formatReais } from '$lib/money';
+	import { formatCents, formatReais, parseReaisToCents } from '$lib/money';
 	import type { SavedFormulaView } from '$lib/server/formula-api';
 	import type { TransactionView } from '$lib/server/transaction-api';
 	import { formatTransactionDate, transactionSourceLabel } from '$lib/transaction-labels';
@@ -69,8 +69,27 @@
 
 	let createOpen = $state(false);
 	let editing = $state<TransactionView | null>(null);
+	let editingInstallmentTotal = $state(false);
 
 	let newMethod = $state<'pix' | 'debit' | 'cash' | 'credit' | 'transfer'>('pix');
+	let newAmount = $state('');
+	let newInstallments = $state(1);
+
+	/** Espelha `splitInstallments` do backend (invoice-rules.ts) — resto do arredondamento na primeira parcela. */
+	function splitInstallmentsPreview(totalCents: number, count: number): number[] {
+		const base = Math.floor(totalCents / count);
+		const remainder = totalCents - base * count;
+		return Array.from({ length: count }, (_, i) => (i === 0 ? base + remainder : base));
+	}
+
+	/** Preview em tempo real — só faz sentido em crédito parcelado (2x ou mais). */
+	const newInstallmentPreview = $derived.by(() => {
+		if (newMethod !== 'credit' || newInstallments < 2) return null;
+		const totalCents = parseReaisToCents(newAmount);
+		if (totalCents === null || totalCents <= 0) return null;
+		const amounts = splitInstallmentsPreview(totalCents, newInstallments);
+		return { count: newInstallments, first: amounts[0]!, rest: amounts[1] ?? amounts[0]! };
+	});
 
 	function closeOnSuccess(close: () => void) {
 		return async ({
@@ -416,7 +435,14 @@
 			<div class="grid grid-cols-2 gap-4">
 				<div class="grid gap-2">
 					<Label for="new-amount">Valor</Label>
-					<Input id="new-amount" name="amount" inputmode="decimal" placeholder="0,00" required />
+					<Input
+						id="new-amount"
+						name="amount"
+						inputmode="decimal"
+						placeholder="0,00"
+						bind:value={newAmount}
+						required
+					/>
 				</div>
 				<div class="grid gap-2">
 					<Label for="new-date">Data</Label>
@@ -489,9 +515,17 @@
 							type="number"
 							min="1"
 							max="48"
-							value="1"
+							bind:value={newInstallments}
 						/>
 					</div>
+					{#if newInstallmentPreview}
+						<p class="col-span-2 text-xs text-muted-foreground">
+							{newInstallmentPreview.count}x de {formatCents(newInstallmentPreview.rest)}
+							{#if newInstallmentPreview.first !== newInstallmentPreview.rest}
+								— 1ª parcela {formatCents(newInstallmentPreview.first)}
+							{/if}
+						</p>
+					{/if}
 				</div>
 			{:else if newMethod === 'transfer'}
 				<div class="grid grid-cols-2 gap-4">
@@ -545,13 +579,22 @@
 	</Dialog.Content>
 </Dialog.Root>
 
-<Dialog.Root open={editing !== null} onOpenChange={(open) => !open && (editing = null)}>
+<Dialog.Root
+	open={editing !== null}
+	onOpenChange={(open) => {
+		if (!open) {
+			editing = null;
+			editingInstallmentTotal = false;
+		}
+	}}
+>
 	<Dialog.Content>
 		<Dialog.Header>
 			<Dialog.Title>Editar transação</Dialog.Title>
 			{#if editing?.installmentGroupId}
 				<Dialog.Description>
-					Parcela: valor, data e cartão ficam travados — edite só descrição/categoria.
+					Parcela: valor, data e cartão ficam travados — edite só descrição/categoria. Pra mudar o
+					valor, use "Alterar valor total da compra" abaixo.
 				</Dialog.Description>
 			{/if}
 		</Dialog.Header>
@@ -573,23 +616,36 @@
 						<Label for="edit-amount">Valor</Label>
 						<Input
 							id="edit-amount"
-							name="amount"
+							name={locked ? undefined : 'amount'}
 							inputmode="decimal"
 							disabled={locked}
 							value={(editing.amount / 100).toFixed(2).replace('.', ',')}
 							required
 						/>
+						{#if locked}
+							<!-- Input disabled não entra no FormData — sem este hidden, salvar só
+							     descrição/categoria de uma parcela falhava (amount ausente,
+							     obrigatório no schema). -->
+							<input
+								type="hidden"
+								name="amount"
+								value={(editing.amount / 100).toFixed(2).replace('.', ',')}
+							/>
+						{/if}
 					</div>
 					<div class="grid gap-2">
 						<Label for="edit-date">Data</Label>
 						<Input
 							id="edit-date"
-							name="date"
+							name={locked ? undefined : 'date'}
 							type="date"
 							disabled={locked}
 							value={editing.date}
 							required
 						/>
+						{#if locked}
+							<input type="hidden" name="date" value={editing.date} />
+						{/if}
 					</div>
 				</div>
 				<div class="grid gap-2">
@@ -638,10 +694,57 @@
 						</div>
 					{/if}
 				{/if}
-				<Dialog.Footer>
+				<Dialog.Footer class="flex-col items-stretch gap-2 sm:flex-row sm:items-center">
+					{#if locked}
+						<Button
+							type="button"
+							variant="outline"
+							size="sm"
+							class="sm:mr-auto"
+							onclick={() => (editingInstallmentTotal = !editingInstallmentTotal)}
+						>
+							{editingInstallmentTotal
+								? 'Cancelar alteração de valor'
+								: 'Alterar valor total da compra'}
+						</Button>
+					{/if}
 					<Button type="submit">Salvar</Button>
 				</Dialog.Footer>
 			</form>
+
+			{#if locked && editingInstallmentTotal}
+				<!-- Form separado (não pode ficar aninhado no de cima) — muda o valor TOTAL
+				     da compra, não o valor desta parcela isolada. O backend redivide só
+				     entre as parcelas ainda não pagas; as já pagas ficam com o valor
+				     original (correção de fatura paga é só por estorno). -->
+				<form
+					method="POST"
+					action="?/updateInstallmentTotal"
+					class="grid gap-3 border-t border-foreground/10 pt-4"
+					use:enhance={() =>
+						closeOnSuccess(() => {
+							editing = null;
+							editingInstallmentTotal = false;
+						})}
+				>
+					<input type="hidden" name="transactionId" value={editing.id} />
+					<div class="grid gap-2">
+						<Label for="edit-installment-total">Novo valor total da compra</Label>
+						<Input
+							id="edit-installment-total"
+							name="newTotalAmount"
+							inputmode="decimal"
+							placeholder="0,00"
+							required
+						/>
+						<p class="text-xs text-muted-foreground">
+							O novo total é redividido só entre as parcelas ainda não pagas — parcelas já pagas
+							continuam com o valor original.
+						</p>
+					</div>
+					<Button type="submit" class="justify-self-end">Confirmar novo valor total</Button>
+				</form>
+			{/if}
 		{/if}
 	</Dialog.Content>
 </Dialog.Root>

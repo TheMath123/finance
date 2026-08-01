@@ -1,0 +1,1 @@
+CREATE INDEX "transactions_installment_group_idx" ON "transactions" USING btree ("installment_group_id") WHERE "transactions"."installment_group_id" IS NOT NULL;

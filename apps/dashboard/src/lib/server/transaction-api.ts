@@ -105,6 +105,20 @@ export function updateTransaction(
 	});
 }
 
+/** Edita o valor TOTAL de uma compra parcelada — redivide só entre as parcelas ainda não pagas. */
+export function updateInstallmentTotal(
+	accessToken: string,
+	workspaceId: string,
+	transactionId: string,
+	newTotalAmount: number
+): Promise<Either<ApiError, TransactionView[]>> {
+	return apiRequest(`/workspaces/${workspaceId}/transactions/${transactionId}/installment-total`, {
+		method: 'PATCH',
+		body: { newTotalAmount },
+		accessToken
+	});
+}
+
 export function deleteTransaction(
 	accessToken: string,
 	workspaceId: string,

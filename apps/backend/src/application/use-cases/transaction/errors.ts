@@ -5,4 +5,6 @@ export type TransactionError =
   | 'transaction_not_found'
   | 'invalid_method_fields'
   | 'invoice_paid'
-  | 'installment_field_locked';
+  | 'installment_field_locked'
+  | 'not_installment_purchase'
+  | 'total_below_paid_amount';

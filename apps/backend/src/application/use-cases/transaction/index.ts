@@ -10,6 +10,7 @@ export {
   listTransactions,
 } from './list-transactions';
 export { restoreTransaction } from './restore-transaction';
+export { updateInstallmentTotal } from './update-installment-total';
 export {
   type UpdateTransactionInput,
   updateTransaction,

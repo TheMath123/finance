@@ -101,6 +101,20 @@ export const transactionsApi = {
       }
     ),
 
+  /** Edita o valor TOTAL de uma compra parcelada — redivide só entre as parcelas ainda não pagas. */
+  updateInstallmentTotal: (
+    workspaceId: string,
+    transactionId: string,
+    newTotalAmount: number
+  ) =>
+    apiRequest<Transaction[]>(
+      `/workspaces/${workspaceId}/transactions/${transactionId}/installment-total`,
+      {
+        method: 'PATCH',
+        body: { newTotalAmount },
+      }
+    ),
+
   /** Soft delete — some da listagem, mas pode ser restaurada. */
   delete: (workspaceId: string, transactionId: string) =>
     apiRequest<void>(

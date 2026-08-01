@@ -18,6 +18,8 @@ import { useCategories } from '@/lib/hooks/use-categories';
 import {
   type EditTransactionInput,
   editTransactionSchema,
+  type InstallmentTotalInput,
+  installmentTotalSchema,
 } from '@/lib/schemas/finance';
 import { type Transaction, transactionsApi } from '@/lib/transactions-api';
 import { AttachmentField } from './attachment-field';
@@ -41,6 +43,7 @@ export function EditTransactionForm({
   const { workspaceId } = useSession();
   const queryClient = useQueryClient();
   const [splitting, setSplitting] = useState(false);
+  const [editingInstallmentTotal, setEditingInstallmentTotal] = useState(false);
 
   const { data: categories } = useCategories(workspaceId);
 
@@ -88,6 +91,31 @@ export function EditTransactionForm({
     },
   });
 
+  const {
+    control: installmentTotalControl,
+    handleSubmit: handleInstallmentTotalSubmit,
+  } = useForm<InstallmentTotalInput>({
+    resolver: zodResolver(installmentTotalSchema),
+    mode: 'onTouched',
+    defaultValues: { newTotalAmount: 0 },
+  });
+
+  const installmentTotalMutation = useMutation({
+    mutationFn: (input: InstallmentTotalInput) =>
+      transactionsApi.updateInstallmentTotal(
+        workspaceId!,
+        transaction.id,
+        input.newTotalAmount
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ['transactions', workspaceId],
+      });
+      queryClient.invalidateQueries({ queryKey: ['summary', workspaceId] });
+      onDone();
+    },
+  });
+
   const categoryOptions = (categories ?? []).map((c) => ({
     label: c.name,
     value: c.id,
@@ -117,10 +145,48 @@ export function EditTransactionForm({
       />
       <MoneyField control={control} name="amount" label="Valor" />
       {isParceled && (
-        <ThemedText type="small" themeColor="textSecondary">
-          Parcela {transaction.installmentNumber} de{' '}
-          {transaction.installmentTotal} — o valor acima é só desta parcela.
-        </ThemedText>
+        <>
+          <ThemedText type="small" themeColor="textSecondary">
+            Parcela {transaction.installmentNumber} de{' '}
+            {transaction.installmentTotal} — o valor acima é só desta parcela.
+          </ThemedText>
+          <Button
+            variant="outline"
+            onPress={() => setEditingInstallmentTotal((v) => !v)}
+          >
+            {editingInstallmentTotal
+              ? 'Cancelar alteração de valor'
+              : 'Alterar valor total da compra'}
+          </Button>
+          {editingInstallmentTotal && (
+            <View className="gap-3 border-t border-neutral-200 pt-4 dark:border-neutral-800">
+              <MoneyField
+                control={installmentTotalControl}
+                name="newTotalAmount"
+                label="Novo valor total da compra"
+              />
+              <ThemedText type="small" themeColor="textSecondary">
+                O novo total é redividido só entre as parcelas ainda não pagas —
+                parcelas já pagas continuam com o valor original.
+              </ThemedText>
+              {installmentTotalMutation.isError && (
+                <ThemedText type="small" style={{ color: '#DC2626' }}>
+                  {installmentTotalMutation.error instanceof ApiError
+                    ? installmentTotalMutation.error.message
+                    : 'Erro inesperado'}
+                </ThemedText>
+              )}
+              <Button
+                loading={installmentTotalMutation.isPending}
+                onPress={handleInstallmentTotalSubmit((input) =>
+                  installmentTotalMutation.mutate(input)
+                )}
+              >
+                Confirmar novo valor total
+              </Button>
+            </View>
+          )}
+        </>
       )}
       <SelectField
         control={control}

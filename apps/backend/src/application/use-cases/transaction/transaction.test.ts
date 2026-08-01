@@ -31,6 +31,7 @@ import { payInvoice } from '../card/pay-invoice';
 import { deleteCategory } from '../category/delete-category';
 import { createTransaction } from './create-transaction';
 import { deleteTransaction } from './delete-transaction';
+import { updateInstallmentTotal } from './update-installment-total';
 import { updateTransaction } from './update-transaction';
 
 let db: Db;
@@ -612,6 +613,147 @@ describe('editar conta/cartão da transação (auditoria 2026-07-20)', () => {
     const result = await updateTransaction(deps, actor, created.value[0]!.id, {
       cardId: secondCardId,
     });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toBe('invoice_paid');
+  });
+});
+
+describe('editar valor total de compra parcelada', () => {
+  test('redistribui só entre as parcelas não pagas (resto na primeira restante); parcela paga fica intocada', async () => {
+    const created = await createTransaction(deps, actor, {
+      description: 'Geladeira',
+      amount: 100_001, // não divide igual: 1ª parcela leva o resto (25.001)
+      type: 'expense',
+      method: 'credit',
+      date: '2029-01-05',
+      categoryId,
+      cardId,
+      installments: 4,
+    });
+    if (!created.ok) throw new Error('setup falhou');
+    const byInstallment = [...created.value].sort(
+      (a, b) => a.installmentNumber! - b.installmentNumber!
+    );
+    expect(byInstallment.map((t) => t.amount)).toEqual([
+      25_001, 25_000, 25_000, 25_000,
+    ]);
+
+    const paid = await payInvoice(deps, actor, byInstallment[0]!.invoiceId!, {
+      accountId,
+      date: '2029-01-17',
+      method: 'pix',
+    });
+    expect(paid.ok).toBe(true);
+
+    const result = await updateInstallmentTotal(
+      deps,
+      actor,
+      byInstallment[1]!.id, // qualquer parcela ainda aberta dispara a redistribuição
+      91_001
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value).toHaveLength(3);
+    expect(result.value.map((t) => t.amount)).toEqual([22_000, 22_000, 22_000]);
+
+    // A parcela já paga não muda.
+    const stillPaid = await db.query.transactions.findFirst({
+      where: eq(transactions.id, byInstallment[0]!.id),
+    });
+    expect(stillPaid?.amount).toBe(25_001);
+
+    // Soma das 4 parcelas (1 paga + 3 redistribuídas) bate com o novo total.
+    const group = await db.query.transactions.findMany({
+      where: eq(
+        transactions.installmentGroupId,
+        byInstallment[0]!.installmentGroupId!
+      ),
+    });
+    expect(group.reduce((sum, t) => sum + t.amount, 0)).toBe(91_001);
+  });
+
+  test('recusa novo total menor do que a soma já paga', async () => {
+    const created = await createTransaction(deps, actor, {
+      description: 'Sofá',
+      amount: 60_000,
+      type: 'expense',
+      method: 'credit',
+      date: '2029-02-05',
+      categoryId,
+      cardId,
+      installments: 3,
+    });
+    if (!created.ok) throw new Error('setup falhou');
+    const byInstallment = [...created.value].sort(
+      (a, b) => a.installmentNumber! - b.installmentNumber!
+    );
+    const paid = await payInvoice(deps, actor, byInstallment[0]!.invoiceId!, {
+      accountId,
+      date: '2029-02-17',
+      method: 'pix',
+    });
+    expect(paid.ok).toBe(true);
+
+    const result = await updateInstallmentTotal(
+      deps,
+      actor,
+      byInstallment[1]!.id,
+      15_000 // já pagou 20.000 na 1ª parcela
+    );
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toBe('total_below_paid_amount');
+  });
+
+  test('recusa transação que não é parcelada', async () => {
+    const created = await createTransaction(deps, actor, {
+      description: 'Compra à vista',
+      amount: 5_000,
+      type: 'expense',
+      method: 'credit',
+      date: '2029-03-05',
+      categoryId,
+      cardId,
+    });
+    if (!created.ok) throw new Error('setup falhou');
+
+    const result = await updateInstallmentTotal(
+      deps,
+      actor,
+      created.value[0]!.id,
+      6_000
+    );
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toBe('not_installment_purchase');
+  });
+
+  test('recusa quando a parcela informada já está paga', async () => {
+    const created = await createTransaction(deps, actor, {
+      description: 'Bicicleta',
+      amount: 40_000,
+      type: 'expense',
+      method: 'credit',
+      date: '2029-04-05',
+      categoryId,
+      cardId,
+      installments: 2,
+    });
+    if (!created.ok) throw new Error('setup falhou');
+    const byInstallment = [...created.value].sort(
+      (a, b) => a.installmentNumber! - b.installmentNumber!
+    );
+    const paid = await payInvoice(deps, actor, byInstallment[0]!.invoiceId!, {
+      accountId,
+      date: '2029-04-17',
+      method: 'pix',
+    });
+    expect(paid.ok).toBe(true);
+
+    const result = await updateInstallmentTotal(
+      deps,
+      actor,
+      byInstallment[0]!.id,
+      50_000
+    );
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.error).toBe('invoice_paid');
   });
