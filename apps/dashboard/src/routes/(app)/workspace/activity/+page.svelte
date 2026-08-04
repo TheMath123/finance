@@ -21,7 +21,7 @@
 </script>
 
 <svelte:head>
-	<title>Atividade — Finance</title>
+	<title>Atividade — Marcelus</title>
 </svelte:head>
 
 <div class="flex flex-col gap-6">

@@ -13,7 +13,7 @@
 </script>
 
 <svelte:head>
-	<title>Criar conta — Finance</title>
+	<title>Criar conta — Marcelus</title>
 </svelte:head>
 
 <div class="flex min-h-screen items-center justify-center p-4">

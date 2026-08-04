@@ -25,7 +25,7 @@
 </script>
 
 <svelte:head>
-	<title>SaaS — Finance</title>
+	<title>SaaS — Marcelus</title>
 </svelte:head>
 
 <div class="flex min-h-screen">

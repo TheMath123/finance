@@ -46,7 +46,10 @@
 <aside
 	class="hidden w-56 shrink-0 flex-col gap-1 border-r border-foreground/10 bg-sidebar p-4 sm:flex"
 >
-	<p class="mb-4 px-3 text-lg font-semibold text-sidebar-foreground">Finance</p>
+	<div class="mb-4 flex items-center gap-2 px-3">
+		<img src="/logo.svg" alt="" class="h-6 w-6 shrink-0" />
+		<p class="text-lg font-semibold text-sidebar-foreground">Marcelus</p>
+	</div>
 	{#each NAV as item (item.route)}
 		{@const active = item.match(page.url.pathname)}
 		<a

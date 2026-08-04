@@ -44,7 +44,7 @@
 </script>
 
 <svelte:head>
-	<title>Conta — Finance</title>
+	<title>Conta — Marcelus</title>
 </svelte:head>
 
 <div class="mx-auto flex max-w-2xl flex-col gap-6">

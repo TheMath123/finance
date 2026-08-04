@@ -8,7 +8,7 @@
 </script>
 
 <svelte:head>
-	<title>Meus convites — Finance</title>
+	<title>Meus convites — Marcelus</title>
 </svelte:head>
 
 <div class="flex flex-col gap-6">

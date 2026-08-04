@@ -64,7 +64,7 @@
 </script>
 
 <svelte:head>
-	<title>Assinatura — Finance</title>
+	<title>Assinatura — Marcelus</title>
 </svelte:head>
 
 <div class="flex flex-col gap-6">

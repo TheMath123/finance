@@ -34,7 +34,7 @@
 </script>
 
 <svelte:head>
-	<title>Bancos — Finance</title>
+	<title>Bancos — Marcelus</title>
 </svelte:head>
 
 {#snippet bankFields(prefix: string, bank?: BankView)}

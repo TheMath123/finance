@@ -86,11 +86,13 @@ de workspace nenhum.
 
 ## Brand Commitments
 
-Nenhuma marca confirmada ainda. "Finance" (usado em `@finance/*`, título
-das páginas) é **placeholder**, não o nome final do produto. Sem logo ou
-identidade visual própria estabelecida (os logos de banco exibidos por
-transação são de instituições financeiras terceiras, não da marca do
-produto).
+Nome final ainda não confirmado — **"Marcelus" é apelido/codinome de
+projeto** (decisão de 2026-08-01), usado nos títulos de página, sidebar e
+como logo provisória (`static/logo.svg`). `@finance/*` (namespace interno
+dos pacotes do monorepo) continua como está, sem relação com o branding —
+renomear isso não traz ganho nenhum pro usuário final e tem alto risco
+(centenas de imports). Os logos de banco exibidos por transação são de
+instituições financeiras terceiras, não da marca do produto.
 
 ## Evidence on Hand
 

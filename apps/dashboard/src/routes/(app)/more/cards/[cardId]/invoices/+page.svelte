@@ -47,7 +47,7 @@
 </script>
 
 <svelte:head>
-	<title>Faturas — {data.card.name} — Finance</title>
+	<title>Faturas — {data.card.name} — Marcelus</title>
 </svelte:head>
 
 <div class="mx-auto flex max-w-3xl flex-col gap-6">

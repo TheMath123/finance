@@ -71,7 +71,7 @@
 </script>
 
 <svelte:head>
-	<title>Início — Finance</title>
+	<title>Início — Marcelus</title>
 </svelte:head>
 
 <div class="mx-auto flex max-w-3xl flex-col gap-6">

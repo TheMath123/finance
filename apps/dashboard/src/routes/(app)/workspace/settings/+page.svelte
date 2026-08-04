@@ -14,7 +14,7 @@
 </script>
 
 <svelte:head>
-	<title>Configurações do workspace — Finance</title>
+	<title>Configurações do workspace — Marcelus</title>
 </svelte:head>
 
 <div class="flex flex-col gap-6">

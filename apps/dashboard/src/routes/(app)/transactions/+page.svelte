@@ -129,7 +129,7 @@
 </script>
 
 <svelte:head>
-	<title>Transações — Finance</title>
+	<title>Transações — Marcelus</title>
 </svelte:head>
 
 <div class="flex flex-col gap-6">

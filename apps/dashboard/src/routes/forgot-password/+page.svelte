@@ -13,7 +13,7 @@
 </script>
 
 <svelte:head>
-	<title>Esqueci minha senha — Finance</title>
+	<title>Esqueci minha senha — Marcelus</title>
 </svelte:head>
 
 <div class="flex min-h-screen items-center justify-center p-4">

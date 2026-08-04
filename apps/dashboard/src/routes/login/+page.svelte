@@ -13,7 +13,7 @@
 </script>
 
 <svelte:head>
-	<title>Entrar — Finance</title>
+	<title>Entrar — Marcelus</title>
 </svelte:head>
 
 <div class="flex min-h-screen items-center justify-center p-4">

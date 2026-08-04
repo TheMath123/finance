@@ -13,7 +13,7 @@
 </script>
 
 <svelte:head>
-	<title>Novo workspace — Finance</title>
+	<title>Novo workspace — Marcelus</title>
 </svelte:head>
 
 <div class="mx-auto flex max-w-md flex-col gap-6">

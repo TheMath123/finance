@@ -21,7 +21,7 @@
 </script>
 
 <svelte:head>
-	<title>Membros — Finance</title>
+	<title>Membros — Marcelus</title>
 </svelte:head>
 
 <div class="flex flex-col gap-6">

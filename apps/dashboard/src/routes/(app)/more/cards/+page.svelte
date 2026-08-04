@@ -36,7 +36,7 @@
 </script>
 
 <svelte:head>
-	<title>Cartões — Finance</title>
+	<title>Cartões — Marcelus</title>
 </svelte:head>
 
 {#snippet cardFields(prefix: string, card?: CardView)}

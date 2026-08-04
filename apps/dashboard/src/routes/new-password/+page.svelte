@@ -12,7 +12,7 @@
 </script>
 
 <svelte:head>
-	<title>Nova senha — Finance</title>
+	<title>Nova senha — Marcelus</title>
 </svelte:head>
 
 <div class="flex min-h-screen items-center justify-center p-4">

@@ -62,7 +62,7 @@
 </script>
 
 <svelte:head>
-	<title>Recorrências — Finance</title>
+	<title>Recorrências — Marcelus</title>
 </svelte:head>
 
 <div class="flex flex-col gap-6">

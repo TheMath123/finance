@@ -41,7 +41,7 @@
 </script>
 
 <svelte:head>
-	<title>Contas — Finance</title>
+	<title>Contas — Marcelus</title>
 </svelte:head>
 
 {#snippet accountFields(prefix: string, account?: AccountView)}

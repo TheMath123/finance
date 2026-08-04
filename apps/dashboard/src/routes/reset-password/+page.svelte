@@ -35,7 +35,7 @@
 </script>
 
 <svelte:head>
-	<title>Redefinir senha — Finance</title>
+	<title>Redefinir senha — Marcelus</title>
 </svelte:head>
 
 <div class="flex min-h-screen items-center justify-center p-4">
