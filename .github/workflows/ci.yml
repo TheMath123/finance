@@ -40,8 +40,14 @@ jobs:
       - name: Typecheck (turbo)
         run: bun run typecheck
 
+      - name: Lint (Biome)
+        run: bun run lint
+
       - name: Migrações
         run: bun --cwd packages/db run migrate
 
       - name: Testes
         run: bun --cwd apps/backend test
+
+      - name: Build do dashboard (smoke test do adapter)
+        run: bun run build --filter=@finance/dashboard

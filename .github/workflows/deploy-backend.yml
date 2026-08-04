@@ -1,0 +1,47 @@
+name: Deploy backend (Fly.io)
+
+on:
+  push:
+    tags:
+      - 'api-v*'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+
+    env:
+      # DATABASE_URL de produção (Neon) — só usada aqui pra rodar a migração
+      # a partir do runner. O backend em runtime usa a sua própria via Fly
+      # secret (setado uma vez com `flyctl secrets set`, fora do CI).
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Instalar dependências
+        run: bun install --frozen-lockfile
+
+      - name: Typecheck do backend
+        run: bun run typecheck --filter=@finance/backend
+
+      # Sem rodar `bun test` aqui de propósito: os testes de use-case criam e
+      # apagam dados (users/workspaces/plans) — contra o DATABASE_URL de
+      # produção (Neon) isso seria destrutivo. A suíte completa já roda no CI
+      # (.github/workflows/ci.yml) contra um Postgres efêmero a cada push pra
+      # main; uma tag só deve ser cortada de um commit que já passou lá.
+
+      - name: Migrações (Neon, produção)
+        run: bun --cwd packages/db run migrate
+
+      - name: Setup flyctl
+        uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Deploy no Fly.io
+        run: flyctl deploy --config apps/backend/fly.toml --remote-only
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}

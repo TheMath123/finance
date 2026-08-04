@@ -1,0 +1,28 @@
+# Mantém o contexto de build do backend (Dockerfile roda a partir da raiz do
+# repo) enxuto — só o que apps/backend/Dockerfile realmente precisa.
+node_modules
+**/node_modules
+.git
+.turbo
+**/.turbo
+
+# Apps que não entram na imagem do backend
+apps/mobile
+apps/dashboard
+
+# Artefatos de build/dev que não fazem sentido dentro do container
+**/.svelte-kit
+**/build
+**/.wrangler
+**/dist
+**/*.log
+
+# Segredos/env locais — nunca vão pra imagem, só entram via Fly secrets
+.env
+**/.env
+**/.env.*
+
+.vscode
+.claude
+tasks
+*.md

@@ -21,7 +21,9 @@
     "worker": "bun --cwd=apps/backend run worker",
     "tunnel:open": "bun scripts/tunnel/open.ts",
     "tunnel:status": "bun scripts/tunnel/status.ts",
-    "tunnel:close": "bun scripts/tunnel/close.ts"
+    "tunnel:close": "bun scripts/tunnel/close.ts",
+    "release:dashboard": "bun scripts/release.ts dashboard",
+    "release:api": "bun scripts/release.ts api"
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.15",

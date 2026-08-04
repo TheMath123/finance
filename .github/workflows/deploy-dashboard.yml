@@ -1,0 +1,38 @@
+name: Deploy dashboard (Cloudflare)
+
+on:
+  push:
+    tags:
+      - 'dashboard-web-v*'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Instalar dependências
+        run: bun install --frozen-lockfile
+
+      - name: Typecheck do dashboard
+        run: bun run typecheck --filter=@finance/dashboard
+
+      - name: Lint do dashboard
+        run: bun --cwd apps/dashboard run lint
+
+      - name: Build do dashboard
+        run: bun run build --filter=@finance/dashboard
+
+      - name: Deploy no Cloudflare Workers
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: apps/dashboard
+          command: deploy

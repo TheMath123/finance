@@ -1,0 +1,19 @@
+# Config do Cloudflare Worker do dashboard (SvelteKit via @sveltejs/adapter-cloudflare).
+# `name` é só um placeholder — troque pelo nome real do Worker antes do primeiro deploy
+# (precisa bater com o que foi criado no painel/CLI do Cloudflare, ver runbook em
+# tasks/in-progress/ci-cd-deploy.md).
+name = "finance-guide-dashboard"
+main = ".svelte-kit/cloudflare/_worker.js"
+compatibility_date = "2026-08-01"
+# nodejs_compat é o que faz `$env/dynamic/private` (usado em src/lib/server/env.ts)
+# funcionar no runtime do Workers — sem isso a env não é lida.
+compatibility_flags = ["nodejs_compat"]
+
+[assets]
+binding = "ASSETS"
+directory = ".svelte-kit/cloudflare"
+
+[vars]
+# URL pública do backend no Fly.io — não é segredo, só o endereço da API.
+# Trocar pelo domínio real depois que o app do Fly existir (ver runbook).
+API_URL = "https://finance-guide-api.fly.dev"
