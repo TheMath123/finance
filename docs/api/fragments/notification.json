@@ -1,0 +1,453 @@
+{
+  "paths": {
+    "/notifications": {
+      "get": {
+        "tags": ["Notificações"],
+        "summary": "Listar notificações do usuário",
+        "description": "Lista as notificações do usuário autenticado. Sem escopo de workspace — notificações são por usuário. Requer apenas autenticação (sem papel de workspace).",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "archived",
+            "in": "query",
+            "required": false,
+            "description": "Filtra por arquivadas (`true`) ou ativas (`false`, padrão).",
+            "schema": { "type": "boolean", "default": false }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de notificações do usuário.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Notification" }
+                },
+                "example": [
+                  {
+                    "id": "9a1b2c3d-4e5f-4a71-9a1b-2c3d4e5f6a71",
+                    "userId": "5e6f7a8b-9c0d-4e1f-8a2b-3c4d5e6f7a81",
+                    "workspaceId": "1b1f3f7a-2e0e-4f2a-9c3e-6d4b8a1f2e22",
+                    "type": "invoice_due",
+                    "title": "Fatura vence amanhã",
+                    "body": "A fatura do cartão Nubank fake vence amanhã.",
+                    "data": { "cardId": "d4e5f6a7-8b9c-4d0e-9f1a-2b3c4d5e6f71" },
+                    "readAt": null,
+                    "archivedAt": null,
+                    "createdAt": "2026-01-10T08:00:00.000Z"
+                  }
+                ]
+              }
+            }
+          },
+          "4XX": {
+            "description": "`validation_error` (400, `archived` inválido), `unauthorized` (401).",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/notifications/{notificationId}/read": {
+      "post": {
+        "tags": ["Notificações"],
+        "summary": "Marcar notificação como lida",
+        "description": "Marca a notificação do usuário autenticado como lida. Requer apenas autenticação.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "notificationId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "204": { "description": "Notificação marcada como lida. Sem corpo de resposta." },
+          "4XX": {
+            "description": "`notification_not_found` (404), `unauthorized` (401).",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/notifications/{notificationId}/archive": {
+      "post": {
+        "tags": ["Notificações"],
+        "summary": "Arquivar notificação",
+        "description": "Arquiva a notificação do usuário autenticado. Requer apenas autenticação.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "notificationId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "204": { "description": "Notificação arquivada. Sem corpo de resposta." },
+          "4XX": {
+            "description": "`notification_not_found` (404), `unauthorized` (401).",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/notifications/{notificationId}/unarchive": {
+      "post": {
+        "tags": ["Notificações"],
+        "summary": "Desarquivar notificação",
+        "description": "Remove o arquivamento da notificação do usuário autenticado. Requer apenas autenticação.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "notificationId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "204": { "description": "Notificação desarquivada. Sem corpo de resposta." },
+          "4XX": {
+            "description": "`notification_not_found` (404), `unauthorized` (401).",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/notification-preferences": {
+      "get": {
+        "tags": ["Notificações"],
+        "summary": "Listar preferências de notificação",
+        "description": "Lista a preferência do usuário autenticado para todos os tipos de notificação existentes (`NOTIFICATION_TYPES`). Ausência de registro no banco é tratada como habilitado (`enabled: true`). Requer apenas autenticação.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Preferências para todos os tipos de notificação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/NotificationPreference"
+                  }
+                },
+                "example": [
+                  { "type": "invoice_due", "enabled": true },
+                  { "type": "workspace_invite", "enabled": true },
+                  { "type": "transfer_pending", "enabled": false }
+                ]
+              }
+            }
+          },
+          "4XX": {
+            "description": "`unauthorized` (401).",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/notification-preferences/{type}": {
+      "patch": {
+        "tags": ["Notificações"],
+        "summary": "Atualizar preferência de notificação",
+        "description": "Habilita ou desabilita notificações de um tipo específico para o usuário autenticado. Requer apenas autenticação.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "workspace_invite",
+                "invoice_closed",
+                "invoice_due",
+                "recurring_pending",
+                "whatsapp_linked",
+                "transfer_pending",
+                "transfer_accepted",
+                "split_payment_pending",
+                "split_payment_paid",
+                "split_reimbursement_confirmed"
+              ]
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NotificationUpdatePreferenceBody"
+              },
+              "example": { "enabled": false }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Preferência atualizada.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationPreference"
+                },
+                "example": { "type": "transfer_pending", "enabled": false }
+              }
+            }
+          },
+          "4XX": {
+            "description": "`validation_error` (400, `type` fora do enum ou `enabled` ausente/inválido), `unauthorized` (401).",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/push-tokens": {
+      "post": {
+        "tags": ["Notificações"],
+        "summary": "Registrar token de push",
+        "description": "Registra um token de push (Expo/FCM/APNs) para o usuário autenticado, usado no envio de notificações push. Requer apenas autenticação.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NotificationRegisterPushTokenBody"
+              },
+              "example": { "token": "ExponentPushToken[fake-token-abc123]" }
+            }
+          }
+        },
+        "responses": {
+          "204": { "description": "Token registrado. Sem corpo de resposta." },
+          "4XX": {
+            "description": "`validation_error` (400, `token` ausente ou maior que 300 caracteres), `unauthorized` (401).",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Notificações"],
+        "summary": "Remover token de push",
+        "description": "Remove um token de push previamente registrado para o usuário autenticado (ex.: logout do dispositivo). Requer apenas autenticação.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NotificationUnregisterPushTokenBody"
+              },
+              "example": { "token": "ExponentPushToken[fake-token-abc123]" }
+            }
+          }
+        },
+        "responses": {
+          "204": { "description": "Token removido. Sem corpo de resposta." },
+          "4XX": {
+            "description": "`validation_error` (400, `token` ausente ou maior que 300 caracteres), `unauthorized` (401).",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/notifications/stream": {
+      "get": {
+        "tags": ["Notificações"],
+        "summary": "Stream de notificações em tempo real (SSE)",
+        "description": "Conexão persistente via Server-Sent Events (`text/event-stream`) — não é uma resposta única, e sim um fluxo que permanece aberto enquanto o cliente estiver conectado. O app assina esse endpoint ao logar para atualizar lista/badge de notificações sem precisar reabrir a tela; não substitui push (que continua funcionando com o app fechado) nem o histórico em `GET /notifications` — é apenas o \"empurrão\" em tempo real para quem já está com o app aberto. Autenticado por `Authorization: Bearer` normal (o cliente React Native consegue mandar headers customizados num EventSource, diferente do navegador). O servidor envia um comentário `: connected` na abertura e heartbeats `: ping` a cada 25s; eventos de notificação chegam como `data: <json>`. Requer apenas autenticação.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Conexão SSE estabelecida e mantida aberta. Cada evento de notificação chega como uma linha `data: <Notification em JSON>\\n\\n`; linhas iniciadas com `:` são comentários/heartbeat e devem ser ignoradas pelo cliente.",
+            "content": {
+              "text/event-stream": {
+                "schema": { "$ref": "#/components/schemas/Notification" },
+                "example": "data: {\"id\":\"9a1b2c3d-4e5f-4a71-9a1b-2c3d4e5f6a71\",\"type\":\"invoice_due\",\"title\":\"Fatura vence amanhã\"}\n\n"
+              }
+            }
+          },
+          "4XX": {
+            "description": "`unauthorized` (401, sem token válido — conexão recusada antes do upgrade para stream).",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Notification": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "userId": { "type": "string", "format": "uuid" },
+          "workspaceId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "workspace_invite",
+              "invoice_closed",
+              "invoice_due",
+              "recurring_pending",
+              "whatsapp_linked",
+              "transfer_pending",
+              "transfer_accepted",
+              "split_payment_pending",
+              "split_payment_paid",
+              "split_reimbursement_confirmed"
+            ]
+          },
+          "title": { "type": "string" },
+          "body": { "type": "string" },
+          "data": {
+            "type": "object",
+            "nullable": true,
+            "additionalProperties": true,
+            "description": "Payload específico do tipo de notificação (ex.: ids relacionados)."
+          },
+          "readAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "archivedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "createdAt": { "type": "string", "format": "date-time" }
+        },
+        "required": [
+          "id",
+          "userId",
+          "workspaceId",
+          "type",
+          "title",
+          "body",
+          "data",
+          "readAt",
+          "archivedAt",
+          "createdAt"
+        ]
+      },
+      "NotificationPreference": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "workspace_invite",
+              "invoice_closed",
+              "invoice_due",
+              "recurring_pending",
+              "whatsapp_linked",
+              "transfer_pending",
+              "transfer_accepted",
+              "split_payment_pending",
+              "split_payment_paid",
+              "split_reimbursement_confirmed"
+            ]
+          },
+          "enabled": { "type": "boolean" }
+        },
+        "required": ["type", "enabled"]
+      },
+      "NotificationUpdatePreferenceBody": {
+        "type": "object",
+        "properties": {
+          "enabled": { "type": "boolean" }
+        },
+        "required": ["enabled"]
+      },
+      "NotificationRegisterPushTokenBody": {
+        "type": "object",
+        "properties": {
+          "token": { "type": "string", "minLength": 1, "maxLength": 300 }
+        },
+        "required": ["token"]
+      },
+      "NotificationUnregisterPushTokenBody": {
+        "type": "object",
+        "properties": {
+          "token": { "type": "string", "minLength": 1, "maxLength": 300 }
+        },
+        "required": ["token"]
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": { "type": "string" },
+              "message": { "type": "string" },
+              "issues": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "path": { "type": "string" },
+                    "message": { "type": "string" }
+                  }
+                }
+              }
+            },
+            "required": ["code", "message"]
+          }
+        },
+        "required": ["error"]
+      }
+    }
+  }
+}

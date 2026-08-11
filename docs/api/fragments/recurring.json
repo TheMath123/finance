@@ -1,0 +1,387 @@
+{
+  "paths": {
+    "/workspaces/{workspaceId}/recurring": {
+      "get": {
+        "tags": ["Recorrências"],
+        "summary": "Listar recorrências",
+        "description": "Lista as regras de recorrência (transações fixas) do workspace, ativas ou não. Requer papel mínimo **viewer** no workspace.",
+        "operationId": "listRecurring",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "workspaceId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de recorrências do workspace.",
+            "content": {
+              "application/json": {
+                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/RecurringTransaction" } },
+                "example": [
+                  {
+                    "id": "d1a2c3d4-0001-4a11-8b11-000000000001",
+                    "workspaceId": "d1a2c3d4-0000-4a11-8b11-000000000000",
+                    "description": "Assinatura Streaming",
+                    "amount": 2990,
+                    "type": "expense",
+                    "method": "credit",
+                    "categoryId": "d1a2c3d4-0002-4a11-8b11-000000000010",
+                    "accountId": null,
+                    "cardId": "d1a2c3d4-0003-4a11-8b11-000000000020",
+                    "frequency": "monthly",
+                    "dayOfReference": 10,
+                    "monthOfReference": null,
+                    "active": true,
+                    "createdAt": "2026-01-10T12:00:00.000Z",
+                    "updatedAt": "2026-01-10T12:00:00.000Z"
+                  }
+                ]
+              }
+            }
+          },
+          "4XX": {
+            "description": "`not_found` (404, workspaceId inválido/sem acesso) ou `rate_limited` (429).",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Recorrências"],
+        "summary": "Criar recorrência",
+        "description": "Cria uma regra de transação recorrente (transferência recorrente não é suportada). Requer papel mínimo **member** no workspace.",
+        "operationId": "createRecurring",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "workspaceId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/RecurringCreateRecurringBody" },
+              "example": {
+                "description": "Assinatura Streaming",
+                "amount": 2990,
+                "type": "expense",
+                "method": "credit",
+                "categoryId": "d1a2c3d4-0002-4a11-8b11-000000000010",
+                "cardId": "d1a2c3d4-0003-4a11-8b11-000000000020",
+                "frequency": "monthly",
+                "dayOfReference": 10
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Recorrência criada.",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RecurringTransaction" } } }
+          },
+          "4XX": {
+            "description": "`invalid_rule` (400 — dia/mês incompatíveis com a frequência), `category_not_found`/`account_not_found`/`card_not_found` (404), `invalid_method_fields` (400), `validation_error` (400).",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+          }
+        }
+      }
+    },
+    "/workspaces/{workspaceId}/recurring/pending": {
+      "get": {
+        "tags": ["Recorrências"],
+        "summary": "Listar ocorrências pendentes do mês",
+        "description": "Lista as ocorrências previstas para o mês/ano informado que ainda não foram confirmadas (nenhuma transação lançada para aquela data). Requer papel mínimo **viewer** no workspace.",
+        "operationId": "listPendingOccurrences",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "workspaceId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } },
+          { "name": "year", "in": "query", "required": true, "schema": { "type": "integer", "minimum": 2000, "maximum": 2100 } },
+          { "name": "month", "in": "query", "required": true, "schema": { "type": "integer", "minimum": 1, "maximum": 12 } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ocorrências pendentes do mês, ordenadas por data.",
+            "content": {
+              "application/json": {
+                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/RecurringPendingOccurrence" } },
+                "example": [
+                  {
+                    "recurringId": "d1a2c3d4-0001-4a11-8b11-000000000001",
+                    "date": "2026-08-10",
+                    "description": "Assinatura Streaming",
+                    "amount": 2990,
+                    "type": "expense",
+                    "method": "credit",
+                    "categoryId": "d1a2c3d4-0002-4a11-8b11-000000000010",
+                    "accountId": null,
+                    "cardId": "d1a2c3d4-0003-4a11-8b11-000000000020"
+                  }
+                ]
+              }
+            }
+          },
+          "4XX": {
+            "description": "`not_found` (404), `validation_error` (400 — year/month ausentes ou fora da faixa).",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+          }
+        }
+      }
+    },
+    "/workspaces/{workspaceId}/recurring/{recurringId}": {
+      "patch": {
+        "tags": ["Recorrências"],
+        "summary": "Atualizar recorrência",
+        "description": "Atualiza campos de uma regra de recorrência existente (todos os campos são opcionais). Requer papel mínimo **member** no workspace.",
+        "operationId": "updateRecurring",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "workspaceId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } },
+          { "name": "recurringId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/RecurringUpdateRecurringBody" },
+              "example": { "amount": 3490, "active": false }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Recorrência atualizada.",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RecurringTransaction" } } }
+          },
+          "4XX": {
+            "description": "`recurring_not_found` (404), `invalid_rule` (400), `category_not_found`/`account_not_found`/`card_not_found` (404), `invalid_method_fields` (400), `validation_error` (400).",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Recorrências"],
+        "summary": "Excluir recorrência",
+        "description": "Exclui definitivamente a regra de recorrência. Transações já lançadas a partir dela são preservadas (o vínculo é desfeito). Requer papel mínimo **member** no workspace.",
+        "operationId": "deleteRecurring",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "workspaceId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } },
+          { "name": "recurringId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "204": { "description": "Recorrência excluída com sucesso. Sem corpo de resposta." },
+          "4XX": {
+            "description": "`recurring_not_found` (404).",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+          }
+        }
+      }
+    },
+    "/workspaces/{workspaceId}/recurring/{recurringId}/confirm": {
+      "post": {
+        "tags": ["Recorrências"],
+        "summary": "Confirmar ocorrência",
+        "description": "Materializa uma ocorrência prevista da recorrência como uma transação real, para a data informada. Requer papel mínimo **member** no workspace.",
+        "operationId": "confirmOccurrence",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "workspaceId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } },
+          { "name": "recurringId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/RecurringConfirmOccurrenceBody" },
+              "example": { "date": "2026-08-10" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Transação criada a partir da ocorrência confirmada.",
+            "content": {
+              "application/json": {
+                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/RecurringConfirmedTransaction" } },
+                "example": [
+                  {
+                    "id": "d1a2c3d4-0004-4a11-8b11-000000000040",
+                    "workspaceId": "d1a2c3d4-0000-4a11-8b11-000000000000",
+                    "createdBy": "d1a2c3d4-0000-4a11-8b11-000000000099",
+                    "description": "Assinatura Streaming",
+                    "descriptionNormalized": "assinatura streaming",
+                    "amount": 2990,
+                    "type": "expense",
+                    "method": "credit",
+                    "date": "2026-08-10",
+                    "categoryId": "d1a2c3d4-0002-4a11-8b11-000000000010",
+                    "accountId": null,
+                    "toAccountId": null,
+                    "cardId": "d1a2c3d4-0003-4a11-8b11-000000000020",
+                    "invoiceId": "d1a2c3d4-0005-4a11-8b11-000000000050",
+                    "installmentNumber": null,
+                    "installmentTotal": null,
+                    "installmentGroupId": null,
+                    "recurringId": "d1a2c3d4-0001-4a11-8b11-000000000001",
+                    "source": "app",
+                    "attachmentKey": null,
+                    "deletedAt": null,
+                    "createdAt": "2026-08-10T09:00:00.000Z",
+                    "updatedAt": "2026-08-10T09:00:00.000Z"
+                  }
+                ]
+              }
+            }
+          },
+          "4XX": {
+            "description": "`recurring_not_found` (404), `not_an_occurrence` (400 — data não corresponde a uma ocorrência prevista), `occurrence_already_confirmed` (409), `category_not_found`/`account_not_found`/`card_not_found` (404), `invoice_paid` (409), `validation_error` (400).",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ErrorResponse": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message"],
+            "properties": {
+              "code": { "type": "string", "example": "recurring_not_found" },
+              "message": { "type": "string", "example": "Recorrência não encontrada." },
+              "issues": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["path", "message"],
+                  "properties": {
+                    "path": { "type": "string" },
+                    "message": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "RecurringTransaction": {
+        "type": "object",
+        "required": [
+          "id", "workspaceId", "description", "amount", "type", "method",
+          "categoryId", "accountId", "cardId", "frequency", "dayOfReference",
+          "monthOfReference", "active", "createdAt", "updatedAt"
+        ],
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "workspaceId": { "type": "string", "format": "uuid" },
+          "description": { "type": "string" },
+          "amount": { "type": "integer", "description": "Centavos.", "example": 2990 },
+          "type": { "type": "string", "enum": ["income", "expense"] },
+          "method": { "type": "string", "enum": ["pix", "debit", "cash", "credit"], "description": "Transferência recorrente não é suportada." },
+          "categoryId": { "type": "string", "format": "uuid" },
+          "accountId": { "type": "string", "format": "uuid", "nullable": true },
+          "cardId": { "type": "string", "format": "uuid", "nullable": true },
+          "frequency": { "type": "string", "enum": ["weekly", "monthly", "yearly"] },
+          "dayOfReference": { "type": "integer", "minimum": 0, "maximum": 31, "description": "Dia do mês (monthly/yearly) ou dia da semana 0-6 (weekly, 0=domingo)." },
+          "monthOfReference": { "type": "integer", "minimum": 1, "maximum": 12, "nullable": true, "description": "Apenas frequency=yearly." },
+          "active": { "type": "boolean" },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "RecurringPendingOccurrence": {
+        "type": "object",
+        "required": ["recurringId", "date", "description", "amount", "type", "method", "categoryId", "accountId", "cardId"],
+        "properties": {
+          "recurringId": { "type": "string", "format": "uuid" },
+          "date": { "type": "string", "format": "date", "description": "Data prevista desta ocorrência (YYYY-MM-DD)." },
+          "description": { "type": "string" },
+          "amount": { "type": "integer", "description": "Centavos." },
+          "type": { "type": "string", "enum": ["income", "expense"] },
+          "method": { "type": "string", "enum": ["pix", "debit", "cash", "credit"] },
+          "categoryId": { "type": "string", "format": "uuid" },
+          "accountId": { "type": "string", "format": "uuid", "nullable": true },
+          "cardId": { "type": "string", "format": "uuid", "nullable": true }
+        }
+      },
+      "RecurringConfirmedTransaction": {
+        "type": "object",
+        "description": "Transação real materializada a partir da confirmação da ocorrência (mesma forma da entidade Transaction do módulo de transações).",
+        "required": [
+          "id", "workspaceId", "createdBy", "description", "descriptionNormalized",
+          "amount", "type", "method", "date", "categoryId", "accountId", "toAccountId",
+          "cardId", "invoiceId", "installmentNumber", "installmentTotal",
+          "installmentGroupId", "recurringId", "source", "attachmentKey",
+          "deletedAt", "createdAt", "updatedAt"
+        ],
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "workspaceId": { "type": "string", "format": "uuid" },
+          "createdBy": { "type": "string", "format": "uuid", "nullable": true },
+          "description": { "type": "string" },
+          "descriptionNormalized": { "type": "string" },
+          "amount": { "type": "integer", "description": "Centavos." },
+          "type": { "type": "string", "enum": ["income", "expense"] },
+          "method": { "type": "string", "enum": ["pix", "debit", "cash", "credit", "transfer"] },
+          "date": { "type": "string", "format": "date" },
+          "categoryId": { "type": "string", "format": "uuid" },
+          "accountId": { "type": "string", "format": "uuid", "nullable": true },
+          "toAccountId": { "type": "string", "format": "uuid", "nullable": true },
+          "cardId": { "type": "string", "format": "uuid", "nullable": true },
+          "invoiceId": { "type": "string", "format": "uuid", "nullable": true },
+          "installmentNumber": { "type": "integer", "nullable": true },
+          "installmentTotal": { "type": "integer", "nullable": true },
+          "installmentGroupId": { "type": "string", "format": "uuid", "nullable": true },
+          "recurringId": { "type": "string", "format": "uuid", "nullable": true },
+          "source": { "type": "string", "enum": ["app", "chatbot"] },
+          "attachmentKey": { "type": "string", "nullable": true },
+          "deletedAt": { "type": "string", "format": "date-time", "nullable": true },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "RecurringCreateRecurringBody": {
+        "type": "object",
+        "required": ["description", "amount", "type", "method", "categoryId", "frequency", "dayOfReference"],
+        "properties": {
+          "description": { "type": "string", "minLength": 1, "maxLength": 200, "example": "Assinatura Streaming" },
+          "amount": { "type": "integer", "minimum": 1, "description": "Centavos.", "example": 2990 },
+          "type": { "type": "string", "enum": ["income", "expense"] },
+          "method": { "type": "string", "enum": ["pix", "debit", "cash", "credit"] },
+          "categoryId": { "type": "string", "format": "uuid" },
+          "accountId": { "type": "string", "format": "uuid", "description": "Obrigatório quando method != credit." },
+          "cardId": { "type": "string", "format": "uuid", "description": "Obrigatório quando method = credit." },
+          "frequency": { "type": "string", "enum": ["weekly", "monthly", "yearly"] },
+          "dayOfReference": { "type": "integer", "minimum": 0, "maximum": 31, "example": 10 },
+          "monthOfReference": { "type": "integer", "minimum": 1, "maximum": 12, "description": "Obrigatório apenas quando frequency=yearly." },
+          "active": { "type": "boolean", "default": true }
+        }
+      },
+      "RecurringUpdateRecurringBody": {
+        "type": "object",
+        "description": "Todos os campos são opcionais.",
+        "properties": {
+          "description": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "amount": { "type": "integer", "minimum": 1, "description": "Centavos." },
+          "type": { "type": "string", "enum": ["income", "expense"] },
+          "method": { "type": "string", "enum": ["pix", "debit", "cash", "credit"] },
+          "categoryId": { "type": "string", "format": "uuid" },
+          "accountId": { "type": "string", "format": "uuid" },
+          "cardId": { "type": "string", "format": "uuid" },
+          "frequency": { "type": "string", "enum": ["weekly", "monthly", "yearly"] },
+          "dayOfReference": { "type": "integer", "minimum": 0, "maximum": 31 },
+          "monthOfReference": { "type": "integer", "minimum": 1, "maximum": 12 },
+          "active": { "type": "boolean" }
+        }
+      },
+      "RecurringConfirmOccurrenceBody": {
+        "type": "object",
+        "required": ["date"],
+        "properties": {
+          "date": { "type": "string", "format": "date", "example": "2026-08-10" }
+        }
+      }
+    }
+  }
+}

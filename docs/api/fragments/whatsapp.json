@@ -1,0 +1,233 @@
+{
+  "paths": {
+    "/whatsapp/link/start": {
+      "post": {
+        "tags": ["WhatsApp"],
+        "summary": "Iniciar vínculo do WhatsApp",
+        "description": "Gera um código de 6 dígitos exibido no app, que o usuário envia por WhatsApp para vincular o número (o vínculo 'nasce no app'). O webhook da Meta confirma o vínculo ao receber esse código. Gerar um novo código invalida automaticamente códigos anteriores não usados. Limitado a 3 tentativas a cada 15 minutos por usuário.",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Código gerado.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/WhatsappStartLinkResponse" }
+              }
+            }
+          },
+          "4XX": {
+            "description": "401 `unauthorized`, 429 `rate_limited` (limite de geração de código, ou o limite geral por usuário).",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/whatsapp/link": {
+      "delete": {
+        "tags": ["WhatsApp"],
+        "summary": "Revogar vínculo do WhatsApp",
+        "description": "Remove o vínculo do número de WhatsApp da conta autenticada (equivalente a limpar o telefone do usuário). Usado na tela de configurações do app.",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "204": { "description": "Vínculo revogado (sem corpo)." },
+          "4XX": {
+            "description": "401 `unauthorized`, 429 `rate_limited`.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/whatsapp/webhook": {
+      "get": {
+        "tags": ["WhatsApp"],
+        "summary": "Verificação do webhook (Meta)",
+        "description": "Endpoint de verificação inicial exigido pela Meta ao configurar o webhook no painel do App (challenge-response). Rota pública — a Meta chama com `hub.mode`, `hub.verify_token` e `hub.challenge`; a API confere o `verify_token` contra um segredo próprio (fora de um Bearer token) e ecoa `hub.challenge` de volta se válido.",
+        "security": [],
+        "parameters": [
+          {
+            "name": "hub.mode",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "example": "subscribe" }
+          },
+          {
+            "name": "hub.verify_token",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "hub.challenge",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "example": "1158201444" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Token válido — retorna o `hub.challenge` recebido, em texto puro.",
+            "content": {
+              "text/plain": {
+                "schema": { "type": "string", "example": "1158201444" }
+              }
+            }
+          },
+          "403": {
+            "description": "Token de verificação ausente ou inválido.",
+            "content": {
+              "text/plain": {
+                "schema": { "type": "string", "example": "Forbidden" }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["WhatsApp"],
+        "summary": "Webhook de mensagens (Meta Cloud API)",
+        "description": "Recebe eventos de mensagens inbound (texto e imagem) da Meta Cloud API para conversas privadas no WhatsApp (grupos ficam de fora por ora — exige Official Business Account). Rota pública — sem Bearer token. A autenticidade é validada inteiramente pela verificação de assinatura própria da Meta (header `x-hub-signature-256`, HMAC com o app secret, checada dentro do handler); requisições com assinatura ausente ou inválida recebem 401 antes de qualquer processamento. Responde rápido (200) e sempre enfileira o processamento real (`whatsapp.inbound-message` / `whatsapp.inbound-image`) — nunca processa de forma síncrona, conforme exigido pela Meta. Deduplica mensagens repetidas pelo `wamid` (id da mensagem) por 7 dias, contra replay de payloads capturados. O corpo é o payload bruto definido pela Meta, fora do controle desta API.",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "description": "Payload bruto de notificação da Meta Cloud API (`entry[].changes[].value.messages[]`). O formato exato é definido pela Meta, não por esta API.",
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/WhatsappMetaWebhookBody" },
+              "example": {
+                "entry": [
+                  {
+                    "changes": [
+                      {
+                        "field": "messages",
+                        "value": {
+                          "messages": [
+                            {
+                              "id": "wamid.HBgLNTUxMTk5OTk4ODg4FQIAERgSQzc3example",
+                              "from": "5511999998888",
+                              "type": "text",
+                              "text": { "body": "gastei 45 no mercado" }
+                            }
+                          ]
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Payload assinado corretamente e aceito (enfileirado para processamento assíncrono; mensagens já processadas — mesmo `wamid` dentro da janela de dedup — são silenciosamente ignoradas)."
+          },
+          "401": {
+            "description": "Assinatura da Meta (`x-hub-signature-256`) ausente ou inválida — evento rejeitado antes de qualquer processamento."
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ErrorResponse": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message"],
+            "properties": {
+              "code": { "type": "string", "example": "rate_limited" },
+              "message": {
+                "type": "string",
+                "example": "Muitas tentativas. Aguarde um instante antes de gerar um novo código."
+              },
+              "issues": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "path": { "type": "string" },
+                    "message": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "WhatsappStartLinkResponse": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "Código de 6 dígitos que o usuário envia por WhatsApp para confirmar o vínculo.",
+            "example": "482913"
+          },
+          "expiresAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "WhatsappMetaWebhookBody": {
+        "type": "object",
+        "description": "Representação genérica e parcial do payload de notificação da Meta Cloud API. O formato completo e oficial é definido pela Meta, fora do controle desta API.",
+        "properties": {
+          "entry": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "changes": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "field": { "type": "string", "example": "messages" },
+                      "value": {
+                        "type": "object",
+                        "properties": {
+                          "messages": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "id": { "type": "string", "description": "wamid — id único da mensagem, usado para deduplicação." },
+                                "from": { "type": "string", "example": "5511999998888" },
+                                "type": { "type": "string", "example": "text" },
+                                "text": {
+                                  "type": "object",
+                                  "properties": {
+                                    "body": { "type": "string" }
+                                  }
+                                },
+                                "image": {
+                                  "type": "object",
+                                  "properties": {
+                                    "id": { "type": "string", "description": "media_id — o download acontece de forma assíncrona, nunca no próprio webhook." },
+                                    "mime_type": { "type": "string", "example": "image/jpeg" }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,488 @@
+{
+  "paths": {
+    "/workspaces/{workspaceId}/transactions": {
+      "get": {
+        "tags": ["Transações"],
+        "summary": "Listar transações",
+        "description": "Lista as transações do workspace com filtros opcionais. Requer papel mínimo **viewer** no workspace.",
+        "operationId": "listTransactions",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "workspaceId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } },
+          { "name": "from", "in": "query", "required": false, "schema": { "type": "string", "format": "date" }, "description": "Competência inicial (YYYY-MM-DD), inclusiva." },
+          { "name": "to", "in": "query", "required": false, "schema": { "type": "string", "format": "date" }, "description": "Competência final (YYYY-MM-DD), inclusiva." },
+          { "name": "categoryId", "in": "query", "required": false, "schema": { "type": "string", "format": "uuid" } },
+          { "name": "accountId", "in": "query", "required": false, "schema": { "type": "string", "format": "uuid" } },
+          { "name": "cardId", "in": "query", "required": false, "schema": { "type": "string", "format": "uuid" } },
+          { "name": "createdBy", "in": "query", "required": false, "schema": { "type": "string", "format": "uuid" }, "description": "Filtra pelo usuário que criou a transação." },
+          { "name": "q", "in": "query", "required": false, "schema": { "type": "string", "maxLength": 120 }, "description": "Busca textual na descrição (normalizada)." },
+          { "name": "limit", "in": "query", "required": false, "schema": { "type": "integer", "minimum": 1, "maximum": 200 } },
+          { "name": "offset", "in": "query", "required": false, "schema": { "type": "integer", "minimum": 0 } },
+          { "name": "deletedOnly", "in": "query", "required": false, "schema": { "type": "boolean" }, "description": "Quando true, retorna apenas transações excluídas (soft delete)." }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de transações do workspace, já com o indicador `hasActiveSplit`.",
+            "content": {
+              "application/json": {
+                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/TransactionListItem" } },
+                "example": [
+                  {
+                    "id": "b1a2c3d4-0001-4a11-8b11-000000000001",
+                    "workspaceId": "b1a2c3d4-0000-4a11-8b11-000000000000",
+                    "createdBy": "b1a2c3d4-0000-4a11-8b11-000000000099",
+                    "description": "Supermercado Extra",
+                    "descriptionNormalized": "supermercado extra",
+                    "amount": 15000,
+                    "type": "expense",
+                    "method": "pix",
+                    "date": "2026-08-05",
+                    "categoryId": "b1a2c3d4-0002-4a11-8b11-000000000010",
+                    "accountId": "b1a2c3d4-0003-4a11-8b11-000000000020",
+                    "toAccountId": null,
+                    "cardId": null,
+                    "invoiceId": null,
+                    "installmentNumber": null,
+                    "installmentTotal": null,
+                    "installmentGroupId": null,
+                    "recurringId": null,
+                    "source": "app",
+                    "attachmentKey": null,
+                    "deletedAt": null,
+                    "createdAt": "2026-08-05T12:00:00.000Z",
+                    "updatedAt": "2026-08-05T12:00:00.000Z",
+                    "hasActiveSplit": false
+                  }
+                ]
+              }
+            }
+          },
+          "4XX": {
+            "description": "`not_found` (404, workspaceId inválido/sem acesso) ou `rate_limited` (429).",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Transações"],
+        "summary": "Criar transação",
+        "description": "Cria uma transação avulsa, de transferência ou uma compra parcelada no cartão (uma linha por parcela). Requer papel mínimo **member** no workspace.",
+        "operationId": "createTransaction",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "workspaceId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/TransactionCreateTransactionBody" },
+              "example": {
+                "description": "Supermercado Extra",
+                "amount": 15000,
+                "type": "expense",
+                "method": "pix",
+                "date": "2026-08-05",
+                "categoryId": "b1a2c3d4-0002-4a11-8b11-000000000010",
+                "accountId": "b1a2c3d4-0003-4a11-8b11-000000000020"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Transação(ões) criada(s). Compra parcelada retorna uma linha por parcela.",
+            "content": {
+              "application/json": {
+                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Transaction" } }
+              }
+            }
+          },
+          "4XX": {
+            "description": "`category_not_found`/`account_not_found`/`card_not_found` (404), `invalid_method_fields` (400 — combinação de conta/cartão/destino incompatível com o método), `invoice_paid` (409 — fatura da competência já está paga), `validation_error` (400).",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+          }
+        }
+      }
+    },
+    "/workspaces/{workspaceId}/transactions/{transactionId}": {
+      "patch": {
+        "tags": ["Transações"],
+        "summary": "Atualizar transação",
+        "description": "Atualiza campos de uma transação existente. Parcelas de uma compra parcelada têm valor, data e cartão travados (só descrição/categoria editáveis). Requer papel mínimo **member** no workspace.",
+        "operationId": "updateTransaction",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "workspaceId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } },
+          { "name": "transactionId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/TransactionUpdateTransactionBody" },
+              "example": { "description": "Supermercado Pão de Açúcar", "amount": 15500 }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Transação atualizada.",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Transaction" } } }
+          },
+          "4XX": {
+            "description": "`transaction_not_found` (404), `invoice_paid` (409), `installment_field_locked` (409 — parcela não permite mudar valor/data/cartão), `category_not_found`/`account_not_found`/`card_not_found` (404), `invalid_method_fields` (400), `validation_error` (400).",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Transações"],
+        "summary": "Excluir transação (soft delete)",
+        "description": "Exclusão lógica. Se a transação for parcela de uma compra parcelada, exclui todas as parcelas ainda não pagas do grupo. Requer papel mínimo **member** no workspace.",
+        "operationId": "deleteTransaction",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "workspaceId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } },
+          { "name": "transactionId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "IDs das transações excluídas (pode ser mais de uma, em compra parcelada).",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/TransactionDeleteResponse" },
+                "example": { "deletedIds": ["b1a2c3d4-0001-4a11-8b11-000000000001"] }
+              }
+            }
+          },
+          "4XX": {
+            "description": "`transaction_not_found` (404), `invoice_paid` (409 — fatura já paga é imutável).",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+          }
+        }
+      }
+    },
+    "/workspaces/{workspaceId}/transactions/{transactionId}/installment-total": {
+      "patch": {
+        "tags": ["Transações"],
+        "summary": "Editar valor total de compra parcelada",
+        "description": "Redefine o valor total de uma compra parcelada; o restante é redistribuído entre as parcelas ainda não pagas (parcelas pagas ficam intactas). Requer papel mínimo **member** no workspace.",
+        "operationId": "updateInstallmentTotal",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "workspaceId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } },
+          { "name": "transactionId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" }, "description": "Qualquer parcela ainda não paga do grupo." }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/TransactionUpdateInstallmentTotalBody" },
+              "example": { "newTotalAmount": 90000 }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Parcelas ainda não pagas, já com os novos valores redistribuídos.",
+            "content": {
+              "application/json": {
+                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Transaction" } }
+              }
+            }
+          },
+          "4XX": {
+            "description": "`transaction_not_found` (404), `not_installment_purchase` (400), `invoice_paid` (409), `total_below_paid_amount` (409 — novo total é menor que o já pago), `validation_error` (400).",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+          }
+        }
+      }
+    },
+    "/workspaces/{workspaceId}/transactions/{transactionId}/restore": {
+      "post": {
+        "tags": ["Transações"],
+        "summary": "Restaurar transação excluída",
+        "description": "Reverte o soft delete. Se a transação for parcela de uma compra parcelada, restaura todas as parcelas excluídas do grupo. Requer papel mínimo **member** no workspace.",
+        "operationId": "restoreTransaction",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "workspaceId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } },
+          { "name": "transactionId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "IDs das transações restauradas.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/TransactionRestoreResponse" },
+                "example": { "restoredIds": ["b1a2c3d4-0001-4a11-8b11-000000000001"] }
+              }
+            }
+          },
+          "4XX": {
+            "description": "`transaction_not_found` (404 — inclui o caso de a transação já estar ativa, não excluída).",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+          }
+        }
+      }
+    },
+    "/workspaces/{workspaceId}/export.csv": {
+      "get": {
+        "tags": ["Transações"],
+        "summary": "Exportar transações em CSV",
+        "description": "Exporta todas as transações do workspace em CSV (portabilidade de dados, LGPD). Dado sensível do workspace inteiro — requer papel mínimo **admin**.",
+        "operationId": "exportTransactionsCsv",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "workspaceId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Arquivo CSV com as transações do workspace (`Content-Disposition: attachment; filename=\"transacoes.csv\"`).",
+            "content": {
+              "text/csv": {
+                "schema": { "type": "string", "format": "binary" },
+                "example": "id,descricao,valor,data\nb1a2c3d4-0001-4a11-8b11-000000000001,Supermercado Extra,150.00,2026-08-05\n"
+              }
+            }
+          },
+          "4XX": {
+            "description": "`not_found` (404) ou `forbidden` (403 — papel abaixo de admin).",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+          }
+        }
+      }
+    },
+    "/workspaces/{workspaceId}/transactions/{transactionId}/attachment": {
+      "post": {
+        "tags": ["Transações"],
+        "summary": "Enviar comprovante da transação",
+        "description": "Upload do comprovante (imagem) de uma transação; substitui o anexo anterior, se existir. Aceita apenas jpg/png/webp, até 5MB. Requer papel mínimo **member** no workspace.",
+        "operationId": "uploadAttachment",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "workspaceId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } },
+          { "name": "transactionId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "Imagem do comprovante (jpg, png ou webp; máximo 5MB)."
+                  }
+                },
+                "required": ["file"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Anexo salvo; retorna a chave interna do arquivo no storage (não a URL final).",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/TransactionAttachmentKeyResponse" },
+                "example": { "attachmentKey": "b1a2c3d4-0000-4a11-8b11-000000000000/b1a2c3d4-0001-4a11-8b11-000000000001/9a4e3c9a-2b7a-4b0a-9b2a-1a2b3c4d5e6f.jpg" }
+              }
+            }
+          },
+          "4XX": {
+            "description": "`transaction_not_found` (404), `invalid_file_type` (400 — só jpg/png/webp), `file_too_large` (400 — limite de 5MB), `validation_error` (400 — arquivo não enviado).",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Transações"],
+        "summary": "Remover comprovante da transação",
+        "description": "Remove o anexo (comprovante) da transação, se existir. Requer papel mínimo **member** no workspace.",
+        "operationId": "deleteAttachment",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "workspaceId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } },
+          { "name": "transactionId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "204": { "description": "Anexo removido com sucesso. Sem corpo de resposta." },
+          "4XX": {
+            "description": "`transaction_not_found` (404) ou `attachment_not_found` (404 — transação sem comprovante).",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+          }
+        }
+      },
+      "get": {
+        "tags": ["Transações"],
+        "summary": "Obter URL do comprovante da transação",
+        "description": "Retorna uma URL assinada e temporária (5 minutos) para leitura do comprovante anexado. Requer papel mínimo **viewer** no workspace.",
+        "operationId": "getAttachmentUrl",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "workspaceId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } },
+          { "name": "transactionId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "URL assinada, válida por 300 segundos.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/TransactionAttachmentUrlResponse" },
+                "example": { "url": "https://storage.example.com/finance/b1a2c3d4.../comprovante.jpg?signature=abc123&expires=1786012345" }
+              }
+            }
+          },
+          "4XX": {
+            "description": "`transaction_not_found` (404) ou `attachment_not_found` (404 — transação sem comprovante).",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ErrorResponse": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message"],
+            "properties": {
+              "code": { "type": "string", "example": "validation_error" },
+              "message": { "type": "string", "example": "Payload inválido." },
+              "issues": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["path", "message"],
+                  "properties": {
+                    "path": { "type": "string" },
+                    "message": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "Transaction": {
+        "type": "object",
+        "description": "Entidade de transação (valores monetários sempre em centavos).",
+        "required": [
+          "id", "workspaceId", "createdBy", "description", "descriptionNormalized",
+          "amount", "type", "method", "date", "categoryId", "accountId", "toAccountId",
+          "cardId", "invoiceId", "installmentNumber", "installmentTotal",
+          "installmentGroupId", "recurringId", "source", "attachmentKey",
+          "deletedAt", "createdAt", "updatedAt"
+        ],
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "workspaceId": { "type": "string", "format": "uuid" },
+          "createdBy": { "type": "string", "format": "uuid", "nullable": true },
+          "description": { "type": "string" },
+          "descriptionNormalized": { "type": "string", "description": "Descrição normalizada para busca (minúsculas, sem acento)." },
+          "amount": { "type": "integer", "description": "Valor em centavos.", "example": 15000 },
+          "type": { "type": "string", "enum": ["income", "expense"] },
+          "method": { "type": "string", "enum": ["pix", "debit", "cash", "credit", "transfer"] },
+          "date": { "type": "string", "format": "date", "description": "Competência local (YYYY-MM-DD)." },
+          "categoryId": { "type": "string", "format": "uuid" },
+          "accountId": { "type": "string", "format": "uuid", "nullable": true },
+          "toAccountId": { "type": "string", "format": "uuid", "nullable": true, "description": "Conta destino, apenas method=transfer." },
+          "cardId": { "type": "string", "format": "uuid", "nullable": true },
+          "invoiceId": { "type": "string", "format": "uuid", "nullable": true },
+          "installmentNumber": { "type": "integer", "nullable": true, "description": "Número da parcela (1-based), apenas compra parcelada." },
+          "installmentTotal": { "type": "integer", "nullable": true, "description": "Total de parcelas da compra." },
+          "installmentGroupId": { "type": "string", "format": "uuid", "nullable": true },
+          "recurringId": { "type": "string", "format": "uuid", "nullable": true, "description": "Preenchido quando a transação materializa uma recorrência confirmada." },
+          "source": { "type": "string", "enum": ["app", "chatbot"] },
+          "attachmentKey": { "type": "string", "nullable": true, "description": "Chave interna do comprovante no storage (nunca a URL final)." },
+          "deletedAt": { "type": "string", "format": "date-time", "nullable": true },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "TransactionListItem": {
+        "allOf": [
+          { "$ref": "#/components/schemas/Transaction" },
+          {
+            "type": "object",
+            "required": ["hasActiveSplit"],
+            "properties": {
+              "hasActiveSplit": { "type": "boolean", "description": "Indica se a despesa está atualmente dividida com outro usuário (computado, não é coluna)." }
+            }
+          }
+        ]
+      },
+      "TransactionCreateTransactionBody": {
+        "type": "object",
+        "required": ["description", "amount", "type", "method", "date", "categoryId"],
+        "properties": {
+          "description": { "type": "string", "minLength": 1, "maxLength": 200, "example": "Supermercado Extra" },
+          "amount": { "type": "integer", "minimum": 1, "description": "Centavos.", "example": 15000 },
+          "type": { "type": "string", "enum": ["income", "expense"] },
+          "method": { "type": "string", "enum": ["pix", "debit", "cash", "credit", "transfer"] },
+          "date": { "type": "string", "format": "date", "example": "2026-08-05" },
+          "categoryId": { "type": "string", "format": "uuid" },
+          "accountId": { "type": "string", "format": "uuid", "description": "Obrigatório para method=pix/debit/cash e como origem em method=transfer." },
+          "toAccountId": { "type": "string", "format": "uuid", "description": "Obrigatório e diferente de accountId quando method=transfer." },
+          "cardId": { "type": "string", "format": "uuid", "description": "Obrigatório quando method=credit." },
+          "installments": { "type": "integer", "minimum": 1, "maximum": 48, "description": "Apenas method=credit; 1 = à vista.", "default": 1 }
+        }
+      },
+      "TransactionUpdateTransactionBody": {
+        "type": "object",
+        "description": "Todos os campos são opcionais. Parcelas de compra parcelada não podem alterar amount/date/cardId (bloqueado com `installment_field_locked`).",
+        "properties": {
+          "description": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "amount": { "type": "integer", "minimum": 1, "description": "Centavos." },
+          "categoryId": { "type": "string", "format": "uuid" },
+          "date": { "type": "string", "format": "date" },
+          "accountId": { "type": "string", "format": "uuid", "description": "Só válido para method pix/debit/cash." },
+          "cardId": { "type": "string", "format": "uuid", "description": "Só válido para method=credit, em transação avulsa (não parcela)." }
+        }
+      },
+      "TransactionUpdateInstallmentTotalBody": {
+        "type": "object",
+        "required": ["newTotalAmount"],
+        "properties": {
+          "newTotalAmount": { "type": "integer", "minimum": 1, "description": "Novo valor total da compra parcelada, em centavos.", "example": 90000 }
+        }
+      },
+      "TransactionDeleteResponse": {
+        "type": "object",
+        "required": ["deletedIds"],
+        "properties": {
+          "deletedIds": { "type": "array", "items": { "type": "string", "format": "uuid" } }
+        }
+      },
+      "TransactionRestoreResponse": {
+        "type": "object",
+        "required": ["restoredIds"],
+        "properties": {
+          "restoredIds": { "type": "array", "items": { "type": "string", "format": "uuid" } }
+        }
+      },
+      "TransactionAttachmentKeyResponse": {
+        "type": "object",
+        "required": ["attachmentKey"],
+        "properties": {
+          "attachmentKey": { "type": "string" }
+        }
+      },
+      "TransactionAttachmentUrlResponse": {
+        "type": "object",
+        "required": ["url"],
+        "properties": {
+          "url": { "type": "string", "format": "uri" }
+        }
+      }
+    }
+  }
+}

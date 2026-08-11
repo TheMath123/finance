@@ -1,0 +1,318 @@
+{
+  "paths": {
+    "/workspaces/{workspaceId}/categories": {
+      "get": {
+        "tags": ["Categorias"],
+        "summary": "Listar categorias do workspace",
+        "description": "Lista todas as categorias do workspace, incluindo as padrão (`isDefault`) e a categoria de fallback \"Outros\" (`isFallback`). Requer papel mínimo **viewer** no workspace.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de categorias do workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Category" }
+                },
+                "example": [
+                  {
+                    "id": "c1a1e45f-ceea-4b7f-90cf-3f2e1a6f1a11",
+                    "workspaceId": "1b1f3f7a-2e0e-4f2a-9c3e-6d4b8a1f2e22",
+                    "name": "Mercado",
+                    "icon": "shopping-cart",
+                    "color": "#22C55E",
+                    "isFallback": false,
+                    "isDefault": true,
+                    "createdAt": "2026-01-01T00:00:00.000Z",
+                    "updatedAt": "2026-01-01T00:00:00.000Z"
+                  }
+                ]
+              }
+            }
+          },
+          "4XX": {
+            "description": "`unauthorized` (401), `not_found` (404, workspace), `forbidden` (403), `rate_limited` (429).",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Categorias"],
+        "summary": "Criar categoria",
+        "description": "Cria uma nova categoria no workspace. Requer papel mínimo **admin** no workspace.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CategoryCreateCategoryBody"
+              },
+              "example": {
+                "name": "Assinaturas",
+                "icon": "device-mobile",
+                "color": "#6366F1"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Categoria criada.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Category" },
+                "example": {
+                  "id": "c1a1e45f-ceea-4b7f-90cf-3f2e1a6f1a11",
+                  "workspaceId": "1b1f3f7a-2e0e-4f2a-9c3e-6d4b8a1f2e22",
+                  "name": "Assinaturas",
+                  "icon": "device-mobile",
+                  "color": "#6366F1",
+                  "isFallback": false,
+                  "isDefault": false,
+                  "createdAt": "2026-01-10T12:00:00.000Z",
+                  "updatedAt": "2026-01-10T12:00:00.000Z"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "`validation_error` (400, ex.: `color` fora do formato hexadecimal `#RRGGBB`), `unauthorized` (401), `not_found` (404, workspace), `forbidden` (403), `rate_limited` (429).",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/workspaces/{workspaceId}/categories/{categoryId}": {
+      "patch": {
+        "tags": ["Categorias"],
+        "summary": "Atualizar categoria",
+        "description": "Atualiza campos da categoria (parcial). Falha com `default_category_protected` para categorias padrão/fallback (`isDefault`/`isFallback`), que não podem ser editadas. Requer papel mínimo **admin** no workspace.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          },
+          {
+            "name": "categoryId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CategoryUpdateCategoryBody"
+              },
+              "example": { "color": "#F97316" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Categoria atualizada.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Category" },
+                "example": {
+                  "id": "c1a1e45f-ceea-4b7f-90cf-3f2e1a6f1a11",
+                  "workspaceId": "1b1f3f7a-2e0e-4f2a-9c3e-6d4b8a1f2e22",
+                  "name": "Assinaturas",
+                  "icon": "device-mobile",
+                  "color": "#F97316",
+                  "isFallback": false,
+                  "isDefault": false,
+                  "createdAt": "2026-01-10T12:00:00.000Z",
+                  "updatedAt": "2026-01-12T08:00:00.000Z"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "`validation_error` (400), `category_not_found` (404), `default_category_protected` (409), `unauthorized` (401), `not_found` (404, workspace), `forbidden` (403), `rate_limited` (429).",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Categorias"],
+        "summary": "Excluir categoria",
+        "description": "Exclui a categoria. Falha com `default_category_protected` para categorias padrão/fallback, que não podem ser excluídas. Transações da categoria excluída são realocadas para a categoria \"Outros\" (fallback). Requer papel mínimo **admin** no workspace.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          },
+          {
+            "name": "categoryId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Categoria excluída. Responde 200 (não 204): as transações da categoria são reatribuídas à categoria \"Outros\" (fallback) e o corpo devolve o id dela.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CategoryDeleteCategoryResponse"
+                },
+                "example": {
+                  "reassignedTo": "0a1b2c3d-4e5f-4071-9a1b-2c3d4e5f6071"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "`category_not_found` (404), `default_category_protected` (409), `unauthorized` (401), `not_found` (404, workspace), `forbidden` (403), `rate_limited` (429).",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "CategoryDeleteCategoryResponse": {
+        "type": "object",
+        "description": "Id da categoria \"Outros\" (fallback) para a qual as transações da categoria excluída foram reatribuídas.",
+        "properties": {
+          "reassignedTo": { "type": "string", "format": "uuid" }
+        },
+        "required": ["reassignedTo"]
+      },
+      "Category": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "workspaceId": { "type": "string", "format": "uuid" },
+          "name": { "type": "string" },
+          "icon": {
+            "type": "string",
+            "description": "Nome do ícone Phosphor usado no app/dashboard."
+          },
+          "color": {
+            "type": "string",
+            "pattern": "^#[0-9A-Fa-f]{6}$",
+            "description": "Cor hexadecimal (#RRGGBB)."
+          },
+          "isFallback": {
+            "type": "boolean",
+            "description": "\"Outros\" — não-deletável, destino de transações de categorias excluídas."
+          },
+          "isDefault": {
+            "type": "boolean",
+            "description": "Categoria do seed (criada junto com o workspace) — não editável nem excluível pelo usuário."
+          },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        },
+        "required": [
+          "id",
+          "workspaceId",
+          "name",
+          "icon",
+          "color",
+          "isFallback",
+          "isDefault",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "CategoryCreateCategoryBody": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string", "minLength": 1, "maxLength": 60 },
+          "icon": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60,
+            "description": "Nome do ícone Phosphor (ex.: \"shopping-cart\")."
+          },
+          "color": {
+            "type": "string",
+            "pattern": "^#[0-9A-Fa-f]{6}$",
+            "description": "Cor hexadecimal (#RRGGBB)."
+          }
+        },
+        "required": ["name", "icon", "color"]
+      },
+      "CategoryUpdateCategoryBody": {
+        "type": "object",
+        "description": "Todos os campos são opcionais (atualização parcial). Falha com `default_category_protected` se a categoria for padrão/fallback.",
+        "properties": {
+          "name": { "type": "string", "minLength": 1, "maxLength": 60 },
+          "icon": { "type": "string", "minLength": 1, "maxLength": 60 },
+          "color": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": { "type": "string" },
+              "message": { "type": "string" },
+              "issues": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "path": { "type": "string" },
+                    "message": { "type": "string" }
+                  }
+                }
+              }
+            },
+            "required": ["code", "message"]
+          }
+        },
+        "required": ["error"]
+      }
+    }
+  }
+}

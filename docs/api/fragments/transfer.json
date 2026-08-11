@@ -1,0 +1,343 @@
+{
+  "paths": {
+    "/workspaces/{workspaceId}/transfers": {
+      "post": {
+        "tags": ["Transferências entre usuários"],
+        "summary": "Criar transferência para outro usuário",
+        "description": "Requer papel member ou superior no workspace. Debita a conta de origem informada; se o destinatário já confia no remetente (contato confiável), cai automaticamente na conta padrão dele (status `accepted`), senão fica pendente aguardando aceite.",
+        "operationId": "createTransfer",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/TransferCreateTransferBody" },
+              "example": {
+                "recipient": "amigo@exemplo.com",
+                "amount": 15000,
+                "description": "Rateio do jantar",
+                "accountId": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Transferência criada (pendente ou já aceita, se o destinatário confia no remetente).",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/TransferEntity" } }
+            }
+          },
+          "4XX": {
+            "description": "validation_error (400), invalid_amount (400), self_transfer (400), unauthorized (401), forbidden (403), not_found (404), account_not_found (404), recipient_not_found (404), rate_limited (429).",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+            }
+          }
+        }
+      }
+    },
+    "/transfers/{id}/accept": {
+      "post": {
+        "tags": ["Transferências entre usuários"],
+        "summary": "Aceitar transferência recebida",
+        "description": "Requer autenticação. Só o destinatário da transferência pode aceitar. Cria uma transação de entrada na conta escolhida; opcionalmente marca o remetente como contato confiável nessa conta.",
+        "operationId": "acceptTransfer",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/TransferAcceptTransferBody" },
+              "example": {
+                "accountId": "9c858901-8a57-4791-81fe-4c455b099bc9",
+                "markTrusted": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Transferência aceita.",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/TransferEntity" } }
+            }
+          },
+          "4XX": {
+            "description": "validation_error (400), unauthorized (401), not_found (404, inclui transferência de outro usuário), account_not_found (404), already_finalized (409), rate_limited (429).",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+            }
+          }
+        }
+      }
+    },
+    "/transfers/{id}/reject": {
+      "post": {
+        "tags": ["Transferências entre usuários"],
+        "summary": "Recusar transferência recebida",
+        "description": "Requer autenticação. Só o destinatário da transferência pode recusar.",
+        "operationId": "rejectTransfer",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Transferência recusada.",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/TransferEntity" } }
+            }
+          },
+          "4XX": {
+            "description": "unauthorized (401), not_found (404, inclui transferência de outro usuário), already_finalized (409), rate_limited (429).",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+            }
+          }
+        }
+      }
+    },
+    "/transfers/pending": {
+      "get": {
+        "tags": ["Transferências entre usuários"],
+        "summary": "Listar transferências pendentes recebidas",
+        "description": "Requer autenticação. Transferências recebidas pelo usuário logado aguardando aceite/recusa.",
+        "operationId": "listPendingTransfers",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Transferências pendentes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/TransferPendingView" }
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "unauthorized (401), rate_limited (429).",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+            }
+          }
+        }
+      }
+    },
+    "/transfers/accounts": {
+      "get": {
+        "tags": ["Transferências entre usuários"],
+        "summary": "Listar contas elegíveis para receber transferência",
+        "description": "Requer autenticação. Contas ativas do usuário logado em qualquer workspace do qual é membro — usado na tela de aceite para escolher onde a entrada cai.",
+        "operationId": "listTransferAccounts",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Contas disponíveis.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/TransferAccountOption" }
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "unauthorized (401), rate_limited (429).",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+            }
+          }
+        }
+      }
+    },
+    "/trusted-contacts": {
+      "get": {
+        "tags": ["Transferências entre usuários"],
+        "summary": "Listar contatos confiáveis",
+        "description": "Requer autenticação. Usuários cujas transferências futuras para o usuário logado caem automaticamente, sem aceite manual.",
+        "operationId": "listTrustedContacts",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Contatos confiáveis do usuário logado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/TransferTrustedContact" }
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "unauthorized (401), rate_limited (429).",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+            }
+          }
+        }
+      }
+    },
+    "/trusted-contacts/{id}": {
+      "delete": {
+        "tags": ["Transferências entre usuários"],
+        "summary": "Remover contato confiável",
+        "description": "Requer autenticação. Idempotente e escopado ao dono — remove só se o contato confiável pertencer ao usuário logado.",
+        "operationId": "removeTrustedContact",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Contato confiável removido (sem corpo)."
+          },
+          "4XX": {
+            "description": "unauthorized (401), rate_limited (429).",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": { "type": "string", "example": "not_found" },
+              "message": { "type": "string", "example": "Transferência não encontrada." },
+              "issues": {
+                "type": "array",
+                "nullable": true,
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "path": { "type": "string" },
+                    "message": { "type": "string" }
+                  }
+                }
+              }
+            },
+            "required": ["code", "message"]
+          }
+        },
+        "required": ["error"]
+      },
+      "TransferEntity": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "fromUserId": { "type": "string", "format": "uuid" },
+          "fromTransactionId": { "type": "string", "format": "uuid" },
+          "toUserId": { "type": "string", "format": "uuid" },
+          "toTransactionId": { "type": "string", "format": "uuid", "nullable": true },
+          "amount": { "type": "integer", "description": "Centavos.", "example": 15000 },
+          "description": { "type": "string" },
+          "status": { "type": "string", "enum": ["pending", "accepted", "rejected", "expired"] },
+          "expiresAt": { "type": "string", "format": "date-time" },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        },
+        "required": [
+          "id", "fromUserId", "fromTransactionId", "toUserId", "toTransactionId",
+          "amount", "description", "status", "expiresAt", "createdAt", "updatedAt"
+        ]
+      },
+      "TransferPendingView": {
+        "type": "object",
+        "description": "Transferência recebida ainda não decidida, já com o nome do remetente.",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "amount": { "type": "integer", "description": "Centavos.", "example": 15000 },
+          "description": { "type": "string" },
+          "expiresAt": { "type": "string", "format": "date-time" },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "fromUserName": { "type": "string", "example": "Ana Silva" }
+        },
+        "required": ["id", "amount", "description", "expiresAt", "createdAt", "fromUserName"]
+      },
+      "TransferAccountOption": {
+        "type": "object",
+        "properties": {
+          "accountId": { "type": "string", "format": "uuid" },
+          "accountName": { "type": "string", "example": "Conta principal" },
+          "workspaceId": { "type": "string", "format": "uuid" },
+          "workspaceName": { "type": "string", "example": "Família Silva" }
+        },
+        "required": ["accountId", "accountName", "workspaceId", "workspaceName"]
+      },
+      "TransferTrustedContact": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "userId": { "type": "string", "format": "uuid" },
+          "trustedUserId": { "type": "string", "format": "uuid" },
+          "defaultAccountId": { "type": "string", "format": "uuid" },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "trustedUserName": { "type": "string", "example": "Ana Silva" }
+        },
+        "required": ["id", "userId", "trustedUserId", "defaultAccountId", "createdAt", "trustedUserName"]
+      },
+      "TransferCreateTransferBody": {
+        "type": "object",
+        "properties": {
+          "recipient": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 320,
+            "description": "Telefone ou e-mail de um usuário existente na plataforma.",
+            "example": "amigo@exemplo.com"
+          },
+          "amount": { "type": "integer", "minimum": 1, "description": "Centavos.", "example": 15000 },
+          "description": { "type": "string", "minLength": 1, "maxLength": 200, "example": "Rateio do jantar" },
+          "accountId": { "type": "string", "format": "uuid", "description": "Conta de origem, no workspace do ator." }
+        },
+        "required": ["recipient", "amount", "description", "accountId"]
+      },
+      "TransferAcceptTransferBody": {
+        "type": "object",
+        "properties": {
+          "accountId": { "type": "string", "format": "uuid", "description": "Conta do destinatário onde a entrada vai cair." },
+          "markTrusted": { "type": "boolean", "description": "Marca o remetente como contato confiável nessa conta." }
+        },
+        "required": ["accountId"]
+      }
+    }
+  }
+}

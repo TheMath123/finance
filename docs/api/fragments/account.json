@@ -1,0 +1,431 @@
+{
+  "paths": {
+    "/workspaces/{workspaceId}/accounts": {
+      "get": {
+        "tags": ["Contas Bancárias"],
+        "summary": "Listar contas bancárias do workspace",
+        "description": "Lista todas as contas bancárias do workspace, com saldo derivado (initialBalance + soma das transações) e o código de banco do catálogo. Requer papel viewer ou superior no workspace.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" },
+            "example": "9c858901-8a57-4791-81fe-4c455b099bc9"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de contas bancárias.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/AccountWithBalance" }
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Erro de autenticação/autorização (400 `validation_error` se workspaceId malformado, 401 `unauthorized`, 404 `not_found` se o workspace não existe ou o usuário não é membro, 403 `forbidden` se o papel for insuficiente).",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Contas Bancárias"],
+        "summary": "Criar conta bancária",
+        "description": "Cria uma conta bancária no workspace. O banco é resolvido a partir do `bankCode` do catálogo (criado sob demanda no workspace se ainda não existir). Requer papel admin ou superior no workspace. 400 se `invalid_bank_code`.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" },
+            "example": "9c858901-8a57-4791-81fe-4c455b099bc9"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/AccountCreateAccountBody" },
+              "example": {
+                "name": "Conta Corrente",
+                "bankCode": "260",
+                "type": "checking",
+                "initialBalance": 15000
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Conta criada.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/BankAccount" }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Erro de validação ou negócio (400 `validation_error`/`invalid_bank_code`, 401 `unauthorized`, 404 `not_found`, 403 `forbidden`).",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/workspaces/{workspaceId}/accounts/{accountId}": {
+      "patch": {
+        "tags": ["Contas Bancárias"],
+        "summary": "Atualizar conta bancária",
+        "description": "Atualiza parcialmente os dados da conta bancária (todos os campos opcionais). Requer papel admin ou superior no workspace. 404 se `account_not_found`, 400 se `invalid_bank_code`.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" },
+            "example": "9c858901-8a57-4791-81fe-4c455b099bc9"
+          },
+          {
+            "name": "accountId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" },
+            "example": "d290f1ee-6c54-4b01-90e6-d701748f0851"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/AccountUpdateAccountBody" },
+              "example": {
+                "name": "Conta Corrente Principal",
+                "initialBalance": 20000
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Conta atualizada.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/BankAccount" }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Erro de validação ou negócio (400 `validation_error`/`invalid_bank_code`, 401 `unauthorized`, 404 `not_found`/`account_not_found`, 403 `forbidden`).",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Contas Bancárias"],
+        "summary": "Excluir conta bancária",
+        "description": "Exclui definitivamente a conta bancária. Só é permitido se a conta não tiver transações lançadas — nesse caso, arquive em vez de excluir. Requer papel admin ou superior no workspace. 404 se `account_not_found`, 409 se `account_has_transactions`.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" },
+            "example": "9c858901-8a57-4791-81fe-4c455b099bc9"
+          },
+          {
+            "name": "accountId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" },
+            "example": "d290f1ee-6c54-4b01-90e6-d701748f0851"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Conta excluída (sem corpo)."
+          },
+          "4XX": {
+            "description": "Erro de negócio (401 `unauthorized`, 404 `not_found`/`account_not_found`, 403 `forbidden`, 409 `account_has_transactions`).",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/workspaces/{workspaceId}/accounts/{accountId}/archive": {
+      "post": {
+        "tags": ["Contas Bancárias"],
+        "summary": "Arquivar conta bancária",
+        "description": "Marca a conta bancária como arquivada (`archivedAt` preenchido) — alternativa à exclusão para contas com transações. Requer papel admin ou superior no workspace. 404 se `account_not_found`.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" },
+            "example": "9c858901-8a57-4791-81fe-4c455b099bc9"
+          },
+          {
+            "name": "accountId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" },
+            "example": "d290f1ee-6c54-4b01-90e6-d701748f0851"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Conta arquivada.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/BankAccount" }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Erro de negócio (401 `unauthorized`, 404 `not_found`/`account_not_found`, 403 `forbidden`).",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/workspaces/{workspaceId}/accounts/{accountId}/unarchive": {
+      "post": {
+        "tags": ["Contas Bancárias"],
+        "summary": "Desarquivar conta bancária",
+        "description": "Remove o arquivamento da conta bancária (`archivedAt` volta a `null`). Requer papel admin ou superior no workspace. 404 se `account_not_found`.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" },
+            "example": "9c858901-8a57-4791-81fe-4c455b099bc9"
+          },
+          {
+            "name": "accountId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" },
+            "example": "d290f1ee-6c54-4b01-90e6-d701748f0851"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Conta desarquivada.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/BankAccount" }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Erro de negócio (401 `unauthorized`, 404 `not_found`/`account_not_found`, 403 `forbidden`).",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ErrorResponse": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message"],
+            "properties": {
+              "code": { "type": "string", "example": "account_not_found" },
+              "message": {
+                "type": "string",
+                "example": "Conta não encontrada."
+              },
+              "issues": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "path": { "type": "string" },
+                    "message": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "BankAccount": {
+        "type": "object",
+        "description": "Conta bancária (bankAccounts) — não confundir com perfil de usuário.",
+        "required": [
+          "id",
+          "workspaceId",
+          "bankId",
+          "name",
+          "type",
+          "initialBalance",
+          "archivedAt",
+          "createdAt",
+          "updatedAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "example": "d290f1ee-6c54-4b01-90e6-d701748f0851"
+          },
+          "workspaceId": {
+            "type": "string",
+            "format": "uuid",
+            "example": "9c858901-8a57-4791-81fe-4c455b099bc9"
+          },
+          "bankId": {
+            "type": "string",
+            "format": "uuid",
+            "example": "1b9d6bcd-bbfd-4b2d-9b5d-ab8dfbbd4bed"
+          },
+          "name": { "type": "string", "example": "Conta Corrente" },
+          "type": {
+            "type": "string",
+            "enum": ["checking", "savings", "payment"],
+            "example": "checking"
+          },
+          "initialBalance": {
+            "type": "integer",
+            "description": "Centavos. Saldo atual é sempre derivado (não é este campo).",
+            "example": 15000
+          },
+          "archivedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "example": null
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-06-01T12:00:00.000Z"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-06-01T12:00:00.000Z"
+          }
+        }
+      },
+      "AccountWithBalance": {
+        "type": "object",
+        "description": "BankAccount acrescido do saldo derivado e do código de banco do catálogo.",
+        "allOf": [
+          { "$ref": "#/components/schemas/BankAccount" },
+          {
+            "type": "object",
+            "required": ["balance", "bankCode"],
+            "properties": {
+              "balance": {
+                "type": "integer",
+                "description": "Centavos. initialBalance + soma das transações da conta.",
+                "example": 42350
+              },
+              "bankCode": {
+                "type": "string",
+                "description": "Código do catálogo de bancos (ex.: 'other' se o banco não foi encontrado).",
+                "example": "260"
+              }
+            }
+          }
+        ]
+      },
+      "AccountCreateAccountBody": {
+        "type": "object",
+        "required": ["name", "bankCode", "type"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80,
+            "example": "Conta Corrente"
+          },
+          "bankCode": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Código do catálogo de bancos (resolvido no backend — o usuário não cadastra o banco manualmente).",
+            "example": "260"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["checking", "savings", "payment"],
+            "example": "checking"
+          },
+          "initialBalance": {
+            "type": "integer",
+            "description": "Centavos. Opcional, padrão 0.",
+            "default": 0,
+            "example": 15000
+          }
+        }
+      },
+      "AccountUpdateAccountBody": {
+        "type": "object",
+        "description": "Todos os campos são opcionais (atualização parcial).",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80,
+            "example": "Conta Corrente Principal"
+          },
+          "bankCode": {
+            "type": "string",
+            "minLength": 1,
+            "example": "260"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["checking", "savings", "payment"],
+            "example": "checking"
+          },
+          "initialBalance": {
+            "type": "integer",
+            "description": "Centavos.",
+            "example": 20000
+          }
+        }
+      }
+    }
+  }
+}

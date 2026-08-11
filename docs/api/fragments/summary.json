@@ -1,0 +1,244 @@
+{
+  "paths": {
+    "/workspaces/{workspaceId}/summary": {
+      "get": {
+        "tags": ["Resumo Financeiro"],
+        "summary": "Resumo mensal do workspace",
+        "description": "Visão mensal: receitas, despesas (por categoria e por método de pagamento), saldo total das contas hoje, e disponível projetado até o fim do mês (null para meses já encerrados). Requer papel mínimo **viewer** no workspace.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          },
+          {
+            "name": "year",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "integer", "minimum": 2000, "maximum": 2100 }
+          },
+          {
+            "name": "month",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "integer", "minimum": 1, "maximum": 12 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Resumo mensal calculado. Valores monetários em centavos.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/MonthlySummary" },
+                "example": {
+                  "year": 2026,
+                  "month": 1,
+                  "income": 850000,
+                  "expense": 620000,
+                  "byCategory": [
+                    {
+                      "categoryId": "c1a1e45f-ceea-4b7f-90cf-3f2e1a6f1a11",
+                      "name": "Mercado",
+                      "color": "#22C55E",
+                      "total": 180000
+                    }
+                  ],
+                  "byMethod": [
+                    { "method": "pix", "total": 250000 },
+                    { "method": "credit", "total": 300000 }
+                  ],
+                  "totalBalance": 1200000,
+                  "projectedAvailable": 980000
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "`validation_error` (400, `year`/`month` fora do intervalo ou ausentes), `unauthorized` (401), `not_found` (404, workspace), `forbidden` (403), `rate_limited` (429).",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/workspaces/{workspaceId}/summary/variable-expense-estimate": {
+      "get": {
+        "tags": ["Resumo Financeiro"],
+        "summary": "Estimativa de gasto variável por categoria",
+        "description": "Estimativa de gasto variável por categoria (média dos últimos 3 meses completos, mês corrente excluído). Janela móvel fixa — não recebe `year`/`month`, é sempre calculada relativa a hoje. Resultado cacheado por workspace por 6 horas. Requer papel mínimo **viewer** no workspace.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Estimativa calculada. Valores monetários em centavos.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VariableExpenseEstimate"
+                },
+                "example": {
+                  "byCategory": [
+                    {
+                      "categoryId": "c1a1e45f-ceea-4b7f-90cf-3f2e1a6f1a11",
+                      "name": "Mercado",
+                      "color": "#22C55E",
+                      "estimated": 165000
+                    }
+                  ],
+                  "total": 165000
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "`unauthorized` (401), `not_found` (404, workspace), `forbidden` (403), `rate_limited` (429).",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "CategorySummary": {
+        "type": "object",
+        "properties": {
+          "categoryId": { "type": "string", "format": "uuid" },
+          "name": { "type": "string" },
+          "color": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
+          "total": {
+            "type": "integer",
+            "description": "Total de despesas da categoria no mês, em centavos."
+          }
+        },
+        "required": ["categoryId", "name", "color", "total"]
+      },
+      "MethodSummary": {
+        "type": "object",
+        "properties": {
+          "method": {
+            "type": "string",
+            "enum": ["pix", "debit", "cash", "credit"],
+            "description": "Sem `transfer` — movimentação neutra, não despesa."
+          },
+          "total": {
+            "type": "integer",
+            "description": "Total de despesas pagas com o método no mês, em centavos."
+          }
+        },
+        "required": ["method", "total"]
+      },
+      "MonthlySummary": {
+        "type": "object",
+        "properties": {
+          "year": { "type": "integer" },
+          "month": { "type": "integer", "minimum": 1, "maximum": 12 },
+          "income": {
+            "type": "integer",
+            "description": "Receitas do mês por competência, em centavos."
+          },
+          "expense": {
+            "type": "integer",
+            "description": "Despesas do mês por competência (inclui compras no crédito pela data da compra), em centavos."
+          },
+          "byCategory": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/CategorySummary" }
+          },
+          "byMethod": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/MethodSummary" }
+          },
+          "totalBalance": {
+            "type": "integer",
+            "description": "Soma dos saldos derivados de todas as contas, hoje, em centavos."
+          },
+          "projectedAvailable": {
+            "type": "integer",
+            "nullable": true,
+            "description": "Disponível projetado até o fim do mês (saldos + receitas recorrentes previstas − despesas recorrentes previstas − faturas não pagas com vencimento até o fim do mês − estimativa de gasto variável para os dias restantes). Null para meses já encerrados. Em centavos."
+          }
+        },
+        "required": [
+          "year",
+          "month",
+          "income",
+          "expense",
+          "byCategory",
+          "byMethod",
+          "totalBalance",
+          "projectedAvailable"
+        ]
+      },
+      "VariableExpenseCategoryEstimate": {
+        "type": "object",
+        "properties": {
+          "categoryId": { "type": "string", "format": "uuid" },
+          "name": { "type": "string" },
+          "color": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
+          "estimated": {
+            "type": "integer",
+            "description": "Média dos últimos 3 meses completos para a categoria, em centavos."
+          }
+        },
+        "required": ["categoryId", "name", "color", "estimated"]
+      },
+      "VariableExpenseEstimate": {
+        "type": "object",
+        "properties": {
+          "byCategory": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/VariableExpenseCategoryEstimate"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "description": "Soma das estimativas de todas as categorias, em centavos."
+          }
+        },
+        "required": ["byCategory", "total"]
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": { "type": "string" },
+              "message": { "type": "string" },
+              "issues": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "path": { "type": "string" },
+                    "message": { "type": "string" }
+                  }
+                }
+              }
+            },
+            "required": ["code", "message"]
+          }
+        },
+        "required": ["error"]
+      }
+    }
+  }
+}

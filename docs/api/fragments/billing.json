@@ -1,0 +1,365 @@
+{
+  "paths": {
+    "/plans": {
+      "get": {
+        "tags": ["Cobrança e Assinatura"],
+        "summary": "Listar planos disponíveis",
+        "description": "Lista os planos ativos disponíveis para assinatura (autoatendimento). Diferente de `GET /admin/plans`: aberta a qualquer usuário autenticado, sem exigir superadmin, e retorna só planos ativos.",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Lista de planos ativos.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/BillingPlan" }
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "401 `unauthorized`, 429 `rate_limited`.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/workspaces/{workspaceId}/billing": {
+      "get": {
+        "tags": ["Cobrança e Assinatura"],
+        "summary": "Ver status de cobrança do workspace",
+        "description": "Retorna o status de assinatura do workspace: plano atual, opção de cobrança, status da assinatura no Stripe, trial e período de cobrança corrente. Qualquer membro do workspace pode ver (papel mínimo `viewer`); agir sobre a assinatura (checkout/portal) exige ser `owner`.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Status de cobrança do workspace.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/BillingStatus" }
+              }
+            }
+          },
+          "4XX": {
+            "description": "401 `unauthorized`, 403 `forbidden` (papel insuficiente), 404 `not_found` (workspace inexistente ou usuário sem membership — não distingue os dois casos de propósito), 429 `rate_limited`.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/workspaces/{workspaceId}/billing/checkout": {
+      "post": {
+        "tags": ["Cobrança e Assinatura"],
+        "summary": "Iniciar checkout de assinatura",
+        "description": "Inicia o Stripe Checkout hospedado para o workspace assinar um plano/opção de cobrança. Sincroniza lazy o Product/Price do Stripe na primeira vez que o plano/preço é usado. Só o `owner` do workspace pode assinar em nome dele. Falha se o workspace já tiver assinatura ativa/em trial/inadimplente — nesse caso, use o Customer Portal para trocar de plano.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/BillingStartCheckoutBody" },
+              "example": {
+                "planId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+                "planPriceId": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+                "successUrl": "financeguide://billing-return?status=success",
+                "cancelUrl": "financeguide://billing-return?status=cancel"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "URL do Checkout hospedado do Stripe, para redirecionar o usuário.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/BillingCheckoutResponse" }
+              }
+            }
+          },
+          "4XX": {
+            "description": "400 `validation_error`, 401 `unauthorized`, 403 `forbidden` (não é owner), 404 `plan_not_found` | `plan_price_not_found`, 409 `already_subscribed`, 429 `rate_limited`.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/workspaces/{workspaceId}/billing/portal": {
+      "post": {
+        "tags": ["Cobrança e Assinatura"],
+        "summary": "Iniciar sessão do Customer Portal",
+        "description": "Abre o Stripe Customer Portal hospedado, onde o dono do workspace pode trocar de plano, cancelar a assinatura ou atualizar o cartão. Só o `owner` do workspace pode acessar. Falha se o workspace nunca tiver passado por um checkout (sem `stripeCustomerId`, não há o que gerenciar).",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/BillingStartPortalBody" },
+              "example": {
+                "returnUrl": "financeguide://settings/billing"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "URL da sessão do Customer Portal hospedado do Stripe.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/BillingPortalResponse" }
+              }
+            }
+          },
+          "4XX": {
+            "description": "400 `validation_error`, 401 `unauthorized`, 403 `forbidden` (não é owner), 404 `no_active_subscription`, 429 `rate_limited`.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/webhooks/stripe": {
+      "post": {
+        "tags": ["Cobrança e Assinatura"],
+        "summary": "Webhook do Stripe",
+        "description": "Recebe eventos assíncronos do Stripe (ex.: `checkout.session.completed`, mudanças de assinatura) e sincroniza o estado de cobrança do workspace. Rota pública — sem Bearer token. A autenticidade é validada inteiramente pela verificação de assinatura própria do Stripe (header `stripe-signature`, checada dentro do handler); requisições com assinatura ausente ou inválida recebem 401 antes de qualquer processamento. Diferente do webhook do WhatsApp, é processado de forma síncrona (grava direto no banco, sem fila). O corpo é o payload bruto definido pelo Stripe, fora do controle desta API — o schema abaixo é apenas ilustrativo.",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "description": "Payload bruto de um evento do Stripe (`Stripe.Event`). O formato exato de cada tipo de evento é definido pelo Stripe, não por esta API.",
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/BillingStripeWebhookBody" },
+              "example": {
+                "id": "evt_1PxA2bKzQpZ9example",
+                "type": "checkout.session.completed",
+                "data": {
+                  "object": {
+                    "id": "cs_test_example123",
+                    "customer": "cus_exampleABC",
+                    "subscription": "sub_exampleXYZ"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Evento aceito e processado (ou ignorado, se não relevante)."
+          },
+          "401": {
+            "description": "Assinatura do Stripe (`stripe-signature`) ausente ou inválida — evento rejeitado antes de qualquer processamento."
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ErrorResponse": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message"],
+            "properties": {
+              "code": { "type": "string", "example": "plan_not_found" },
+              "message": { "type": "string", "example": "Plano não encontrado." },
+              "issues": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "path": { "type": "string" },
+                    "message": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "BillingPlanLimits": {
+        "type": "object",
+        "properties": {
+          "maxOwnedSharedWorkspaces": { "type": "integer", "example": 3 },
+          "maxMembersPerWorkspace": { "type": "integer", "example": 10 },
+          "maxSavedFormulasPerWorkspace": { "type": "integer", "example": 20 }
+        }
+      },
+      "BillingPlanPrice": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "planId": { "type": "string", "format": "uuid" },
+          "billingIntervalUnit": {
+            "type": "string",
+            "enum": ["day", "week", "month", "year"]
+          },
+          "billingIntervalCount": { "type": "integer", "example": 1 },
+          "priceCents": {
+            "type": "integer",
+            "description": "Sempre em centavos, nunca float.",
+            "example": 2990
+          },
+          "maxInstallments": { "type": "integer", "example": 1 },
+          "paymentMethods": {
+            "type": "array",
+            "items": { "type": "string", "enum": ["credit_card", "debit_card", "pix"] }
+          },
+          "isDefault": { "type": "boolean" },
+          "sortOrder": { "type": "integer", "example": 0 },
+          "stripePriceId": { "type": "string", "nullable": true, "example": "price_1PxAexample" },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "BillingPlan": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "key": { "type": "string", "example": "pro" },
+          "name": { "type": "string", "example": "Pro" },
+          "description": { "type": "string", "nullable": true, "example": "Para famílias e times pequenos." },
+          "trialDays": { "type": "integer", "example": 14 },
+          "stripeProductId": { "type": "string", "nullable": true, "example": "prod_Qexample" },
+          "limits": { "$ref": "#/components/schemas/BillingPlanLimits" },
+          "features": {
+            "type": "array",
+            "items": { "type": "string" },
+            "example": ["ai_whatsapp_assistant", "custom_categories"]
+          },
+          "isActive": { "type": "boolean", "example": true },
+          "sortOrder": { "type": "integer", "example": 1 },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" },
+          "prices": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/BillingPlanPrice" }
+          }
+        }
+      },
+      "BillingStatus": {
+        "type": "object",
+        "properties": {
+          "plan": { "$ref": "#/components/schemas/BillingPlan" },
+          "planPrice": {
+            "allOf": [{ "$ref": "#/components/schemas/BillingPlanPrice" }],
+            "nullable": true
+          },
+          "subscriptionStatus": {
+            "type": "string",
+            "enum": ["none", "trialing", "active", "past_due", "canceled", "incomplete"]
+          },
+          "trialEndsAt": { "type": "string", "format": "date-time", "nullable": true },
+          "cancelAtPeriodEnd": { "type": "boolean", "example": false },
+          "currentPeriodEndsAt": { "type": "string", "format": "date-time", "nullable": true },
+          "hasStripeCustomer": { "type": "boolean", "example": true }
+        }
+      },
+      "BillingStartCheckoutBody": {
+        "type": "object",
+        "required": ["planId", "planPriceId", "successUrl", "cancelUrl"],
+        "properties": {
+          "planId": { "type": "string", "format": "uuid" },
+          "planPriceId": { "type": "string", "format": "uuid" },
+          "successUrl": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000,
+            "description": "Não é validado como URL http(s) estrita — o app mobile manda um deep link com scheme customizado (ex. `financeguide://billing-return`).",
+            "example": "financeguide://billing-return?status=success"
+          },
+          "cancelUrl": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000,
+            "example": "financeguide://billing-return?status=cancel"
+          }
+        }
+      },
+      "BillingCheckoutResponse": {
+        "type": "object",
+        "properties": {
+          "checkoutUrl": {
+            "type": "string",
+            "example": "https://checkout.stripe.com/c/pay/cs_test_example123"
+          }
+        }
+      },
+      "BillingStartPortalBody": {
+        "type": "object",
+        "required": ["returnUrl"],
+        "properties": {
+          "returnUrl": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000,
+            "example": "financeguide://settings/billing"
+          }
+        }
+      },
+      "BillingPortalResponse": {
+        "type": "object",
+        "properties": {
+          "portalUrl": {
+            "type": "string",
+            "example": "https://billing.stripe.com/p/session/example123"
+          }
+        }
+      },
+      "BillingStripeWebhookBody": {
+        "type": "object",
+        "description": "Representação genérica — o formato exato de cada evento é definido pelo Stripe (`Stripe.Event`), fora do controle desta API.",
+        "properties": {
+          "id": { "type": "string", "example": "evt_1PxA2bKzQpZ9example" },
+          "type": { "type": "string", "example": "checkout.session.completed" },
+          "data": {
+            "type": "object",
+            "description": "Objeto do evento, formato varia por `type`."
+          }
+        }
+      }
+    }
+  }
+}

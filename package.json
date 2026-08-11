@@ -23,7 +23,9 @@
     "tunnel:status": "bun scripts/tunnel/status.ts",
     "tunnel:close": "bun scripts/tunnel/close.ts",
     "release:dashboard": "bun scripts/release.ts dashboard",
-    "release:api": "bun scripts/release.ts api"
+    "release:api": "bun scripts/release.ts api",
+    "auth:login": "bun scripts/api-login.ts",
+    "docs:api": "bun docs/api/merge-fragments.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.15",

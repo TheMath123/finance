@@ -1,0 +1,369 @@
+{
+  "paths": {
+    "/workspaces/{workspaceId}/banks": {
+      "get": {
+        "tags": ["Bancos"],
+        "summary": "Listar bancos do workspace",
+        "description": "Lista todos os bancos cadastrados no workspace (arquivados inclusos). Requer papel mínimo **viewer** no workspace.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de bancos do workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Bank" }
+                },
+                "example": [
+                  {
+                    "id": "8f14e45f-ceea-4b7f-90cf-3f2e1a6f1a11",
+                    "workspaceId": "1b1f3f7a-2e0e-4f2a-9c3e-6d4b8a1f2e22",
+                    "name": "Banco Fake S.A.",
+                    "bankCode": "999",
+                    "archivedAt": null,
+                    "createdAt": "2026-01-10T12:00:00.000Z",
+                    "updatedAt": "2026-01-10T12:00:00.000Z"
+                  }
+                ]
+              }
+            }
+          },
+          "4XX": {
+            "description": "`unauthorized` (401, sem token), `not_found` (404, workspace inexistente ou sem membership), `forbidden` (403, papel insuficiente), `rate_limited` (429).",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Bancos"],
+        "summary": "Criar banco",
+        "description": "Cria um novo banco no workspace. Requer papel mínimo **admin** no workspace.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/BankCreateBankBody" },
+              "example": { "name": "Banco Fake S.A.", "bankCode": "999" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Banco criado.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Bank" },
+                "example": {
+                  "id": "8f14e45f-ceea-4b7f-90cf-3f2e1a6f1a11",
+                  "workspaceId": "1b1f3f7a-2e0e-4f2a-9c3e-6d4b8a1f2e22",
+                  "name": "Banco Fake S.A.",
+                  "bankCode": "999",
+                  "archivedAt": null,
+                  "createdAt": "2026-01-10T12:00:00.000Z",
+                  "updatedAt": "2026-01-10T12:00:00.000Z"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "`validation_error` (400, payload inválido), `invalid_bank_code` (400, código fora do catálogo), `unauthorized` (401), `not_found` (404), `forbidden` (403), `rate_limited` (429).",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/workspaces/{workspaceId}/banks/{bankId}": {
+      "patch": {
+        "tags": ["Bancos"],
+        "summary": "Atualizar banco",
+        "description": "Atualiza campos do banco (parcial). Requer papel mínimo **admin** no workspace.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          },
+          {
+            "name": "bankId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/BankUpdateBankBody" },
+              "example": { "name": "Banco Fake Renomeado S.A." }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Banco atualizado.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Bank" },
+                "example": {
+                  "id": "8f14e45f-ceea-4b7f-90cf-3f2e1a6f1a11",
+                  "workspaceId": "1b1f3f7a-2e0e-4f2a-9c3e-6d4b8a1f2e22",
+                  "name": "Banco Fake Renomeado S.A.",
+                  "bankCode": "999",
+                  "archivedAt": null,
+                  "createdAt": "2026-01-10T12:00:00.000Z",
+                  "updatedAt": "2026-01-11T09:30:00.000Z"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "`validation_error` (400), `invalid_bank_code` (400), `bank_not_found` (404), `unauthorized` (401), `not_found` (404, workspace), `forbidden` (403), `rate_limited` (429).",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Bancos"],
+        "summary": "Excluir banco",
+        "description": "Exclui definitivamente um banco. Falha com `bank_in_use` se houver contas/cartões vinculados — nesse caso, arquive em vez de excluir. Requer papel mínimo **admin** no workspace.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          },
+          {
+            "name": "bankId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "204": { "description": "Banco excluído. Sem corpo de resposta." },
+          "4XX": {
+            "description": "`bank_not_found` (404), `bank_in_use` (409, possui contas/cartões vinculados), `unauthorized` (401), `not_found` (404, workspace), `forbidden` (403), `rate_limited` (429).",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/workspaces/{workspaceId}/banks/{bankId}/archive": {
+      "post": {
+        "tags": ["Bancos"],
+        "summary": "Arquivar banco",
+        "description": "Marca o banco como arquivado (oculto de seletores, mas preserva histórico). Requer papel mínimo **admin** no workspace.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          },
+          {
+            "name": "bankId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Banco arquivado.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Bank" },
+                "example": {
+                  "id": "8f14e45f-ceea-4b7f-90cf-3f2e1a6f1a11",
+                  "workspaceId": "1b1f3f7a-2e0e-4f2a-9c3e-6d4b8a1f2e22",
+                  "name": "Banco Fake S.A.",
+                  "bankCode": "999",
+                  "archivedAt": "2026-01-11T09:30:00.000Z",
+                  "createdAt": "2026-01-10T12:00:00.000Z",
+                  "updatedAt": "2026-01-11T09:30:00.000Z"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "`bank_not_found` (404), `unauthorized` (401), `not_found` (404, workspace), `forbidden` (403), `rate_limited` (429).",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/workspaces/{workspaceId}/banks/{bankId}/unarchive": {
+      "post": {
+        "tags": ["Bancos"],
+        "summary": "Desarquivar banco",
+        "description": "Remove o arquivamento do banco, voltando a exibi-lo em seletores. Requer papel mínimo **admin** no workspace.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          },
+          {
+            "name": "bankId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Banco desarquivado.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Bank" },
+                "example": {
+                  "id": "8f14e45f-ceea-4b7f-90cf-3f2e1a6f1a11",
+                  "workspaceId": "1b1f3f7a-2e0e-4f2a-9c3e-6d4b8a1f2e22",
+                  "name": "Banco Fake S.A.",
+                  "bankCode": "999",
+                  "archivedAt": null,
+                  "createdAt": "2026-01-10T12:00:00.000Z",
+                  "updatedAt": "2026-01-12T15:00:00.000Z"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "`bank_not_found` (404), `unauthorized` (401), `not_found` (404, workspace), `forbidden` (403), `rate_limited` (429).",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Bank": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "workspaceId": { "type": "string", "format": "uuid" },
+          "name": { "type": "string" },
+          "bankCode": {
+            "type": "string",
+            "description": "Código do banco no catálogo suportado (ex.: código FEBRABAN)."
+          },
+          "archivedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        },
+        "required": [
+          "id",
+          "workspaceId",
+          "name",
+          "bankCode",
+          "archivedAt",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "BankCreateBankBody": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string", "minLength": 1, "maxLength": 80 },
+          "bankCode": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Precisa constar no catálogo de bancos suportado (validado no backend)."
+          }
+        },
+        "required": ["name", "bankCode"]
+      },
+      "BankUpdateBankBody": {
+        "type": "object",
+        "description": "Todos os campos são opcionais (atualização parcial).",
+        "properties": {
+          "name": { "type": "string", "minLength": 1, "maxLength": 80 },
+          "bankCode": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Precisa constar no catálogo de bancos suportado (validado no backend)."
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": { "type": "string" },
+              "message": { "type": "string" },
+              "issues": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "path": { "type": "string" },
+                    "message": { "type": "string" }
+                  }
+                }
+              }
+            },
+            "required": ["code", "message"]
+          }
+        },
+        "required": ["error"]
+      }
+    }
+  }
+}

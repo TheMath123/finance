@@ -1,0 +1,422 @@
+{
+  "paths": {
+    "/workspaces/{workspaceId}/cards": {
+      "get": {
+        "tags": ["Cartões e Faturas"],
+        "summary": "Listar cartões",
+        "description": "Lista os cartões do workspace com limite disponível calculado. Requer papel mínimo **viewer** no workspace.",
+        "operationId": "listCards",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "workspaceId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de cartões do workspace.",
+            "content": {
+              "application/json": {
+                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/CardWithLimit" } },
+                "example": [
+                  {
+                    "id": "c1a2c3d4-0001-4a11-8b11-000000000001",
+                    "workspaceId": "c1a2c3d4-0000-4a11-8b11-000000000000",
+                    "bankId": "c1a2c3d4-0002-4a11-8b11-000000000010",
+                    "name": "Nubank Roxinho",
+                    "limit": 500000,
+                    "closingDay": 5,
+                    "dueDay": 12,
+                    "archivedAt": null,
+                    "createdAt": "2026-01-10T12:00:00.000Z",
+                    "updatedAt": "2026-01-10T12:00:00.000Z",
+                    "availableLimit": 350000,
+                    "bankCode": "nubank"
+                  }
+                ]
+              }
+            }
+          },
+          "4XX": {
+            "description": "`not_found` (404, workspaceId inválido/sem acesso) ou `rate_limited` (429).",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Cartões e Faturas"],
+        "summary": "Criar cartão",
+        "description": "Cria um cartão de crédito no workspace; o banco é resolvido/criado a partir do `bankCode` do catálogo. Requer papel mínimo **admin** no workspace.",
+        "operationId": "createCard",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "workspaceId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CardCreateCardBody" },
+              "example": {
+                "name": "Nubank Roxinho",
+                "bankCode": "nubank",
+                "limit": 500000,
+                "closingDay": 5,
+                "dueDay": 12
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Cartão criado.",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Card" } } }
+          },
+          "4XX": {
+            "description": "`invalid_bank_code` (400 — código fora do catálogo), `validation_error` (400).",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+          }
+        }
+      }
+    },
+    "/workspaces/{workspaceId}/cards/{cardId}": {
+      "patch": {
+        "tags": ["Cartões e Faturas"],
+        "summary": "Atualizar cartão",
+        "description": "Atualiza campos de um cartão existente (todos os campos são opcionais). Requer papel mínimo **admin** no workspace.",
+        "operationId": "updateCard",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "workspaceId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } },
+          { "name": "cardId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CardUpdateCardBody" },
+              "example": { "limit": 600000, "dueDay": 15 }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Cartão atualizado.",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Card" } } }
+          },
+          "4XX": {
+            "description": "`card_not_found` (404), `invalid_bank_code` (400), `validation_error` (400).",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Cartões e Faturas"],
+        "summary": "Excluir cartão",
+        "description": "Exclusão definitiva. Cartão com transações associadas não pode ser excluído (use arquivar). Requer papel mínimo **admin** no workspace.",
+        "operationId": "deleteCard",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "workspaceId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } },
+          { "name": "cardId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "204": { "description": "Cartão excluído com sucesso. Sem corpo de resposta." },
+          "4XX": {
+            "description": "`card_not_found` (404), `card_has_transactions` (409 — cartão com transações não pode ser excluído, arquive em vez disso).",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+          }
+        }
+      }
+    },
+    "/workspaces/{workspaceId}/cards/{cardId}/archive": {
+      "post": {
+        "tags": ["Cartões e Faturas"],
+        "summary": "Arquivar cartão",
+        "description": "Arquiva o cartão (oculta de listagens ativas sem perder o histórico de faturas/transações). Requer papel mínimo **admin** no workspace.",
+        "operationId": "archiveCard",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "workspaceId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } },
+          { "name": "cardId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cartão arquivado.",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Card" } } }
+          },
+          "4XX": {
+            "description": "`card_not_found` (404).",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+          }
+        }
+      }
+    },
+    "/workspaces/{workspaceId}/cards/{cardId}/unarchive": {
+      "post": {
+        "tags": ["Cartões e Faturas"],
+        "summary": "Desarquivar cartão",
+        "description": "Reverte o arquivamento do cartão. Requer papel mínimo **admin** no workspace.",
+        "operationId": "unarchiveCard",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "workspaceId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } },
+          { "name": "cardId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cartão desarquivado.",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Card" } } }
+          },
+          "4XX": {
+            "description": "`card_not_found` (404).",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+          }
+        }
+      }
+    },
+    "/workspaces/{workspaceId}/cards/{cardId}/invoices": {
+      "get": {
+        "tags": ["Cartões e Faturas"],
+        "summary": "Listar faturas do cartão",
+        "description": "Lista as faturas do cartão, paginadas e opcionalmente filtradas por mês/ano de referência. Também retorna a fatura em aberto mais antiga (`current`), independente da página/filtro aplicado. Requer papel mínimo **viewer** no workspace.",
+        "operationId": "listInvoices",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "workspaceId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } },
+          { "name": "cardId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } },
+          { "name": "limit", "in": "query", "required": false, "schema": { "type": "integer", "minimum": 1, "maximum": 60 } },
+          { "name": "offset", "in": "query", "required": false, "schema": { "type": "integer", "minimum": 0 } },
+          { "name": "month", "in": "query", "required": false, "schema": { "type": "integer", "minimum": 1, "maximum": 12 }, "description": "Mês de referência da fatura (1-12)." },
+          { "name": "year", "in": "query", "required": false, "schema": { "type": "integer", "minimum": 2000, "maximum": 2100 }, "description": "Ano de referência da fatura." }
+        ],
+        "responses": {
+          "200": {
+            "description": "Página de faturas do cartão, total de registros e a fatura aberta atual.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CardListInvoicesResponse" },
+                "example": {
+                  "invoices": [
+                    {
+                      "id": "c1a2c3d4-0003-4a11-8b11-000000000030",
+                      "workspaceId": "c1a2c3d4-0000-4a11-8b11-000000000000",
+                      "cardId": "c1a2c3d4-0001-4a11-8b11-000000000001",
+                      "monthReference": 8,
+                      "yearReference": 2026,
+                      "status": "open",
+                      "paymentTransactionId": null,
+                      "createdAt": "2026-07-06T12:00:00.000Z",
+                      "updatedAt": "2026-08-05T12:00:00.000Z",
+                      "total": 32000,
+                      "effectiveStatus": "open"
+                    }
+                  ],
+                  "total": 1,
+                  "current": {
+                    "id": "c1a2c3d4-0003-4a11-8b11-000000000030",
+                    "workspaceId": "c1a2c3d4-0000-4a11-8b11-000000000000",
+                    "cardId": "c1a2c3d4-0001-4a11-8b11-000000000001",
+                    "monthReference": 8,
+                    "yearReference": 2026,
+                    "status": "open",
+                    "paymentTransactionId": null,
+                    "createdAt": "2026-07-06T12:00:00.000Z",
+                    "updatedAt": "2026-08-05T12:00:00.000Z",
+                    "total": 32000,
+                    "effectiveStatus": "open"
+                  }
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "`card_not_found` (404), `validation_error` (400).",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+          }
+        }
+      }
+    },
+    "/workspaces/{workspaceId}/invoices/{invoiceId}/pay": {
+      "post": {
+        "tags": ["Cartões e Faturas"],
+        "summary": "Pagar fatura",
+        "description": "Registra o pagamento da fatura: cria uma transação de despesa na conta escolhida e marca a fatura como paga. Requer papel mínimo **member** no workspace.",
+        "operationId": "payInvoice",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "workspaceId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } },
+          { "name": "invoiceId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CardPayInvoiceBody" },
+              "example": {
+                "accountId": "c1a2c3d4-0004-4a11-8b11-000000000040",
+                "date": "2026-08-12",
+                "method": "pix"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Fatura paga.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/InvoiceView" },
+                "example": {
+                  "id": "c1a2c3d4-0003-4a11-8b11-000000000030",
+                  "workspaceId": "c1a2c3d4-0000-4a11-8b11-000000000000",
+                  "cardId": "c1a2c3d4-0001-4a11-8b11-000000000001",
+                  "monthReference": 8,
+                  "yearReference": 2026,
+                  "status": "paid",
+                  "paymentTransactionId": "c1a2c3d4-0005-4a11-8b11-000000000050",
+                  "createdAt": "2026-07-06T12:00:00.000Z",
+                  "updatedAt": "2026-08-12T09:00:00.000Z",
+                  "total": 32000,
+                  "effectiveStatus": "paid"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "`invoice_not_found` (404), `invoice_already_paid` (409), `card_not_found` (404), `account_not_found` (404), `invoice_empty` (409 — fatura sem valor a pagar), `validation_error` (400).",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ErrorResponse": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message"],
+            "properties": {
+              "code": { "type": "string", "example": "card_not_found" },
+              "message": { "type": "string", "example": "Cartão não encontrado." },
+              "issues": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["path", "message"],
+                  "properties": {
+                    "path": { "type": "string" },
+                    "message": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "Card": {
+        "type": "object",
+        "required": ["id", "workspaceId", "bankId", "name", "limit", "closingDay", "dueDay", "archivedAt", "createdAt", "updatedAt"],
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "workspaceId": { "type": "string", "format": "uuid" },
+          "bankId": { "type": "string", "format": "uuid" },
+          "name": { "type": "string", "example": "Nubank Roxinho" },
+          "limit": { "type": "integer", "description": "Limite total do cartão, em centavos.", "example": 500000 },
+          "closingDay": { "type": "integer", "minimum": 1, "maximum": 28 },
+          "dueDay": { "type": "integer", "minimum": 1, "maximum": 28 },
+          "archivedAt": { "type": "string", "format": "date-time", "nullable": true },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "CardWithLimit": {
+        "allOf": [
+          { "$ref": "#/components/schemas/Card" },
+          {
+            "type": "object",
+            "required": ["availableLimit", "bankCode"],
+            "properties": {
+              "availableLimit": { "type": "integer", "description": "limit − soma das faturas não pagas (derivado), em centavos.", "example": 350000 },
+              "bankCode": { "type": "string", "description": "Código do catálogo de bancos.", "example": "nubank" }
+            }
+          }
+        ]
+      },
+      "CardInvoice": {
+        "type": "object",
+        "required": ["id", "workspaceId", "cardId", "monthReference", "yearReference", "status", "paymentTransactionId", "createdAt", "updatedAt"],
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "workspaceId": { "type": "string", "format": "uuid" },
+          "cardId": { "type": "string", "format": "uuid" },
+          "monthReference": { "type": "integer", "minimum": 1, "maximum": 12 },
+          "yearReference": { "type": "integer" },
+          "status": { "type": "string", "enum": ["open", "closed", "paid"] },
+          "paymentTransactionId": { "type": "string", "format": "uuid", "nullable": true },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "InvoiceView": {
+        "allOf": [
+          { "$ref": "#/components/schemas/CardInvoice" },
+          {
+            "type": "object",
+            "required": ["total", "effectiveStatus"],
+            "properties": {
+              "total": { "type": "integer", "description": "Soma das transações da fatura, em centavos.", "example": 32000 },
+              "effectiveStatus": { "type": "string", "enum": ["open", "closed", "paid"], "description": "Status recalculado no momento da leitura (pode divergir do `status` persistido até a próxima transição)." }
+            }
+          }
+        ]
+      },
+      "CardListInvoicesResponse": {
+        "type": "object",
+        "required": ["invoices", "total", "current"],
+        "properties": {
+          "invoices": { "type": "array", "items": { "$ref": "#/components/schemas/InvoiceView" } },
+          "total": { "type": "integer", "description": "Total de faturas que atendem ao filtro (para paginação)." },
+          "current": {
+            "allOf": [{ "$ref": "#/components/schemas/InvoiceView" }],
+            "nullable": true,
+            "description": "Fatura não paga mais antiga do cartão, independente de página/filtro — destaque de 'quanto devo agora'."
+          }
+        }
+      },
+      "CardCreateCardBody": {
+        "type": "object",
+        "required": ["name", "bankCode", "limit", "closingDay", "dueDay"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1, "maxLength": 80, "example": "Nubank Roxinho" },
+          "bankCode": { "type": "string", "description": "Código do catálogo de bancos (resolvido/criado no workspace).", "example": "nubank" },
+          "limit": { "type": "integer", "minimum": 1, "description": "Centavos.", "example": 500000 },
+          "closingDay": { "type": "integer", "minimum": 1, "maximum": 28 },
+          "dueDay": { "type": "integer", "minimum": 1, "maximum": 28 }
+        }
+      },
+      "CardUpdateCardBody": {
+        "type": "object",
+        "description": "Todos os campos são opcionais.",
+        "properties": {
+          "name": { "type": "string", "minLength": 1, "maxLength": 80 },
+          "bankCode": { "type": "string" },
+          "limit": { "type": "integer", "minimum": 1, "description": "Centavos." },
+          "closingDay": { "type": "integer", "minimum": 1, "maximum": 28 },
+          "dueDay": { "type": "integer", "minimum": 1, "maximum": 28 }
+        }
+      },
+      "CardPayInvoiceBody": {
+        "type": "object",
+        "required": ["accountId", "date", "method"],
+        "properties": {
+          "accountId": { "type": "string", "format": "uuid", "description": "Conta de onde sai o pagamento." },
+          "date": { "type": "string", "format": "date", "example": "2026-08-12" },
+          "method": { "type": "string", "enum": ["pix", "debit"] }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,335 @@
+{
+  "paths": {
+    "/workspaces/{workspaceId}/transactions/{transactionId}/split": {
+      "post": {
+        "tags": ["Divisão de despesas"],
+        "summary": "Dividir uma despesa",
+        "description": "Requer papel member ou superior no workspace. A transação precisa ser uma despesa (`expense`) com conta de origem. Participantes podem ser usuários da plataforma (por e-mail/telefone) ou externos (só nome); valores por participante são opcionais — sem eles, a divisão é igual entre todos (criador + participantes), com o criador absorvendo o resto de centavos.",
+        "operationId": "createSplit",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          },
+          {
+            "name": "transactionId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/SplitCreateSplitBody" },
+              "example": {
+                "participants": [
+                  { "type": "user", "contact": "amigo@exemplo.com", "amount": 5000 },
+                  { "type": "external", "name": "Convidado sem conta" }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Split criado, com uma parte (share) por participante.",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/SplitEntity" } }
+            }
+          },
+          "4XX": {
+            "description": "validation_error (400), no_participants (400), not_an_expense (400), unsupported_method (400), participant_not_found (404), self_participant (400), invalid_amount (400), amounts_exceed_total (400), unauthorized (401), forbidden (403), not_found (404), transaction_not_found (404), already_split (409), rate_limited (429).",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+            }
+          }
+        }
+      }
+    },
+    "/splits/{id}/cancel": {
+      "post": {
+        "tags": ["Divisão de despesas"],
+        "summary": "Cancelar um split",
+        "description": "Requer autenticação. Só quem criou o split pode cancelar, e só enquanto nenhuma parte foi paga ou confirmada (soft-cancel — nunca mexe na transação original).",
+        "operationId": "cancelSplit",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Split cancelado.",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/SplitEntity" } }
+            }
+          },
+          "4XX": {
+            "description": "unauthorized (401), not_found (404, inclui split de outro usuário), shares_already_settled (409), rate_limited (429).",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+            }
+          }
+        }
+      }
+    },
+    "/split-shares/{id}/paid": {
+      "post": {
+        "tags": ["Divisão de despesas"],
+        "summary": "Marcar minha parte como paga",
+        "description": "Requer autenticação. Só o próprio participante (com conta na plataforma) pode marcar — participante externo não passa por essa rota.",
+        "operationId": "markSharePaid",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Parte marcada como paga.",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/SplitShareEntity" } }
+            }
+          },
+          "4XX": {
+            "description": "unauthorized (401), not_found (404, inclui parte de outro usuário), invalid_transition (409), rate_limited (429).",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+            }
+          }
+        }
+      }
+    },
+    "/split-shares/{id}/confirm": {
+      "post": {
+        "tags": ["Divisão de despesas"],
+        "summary": "Confirmar recebimento do reembolso",
+        "description": "Requer autenticação. Só quem criou o split confirma. Participante-usuário precisa ter marcado como pago antes; participante externo pula direto de pendente para confirmado (não tem conta pra marcar 'paguei'). Gera uma transação de entrada (reembolso) na mesma conta da despesa original.",
+        "operationId": "confirmShareReimbursement",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Parte confirmada, reembolso lançado.",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/SplitShareEntity" } }
+            }
+          },
+          "4XX": {
+            "description": "unauthorized (401), not_found (404, inclui parte de split que não é seu), invalid_transition (409), rate_limited (429).",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+            }
+          }
+        }
+      }
+    },
+    "/splits/owed-by-me": {
+      "get": {
+        "tags": ["Divisão de despesas"],
+        "summary": "Listar o que devo",
+        "description": "Requer autenticação. Partes em que o usuário logado é participante em splits de outros, ainda não confirmadas.",
+        "operationId": "listOwedByMe",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Partes que o usuário deve.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/SplitOwedByMeView" }
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "unauthorized (401), rate_limited (429).",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+            }
+          }
+        }
+      }
+    },
+    "/splits/owed-to-me": {
+      "get": {
+        "tags": ["Divisão de despesas"],
+        "summary": "Listar o que me devem",
+        "description": "Requer autenticação. Partes de splits criados pelo usuário logado, ainda não confirmadas.",
+        "operationId": "listOwedToMe",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Partes que devem ao usuário.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/SplitOwedToMeView" }
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "unauthorized (401), rate_limited (429).",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": { "type": "string", "example": "not_found" },
+              "message": { "type": "string", "example": "Split não encontrado." },
+              "issues": {
+                "type": "array",
+                "nullable": true,
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "path": { "type": "string" },
+                    "message": { "type": "string" }
+                  }
+                }
+              }
+            },
+            "required": ["code", "message"]
+          }
+        },
+        "required": ["error"]
+      },
+      "SplitEntity": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "transactionId": { "type": "string", "format": "uuid" },
+          "createdBy": { "type": "string", "format": "uuid" },
+          "cancelledAt": { "type": "string", "format": "date-time", "nullable": true },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        },
+        "required": ["id", "transactionId", "createdBy", "cancelledAt", "createdAt", "updatedAt"]
+      },
+      "SplitShareEntity": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "splitId": { "type": "string", "format": "uuid" },
+          "participantUserId": { "type": "string", "format": "uuid", "nullable": true },
+          "participantName": { "type": "string", "nullable": true },
+          "amount": { "type": "integer", "description": "Centavos.", "example": 5000 },
+          "status": { "type": "string", "enum": ["pending", "paid", "confirmed"] },
+          "reimbursementTransactionId": { "type": "string", "format": "uuid", "nullable": true },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        },
+        "required": [
+          "id", "splitId", "participantUserId", "participantName", "amount",
+          "status", "reimbursementTransactionId", "createdAt", "updatedAt"
+        ]
+      },
+      "SplitOwedByMeView": {
+        "type": "object",
+        "properties": {
+          "shareId": { "type": "string", "format": "uuid" },
+          "splitId": { "type": "string", "format": "uuid" },
+          "amount": { "type": "integer", "description": "Centavos.", "example": 5000 },
+          "status": { "type": "string", "enum": ["pending", "paid", "confirmed"] },
+          "transactionDescription": { "type": "string", "example": "Jantar de sexta" },
+          "creatorName": { "type": "string", "example": "Ana Silva" }
+        },
+        "required": ["shareId", "splitId", "amount", "status", "transactionDescription", "creatorName"]
+      },
+      "SplitOwedToMeView": {
+        "type": "object",
+        "properties": {
+          "shareId": { "type": "string", "format": "uuid" },
+          "splitId": { "type": "string", "format": "uuid" },
+          "amount": { "type": "integer", "description": "Centavos.", "example": 5000 },
+          "status": { "type": "string", "enum": ["pending", "paid", "confirmed"] },
+          "transactionDescription": { "type": "string", "example": "Jantar de sexta" },
+          "participantName": { "type": "string", "example": "Convidado sem conta" },
+          "participantUserId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true,
+            "description": "Null quando o participante é externo (sem conta na plataforma)."
+          }
+        },
+        "required": [
+          "shareId", "splitId", "amount", "status", "transactionDescription",
+          "participantName", "participantUserId"
+        ]
+      },
+      "SplitCreateSplitBody": {
+        "type": "object",
+        "properties": {
+          "participants": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 20,
+            "items": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string", "enum": ["user"] },
+                    "contact": {
+                      "type": "string",
+                      "minLength": 3,
+                      "maxLength": 320,
+                      "description": "Telefone ou e-mail de um usuário existente na plataforma.",
+                      "example": "amigo@exemplo.com"
+                    },
+                    "amount": { "type": "integer", "minimum": 1, "description": "Centavos. Opcional — omitido, divide igualmente." }
+                  },
+                  "required": ["type", "contact"]
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string", "enum": ["external"] },
+                    "name": { "type": "string", "minLength": 1, "maxLength": 120, "example": "Convidado sem conta" },
+                    "amount": { "type": "integer", "minimum": 1, "description": "Centavos. Opcional — omitido, divide igualmente." }
+                  },
+                  "required": ["type", "name"]
+                }
+              ]
+            }
+          }
+        },
+        "required": ["participants"]
+      }
+    }
+  }
+}

@@ -1,0 +1,1283 @@
+{
+  "paths": {
+    "/admin/users": {
+      "get": {
+        "tags": ["Administração (Superadmin)"],
+        "summary": "Listar usuários",
+        "description": "Lista usuários da plataforma com busca e paginação. Inclui o nome do plano do workspace pessoal de cada usuário. Nunca inclui `passwordHash`.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "minLength": 1, "maxLength": 120 }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer", "minimum": 1, "maximum": 100, "default": 20 }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer", "minimum": 0, "default": 0 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista paginada de usuários.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/AdminListUsersResponse" }
+              }
+            }
+          },
+          "4XX": {
+            "description": "401 `unauthorized`, 403 `forbidden` (não é superadmin), 429 `rate_limited`.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/users/{userId}/suspend": {
+      "post": {
+        "tags": ["Administração (Superadmin)"],
+        "summary": "Suspender usuário",
+        "description": "Suspende a conta de um usuário (bloqueia login). Um superadmin não pode suspender a própria conta.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "204": { "description": "Usuário suspenso (sem corpo)." },
+          "4XX": {
+            "description": "401 `unauthorized`, 403 `forbidden`, 404 `user_not_found`, 409 `cannot_suspend_self`, 429 `rate_limited`.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/users/{userId}/reactivate": {
+      "post": {
+        "tags": ["Administração (Superadmin)"],
+        "summary": "Reativar usuário",
+        "description": "Remove a suspensão de um usuário, permitindo login novamente.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "204": { "description": "Usuário reativado (sem corpo)." },
+          "4XX": {
+            "description": "401 `unauthorized`, 403 `forbidden`, 404 `user_not_found`, 429 `rate_limited`.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/default-categories": {
+      "get": {
+        "tags": ["Administração (Superadmin)"],
+        "summary": "Listar categorias padrão",
+        "description": "Lista as categorias padrão que todo workspace novo recebe (inclui a categoria fallback).",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Lista de categorias padrão.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/AdminDefaultCategory" }
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "401 `unauthorized`, 403 `forbidden`, 429 `rate_limited`.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Administração (Superadmin)"],
+        "summary": "Criar categoria padrão",
+        "description": "Cria uma nova categoria padrão. Se `isFallback: true`, desmarca automaticamente a categoria fallback anterior (só pode existir uma).",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/AdminCreateDefaultCategoryBody" },
+              "example": {
+                "name": "Assinaturas",
+                "icon": "repeat",
+                "color": "#7C3AED",
+                "isFallback": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Categoria criada.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/AdminDefaultCategory" }
+              }
+            }
+          },
+          "4XX": {
+            "description": "400 `validation_error`, 401 `unauthorized`, 403 `forbidden`, 429 `rate_limited`.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/default-categories/{categoryId}": {
+      "patch": {
+        "tags": ["Administração (Superadmin)"],
+        "summary": "Atualizar categoria padrão",
+        "description": "Atualiza parcialmente uma categoria padrão. Se `isFallback: true`, desmarca a fallback anterior.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "categoryId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/AdminUpdateDefaultCategoryBody" },
+              "example": { "name": "Assinaturas e streaming" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Categoria atualizada.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/AdminDefaultCategory" }
+              }
+            }
+          },
+          "4XX": {
+            "description": "400 `validation_error`, 401 `unauthorized`, 403 `forbidden`, 404 `default_category_not_found` (também para path param malformado), 429 `rate_limited`.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Administração (Superadmin)"],
+        "summary": "Excluir categoria padrão",
+        "description": "Exclui uma categoria padrão. Nunca é possível excluir a categoria marcada como fallback — outra precisa ser promovida antes (via PATCH).",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "categoryId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "204": { "description": "Categoria excluída (sem corpo)." },
+          "4XX": {
+            "description": "401 `unauthorized`, 403 `forbidden`, 404 `default_category_not_found`, 409 `cannot_delete_fallback_category`, 429 `rate_limited`.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/ai-settings": {
+      "get": {
+        "tags": ["Administração (Superadmin)"],
+        "summary": "Ver configurações de IA",
+        "description": "Retorna as configurações globais de guardrail de IA (orçamento diário de tokens por usuário).",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Configurações atuais.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/AdminAiSettings" }
+              }
+            }
+          },
+          "4XX": {
+            "description": "401 `unauthorized`, 403 `forbidden`, 429 `rate_limited`.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": ["Administração (Superadmin)"],
+        "summary": "Atualizar configurações de IA",
+        "description": "Atualiza o orçamento diário de tokens de IA por usuário. Grava write-through no cache — reflete no pipeline de IA imediatamente, sem redeploy.",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/AdminUpdateAiSettingsBody" },
+              "example": { "dailyTokenBudgetPerUser": 50000 }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Configurações atualizadas.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/AdminAiSettings" }
+              }
+            }
+          },
+          "4XX": {
+            "description": "400 `validation_error`, 401 `unauthorized`, 403 `forbidden`, 429 `rate_limited`.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/feature-flags": {
+      "get": {
+        "tags": ["Administração (Superadmin)"],
+        "summary": "Listar feature flags",
+        "description": "Lista todas as feature flags da plataforma, incluindo as de sistema (`isSystem: true`, não editáveis via delete).",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Lista de feature flags.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/AdminFeatureFlag" }
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "401 `unauthorized`, 403 `forbidden`, 429 `rate_limited`.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/feature-flags/{key}": {
+      "put": {
+        "tags": ["Administração (Superadmin)"],
+        "summary": "Criar ou atualizar feature flag",
+        "description": "Cria a flag se `key` não existir, ou atualiza se já existir (upsert). Nunca permite alterar `isSystem` — esse campo só é definido pelo seed.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-z0-9_-]+$",
+              "minLength": 1,
+              "maxLength": 80
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/AdminUpsertFeatureFlagBody" },
+              "example": {
+                "enabled": true,
+                "description": "Libera o assistente de IA no WhatsApp para todos os workspaces."
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Feature flag criada ou atualizada.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/AdminFeatureFlag" }
+              }
+            }
+          },
+          "4XX": {
+            "description": "400 `validation_error`, 401 `unauthorized`, 403 `forbidden`, 404 (path param `key` malformado), 429 `rate_limited`.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Administração (Superadmin)"],
+        "summary": "Excluir feature flag",
+        "description": "Exclui uma feature flag. Nunca é possível excluir uma flag de sistema (`isSystem: true`) — só o toggle `enabled` é editável nela via PUT.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-z0-9_-]+$",
+              "minLength": 1,
+              "maxLength": 80
+            }
+          }
+        ],
+        "responses": {
+          "204": { "description": "Feature flag excluída (sem corpo)." },
+          "4XX": {
+            "description": "401 `unauthorized`, 403 `forbidden`, 404 `feature_flag_not_found`, 409 `cannot_delete_system_feature_flag`, 429 `rate_limited`.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/metrics": {
+      "get": {
+        "tags": ["Administração (Superadmin)"],
+        "summary": "Métricas da plataforma",
+        "description": "Retorna métricas agregadas: usuários totais/suspensos, workspaces por plano e tipo, transações do mês corrente e uso de IA (últimos 30 dias) por camada — a camada 0 (determinística, custo zero) nunca aparece aqui.",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Métricas agregadas da plataforma.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/AdminPlatformMetrics" }
+              }
+            }
+          },
+          "4XX": {
+            "description": "401 `unauthorized`, 403 `forbidden`, 429 `rate_limited`.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/plans": {
+      "get": {
+        "tags": ["Administração (Superadmin)"],
+        "summary": "Listar planos",
+        "description": "Lista todos os planos da plataforma (ativos e inativos), com suas opções de cobrança.",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Lista de planos.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/AdminPlan" }
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "401 `unauthorized`, 403 `forbidden`, 429 `rate_limited`.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Administração (Superadmin)"],
+        "summary": "Criar plano",
+        "description": "Cria um novo plano. `key` precisa ser única na plataforma. `features` precisa conter apenas chaves de feature flags já cadastradas.",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/AdminCreatePlanBody" },
+              "example": {
+                "key": "pro",
+                "name": "Pro",
+                "description": "Para famílias e times pequenos.",
+                "trialDays": 14,
+                "limits": {
+                  "maxOwnedSharedWorkspaces": 3,
+                  "maxMembersPerWorkspace": 10,
+                  "maxSavedFormulasPerWorkspace": 20
+                },
+                "features": ["ai_whatsapp_assistant", "custom_categories"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Plano criado.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/AdminPlan" }
+              }
+            }
+          },
+          "4XX": {
+            "description": "400 `validation_error`, 401 `unauthorized`, 403 `forbidden`, 409 `plan_key_taken`, 422 `unknown_feature_key`, 429 `rate_limited`.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/plans/{id}": {
+      "patch": {
+        "tags": ["Administração (Superadmin)"],
+        "summary": "Atualizar plano",
+        "description": "Atualiza parcialmente um plano. `key` nunca é editável por essa rota — é o identificador estável usado por lookups internos (ex.: o plano `free`).",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/AdminUpdatePlanBody" },
+              "example": { "name": "Pro Plus", "trialDays": 30 }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Plano atualizado.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/AdminPlan" }
+              }
+            }
+          },
+          "4XX": {
+            "description": "400 `validation_error`, 401 `unauthorized`, 403 `forbidden`, 404 `plan_not_found`, 422 `unknown_feature_key`, 429 `rate_limited`.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/plans/{id}/deactivate": {
+      "post": {
+        "tags": ["Administração (Superadmin)"],
+        "summary": "Desativar plano",
+        "description": "Desativa um plano — some da lista de opções para novas atribuições, mas quem já está nele continua exatamente como antes (sem hard delete, `plans.id` é FK de `workspaces.planId`).",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Plano desativado.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/AdminPlan" }
+              }
+            }
+          },
+          "4XX": {
+            "description": "401 `unauthorized`, 403 `forbidden`, 404 `plan_not_found`, 429 `rate_limited`.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/plans/{id}/activate": {
+      "post": {
+        "tags": ["Administração (Superadmin)"],
+        "summary": "Ativar plano",
+        "description": "Reativa um plano previamente desativado, voltando a listá-lo como opção para novas atribuições.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Plano ativado.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/AdminPlan" }
+              }
+            }
+          },
+          "4XX": {
+            "description": "401 `unauthorized`, 403 `forbidden`, 404 `plan_not_found`, 429 `rate_limited`.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/plans/{id}/prices": {
+      "post": {
+        "tags": ["Administração (Superadmin)"],
+        "summary": "Adicionar opção de cobrança ao plano",
+        "description": "Adiciona uma nova opção de cobrança (ex.: mensal, anual) a um plano. Não pode haver duas opções com o mesmo intervalo (`billingIntervalUnit` + `billingIntervalCount`) no mesmo plano. Se `isDefault: true`, desmarca a opção default anterior.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/AdminCreatePlanPriceBody" },
+              "example": {
+                "billingIntervalUnit": "month",
+                "billingIntervalCount": 1,
+                "priceCents": 2990,
+                "maxInstallments": 1,
+                "paymentMethods": ["credit_card", "pix"],
+                "isDefault": true,
+                "sortOrder": 0
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Opção de cobrança criada.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/AdminPlanPrice" }
+              }
+            }
+          },
+          "4XX": {
+            "description": "400 `validation_error`, 401 `unauthorized`, 403 `forbidden`, 404 `plan_not_found`, 409 `plan_price_interval_taken`, 429 `rate_limited`.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/plans/{id}/prices/{priceId}": {
+      "patch": {
+        "tags": ["Administração (Superadmin)"],
+        "summary": "Atualizar opção de cobrança",
+        "description": "Atualiza parcialmente uma opção de cobrança de um plano. Se mudar o intervalo, valida que não colide com outra opção do mesmo plano.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          },
+          {
+            "name": "priceId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/AdminUpdatePlanPriceBody" },
+              "example": { "priceCents": 3490 }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Opção de cobrança atualizada.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/AdminPlanPrice" }
+              }
+            }
+          },
+          "4XX": {
+            "description": "400 `validation_error`, 401 `unauthorized`, 403 `forbidden`, 404 `plan_price_not_found`, 409 `plan_price_interval_taken`, 429 `rate_limited`.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Administração (Superadmin)"],
+        "summary": "Excluir opção de cobrança",
+        "description": "Exclui uma opção de cobrança do plano. Todo plano precisa ter ao menos uma opção — a exclusão da última é bloqueada.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          },
+          {
+            "name": "priceId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "204": { "description": "Opção de cobrança excluída (sem corpo)." },
+          "4XX": {
+            "description": "401 `unauthorized`, 403 `forbidden`, 404 `plan_price_not_found`, 409 `plan_price_required` (é a última opção do plano), 429 `rate_limited`.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/workspaces": {
+      "get": {
+        "tags": ["Administração (Superadmin)"],
+        "summary": "Listar workspaces",
+        "description": "Lista workspaces da plataforma com busca e paginação, incluindo plano atual, contagem de membros e dono.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "minLength": 1, "maxLength": 120 }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer", "minimum": 1, "maximum": 100, "default": 20 }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer", "minimum": 0, "default": 0 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista paginada de workspaces.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/AdminListWorkspacesResponse" }
+              }
+            }
+          },
+          "4XX": {
+            "description": "401 `unauthorized`, 403 `forbidden`, 429 `rate_limited`.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/workspaces/{workspaceId}/plan": {
+      "patch": {
+        "tags": ["Administração (Superadmin)"],
+        "summary": "Definir plano de um workspace",
+        "description": "Atribui manualmente um plano (e opcionalmente uma opção de cobrança específica) a um workspace — hoje é a única forma de mudar plano fora do fluxo de cobrança via Stripe. Trocar para um plano com `trialDays > 0` inicia um novo trial; se `planPriceId` for omitido, usa a opção marcada como `isDefault` do plano.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/AdminSetWorkspacePlanBody" },
+              "example": {
+                "planId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+                "planPriceId": "7c9e6679-7425-40de-944b-e07fc1f90ae7"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Workspace atualizado com o novo plano.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/AdminWorkspace" }
+              }
+            }
+          },
+          "4XX": {
+            "description": "400 `validation_error`, 401 `unauthorized`, 403 `forbidden`, 404 `workspace_not_found` | `plan_not_found` | `plan_price_not_found`, 429 `rate_limited`.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/workspaces/{workspaceId}/confirm-payment": {
+      "post": {
+        "tags": ["Administração (Superadmin)"],
+        "summary": "Confirmar pagamento de um workspace",
+        "description": "Zera `trialEndsAt`, marcando o workspace como 'pagamento confirmado' e encerrando o trial antes do prazo. Usado manualmente pelo superadmin enquanto não há gateway de pagamento real integrado para esse fluxo específico.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Workspace com pagamento confirmado (trial encerrado).",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/AdminWorkspace" }
+              }
+            }
+          },
+          "4XX": {
+            "description": "401 `unauthorized`, 403 `forbidden`, 404 `workspace_not_found`, 429 `rate_limited`.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ErrorResponse": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message"],
+            "properties": {
+              "code": { "type": "string", "example": "validation_error" },
+              "message": { "type": "string", "example": "Payload inválido." },
+              "issues": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "path": { "type": "string" },
+                    "message": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "AdminUser": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "name": { "type": "string", "example": "Ana Souza" },
+          "email": { "type": "string", "format": "email", "example": "ana@exemplo.com" },
+          "phone": { "type": "string", "nullable": true, "example": "5511999998888" },
+          "platformRole": { "type": "string", "enum": ["user", "superadmin"] },
+          "emailVerifiedAt": { "type": "string", "format": "date-time", "nullable": true },
+          "suspendedAt": { "type": "string", "format": "date-time", "nullable": true },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "planName": { "type": "string", "nullable": true, "example": "Pro" }
+        }
+      },
+      "AdminListUsersResponse": {
+        "type": "object",
+        "properties": {
+          "users": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/AdminUser" }
+          },
+          "total": { "type": "integer", "example": 132 }
+        }
+      },
+      "AdminDefaultCategory": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "name": { "type": "string", "example": "Assinaturas" },
+          "icon": { "type": "string", "example": "repeat" },
+          "color": { "type": "string", "example": "#7C3AED" },
+          "isFallback": { "type": "boolean", "example": false },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "AdminCreateDefaultCategoryBody": {
+        "type": "object",
+        "required": ["name", "icon", "color"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1, "maxLength": 60 },
+          "icon": { "type": "string", "minLength": 1, "maxLength": 60 },
+          "color": {
+            "type": "string",
+            "pattern": "^#[0-9A-Fa-f]{6}$",
+            "example": "#7C3AED"
+          },
+          "isFallback": { "type": "boolean", "default": false }
+        }
+      },
+      "AdminUpdateDefaultCategoryBody": {
+        "type": "object",
+        "description": "Todos os campos são opcionais (atualização parcial).",
+        "properties": {
+          "name": { "type": "string", "minLength": 1, "maxLength": 60 },
+          "icon": { "type": "string", "minLength": 1, "maxLength": 60 },
+          "color": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
+          "isFallback": { "type": "boolean" }
+        }
+      },
+      "AdminAiSettings": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "dailyTokenBudgetPerUser": { "type": "integer", "example": 50000 },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "AdminUpdateAiSettingsBody": {
+        "type": "object",
+        "required": ["dailyTokenBudgetPerUser"],
+        "properties": {
+          "dailyTokenBudgetPerUser": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10000000,
+            "example": 50000
+          }
+        }
+      },
+      "AdminFeatureFlag": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "key": { "type": "string", "example": "ai_whatsapp_assistant" },
+          "enabled": { "type": "boolean", "example": true },
+          "description": {
+            "type": "string",
+            "nullable": true,
+            "example": "Libera o assistente de IA no WhatsApp."
+          },
+          "isSystem": { "type": "boolean", "example": false },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "AdminUpsertFeatureFlagBody": {
+        "type": "object",
+        "required": ["enabled"],
+        "properties": {
+          "enabled": { "type": "boolean" },
+          "description": {
+            "type": "string",
+            "maxLength": 200,
+            "nullable": true
+          }
+        }
+      },
+      "AdminPlatformMetrics": {
+        "type": "object",
+        "properties": {
+          "totalUsers": { "type": "integer", "example": 1320 },
+          "suspendedUsers": { "type": "integer", "example": 4 },
+          "workspacesByPlan": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "plan": { "type": "string", "example": "free" },
+                "count": { "type": "integer", "example": 980 }
+              }
+            }
+          },
+          "workspacesByType": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "type": { "type": "string", "example": "personal" },
+                "count": { "type": "integer", "example": 1100 }
+              }
+            }
+          },
+          "transactionsThisMonth": { "type": "integer", "example": 45210 },
+          "aiUsageByLayer": {
+            "type": "array",
+            "description": "Últimos 30 dias. A camada 0 (determinística, custo zero) nunca aparece aqui.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "layer": { "type": "integer", "example": 1 },
+                "callCount": { "type": "integer", "example": 3200 },
+                "totalInputTokens": { "type": "integer", "example": 512000 },
+                "totalOutputTokens": { "type": "integer", "example": 98000 }
+              }
+            }
+          }
+        }
+      },
+      "AdminPlanLimits": {
+        "type": "object",
+        "required": [
+          "maxOwnedSharedWorkspaces",
+          "maxMembersPerWorkspace",
+          "maxSavedFormulasPerWorkspace"
+        ],
+        "properties": {
+          "maxOwnedSharedWorkspaces": { "type": "integer", "minimum": 0, "example": 3 },
+          "maxMembersPerWorkspace": { "type": "integer", "minimum": 1, "example": 10 },
+          "maxSavedFormulasPerWorkspace": { "type": "integer", "minimum": 0, "example": 20 }
+        }
+      },
+      "AdminPlanPrice": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "planId": { "type": "string", "format": "uuid" },
+          "billingIntervalUnit": {
+            "type": "string",
+            "enum": ["day", "week", "month", "year"]
+          },
+          "billingIntervalCount": { "type": "integer", "minimum": 1, "example": 1 },
+          "priceCents": {
+            "type": "integer",
+            "description": "Sempre em centavos, nunca float.",
+            "example": 2990
+          },
+          "maxInstallments": { "type": "integer", "minimum": 1, "example": 1 },
+          "paymentMethods": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": ["credit_card", "debit_card", "pix"]
+            }
+          },
+          "isDefault": { "type": "boolean" },
+          "sortOrder": { "type": "integer", "example": 0 },
+          "stripePriceId": {
+            "type": "string",
+            "nullable": true,
+            "description": "Id do Price no Stripe, sincronizado lazy (nulo até o primeiro checkout).",
+            "example": null
+          },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "AdminPlan": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "key": { "type": "string", "example": "pro" },
+          "name": { "type": "string", "example": "Pro" },
+          "description": {
+            "type": "string",
+            "nullable": true,
+            "example": "Para famílias e times pequenos."
+          },
+          "trialDays": { "type": "integer", "minimum": 0, "maximum": 365, "example": 14 },
+          "stripeProductId": {
+            "type": "string",
+            "nullable": true,
+            "description": "Id do Product no Stripe, sincronizado lazy.",
+            "example": null
+          },
+          "limits": { "$ref": "#/components/schemas/AdminPlanLimits" },
+          "features": {
+            "type": "array",
+            "items": { "type": "string" },
+            "example": ["ai_whatsapp_assistant", "custom_categories"]
+          },
+          "isActive": { "type": "boolean", "example": true },
+          "sortOrder": { "type": "integer", "example": 1 },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" },
+          "prices": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/AdminPlanPrice" }
+          }
+        }
+      },
+      "AdminCreatePlanBody": {
+        "type": "object",
+        "required": ["key", "name", "trialDays", "limits"],
+        "properties": {
+          "key": {
+            "type": "string",
+            "pattern": "^[a-z0-9_-]+$",
+            "minLength": 1,
+            "maxLength": 40,
+            "example": "pro"
+          },
+          "name": { "type": "string", "minLength": 1, "maxLength": 80, "example": "Pro" },
+          "description": {
+            "type": "string",
+            "maxLength": 300,
+            "nullable": true
+          },
+          "trialDays": { "type": "integer", "minimum": 0, "maximum": 365, "example": 14 },
+          "limits": { "$ref": "#/components/schemas/AdminPlanLimits" },
+          "features": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1, "maxLength": 80 },
+            "default": [],
+            "description": "Precisa conter apenas chaves de feature flags já cadastradas."
+          }
+        }
+      },
+      "AdminUpdatePlanBody": {
+        "type": "object",
+        "description": "Todos os campos são opcionais (atualização parcial). `key` nunca é editável por essa rota.",
+        "properties": {
+          "name": { "type": "string", "minLength": 1, "maxLength": 80 },
+          "description": { "type": "string", "maxLength": 300, "nullable": true },
+          "trialDays": { "type": "integer", "minimum": 0, "maximum": 365 },
+          "limits": { "$ref": "#/components/schemas/AdminPlanLimits" },
+          "features": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1, "maxLength": 80 }
+          }
+        }
+      },
+      "AdminCreatePlanPriceBody": {
+        "type": "object",
+        "required": ["billingIntervalUnit", "billingIntervalCount", "priceCents"],
+        "properties": {
+          "billingIntervalUnit": {
+            "type": "string",
+            "enum": ["day", "week", "month", "year"]
+          },
+          "billingIntervalCount": { "type": "integer", "minimum": 1, "maximum": 36, "example": 1 },
+          "priceCents": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Sempre em centavos, nunca float.",
+            "example": 2990
+          },
+          "maxInstallments": { "type": "integer", "minimum": 1, "maximum": 12, "default": 1 },
+          "paymentMethods": {
+            "type": "array",
+            "items": { "type": "string", "enum": ["credit_card", "debit_card", "pix"] },
+            "default": ["credit_card", "debit_card", "pix"],
+            "minItems": 1
+          },
+          "isDefault": { "type": "boolean", "default": false },
+          "sortOrder": { "type": "integer", "minimum": 0, "default": 0 }
+        }
+      },
+      "AdminUpdatePlanPriceBody": {
+        "type": "object",
+        "description": "Todos os campos são opcionais (atualização parcial).",
+        "properties": {
+          "billingIntervalUnit": {
+            "type": "string",
+            "enum": ["day", "week", "month", "year"]
+          },
+          "billingIntervalCount": { "type": "integer", "minimum": 1, "maximum": 36 },
+          "priceCents": { "type": "integer", "minimum": 0 },
+          "maxInstallments": { "type": "integer", "minimum": 1, "maximum": 12 },
+          "paymentMethods": {
+            "type": "array",
+            "items": { "type": "string", "enum": ["credit_card", "debit_card", "pix"] },
+            "minItems": 1
+          },
+          "isDefault": { "type": "boolean" },
+          "sortOrder": { "type": "integer", "minimum": 0 }
+        }
+      },
+      "AdminWorkspaceView": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "name": { "type": "string", "example": "Família Souza" },
+          "type": { "type": "string", "enum": ["personal", "family", "business"] },
+          "plan": { "$ref": "#/components/schemas/AdminPlan" },
+          "planPrice": {
+            "allOf": [{ "$ref": "#/components/schemas/AdminPlanPrice" }],
+            "nullable": true
+          },
+          "trialEndsAt": { "type": "string", "format": "date-time", "nullable": true },
+          "memberCount": { "type": "integer", "example": 4 },
+          "ownerName": { "type": "string", "nullable": true, "example": "Ana Souza" },
+          "ownerEmail": { "type": "string", "nullable": true, "example": "ana@exemplo.com" },
+          "createdAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "AdminListWorkspacesResponse": {
+        "type": "object",
+        "properties": {
+          "workspaces": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/AdminWorkspaceView" }
+          },
+          "total": { "type": "integer", "example": 340 }
+        }
+      },
+      "AdminWorkspace": {
+        "type": "object",
+        "description": "Entidade completa do workspace (não a view resumida da listagem), retornada pelas rotas de definir plano e confirmar pagamento.",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "name": { "type": "string", "example": "Família Souza" },
+          "type": { "type": "string", "enum": ["personal", "family", "business"] },
+          "planId": { "type": "string", "format": "uuid" },
+          "planPriceId": { "type": "string", "format": "uuid", "nullable": true },
+          "trialEndsAt": { "type": "string", "format": "date-time", "nullable": true },
+          "stripeCustomerId": { "type": "string", "nullable": true, "example": null },
+          "stripeSubscriptionId": { "type": "string", "nullable": true, "example": null },
+          "subscriptionStatus": {
+            "type": "string",
+            "enum": ["none", "trialing", "active", "past_due", "canceled", "incomplete"]
+          },
+          "cancelAtPeriodEnd": { "type": "boolean", "example": false },
+          "currentPeriodEndsAt": { "type": "string", "format": "date-time", "nullable": true },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "AdminSetWorkspacePlanBody": {
+        "type": "object",
+        "required": ["planId"],
+        "properties": {
+          "planId": { "type": "string", "format": "uuid" },
+          "planPriceId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Opcional — se omitido, usa a opção de cobrança marcada como default do plano."
+          }
+        }
+      }
+    }
+  }
+}

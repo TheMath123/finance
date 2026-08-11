@@ -1,0 +1,562 @@
+{
+  "paths": {
+    "/workspaces/{workspaceId}/saved-formulas/variables": {
+      "get": {
+        "tags": ["Fórmulas Salvas"],
+        "summary": "Listar variáveis disponíveis para fórmulas",
+        "description": "Catálogo de variáveis (tokens) que podem ser usadas em expressões de fórmulas salvas, calculado para o mês pedido (ou o mês corrente, se `year`/`month` forem omitidos). Reaproveita os mesmos números do resumo mensal — inclui variáveis de resumo, categoria, conta, cartão e método de pagamento. Requer papel mínimo **viewer** no workspace.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          },
+          {
+            "name": "year",
+            "in": "query",
+            "required": false,
+            "description": "Padrão: ano corrente.",
+            "schema": { "type": "integer", "minimum": 2000, "maximum": 2100 }
+          },
+          {
+            "name": "month",
+            "in": "query",
+            "required": false,
+            "description": "Padrão: mês corrente. `year` e `month` são usados em conjunto — se um for informado, o outro também deve ser.",
+            "schema": { "type": "integer", "minimum": 1, "maximum": 12 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de variáveis disponíveis no período.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/FormulaVariable" }
+                },
+                "example": [
+                  {
+                    "token": "receitas",
+                    "label": "Receitas",
+                    "description": "Total de receitas do mês",
+                    "group": "summary"
+                  },
+                  {
+                    "token": "despesa_categoria_c1a1e45fceea4b7f90cf3f2e1a6f1a11",
+                    "label": "Mercado",
+                    "description": "Total de despesas na categoria \"Mercado\" no mês",
+                    "group": "category"
+                  }
+                ]
+              }
+            }
+          },
+          "4XX": {
+            "description": "`validation_error` (400), `unauthorized` (401), `not_found` (404, workspace), `forbidden` (403), `rate_limited` (429).",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/workspaces/{workspaceId}/saved-formulas": {
+      "get": {
+        "tags": ["Fórmulas Salvas"],
+        "summary": "Listar fórmulas salvas do workspace",
+        "description": "Lista todas as fórmulas salvas do workspace. Requer papel mínimo **viewer** no workspace.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de fórmulas salvas.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/SavedFormula" }
+                },
+                "example": [
+                  {
+                    "id": "f1e2d3c4-b5a6-4978-8f9e-0a1b2c3d4e5f",
+                    "workspaceId": "1b1f3f7a-2e0e-4f2a-9c3e-6d4b8a1f2e22",
+                    "createdByUserId": "5e6f7a8b-9c0d-4e1f-8a2b-3c4d5e6f7a81",
+                    "name": "Sobra do mês",
+                    "expression": "receitas - despesas",
+                    "displayFormat": "currency",
+                    "pinnedHome": true,
+                    "pinnedTransactions": false,
+                    "homeOrder": 0,
+                    "transactionsOrder": null,
+                    "createdAt": "2026-01-05T10:00:00.000Z",
+                    "updatedAt": "2026-01-05T10:00:00.000Z"
+                  }
+                ]
+              }
+            }
+          },
+          "4XX": {
+            "description": "`unauthorized` (401), `not_found` (404, workspace), `forbidden` (403), `rate_limited` (429).",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Fórmulas Salvas"],
+        "summary": "Criar fórmula salva",
+        "description": "Cria uma nova fórmula salva no workspace. A expressão é avaliada contra o catálogo de variáveis do mês corrente no momento da criação, para validar sintaxe/variáveis antes de salvar — falha com `invalid_expression`, `unknown_variable` ou `evaluation_error` se a expressão não puder ser calculada. Falha com `plan_limit_reached` se o workspace já atingiu o limite de fórmulas salvas do plano efetivo. Requer papel mínimo **member** no workspace.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SavedFormulaCreateSavedFormulaBody"
+              },
+              "example": {
+                "name": "Sobra do mês",
+                "expression": "receitas - despesas",
+                "displayFormat": "currency",
+                "pinnedHome": true,
+                "pinnedTransactions": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Fórmula salva criada.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SavedFormula" },
+                "example": {
+                  "id": "f1e2d3c4-b5a6-4978-8f9e-0a1b2c3d4e5f",
+                  "workspaceId": "1b1f3f7a-2e0e-4f2a-9c3e-6d4b8a1f2e22",
+                  "createdByUserId": "5e6f7a8b-9c0d-4e1f-8a2b-3c4d5e6f7a81",
+                  "name": "Sobra do mês",
+                  "expression": "receitas - despesas",
+                  "displayFormat": "currency",
+                  "pinnedHome": true,
+                  "pinnedTransactions": false,
+                  "homeOrder": 0,
+                  "transactionsOrder": null,
+                  "createdAt": "2026-01-05T10:00:00.000Z",
+                  "updatedAt": "2026-01-05T10:00:00.000Z"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "`validation_error` (400, payload inválido), `invalid_expression` (400, sintaxe da fórmula inválida), `unknown_variable` (400, expressão usa token inexistente no catálogo), `evaluation_error` (400, ex.: divisão por zero), `plan_limit_reached` (409, limite de fórmulas salvas do plano atingido), `unauthorized` (401), `not_found` (404, workspace), `forbidden` (403), `rate_limited` (429).",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/workspaces/{workspaceId}/saved-formulas/reorder": {
+      "patch": {
+        "tags": ["Fórmulas Salvas"],
+        "summary": "Reordenar fórmulas fixadas",
+        "description": "Reordena os widgets de fórmulas fixadas em uma tela (\"home\" ou \"transactions\", via drag-and-drop no app/dashboard). `formulaIds` deve ser a lista completa e ordenada de ids das fórmulas atualmente fixadas naquela tela — cada uma recebe sua posição (índice no array) como nova ordem. Falha com `formula_not_found` se algum id não existir no workspace ou não estiver fixado no campo (`home`/`transactions`) informado. Requer papel mínimo **member** no workspace.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SavedFormulaReorderSavedFormulasBody"
+              },
+              "example": {
+                "field": "home",
+                "formulaIds": [
+                  "f1e2d3c4-b5a6-4978-8f9e-0a1b2c3d4e5f",
+                  "a2b3c4d5-e6f7-4a89-9b0c-1d2e3f4a5b6c"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Fórmulas reordenadas — devolve as fórmulas afetadas com a nova ordem.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/SavedFormula" }
+                },
+                "example": [
+                  {
+                    "id": "f1e2d3c4-b5a6-4978-8f9e-0a1b2c3d4e5f",
+                    "workspaceId": "1b1f3f7a-2e0e-4f2a-9c3e-6d4b8a1f2e22",
+                    "createdByUserId": "5e6f7a8b-9c0d-4e1f-8a2b-3c4d5e6f7a81",
+                    "name": "Sobra do mês",
+                    "expression": "receitas - despesas",
+                    "displayFormat": "currency",
+                    "pinnedHome": true,
+                    "pinnedTransactions": false,
+                    "homeOrder": 0,
+                    "transactionsOrder": null,
+                    "createdAt": "2026-01-05T10:00:00.000Z",
+                    "updatedAt": "2026-01-12T11:00:00.000Z"
+                  }
+                ]
+              }
+            }
+          },
+          "4XX": {
+            "description": "`validation_error` (400), `formula_not_found` (404, id inexistente ou não fixado no campo informado), `unauthorized` (401), `not_found` (404, workspace), `forbidden` (403), `rate_limited` (429).",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/workspaces/{workspaceId}/saved-formulas/{formulaId}": {
+      "patch": {
+        "tags": ["Fórmulas Salvas"],
+        "summary": "Atualizar fórmula salva",
+        "description": "Atualiza campos da fórmula salva (parcial). Se `expression` for enviada, é revalidada contra o catálogo de variáveis do mês corrente (mesmas falhas de `invalid_expression`/`unknown_variable`/`evaluation_error` da criação). Alternar `pinnedHome`/`pinnedTransactions` reordena o widget automaticamente (vai para o fim da fila ao fixar, perde a posição ao desafixar). Requer papel mínimo **member** no workspace.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          },
+          {
+            "name": "formulaId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SavedFormulaUpdateSavedFormulaBody"
+              },
+              "example": { "pinnedTransactions": true }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Fórmula salva atualizada.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SavedFormula" },
+                "example": {
+                  "id": "f1e2d3c4-b5a6-4978-8f9e-0a1b2c3d4e5f",
+                  "workspaceId": "1b1f3f7a-2e0e-4f2a-9c3e-6d4b8a1f2e22",
+                  "createdByUserId": "5e6f7a8b-9c0d-4e1f-8a2b-3c4d5e6f7a81",
+                  "name": "Sobra do mês",
+                  "expression": "receitas - despesas",
+                  "displayFormat": "currency",
+                  "pinnedHome": true,
+                  "pinnedTransactions": true,
+                  "homeOrder": 0,
+                  "transactionsOrder": 2,
+                  "createdAt": "2026-01-05T10:00:00.000Z",
+                  "updatedAt": "2026-01-12T11:30:00.000Z"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "`validation_error` (400), `formula_not_found` (404), `invalid_expression` (400), `unknown_variable` (400), `evaluation_error` (400), `unauthorized` (401), `not_found` (404, workspace), `forbidden` (403), `rate_limited` (429).",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Fórmulas Salvas"],
+        "summary": "Excluir fórmula salva",
+        "description": "Exclui definitivamente a fórmula salva. Requer papel mínimo **member** no workspace.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          },
+          {
+            "name": "formulaId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "204": { "description": "Fórmula salva excluída. Sem corpo de resposta." },
+          "4XX": {
+            "description": "`formula_not_found` (404), `unauthorized` (401), `not_found` (404, workspace), `forbidden` (403), `rate_limited` (429).",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/workspaces/{workspaceId}/saved-formulas/{formulaId}/evaluate": {
+      "get": {
+        "tags": ["Fórmulas Salvas"],
+        "summary": "Avaliar fórmula salva",
+        "description": "Calcula o valor atual da fórmula salva para o período pedido (ou o mês corrente, se `year`/`month` forem omitidos), usando o catálogo de variáveis financeiras do workspace naquele mês. Requer papel mínimo **viewer** no workspace.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          },
+          {
+            "name": "formulaId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          },
+          {
+            "name": "year",
+            "in": "query",
+            "required": false,
+            "description": "Padrão: ano corrente.",
+            "schema": { "type": "integer", "minimum": 2000, "maximum": 2100 }
+          },
+          {
+            "name": "month",
+            "in": "query",
+            "required": false,
+            "description": "Padrão: mês corrente.",
+            "schema": { "type": "integer", "minimum": 1, "maximum": 12 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Fórmula avaliada. `value` está em reais (não centavos) — variáveis financeiras já entram convertidas no catálogo usado pela avaliação.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/EvaluatedFormula" },
+                "example": { "value": 2300.5, "displayFormat": "currency" }
+              }
+            }
+          },
+          "4XX": {
+            "description": "`validation_error` (400), `formula_not_found` (404), `unknown_variable` (400, expressão referencia variável que não existe mais no catálogo do período), `evaluation_error` (400, ex.: divisão por zero), `unauthorized` (401), `not_found` (404, workspace), `forbidden` (403), `rate_limited` (429).",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "SavedFormula": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "workspaceId": { "type": "string", "format": "uuid" },
+          "createdByUserId": { "type": "string", "format": "uuid" },
+          "name": { "type": "string" },
+          "expression": {
+            "type": "string",
+            "description": "Expressão matemática usando tokens do catálogo de variáveis (ex.: \"receitas - despesas\")."
+          },
+          "displayFormat": {
+            "type": "string",
+            "enum": ["currency", "number"]
+          },
+          "pinnedHome": { "type": "boolean" },
+          "pinnedTransactions": { "type": "boolean" },
+          "homeOrder": {
+            "type": "integer",
+            "nullable": true,
+            "description": "Ordem de exibição do widget na Home — null quando não fixada lá."
+          },
+          "transactionsOrder": {
+            "type": "integer",
+            "nullable": true,
+            "description": "Ordem de exibição do widget na tela de transações — null quando não fixada lá."
+          },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        },
+        "required": [
+          "id",
+          "workspaceId",
+          "createdByUserId",
+          "name",
+          "expression",
+          "displayFormat",
+          "pinnedHome",
+          "pinnedTransactions",
+          "homeOrder",
+          "transactionsOrder",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "FormulaVariable": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "description": "Identificador alfanumérico/underscore usado na expressão (sem hífen)."
+          },
+          "label": { "type": "string" },
+          "description": { "type": "string" },
+          "group": {
+            "type": "string",
+            "enum": ["summary", "category", "account", "card", "method"]
+          }
+        },
+        "required": ["token", "label", "description", "group"]
+      },
+      "EvaluatedFormula": {
+        "type": "object",
+        "properties": {
+          "value": { "type": "number" },
+          "displayFormat": {
+            "type": "string",
+            "enum": ["currency", "number"]
+          }
+        },
+        "required": ["value", "displayFormat"]
+      },
+      "SavedFormulaCreateSavedFormulaBody": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string", "minLength": 1, "maxLength": 80 },
+          "expression": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500,
+            "description": "Validada e avaliada contra o catálogo de variáveis do mês corrente antes de salvar."
+          },
+          "displayFormat": {
+            "type": "string",
+            "enum": ["currency", "number"]
+          },
+          "pinnedHome": { "type": "boolean" },
+          "pinnedTransactions": { "type": "boolean" }
+        },
+        "required": [
+          "name",
+          "expression",
+          "displayFormat",
+          "pinnedHome",
+          "pinnedTransactions"
+        ]
+      },
+      "SavedFormulaUpdateSavedFormulaBody": {
+        "type": "object",
+        "description": "Todos os campos são opcionais (atualização parcial).",
+        "properties": {
+          "name": { "type": "string", "minLength": 1, "maxLength": 80 },
+          "expression": { "type": "string", "minLength": 1, "maxLength": 500 },
+          "displayFormat": {
+            "type": "string",
+            "enum": ["currency", "number"]
+          },
+          "pinnedHome": { "type": "boolean" },
+          "pinnedTransactions": { "type": "boolean" }
+        }
+      },
+      "SavedFormulaReorderSavedFormulasBody": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "string",
+            "enum": ["home", "transactions"],
+            "description": "Tela cujo widget está sendo reordenado."
+          },
+          "formulaIds": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "type": "string", "format": "uuid" },
+            "description": "Ordem final desejada — lista completa dos ids fixados na tela indicada por `field`."
+          }
+        },
+        "required": ["field", "formulaIds"]
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": { "type": "string" },
+              "message": { "type": "string" },
+              "issues": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "path": { "type": "string" },
+                    "message": { "type": "string" }
+                  }
+                }
+              }
+            },
+            "required": ["code", "message"]
+          }
+        },
+        "required": ["error"]
+      }
+    }
+  }
+}

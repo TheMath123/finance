@@ -1,0 +1,635 @@
+{
+  "paths": {
+    "/workspaces": {
+      "get": {
+        "tags": ["Workspaces"],
+        "summary": "Listar meus workspaces",
+        "description": "Workspaces (pessoal e compartilhados) dos quais o usuário autenticado é membro — usado no seletor do app.",
+        "operationId": "listMyWorkspaces",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Lista de workspaces do usuário.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/WorkspaceSummary" }
+                },
+                "example": [
+                  {
+                    "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+                    "name": "Família Silva",
+                    "type": "family",
+                    "plan": "free",
+                    "role": "owner"
+                  }
+                ]
+              }
+            }
+          },
+          "4XX": {
+            "description": "unauthorized (401), rate_limited (429).",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Workspaces"],
+        "summary": "Criar workspace",
+        "description": "Cria um workspace compartilhado (`family`) no plano free, já com quem criou como owner, categorias padrão e uma conta inicial. Requer autenticação.",
+        "operationId": "createWorkspace",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/WorkspaceCreateWorkspaceBody" },
+              "example": { "name": "Família Silva" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Workspace criado.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/WorkspaceEntity" }
+              }
+            }
+          },
+          "4XX": {
+            "description": "validation_error (400), unauthorized (401), plan_limit_reached (409), rate_limited (429).",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+            }
+          }
+        }
+      }
+    },
+    "/workspaces/{workspaceId}": {
+      "patch": {
+        "tags": ["Workspaces"],
+        "summary": "Renomear workspace",
+        "description": "Requer papel admin ou superior no workspace.",
+        "operationId": "updateWorkspace",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/WorkspaceUpdateWorkspaceBody" },
+              "example": { "name": "Família Silva & Cia" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Workspace atualizado.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/WorkspaceEntity" }
+              }
+            }
+          },
+          "4XX": {
+            "description": "validation_error (400), unauthorized (401), forbidden (403), not_found (404), rate_limited (429).",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+            }
+          }
+        }
+      }
+    },
+    "/workspaces/{workspaceId}/members": {
+      "get": {
+        "tags": ["Workspaces"],
+        "summary": "Listar membros do workspace",
+        "description": "Requer papel viewer ou superior no workspace (qualquer membro).",
+        "operationId": "listMembers",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Membros do workspace, com nome e e-mail.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/WorkspaceMember" }
+                },
+                "example": [
+                  {
+                    "userId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+                    "role": "owner",
+                    "name": "Ana Silva",
+                    "email": "ana@exemplo.com"
+                  }
+                ]
+              }
+            }
+          },
+          "4XX": {
+            "description": "unauthorized (401), not_found (404, workspace inexistente ou usuário não é membro), rate_limited (429).",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+            }
+          }
+        }
+      }
+    },
+    "/workspaces/{workspaceId}/members/{userId}": {
+      "patch": {
+        "tags": ["Workspaces"],
+        "summary": "Alterar papel de um membro",
+        "description": "Requer papel admin ou superior no workspace. Somente um owner pode promover outro membro a owner; rebaixar o único owner é bloqueado.",
+        "operationId": "updateMemberRole",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          },
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/WorkspaceUpdateMemberRoleBody" },
+              "example": { "role": "admin" }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Papel atualizado (sem corpo)."
+          },
+          "4XX": {
+            "description": "validation_error (400), unauthorized (401), forbidden (403), owner_required_to_transfer (403), not_found (404), member_not_found (404), sole_owner_cannot_be_demoted (409), rate_limited (429).",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Workspaces"],
+        "summary": "Remover membro (ou sair do workspace)",
+        "description": "Requer papel viewer ou superior no workspace (qualquer membro pode chamar). Sair de si mesmo (`userId` = usuário autenticado) é sempre permitido, exceto sendo o único owner; remover outro membro exige papel admin ou superior, checado dentro do use case.",
+        "operationId": "removeMember",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          },
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Membro removido (sem corpo)."
+          },
+          "4XX": {
+            "description": "unauthorized (401), forbidden (403), not_found (404), member_not_found (404), sole_owner_cannot_leave (409), rate_limited (429).",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+            }
+          }
+        }
+      }
+    },
+    "/workspaces/{workspaceId}/invites": {
+      "post": {
+        "tags": ["Workspaces"],
+        "summary": "Criar convite de workspace",
+        "description": "Requer papel admin ou superior no workspace. Aceita e-mail ou telefone; convite nunca concede papel owner.",
+        "operationId": "createInvite",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/WorkspaceCreateInviteBody" },
+              "example": { "emailOrPhone": "convidado@exemplo.com", "role": "member" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Convite criado.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/WorkspaceInvite" }
+              }
+            }
+          },
+          "4XX": {
+            "description": "validation_error (400), unauthorized (401), forbidden (403), not_found (404), already_member (409), plan_limit_reached (409), rate_limited (429).",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": ["Workspaces"],
+        "summary": "Listar convites pendentes do workspace",
+        "description": "Requer papel admin ou superior no workspace. Visão de quem convidou — convites ainda pendentes.",
+        "operationId": "listWorkspaceInvites",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Convites pendentes do workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/WorkspaceInvite" }
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "unauthorized (401), forbidden (403), not_found (404), rate_limited (429).",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+            }
+          }
+        }
+      }
+    },
+    "/invites": {
+      "get": {
+        "tags": ["Workspaces"],
+        "summary": "Listar meus convites pendentes",
+        "description": "Convites pendentes endereçados ao usuário autenticado (por e-mail ou telefone vinculado). Requer autenticação.",
+        "operationId": "listMyInvites",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Convites pendentes do usuário.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/WorkspaceMyInvite" }
+                },
+                "example": [
+                  {
+                    "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+                    "workspaceId": "9c858901-8a57-4791-81fe-4c455b099bc9",
+                    "workspaceName": "Família Silva",
+                    "inviterName": "Ana Silva",
+                    "role": "member",
+                    "expiresAt": "2026-08-18T12:00:00.000Z"
+                  }
+                ]
+              }
+            }
+          },
+          "4XX": {
+            "description": "unauthorized (401), rate_limited (429).",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+            }
+          }
+        }
+      }
+    },
+    "/invites/{inviteId}/accept": {
+      "post": {
+        "tags": ["Workspaces"],
+        "summary": "Aceitar convite",
+        "description": "Requer autenticação. Só aceita se o e-mail/telefone do convite bater com o usuário logado (e, no caso de e-mail, verificado). Idempotente.",
+        "operationId": "acceptInvite",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "inviteId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Convite aceito, usuário adicionado como membro (sem corpo)."
+          },
+          "4XX": {
+            "description": "unauthorized (401), not_found (404, inclui convite inexistente/alheio), invite_not_pending (409), plan_limit_reached (409), rate_limited (429).",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+            }
+          }
+        }
+      }
+    },
+    "/invites/{inviteId}/revoke": {
+      "post": {
+        "tags": ["Workspaces"],
+        "summary": "Revogar convite",
+        "description": "Requer autenticação; autorização (papel admin ou superior no workspace do convite) é checada dentro do use case — rota top-level, sem :workspaceId na URL.",
+        "operationId": "revokeInvite",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "inviteId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Convite revogado (sem corpo)."
+          },
+          "4XX": {
+            "description": "unauthorized (401), not_found (404, inclui convite inexistente ou de outro workspace), invite_not_pending (409), rate_limited (429).",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+            }
+          }
+        }
+      }
+    },
+    "/workspaces/{workspaceId}/activity": {
+      "get": {
+        "tags": ["Workspaces"],
+        "summary": "Listar atividade (audit log) do workspace",
+        "description": "Requer papel viewer ou superior no workspace.",
+        "operationId": "listActivity",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          },
+          {
+            "name": "entity",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "maxLength": 60 }
+          },
+          {
+            "name": "userId",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "format": "uuid" }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "format": "date" },
+            "description": "Formato YYYY-MM-DD."
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "format": "date" },
+            "description": "Formato YYYY-MM-DD."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer", "minimum": 1, "maximum": 200 }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer", "minimum": 0 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Entradas de auditoria do workspace, mais recentes primeiro.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/WorkspaceActivityEntry" }
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "validation_error (400), unauthorized (401), not_found (404), rate_limited (429).",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": { "type": "string", "example": "not_found" },
+              "message": { "type": "string", "example": "Workspace não encontrado." },
+              "issues": {
+                "type": "array",
+                "nullable": true,
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "path": { "type": "string" },
+                    "message": { "type": "string" }
+                  }
+                }
+              }
+            },
+            "required": ["code", "message"]
+          }
+        },
+        "required": ["error"]
+      },
+      "WorkspaceEntity": {
+        "type": "object",
+        "description": "Workspace completo (retornado por criar/renomear).",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "name": { "type": "string", "example": "Família Silva" },
+          "type": { "type": "string", "enum": ["personal", "family", "business"] },
+          "planId": { "type": "string", "format": "uuid" },
+          "planPriceId": { "type": "string", "format": "uuid", "nullable": true },
+          "trialEndsAt": { "type": "string", "format": "date-time", "nullable": true },
+          "stripeCustomerId": { "type": "string", "nullable": true },
+          "stripeSubscriptionId": { "type": "string", "nullable": true },
+          "subscriptionStatus": {
+            "type": "string",
+            "enum": ["none", "trialing", "active", "past_due", "canceled", "incomplete"]
+          },
+          "cancelAtPeriodEnd": { "type": "boolean" },
+          "currentPeriodEndsAt": { "type": "string", "format": "date-time", "nullable": true },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        },
+        "required": [
+          "id", "name", "type", "planId", "planPriceId", "trialEndsAt",
+          "stripeCustomerId", "stripeSubscriptionId", "subscriptionStatus",
+          "cancelAtPeriodEnd", "currentPeriodEndsAt", "createdAt", "updatedAt"
+        ]
+      },
+      "WorkspaceSummary": {
+        "type": "object",
+        "description": "Resumo de workspace usado na listagem 'meus workspaces'.",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "name": { "type": "string" },
+          "type": { "type": "string", "enum": ["personal", "family", "business"] },
+          "plan": { "type": "string", "example": "free" },
+          "role": { "type": "string", "enum": ["owner", "admin", "member", "viewer"] }
+        },
+        "required": ["id", "name", "type", "plan", "role"]
+      },
+      "WorkspaceMember": {
+        "type": "object",
+        "properties": {
+          "userId": { "type": "string", "format": "uuid" },
+          "role": { "type": "string", "enum": ["owner", "admin", "member", "viewer"] },
+          "name": { "type": "string" },
+          "email": { "type": "string", "format": "email" }
+        },
+        "required": ["userId", "role", "name", "email"]
+      },
+      "WorkspaceInvite": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "workspaceId": { "type": "string", "format": "uuid" },
+          "invitedBy": { "type": "string", "format": "uuid", "nullable": true },
+          "emailOrPhone": { "type": "string", "example": "convidado@exemplo.com" },
+          "role": { "type": "string", "enum": ["admin", "member", "viewer"] },
+          "status": { "type": "string", "enum": ["pending", "accepted", "expired", "revoked"] },
+          "expiresAt": { "type": "string", "format": "date-time" },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        },
+        "required": [
+          "id", "workspaceId", "invitedBy", "emailOrPhone", "role", "status",
+          "expiresAt", "createdAt", "updatedAt"
+        ]
+      },
+      "WorkspaceMyInvite": {
+        "type": "object",
+        "description": "Convite pendente endereçado ao usuário logado, já com nome do workspace e de quem convidou.",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "workspaceId": { "type": "string", "format": "uuid" },
+          "workspaceName": { "type": "string" },
+          "inviterName": { "type": "string" },
+          "role": { "type": "string", "enum": ["admin", "member", "viewer"] },
+          "expiresAt": { "type": "string", "format": "date-time" }
+        },
+        "required": ["id", "workspaceId", "workspaceName", "inviterName", "role", "expiresAt"]
+      },
+      "WorkspaceActivityEntry": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "action": { "type": "string", "enum": ["create", "update", "delete", "restore"] },
+          "entity": { "type": "string", "example": "workspace_member" },
+          "entityId": { "type": "string", "format": "uuid" },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "userId": { "type": "string", "format": "uuid", "nullable": true },
+          "userName": { "type": "string", "nullable": true, "description": "Null quando o usuário que praticou a ação foi excluído (LGPD)." }
+        },
+        "required": ["id", "action", "entity", "entityId", "createdAt", "userId", "userName"]
+      },
+      "WorkspaceCreateWorkspaceBody": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string", "minLength": 1, "maxLength": 120, "example": "Família Silva" }
+        },
+        "required": ["name"]
+      },
+      "WorkspaceUpdateWorkspaceBody": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string", "minLength": 1, "maxLength": 120, "example": "Família Silva & Cia" }
+        },
+        "required": ["name"]
+      },
+      "WorkspaceUpdateMemberRoleBody": {
+        "type": "object",
+        "properties": {
+          "role": { "type": "string", "enum": ["owner", "admin", "member", "viewer"] }
+        },
+        "required": ["role"]
+      },
+      "WorkspaceCreateInviteBody": {
+        "type": "object",
+        "properties": {
+          "emailOrPhone": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 320,
+            "description": "E-mail ou telefone de um usuário (existente ou não) da plataforma.",
+            "example": "convidado@exemplo.com"
+          },
+          "role": { "type": "string", "enum": ["admin", "member", "viewer"], "description": "Convite nunca concede owner." }
+        },
+        "required": ["emailOrPhone", "role"]
+      }
+    }
+  }
+}

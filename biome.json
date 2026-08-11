@@ -6,7 +6,9 @@
       "!**/apps/dashboard",
       "!**/apps/mobile/android",
       "!**/apps/mobile/assets",
-      "!**/packages/db/drizzle"
+      "!**/packages/db/drizzle",
+      "!**/docs/api/fragments",
+      "!**/docs/api/openapi.json"
     ]
   },
   "formatter": {
