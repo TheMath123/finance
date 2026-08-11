@@ -11,6 +11,15 @@ export const featureFlags = pgTable('feature_flags', {
   key: text('key').notNull().unique(),
   enabled: boolean('enabled').notNull().default(false),
   description: text('description'),
+  /**
+   * Flags predefinidas da plataforma (seed via migration, ver drizzle/ —
+   * mesmo padrão de `default_categories`/`platform_settings`): nunca podem
+   * ser excluídas via API/UI, só o toggle `enabled` é editável pelo
+   * superadmin. `upsert` nunca escreve este campo (fora de
+   * `FeatureFlagInput`, ver feature-flag-repository.ts) — só o seed decide
+   * quem é `isSystem`.
+   */
+  isSystem: boolean('is_system').notNull().default(false),
   createdAt: createdAt(),
   updatedAt: updatedAt(),
 });

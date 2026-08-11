@@ -133,6 +133,8 @@ export interface FeatureFlagView {
 	key: string;
 	enabled: boolean;
 	description: string | null;
+	/** Flag predefinida da plataforma (seed via migration) — não pode ser excluída. */
+	isSystem: boolean;
 	createdAt: string;
 	updatedAt: string;
 }

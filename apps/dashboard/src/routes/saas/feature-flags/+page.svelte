@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 
+	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { Input } from '$lib/components/ui/input';
@@ -44,7 +45,12 @@
 				class="flex items-center justify-between gap-4 rounded-lg border border-foreground/10 px-4 py-3"
 			>
 				<div class="min-w-0">
-					<p class="truncate text-sm font-medium">{flag.key}</p>
+					<div class="flex items-center gap-2">
+						<p class="truncate text-sm font-medium">{flag.key}</p>
+						{#if flag.isSystem}
+							<Badge variant="outline">Sistema</Badge>
+						{/if}
+					</div>
 					{#if flag.description}
 						<p class="truncate text-sm text-muted-foreground">{flag.description}</p>
 					{/if}
@@ -57,10 +63,12 @@
 							{flag.enabled ? 'Ativa' : 'Inativa'}
 						</Button>
 					</form>
-					<form method="POST" action="?/remove" use:enhance>
-						<input type="hidden" name="key" value={flag.key} />
-						<Button type="submit" variant="destructive" size="sm">Excluir</Button>
-					</form>
+					{#if !flag.isSystem}
+						<form method="POST" action="?/remove" use:enhance>
+							<input type="hidden" name="key" value={flag.key} />
+							<Button type="submit" variant="destructive" size="sm">Excluir</Button>
+						</form>
+					{/if}
 				</div>
 			</div>
 		{:else}

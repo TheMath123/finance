@@ -102,7 +102,8 @@ describe('admin: feature flags', () => {
     const list = await listFeatureFlags(deps);
     expect(list.some((f) => f.key === key)).toBe(true);
 
-    await deleteFeatureFlag(deps, adminUserId, key);
+    const deleted = await deleteFeatureFlag(deps, adminUserId, key);
+    expect(deleted.ok).toBe(true);
     expect(await isFeatureEnabled(deps, key)).toBe(false);
 
     const listAfterDelete = await listFeatureFlags(deps);
@@ -115,6 +116,29 @@ describe('admin: feature flags', () => {
     const actions = auditRows.map((r) => r.action);
     expect(actions).toContain('upsert_feature_flag');
     expect(actions).toContain('delete_feature_flag');
+  });
+
+  test('não é possível deletar uma flag de sistema, mas uma flag comum pode ser deletada', async () => {
+    const deps = createTestDeps(db);
+    const adminUserId = await registerAdmin(deps);
+
+    // Flag de sistema real, seedada via migration (0030) — não criada pelo teste.
+    const systemResult = await deleteFeatureFlag(
+      deps,
+      adminUserId,
+      'csv_export'
+    );
+    expect(systemResult.ok).toBe(false);
+    if (!systemResult.ok) {
+      expect(systemResult.error).toBe('cannot_delete_system_feature_flag');
+    }
+    expect(await isFeatureEnabled(deps, 'csv_export')).toBe(true);
+
+    const key = uniqueFlagKey();
+    await upsertFeatureFlag(deps, adminUserId, key, { enabled: true });
+    const regularResult = await deleteFeatureFlag(deps, adminUserId, key);
+    expect(regularResult.ok).toBe(true);
+    expect(await isFeatureEnabled(deps, key)).toBe(false);
   });
 });
 

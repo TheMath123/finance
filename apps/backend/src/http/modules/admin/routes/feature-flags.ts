@@ -6,8 +6,9 @@ import {
 } from '../../../../application/use-cases/admin';
 import type { AppDeps } from '../../../deps';
 import { requireSuperadmin } from '../../../guards';
-import { fail } from '../../../http-error';
+import { fail, respond } from '../../../http-error';
 import { validateBody, validateParams } from '../../../validate';
+import { ADMIN_ERRORS } from '../errors';
 import { featureFlagParamsSchema, upsertFeatureFlagSchema } from '../schemas';
 
 export const listFeatureFlagsRoute = (deps: AppDeps) =>
@@ -44,7 +45,11 @@ export const deleteFeatureFlagRoute = (deps: AppDeps) =>
       if (!p.ok) return fail(set, p.error);
       const auth = await requireSuperadmin(deps, request);
       if (!auth.ok) return fail(set, auth.error);
-      await deleteFeatureFlag(deps, auth.value.userId, p.value.key);
-      set.status = 204;
+      const result = await deleteFeatureFlag(
+        deps,
+        auth.value.userId,
+        p.value.key
+      );
+      return respond(set, result, ADMIN_ERRORS, 204);
     }
   );
