@@ -289,7 +289,7 @@ describe('crédito, fatura e pagamento', () => {
     const invoices = await listInvoices(deps, actor, cardId);
     expect(invoices.ok).toBe(true);
     if (!invoices.ok) return;
-    const periods = invoices.value.map(
+    const periods = invoices.value.invoices.map(
       (i) => `${i.monthReference}/${i.yearReference}`
     );
     expect(periods).toContain('7/2026');
@@ -312,7 +312,7 @@ describe('crédito, fatura e pagamento', () => {
   test('pagar fatura cria transação de despesa na conta e marca paid; transação da fatura fica imutável', async () => {
     const invoices = await listInvoices(deps, actor, cardId);
     if (!invoices.ok) throw new Error('listagem falhou');
-    const july = invoices.value.find(
+    const july = invoices.value.invoices.find(
       (i) => i.monthReference === 7 && i.yearReference === 2026
     );
     if (!july) throw new Error('fatura 07/2026 não encontrada');
@@ -557,7 +557,7 @@ describe('editar conta/cartão da transação (auditoria 2026-07-20)', () => {
     const newInvoices = await listInvoices(deps, actor, secondCardId);
     if (!newInvoices.ok) throw new Error('listagem falhou');
     expect(
-      newInvoices.value.some((i) => i.id === updated.value.invoiceId)
+      newInvoices.value.invoices.some((i) => i.id === updated.value.invoiceId)
     ).toBe(true);
   });
 

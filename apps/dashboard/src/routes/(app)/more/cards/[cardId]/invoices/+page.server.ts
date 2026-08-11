@@ -7,16 +7,32 @@ import * as invoiceApi from '$lib/server/invoice-api';
 
 import type { Actions, PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async ({ parent, locals, params }) => {
+const PAGE_SIZE = 12;
+
+export const load: PageServerLoad = async ({ parent, locals, params, url }) => {
 	const { activeWorkspace } = await parent();
 	if (!activeWorkspace || !locals.session) redirect(303, '/');
 
 	const accessToken = locals.session.accessToken;
 	const workspaceId = activeWorkspace.id;
 
+	// Filtro por competência (<input type="month">, formato YYYY-MM) — pula
+	// direto pra fatura daquele mês, sem precisar paginar até achar.
+	const monthParam = url.searchParams.get('month');
+	const [yearFilter, monthFilter] = monthParam?.match(/^\d{4}-\d{2}$/)
+		? [Number(monthParam.slice(0, 4)), Number(monthParam.slice(5, 7))]
+		: [undefined, undefined];
+	const page = Math.max(1, Number(url.searchParams.get('page') ?? '1'));
+	const offset = (page - 1) * PAGE_SIZE;
+
 	const [cards, invoices, accounts] = await Promise.all([
 		cardApi.listCards(accessToken, workspaceId),
-		invoiceApi.listInvoices(accessToken, workspaceId, params.cardId),
+		invoiceApi.listInvoices(accessToken, workspaceId, params.cardId, {
+			limit: PAGE_SIZE,
+			offset,
+			month: monthFilter,
+			year: yearFilter
+		}),
 		accountApi.listAccounts(accessToken, workspaceId)
 	]);
 
@@ -25,7 +41,12 @@ export const load: PageServerLoad = async ({ parent, locals, params }) => {
 
 	return {
 		card,
-		invoices: invoices.ok ? invoices.value : [],
+		invoices: invoices.ok ? invoices.value.invoices : [],
+		total: invoices.ok ? invoices.value.total : 0,
+		current: invoices.ok ? invoices.value.current : null,
+		page,
+		pageSize: PAGE_SIZE,
+		monthFilter: monthParam ?? '',
 		accounts: accounts.ok ? accounts.value.filter((a) => !a.archivedAt) : []
 	};
 };

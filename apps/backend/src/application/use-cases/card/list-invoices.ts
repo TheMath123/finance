@@ -10,29 +10,59 @@ export interface InvoiceView extends CardInvoice {
   effectiveStatus: InvoiceStatus;
 }
 
+export interface ListInvoicesFilters {
+  limit?: number;
+  offset?: number;
+  month?: number;
+  year?: number;
+}
+
+export interface ListInvoicesOutput {
+  invoices: InvoiceView[];
+  total: number;
+  /** Fatura não paga mais antiga — destaque da tela ("quanto devo agora"), independente de página/filtro. */
+  current: InvoiceView | null;
+}
+
 export async function listInvoices(
   deps: UseCaseDeps,
   actor: Actor,
-  cardId: string
-): Promise<Either<CardError, InvoiceView[]>> {
+  cardId: string,
+  filters: ListInvoicesFilters = {}
+): Promise<Either<CardError, ListInvoicesOutput>> {
   const card = await deps.repos.card.findInWorkspace(actor.workspaceId, cardId);
   if (!card) return left('card_not_found');
+  const closingDay = card.closingDay;
 
-  const rows = await deps.repos.invoice.listByCard(cardId);
-
-  const views: InvoiceView[] = [];
-  for (const invoice of rows) {
-    const status = effectiveStatus(invoice, card.closingDay);
+  async function toView(invoice: CardInvoice): Promise<InvoiceView> {
+    const status = effectiveStatus(invoice, closingDay);
     // Transição persistida oportunisticamente no primeiro toque (regra do spec)
     if (status !== invoice.status) {
       await deps.repos.invoice.setStatus(invoice.id, status);
     }
-    views.push({
+    return {
       ...invoice,
       status,
       effectiveStatus: status,
       total: await deps.repos.invoice.total(invoice.id),
-    });
+    };
   }
-  return right(views);
+
+  const [{ invoices: pageRows, total }, oldestUnpaid] = await Promise.all([
+    deps.repos.invoice.listByCardPaginated(cardId, {
+      limit: filters.limit,
+      offset: filters.offset,
+      month: filters.month,
+      year: filters.year,
+    }),
+    deps.repos.invoice.findOldestUnpaid(cardId),
+  ]);
+
+  const invoices = await Promise.all(pageRows.map(toView));
+  const current = oldestUnpaid
+    ? (invoices.find((v) => v.id === oldestUnpaid.id) ??
+      (await toView(oldestUnpaid)))
+    : null;
+
+  return right({ invoices, total, current });
 }

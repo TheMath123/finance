@@ -1,5 +1,5 @@
 import { cardInvoices, cards, transactions } from '@finance/db';
-import { and, desc, eq, isNull, ne, sql } from 'drizzle-orm';
+import { and, asc, count, desc, eq, isNull, ne, sql } from 'drizzle-orm';
 import type { InvoiceRepository } from '../../../application/ports/invoice-repository';
 import type { DbHandle } from '../handle';
 
@@ -50,6 +50,40 @@ export function createInvoiceRepository(db: DbHandle): InvoiceRepository {
         orderBy: [
           desc(cardInvoices.yearReference),
           desc(cardInvoices.monthReference),
+        ],
+      }),
+    async listByCardPaginated(cardId, filters) {
+      const conditions = [eq(cardInvoices.cardId, cardId)];
+      if (filters.month !== undefined) {
+        conditions.push(eq(cardInvoices.monthReference, filters.month));
+      }
+      if (filters.year !== undefined) {
+        conditions.push(eq(cardInvoices.yearReference, filters.year));
+      }
+      const where = and(...conditions);
+      const [rows, [totalRow]] = await Promise.all([
+        db.query.cardInvoices.findMany({
+          where,
+          limit: filters.limit,
+          offset: filters.offset,
+          orderBy: [
+            desc(cardInvoices.yearReference),
+            desc(cardInvoices.monthReference),
+          ],
+        }),
+        db.select({ value: count() }).from(cardInvoices).where(where),
+      ]);
+      return { invoices: rows, total: totalRow?.value ?? 0 };
+    },
+    findOldestUnpaid: (cardId) =>
+      db.query.cardInvoices.findFirst({
+        where: and(
+          eq(cardInvoices.cardId, cardId),
+          ne(cardInvoices.status, 'paid')
+        ),
+        orderBy: [
+          asc(cardInvoices.yearReference),
+          asc(cardInvoices.monthReference),
         ],
       }),
     async setStatus(invoiceId, status) {

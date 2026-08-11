@@ -19,6 +19,13 @@ export const createCardSchema = z.object({
 });
 export const updateCardSchema = createCardSchema.partial();
 
+export const listInvoicesQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(60).optional(),
+  offset: z.coerce.number().int().min(0).optional(),
+  month: z.coerce.number().int().min(1).max(12).optional(),
+  year: z.coerce.number().int().min(2000).max(2100).optional(),
+});
+
 export const payInvoiceSchema = z.object({
   accountId: z.string().uuid(),
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),

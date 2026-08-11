@@ -3,14 +3,14 @@ import { listInvoices } from '../../../../application/use-cases/card';
 import type { AppDeps } from '../../../deps';
 import { requireWorkspaceRole } from '../../../guards';
 import { fail, respond } from '../../../http-error';
-import { validateParams } from '../../../validate';
+import { validateParams, validateQuery } from '../../../validate';
 import { CARD_ERRORS } from '../errors';
-import { cardParamsSchema } from '../schemas';
+import { cardParamsSchema, listInvoicesQuerySchema } from '../schemas';
 
 export const listInvoicesRoute = (deps: AppDeps) =>
   new Elysia().get(
     '/workspaces/:workspaceId/cards/:cardId/invoices',
-    async ({ request, params, set }) => {
+    async ({ request, params, query, set }) => {
       const p = validateParams(cardParamsSchema, params);
       if (!p.ok) return fail(set, p.error);
       const auth = await requireWorkspaceRole(
@@ -20,7 +20,14 @@ export const listInvoicesRoute = (deps: AppDeps) =>
         'viewer'
       );
       if (!auth.ok) return fail(set, auth.error);
-      const result = await listInvoices(deps, auth.value, p.value.cardId);
+      const q = validateQuery(listInvoicesQuerySchema, query);
+      if (!q.ok) return fail(set, q.error);
+      const result = await listInvoices(
+        deps,
+        auth.value,
+        p.value.cardId,
+        q.value
+      );
       return respond(set, result, CARD_ERRORS);
     }
   );

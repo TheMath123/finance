@@ -15,6 +15,13 @@ export interface InvoiceRepository {
     period: InvoicePeriod
   ): Promise<CardInvoice>;
   listByCard(cardId: string): Promise<CardInvoice[]>;
+  /** Paginada e com filtro opcional por competência — usada pela tela de faturas (dashboard). */
+  listByCardPaginated(
+    cardId: string,
+    filters: { limit?: number; offset?: number; month?: number; year?: number }
+  ): Promise<{ invoices: CardInvoice[]; total: number }>;
+  /** Fatura não paga mais antiga (a próxima a vencer/exigir atenção) — para destaque na UI. */
+  findOldestUnpaid(cardId: string): Promise<CardInvoice | undefined>;
   setStatus(invoiceId: string, status: InvoiceStatus): Promise<void>;
   /** Condicional (`WHERE status <> 'paid'`) — `undefined` se outra chamada já marcou paga primeiro (corrida). */
   markPaid(
