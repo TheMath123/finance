@@ -15,8 +15,16 @@ export interface ListTransactionsFilters {
   deletedOnly?: boolean;
 }
 
-/** `hasActiveSplit` é computado (não é coluna da transação) — indicador visual de que a despesa está dividida (M3-03). */
-export type TransactionListItem = Transaction & { hasActiveSplit: boolean };
+/**
+ * `hasActiveSplit` e `invoicePaid` são computados (não são coluna da transação):
+ * indicador visual de despesa dividida (M3-03) e de transação imutável por estar
+ * numa fatura já paga — usado pra desabilitar a edição na UI sem precisar tentar
+ * o PATCH e receber `invoice_paid` de volta.
+ */
+export type TransactionListItem = Transaction & {
+  hasActiveSplit: boolean;
+  invoicePaid: boolean;
+};
 
 export async function listTransactions(
   deps: UseCaseDeps,
@@ -30,8 +38,13 @@ export async function listTransactions(
   const activeSplitIds = await deps.repos.expenseSplit.activeTransactionIds(
     rows.map((r) => r.id)
   );
+  const invoiceIds = [
+    ...new Set(rows.flatMap((r) => (r.invoiceId ? [r.invoiceId] : []))),
+  ];
+  const paidInvoiceIds = await deps.repos.invoice.paidInvoiceIds(invoiceIds);
   return rows.map((row) => ({
     ...row,
     hasActiveSplit: activeSplitIds.has(row.id),
+    invoicePaid: row.invoiceId ? paidInvoiceIds.has(row.invoiceId) : false,
   }));
 }

@@ -1,4 +1,10 @@
-import { bankAccounts, cards, categories, transactions } from '@finance/db';
+import {
+  bankAccounts,
+  cardInvoices,
+  cards,
+  categories,
+  transactions,
+} from '@finance/db';
 import {
   and,
   asc,
@@ -10,6 +16,7 @@ import {
   isNotNull,
   isNull,
   lte,
+  notInArray,
   or,
   sql,
 } from 'drizzle-orm';
@@ -55,6 +62,28 @@ export function createTransactionRepository(
         .returning();
       if (!row) throw new Error('falha ao atualizar transação');
       return row;
+    },
+    async updateGroupFields(installmentGroupId, patch) {
+      return db
+        .update(transactions)
+        .set(patch)
+        .where(
+          and(
+            eq(transactions.installmentGroupId, installmentGroupId),
+            isNull(transactions.deletedAt),
+            or(
+              isNull(transactions.invoiceId),
+              notInArray(
+                transactions.invoiceId,
+                db
+                  .select({ id: cardInvoices.id })
+                  .from(cardInvoices)
+                  .where(eq(cardInvoices.status, 'paid'))
+              )
+            )
+          )
+        )
+        .returning();
     },
     async softDelete(id) {
       await db

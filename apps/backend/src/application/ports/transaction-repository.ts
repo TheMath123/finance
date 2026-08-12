@@ -65,6 +65,14 @@ export interface TransactionRepository {
   /** Não-deletadas de uma fatura — usado pelo dedup do import de CSV (M6-01). */
   listByInvoice(invoiceId: string): Promise<Transaction[]>;
   update(id: string, patch: TransactionPatch): Promise<Transaction>;
+  /** Propaga description/categoryId pra todas as parcelas não pagas do grupo — single UPDATE (subquery exclui faturas pagas), sem N+1. */
+  updateGroupFields(
+    installmentGroupId: string,
+    patch: Pick<
+      TransactionPatch,
+      'description' | 'descriptionNormalized' | 'categoryId'
+    >
+  ): Promise<Transaction[]>;
   softDelete(id: string): Promise<void>;
   restore(id: string): Promise<void>;
   list(

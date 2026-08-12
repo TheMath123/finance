@@ -1,5 +1,15 @@
 import { cardInvoices, cards, transactions } from '@finance/db';
-import { and, asc, count, desc, eq, isNull, ne, sql } from 'drizzle-orm';
+import {
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  inArray,
+  isNull,
+  ne,
+  sql,
+} from 'drizzle-orm';
 import type { InvoiceRepository } from '../../../application/ports/invoice-repository';
 import type { DbHandle } from '../handle';
 
@@ -124,6 +134,19 @@ export function createInvoiceRepository(db: DbHandle): InvoiceRepository {
         )
         .returning();
       return row;
+    },
+    async paidInvoiceIds(invoiceIds) {
+      if (invoiceIds.length === 0) return new Set();
+      const rows = await db
+        .select({ id: cardInvoices.id })
+        .from(cardInvoices)
+        .where(
+          and(
+            inArray(cardInvoices.id, invoiceIds),
+            eq(cardInvoices.status, 'paid')
+          )
+        );
+      return new Set(rows.map((r) => r.id));
     },
     async total(invoiceId) {
       const [row] = await db

@@ -103,6 +103,27 @@ export async function updateTransaction(
       // sido paga entre o check acima e este ponto.
       if (await isInPaidInvoice(repos, existing))
         throw new InvoiceNowPaidError();
+
+      // Parcelas: description/categoryId propagam pra todo o grupo numa única
+      // query (sem loop por parcela) — a mesma query já exclui parcelas em
+      // faturas pagas, então não precisa checar de novo linha a linha.
+      if (existing.installmentGroupId) {
+        const rows = await repos.transaction.updateGroupFields(
+          existing.installmentGroupId,
+          patch
+        );
+        const row = rows.find((r) => r.id === existing.id);
+        if (!row) throw new InvoiceNowPaidError();
+        await repos.audit.record({
+          workspaceId: actor.workspaceId,
+          userId: actor.userId,
+          action: 'update',
+          entity: 'transaction',
+          entityId: row.id,
+        });
+        return row;
+      }
+
       const row = await repos.transaction.update(existing.id, patch);
       await repos.audit.record({
         workspaceId: actor.workspaceId,

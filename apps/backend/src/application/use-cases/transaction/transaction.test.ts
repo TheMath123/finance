@@ -28,9 +28,11 @@ import { createTestDeps, getTestPlanId } from '../../../test/deps';
 import type { Actor, UseCaseDeps } from '../../deps';
 import { listInvoices } from '../card/list-invoices';
 import { payInvoice } from '../card/pay-invoice';
+import { undoInvoicePayment } from '../card/undo-invoice-payment';
 import { deleteCategory } from '../category/delete-category';
 import { createTransaction } from './create-transaction';
 import { deleteTransaction } from './delete-transaction';
+import { listTransactions } from './list-transactions';
 import { updateInstallmentTotal } from './update-installment-total';
 import { updateTransaction } from './update-transaction';
 
@@ -349,6 +351,13 @@ describe('crédito, fatura e pagamento', () => {
     expect(upd.ok).toBe(false);
     const del = await deleteTransaction(deps, actor, txInPaid.id);
     expect(del.ok).toBe(false);
+
+    // listagem sinaliza invoicePaid=true nela e false numa transação qualquer não paga
+    const listed = await listTransactions(deps, actor, {});
+    const listedPaid = listed.find((t) => t.id === txInPaid.id);
+    const listedUnpaid = listed.find((t) => t.invoiceId !== july.id);
+    expect(listedPaid?.invoicePaid).toBe(true);
+    expect(listedUnpaid?.invoicePaid).toBe(false);
   });
 
   test('compra parcelada cuja parcela futura cai em fatura já paga: reverte TODAS as parcelas, não deixa lixo parcial', async () => {
@@ -440,6 +449,130 @@ describe('crédito, fatura e pagamento', () => {
         t.accountId === accountId
     );
     expect(invoicePayments).toHaveLength(1);
+  });
+
+  test('desfazer pagamento: reabre a fatura, remove a transação de pagamento e libera imutabilidade', async () => {
+    // Fatura isolada (junho/2030) — nenhum outro teste deste arquivo toca esse período.
+    const created = await createTransaction(deps, actor, {
+      description: 'Compra isolada pra teste de undo',
+      amount: 8_000,
+      type: 'expense',
+      method: 'credit',
+      date: '2030-06-05',
+      categoryId,
+      cardId,
+    });
+    if (!created.ok) throw new Error('setup falhou');
+    const invoiceId = created.value[0]!.invoiceId!;
+
+    const balanceBefore = await accountBalance(accountId);
+    const paid = await payInvoice(deps, actor, invoiceId, {
+      accountId,
+      date: '2030-06-17',
+      method: 'pix',
+    });
+    expect(paid.ok).toBe(true);
+    if (!paid.ok) return;
+    const paymentTransactionId = paid.value.paymentTransactionId;
+    expect(paymentTransactionId).not.toBeNull();
+    expect(await accountBalance(accountId)).toBe(balanceBefore - 8_000);
+
+    const undone = await undoInvoicePayment(deps, actor, invoiceId);
+    expect(undone.ok).toBe(true);
+    if (!undone.ok) return;
+    // fecha em 10/06/2030 — bem no futuro, então volta pra "open" (não "closed")
+    expect(undone.value.status).toBe('open');
+    expect(undone.value.effectiveStatus).toBe('open');
+    expect(undone.value.paymentTransactionId).toBeNull();
+
+    // o pagamento voltou pra conta
+    expect(await accountBalance(accountId)).toBe(balanceBefore);
+
+    // a transação de pagamento foi soft-deleted
+    const payment = await db.query.transactions.findFirst({
+      where: eq(transactions.id, paymentTransactionId!),
+    });
+    expect(payment?.deletedAt).not.toBeNull();
+
+    // a compra volta a poder ser editada (imutabilidade de fatura paga liberada)
+    const purchase = (await db.query.transactions.findMany()).find(
+      (t) => t.invoiceId === invoiceId && t.method === 'credit'
+    );
+    if (!purchase) throw new Error('compra não encontrada');
+    const upd = await updateTransaction(deps, actor, purchase.id, {
+      description: 'agora pode editar',
+    });
+    expect(upd.ok).toBe(true);
+
+    // e novas compras voltam a ser aceitas nela
+    const newPurchase = await createTransaction(deps, actor, {
+      description: 'Nova compra depois do undo',
+      amount: 1_000,
+      type: 'expense',
+      method: 'credit',
+      date: '2030-06-06',
+      categoryId,
+      cardId,
+    });
+    expect(newPurchase.ok).toBe(true);
+  });
+
+  test('desfazer pagamento de fatura que não está paga falha', async () => {
+    const created = await createTransaction(deps, actor, {
+      description: 'Compra não paga pra teste de undo inválido',
+      amount: 3_000,
+      type: 'expense',
+      method: 'credit',
+      date: '2030-07-05',
+      categoryId,
+      cardId,
+    });
+    if (!created.ok) throw new Error('setup falhou');
+    const invoiceId = created.value[0]!.invoiceId!;
+
+    const result = await undoInvoicePayment(deps, actor, invoiceId);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toBe('invoice_not_paid');
+  });
+
+  test('desfazer pagamento de fatura inexistente falha', async () => {
+    const result = await undoInvoicePayment(
+      deps,
+      actor,
+      '00000000-0000-0000-0000-000000000000'
+    );
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toBe('invoice_not_found');
+  });
+
+  test('duas chamadas paralelas de undoInvoicePayment: só uma vence a corrida', async () => {
+    const created = await createTransaction(deps, actor, {
+      description: 'Compra isolada pra teste de corrida do undo',
+      amount: 4_000,
+      type: 'expense',
+      method: 'credit',
+      date: '2030-08-05',
+      categoryId,
+      cardId,
+    });
+    if (!created.ok) throw new Error('setup falhou');
+    const invoiceId = created.value[0]!.invoiceId!;
+    const paid = await payInvoice(deps, actor, invoiceId, {
+      accountId,
+      date: '2030-08-17',
+      method: 'pix',
+    });
+    expect(paid.ok).toBe(true);
+
+    const [first, second] = await Promise.all([
+      undoInvoicePayment(deps, actor, invoiceId),
+      undoInvoicePayment(deps, actor, invoiceId),
+    ]);
+
+    const results = [first, second];
+    expect(results.filter((r) => r.ok)).toHaveLength(1);
+    const failed = results.find((r) => !r.ok);
+    expect(failed && !failed.ok ? failed.error : null).toBe('invoice_not_paid');
   });
 
   test('excluir parcelada remove só as parcelas de faturas não pagas', async () => {
@@ -615,6 +748,127 @@ describe('editar conta/cartão da transação (auditoria 2026-07-20)', () => {
     });
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.error).toBe('invoice_paid');
+  });
+});
+
+describe('editar descrição/categoria de parcela propaga pro grupo (auditoria 2026-08-12)', () => {
+  test('editar só descrição de uma parcela funciona (antes travava mesmo sem mudar valor/data)', async () => {
+    const created = await createTransaction(deps, actor, {
+      description: 'Sofá parcelado',
+      amount: 6_000,
+      type: 'expense',
+      method: 'credit',
+      date: '2028-06-05',
+      categoryId,
+      cardId,
+      installments: 2,
+    });
+    if (!created.ok) throw new Error('setup falhou');
+    const target = created.value[0]!;
+
+    const result = await updateTransaction(deps, actor, target.id, {
+      description: 'Sofá parcelado (nome corrigido)',
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.description).toBe('Sofá parcelado (nome corrigido)');
+  });
+
+  test('editar descrição de uma parcela propaga pra todas as parcelas do grupo', async () => {
+    const created = await createTransaction(deps, actor, {
+      description: 'Notebook parcelado',
+      amount: 9_000,
+      type: 'expense',
+      method: 'credit',
+      date: '2028-06-06',
+      categoryId,
+      cardId,
+      installments: 3,
+    });
+    if (!created.ok) throw new Error('setup falhou');
+    const target = created.value[1]!; // edita a partir de uma parcela do meio
+
+    const result = await updateTransaction(deps, actor, target.id, {
+      description: 'Notebook Dell (nome corrigido)',
+    });
+    expect(result.ok).toBe(true);
+
+    const group = await db.query.transactions.findMany({
+      where: eq(transactions.installmentGroupId, target.installmentGroupId!),
+    });
+    expect(group).toHaveLength(3);
+    for (const row of group) {
+      expect(row.description).toBe('Notebook Dell (nome corrigido)');
+      expect(row.descriptionNormalized).toBe('notebook dell (nome corrigido)');
+    }
+  });
+
+  test('editar categoria de uma parcela propaga pra todas as parcelas do grupo', async () => {
+    const created = await createTransaction(deps, actor, {
+      description: 'Celular parcelado',
+      amount: 4_500,
+      type: 'expense',
+      method: 'credit',
+      date: '2028-06-07',
+      categoryId,
+      cardId,
+      installments: 3,
+    });
+    if (!created.ok) throw new Error('setup falhou');
+    const target = created.value[0]!;
+
+    const result = await updateTransaction(deps, actor, target.id, {
+      categoryId: fallbackCategoryId,
+    });
+    expect(result.ok).toBe(true);
+
+    const group = await db.query.transactions.findMany({
+      where: eq(transactions.installmentGroupId, target.installmentGroupId!),
+    });
+    expect(group).toHaveLength(3);
+    for (const row of group) expect(row.categoryId).toBe(fallbackCategoryId);
+  });
+
+  test('propagação pula parcela em fatura já paga — só as não pagas mudam', async () => {
+    const created = await createTransaction(deps, actor, {
+      description: 'Geladeira parcelada',
+      amount: 12_000,
+      type: 'expense',
+      method: 'credit',
+      date: '2028-07-05',
+      categoryId,
+      cardId,
+      installments: 3,
+    });
+    if (!created.ok) throw new Error('setup falhou');
+    const byInstallment = [...created.value].sort(
+      (a, b) => a.installmentNumber! - b.installmentNumber!
+    );
+
+    const paid = await payInvoice(deps, actor, byInstallment[0]!.invoiceId!, {
+      accountId,
+      date: '2028-07-17',
+      method: 'pix',
+    });
+    expect(paid.ok).toBe(true);
+
+    const result = await updateTransaction(deps, actor, byInstallment[1]!.id, {
+      description: 'Geladeira Brastemp (nome corrigido)',
+    });
+    expect(result.ok).toBe(true);
+
+    const group = await db.query.transactions.findMany({
+      where: eq(
+        transactions.installmentGroupId,
+        byInstallment[0]!.installmentGroupId!
+      ),
+    });
+    const stillPaid = group.find((t) => t.id === byInstallment[0]!.id);
+    const others = group.filter((t) => t.id !== byInstallment[0]!.id);
+    expect(stillPaid?.description).toBe('Geladeira parcelada');
+    for (const row of others) {
+      expect(row.description).toBe('Geladeira Brastemp (nome corrigido)');
+    }
   });
 });
 

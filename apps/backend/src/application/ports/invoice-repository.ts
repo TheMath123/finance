@@ -45,6 +45,8 @@ export interface InvoiceRepository {
   ): Promise<CardInvoice | undefined>;
   /** Total derivado: Σ despesas − Σ receitas das transações não deletadas. */
   total(invoiceId: string): Promise<number>;
+  /** Subconjunto pago dos ids informados — single query, sem N+1 (usada pra marcar transações imutáveis na listagem). */
+  paidInvoiceIds(invoiceIds: string[]): Promise<Set<string>>;
   /** Σ dos totais das faturas não pagas (limite disponível derivado). */
   unpaidTotalByCard(cardId: string): Promise<number>;
   listUnpaidWithDue(
