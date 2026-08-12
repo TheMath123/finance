@@ -8,6 +8,7 @@
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
+	import { dialogFormSubmit } from '$lib/dialog-form';
 	import { formatCents } from '$lib/money';
 	import { MONTH_NAMES } from '$lib/month-names';
 	import type { RecurringView } from '$lib/server/recurring-api';
@@ -42,23 +43,12 @@
 	}
 
 	let createOpen = $state(false);
+	let createError = $state<string | null>(null);
 	let editing = $state<RecurringView | null>(null);
+	let editError = $state<string | null>(null);
 
 	let newMethod = $state<'pix' | 'debit' | 'cash' | 'credit'>('pix');
 	let newFrequency = $state<'weekly' | 'monthly' | 'yearly'>('monthly');
-
-	function closeOnSuccess(close: () => void) {
-		return async ({
-			result,
-			update
-		}: {
-			result: { type: string };
-			update: () => Promise<void>;
-		}) => {
-			if (result.type === 'success') close();
-			await update();
-		};
-	}
 </script>
 
 <svelte:head>
@@ -69,11 +59,16 @@
 	<div class="flex flex-wrap items-center justify-between gap-3">
 		<h1 class="text-xl font-semibold">Recorrências</h1>
 		{#if canManage}
-			<Button onclick={() => (createOpen = true)}>Nova recorrência</Button>
+			<Button
+				onclick={() => {
+					createError = null;
+					createOpen = true;
+				}}>Nova recorrência</Button
+			>
 		{/if}
 	</div>
 
-	{#if form?.message && !createOpen && !editing}
+	{#if form?.message}
 		<p class="text-sm text-destructive">{form.message}</p>
 	{/if}
 
@@ -125,7 +120,10 @@
 										size="icon-sm"
 										title="Editar"
 										aria-label="Editar"
-										onclick={() => (editing = r)}
+										onclick={() => {
+											editError = null;
+											editing = r;
+										}}
 									>
 										<PencilSimpleIcon size={16} />
 									</Button>
@@ -208,14 +206,22 @@
 		<Dialog.Header>
 			<Dialog.Title>Nova recorrência</Dialog.Title>
 		</Dialog.Header>
-		{#if form?.message}
-			<p class="text-sm text-destructive">{form.message}</p>
+		{#if createError}
+			<p class="text-sm text-destructive">{createError}</p>
 		{/if}
 		<form
 			method="POST"
 			action="?/create"
 			class="grid gap-4"
-			use:enhance={() => closeOnSuccess(() => (createOpen = false))}
+			use:enhance={dialogFormSubmit({
+				onSuccess: () => {
+					createOpen = false;
+					createError = null;
+				},
+				onError: (message) => {
+					createError = message;
+				}
+			})}
 		>
 			{@render recurringFields('new')}
 			<div class="grid grid-cols-2 gap-4">
@@ -323,13 +329,21 @@
 	</Dialog.Content>
 </Dialog.Root>
 
-<Dialog.Root open={editing !== null} onOpenChange={(open) => !open && (editing = null)}>
+<Dialog.Root
+	open={editing !== null}
+	onOpenChange={(open) => {
+		if (!open) {
+			editing = null;
+			editError = null;
+		}
+	}}
+>
 	<Dialog.Content>
 		<Dialog.Header>
 			<Dialog.Title>Editar recorrência</Dialog.Title>
 		</Dialog.Header>
-		{#if form?.message}
-			<p class="text-sm text-destructive">{form.message}</p>
+		{#if editError}
+			<p class="text-sm text-destructive">{editError}</p>
 		{/if}
 		{#if editing}
 			{@const editFrequency = editing.frequency}
@@ -338,7 +352,15 @@
 				method="POST"
 				action="?/update"
 				class="grid gap-4"
-				use:enhance={() => closeOnSuccess(() => (editing = null))}
+				use:enhance={dialogFormSubmit({
+					onSuccess: () => {
+						editing = null;
+						editError = null;
+					},
+					onError: (message) => {
+						editError = message;
+					}
+				})}
 			>
 				<input type="hidden" name="recurringId" value={editing.id} />
 				{@render recurringFields('edit', editing)}

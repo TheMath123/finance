@@ -4,6 +4,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { Input } from '$lib/components/ui/input';
+	import { dialogFormSubmit } from '$lib/dialog-form';
 	import { formatCents } from '$lib/money';
 	import type { AdminWorkspaceView } from '$lib/server/admin-api';
 
@@ -12,6 +13,7 @@
 	const totalPages = $derived(Math.max(1, Math.ceil(data.total / data.pageSize)));
 
 	let changingPlan = $state<AdminWorkspaceView | null>(null);
+	let changingPlanError = $state<string | null>(null);
 	let selectedPlanId = $state('');
 
 	const INTERVAL_LABELS: Record<string, string> = {
@@ -48,20 +50,8 @@
 		return isExpired ? `trial venceu em ${formatted}` : `trial até ${formatted}`;
 	}
 
-	function closeOnSuccess(close: () => void) {
-		return async ({
-			result,
-			update
-		}: {
-			result: { type: string };
-			update: () => Promise<void>;
-		}) => {
-			if (result.type === 'success') close();
-			await update();
-		};
-	}
-
 	function openChangePlan(workspace: AdminWorkspaceView) {
+		changingPlanError = null;
 		changingPlan = workspace;
 		selectedPlanId = workspace.plan.id;
 	}
@@ -82,7 +72,7 @@
 		<Button type="submit">Buscar</Button>
 	</form>
 
-	{#if form?.message && !changingPlan}
+	{#if form?.message}
 		<p class="text-sm text-destructive">{form.message}</p>
 	{/if}
 
@@ -143,20 +133,36 @@
 	{/if}
 </div>
 
-<Dialog.Root open={changingPlan !== null} onOpenChange={(open) => !open && (changingPlan = null)}>
+<Dialog.Root
+	open={changingPlan !== null}
+	onOpenChange={(open) => {
+		if (!open) {
+			changingPlan = null;
+			changingPlanError = null;
+		}
+	}}
+>
 	<Dialog.Content>
 		<Dialog.Header>
 			<Dialog.Title>Mudar plano — {changingPlan?.name}</Dialog.Title>
 		</Dialog.Header>
-		{#if form?.message}
-			<p class="text-sm text-destructive">{form.message}</p>
+		{#if changingPlanError}
+			<p class="text-sm text-destructive">{changingPlanError}</p>
 		{/if}
 		{#if changingPlan}
 			<form
 				method="POST"
 				action="?/setPlan"
 				class="grid gap-4"
-				use:enhance={() => closeOnSuccess(() => (changingPlan = null))}
+				use:enhance={dialogFormSubmit({
+					onSuccess: () => {
+						changingPlan = null;
+						changingPlanError = null;
+					},
+					onError: (message) => {
+						changingPlanError = message;
+					}
+				})}
 			>
 				<input type="hidden" name="workspaceId" value={changingPlan.id} />
 				<select

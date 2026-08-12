@@ -10,6 +10,7 @@
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
+	import { dialogFormSubmit } from '$lib/dialog-form';
 	import { MONTH_NAMES } from '$lib/month-names';
 	import { formatCents } from '$lib/money';
 	import type {
@@ -18,9 +19,10 @@
 		InvoiceView
 	} from '$lib/server/invoice-api';
 
-	let { data, form } = $props();
+	let { data } = $props();
 
 	let paying = $state<InvoiceView | null>(null);
+	let payError = $state<string | null>(null);
 	// Confirmação extra pra pagar fatura ainda aberta (não fechada) — pagar
 	// antes do fechamento trava novas compras que cairiam nela (imutabilidade
 	// de fatura paga já existe no backend), então avisa e exige um passo a mais.
@@ -29,6 +31,7 @@
 
 	function openPayDialog(invoice: InvoiceView) {
 		confirmedEarlyPayment = false;
+		payError = null;
 		paying = invoice;
 	}
 
@@ -194,19 +197,6 @@
 		return new Date().toISOString().slice(0, 10);
 	}
 
-	function closeOnSuccess(close: () => void) {
-		return async ({
-			result,
-			update
-		}: {
-			result: { type: string };
-			update: () => Promise<void>;
-		}) => {
-			if (result.type === 'success') close();
-			await update();
-		};
-	}
-
 	// A fatura em destaque já vem separada do backend — evita mostrá-la de novo
 	// na lista de histórico quando ela cair na página/filtro atual.
 	const historyInvoices = $derived(data.invoices.filter((i) => i.id !== data.current?.id));
@@ -264,10 +254,6 @@
 		</a>
 		<h1 class="text-xl font-semibold">Faturas — {data.card.name}</h1>
 	</div>
-
-	{#if form?.message && !paying}
-		<p class="text-sm text-destructive">{form.message}</p>
-	{/if}
 
 	{#if data.current}
 		<div class="rounded-xl border border-foreground/10 bg-foreground/[0.02] p-5">
@@ -400,7 +386,15 @@
 	</div>
 </div>
 
-<Dialog.Root open={paying !== null} onOpenChange={(open) => !open && (paying = null)}>
+<Dialog.Root
+	open={paying !== null}
+	onOpenChange={(open) => {
+		if (!open) {
+			paying = null;
+			payError = null;
+		}
+	}}
+>
 	<Dialog.Content>
 		<Dialog.Header>
 			<Dialog.Title>Pagar fatura</Dialog.Title>
@@ -412,15 +406,23 @@
 				</Dialog.Description>
 			{/if}
 		</Dialog.Header>
-		{#if form?.message}
-			<p class="text-sm text-destructive">{form.message}</p>
+		{#if payError}
+			<p class="text-sm text-destructive">{payError}</p>
 		{/if}
 		{#if paying}
 			<form
 				method="POST"
 				action="?/pay"
 				class="grid gap-4"
-				use:enhance={() => closeOnSuccess(() => (paying = null))}
+				use:enhance={dialogFormSubmit({
+					onSuccess: () => {
+						paying = null;
+						payError = null;
+					},
+					onError: (message) => {
+						payError = message;
+					}
+				})}
 			>
 				<input type="hidden" name="invoiceId" value={paying.id} />
 				{#if isEarlyPayment}

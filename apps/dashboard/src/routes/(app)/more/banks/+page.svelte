@@ -7,6 +7,7 @@
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
+	import { dialogFormSubmit } from '$lib/dialog-form';
 	import type { BankView } from '$lib/server/bank-api';
 
 	let { data, form } = $props();
@@ -16,21 +17,9 @@
 	);
 
 	let createOpen = $state(false);
+	let createError = $state<string | null>(null);
 	let editing = $state<BankView | null>(null);
-
-	/** Fecha o dialog quando a action termina sem erro; o update() recarrega a lista. */
-	function closeOnSuccess(close: () => void) {
-		return async ({
-			result,
-			update
-		}: {
-			result: { type: string };
-			update: () => Promise<void>;
-		}) => {
-			if (result.type === 'success') close();
-			await update();
-		};
-	}
+	let editError = $state<string | null>(null);
 </script>
 
 <svelte:head>
@@ -66,11 +55,16 @@
 <div class="flex flex-col gap-6">
 	{#if canManage}
 		<div class="flex justify-end">
-			<Button onclick={() => (createOpen = true)}>Adicionar banco</Button>
+			<Button
+				onclick={() => {
+					createError = null;
+					createOpen = true;
+				}}>Adicionar banco</Button
+			>
 		</div>
 	{/if}
 
-	{#if form?.message && !createOpen && !editing}
+	{#if form?.message}
 		<p class="text-sm text-destructive">{form.message}</p>
 	{/if}
 
@@ -96,7 +90,14 @@
 				</div>
 				{#if canManage}
 					<div class="flex shrink-0 items-center gap-2">
-						<Button variant="outline" size="sm" onclick={() => (editing = bank)}>Editar</Button>
+						<Button
+							variant="outline"
+							size="sm"
+							onclick={() => {
+								editError = null;
+								editing = bank;
+							}}>Editar</Button
+						>
 						{#if !bank.archivedAt}
 							<form method="POST" action="?/archive" use:enhance>
 								<input type="hidden" name="bankId" value={bank.id} />
@@ -122,14 +123,22 @@
 			<Dialog.Title>Adicionar banco</Dialog.Title>
 			<Dialog.Description>O banco agrupa suas contas e cartões.</Dialog.Description>
 		</Dialog.Header>
-		{#if form?.message}
-			<p class="text-sm text-destructive">{form.message}</p>
+		{#if createError}
+			<p class="text-sm text-destructive">{createError}</p>
 		{/if}
 		<form
 			method="POST"
 			action="?/create"
 			class="grid gap-4"
-			use:enhance={() => closeOnSuccess(() => (createOpen = false))}
+			use:enhance={dialogFormSubmit({
+				onSuccess: () => {
+					createOpen = false;
+					createError = null;
+				},
+				onError: (message) => {
+					createError = message;
+				}
+			})}
 		>
 			{@render bankFields('new')}
 			<Dialog.Footer>
@@ -139,20 +148,36 @@
 	</Dialog.Content>
 </Dialog.Root>
 
-<Dialog.Root open={editing !== null} onOpenChange={(open) => !open && (editing = null)}>
+<Dialog.Root
+	open={editing !== null}
+	onOpenChange={(open) => {
+		if (!open) {
+			editing = null;
+			editError = null;
+		}
+	}}
+>
 	<Dialog.Content>
 		<Dialog.Header>
 			<Dialog.Title>Editar banco</Dialog.Title>
 		</Dialog.Header>
-		{#if form?.message}
-			<p class="text-sm text-destructive">{form.message}</p>
+		{#if editError}
+			<p class="text-sm text-destructive">{editError}</p>
 		{/if}
 		{#if editing}
 			<form
 				method="POST"
 				action="?/update"
 				class="grid gap-4"
-				use:enhance={() => closeOnSuccess(() => (editing = null))}
+				use:enhance={dialogFormSubmit({
+					onSuccess: () => {
+						editing = null;
+						editError = null;
+					},
+					onError: (message) => {
+						editError = message;
+					}
+				})}
 			>
 				<input type="hidden" name="bankId" value={editing.id} />
 				{@render bankFields('edit', editing)}

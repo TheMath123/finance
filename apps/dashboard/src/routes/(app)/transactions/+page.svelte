@@ -18,6 +18,7 @@
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
+	import { dialogFormSubmit } from '$lib/dialog-form';
 	import { buildClientFormulaCatalog } from '$lib/formula-catalog';
 	import { getMerchantLogoUrl } from '$lib/merchant-logo';
 	import { formatCents, formatReais, parseReaisToCents } from '$lib/money';
@@ -68,7 +69,9 @@
 	const activeCards = $derived(data.cards.filter((c) => !c.archivedAt));
 
 	let createOpen = $state(false);
+	let createError = $state<string | null>(null);
 	let editing = $state<TransactionView | null>(null);
+	let editError = $state<string | null>(null);
 	let editingInstallmentTotal = $state(false);
 
 	let newMethod = $state<'pix' | 'debit' | 'cash' | 'credit' | 'transfer'>('pix');
@@ -90,19 +93,6 @@
 		const amounts = splitInstallmentsPreview(totalCents, newInstallments);
 		return { count: newInstallments, first: amounts[0]!, rest: amounts[1] ?? amounts[0]! };
 	});
-
-	function closeOnSuccess(close: () => void) {
-		return async ({
-			result,
-			update
-		}: {
-			result: { type: string };
-			update: () => Promise<void>;
-		}) => {
-			if (result.type === 'success') close();
-			await update();
-		};
-	}
 
 	function todayIso(): string {
 		return new Date().toISOString().slice(0, 10);
@@ -159,7 +149,12 @@
 				Calculadora
 			</Button>
 			{#if canManage}
-				<Button onclick={() => (createOpen = true)}>Nova transação</Button>
+				<Button
+					onclick={() => {
+						createError = null;
+						createOpen = true;
+					}}>Nova transação</Button
+				>
 			{/if}
 		</div>
 	</div>
@@ -301,7 +296,7 @@
 		{#if !data.filters.from && !data.filters.to}(sem filtro de período){/if}
 	</p>
 
-	{#if form?.message && !createOpen && !editing}
+	{#if form?.message}
 		<p class="text-sm text-destructive">{form.message}</p>
 	{/if}
 
@@ -401,7 +396,10 @@
 											size="icon-sm"
 											title="Editar"
 											aria-label="Editar"
-											onclick={() => (editing = transaction)}
+											onclick={() => {
+												editError = null;
+												editing = transaction;
+											}}
 										>
 											<PencilSimpleIcon size={16} />
 										</Button>
@@ -439,14 +437,22 @@
 		<Dialog.Header>
 			<Dialog.Title>Nova transação</Dialog.Title>
 		</Dialog.Header>
-		{#if form?.message}
-			<p class="text-sm text-destructive">{form.message}</p>
+		{#if createError}
+			<p class="text-sm text-destructive">{createError}</p>
 		{/if}
 		<form
 			method="POST"
 			action="?/create"
 			class="grid gap-4"
-			use:enhance={() => closeOnSuccess(() => (createOpen = false))}
+			use:enhance={dialogFormSubmit({
+				onSuccess: () => {
+					createOpen = false;
+					createError = null;
+				},
+				onError: (message) => {
+					createError = message;
+				}
+			})}
 		>
 			<div class="grid gap-2">
 				<Label for="new-description">Descrição</Label>
@@ -605,6 +611,7 @@
 		if (!open) {
 			editing = null;
 			editingInstallmentTotal = false;
+			editError = null;
 		}
 	}}
 >
@@ -618,8 +625,8 @@
 				</Dialog.Description>
 			{/if}
 		</Dialog.Header>
-		{#if form?.message}
-			<p class="text-sm text-destructive">{form.message}</p>
+		{#if editError}
+			<p class="text-sm text-destructive">{editError}</p>
 		{/if}
 		{#if editing}
 			{@const locked = editing.installmentGroupId !== null}
@@ -627,7 +634,15 @@
 				method="POST"
 				action="?/update"
 				class="grid gap-4"
-				use:enhance={() => closeOnSuccess(() => (editing = null))}
+				use:enhance={dialogFormSubmit({
+					onSuccess: () => {
+						editing = null;
+						editError = null;
+					},
+					onError: (message) => {
+						editError = message;
+					}
+				})}
 			>
 				<input type="hidden" name="transactionId" value={editing.id} />
 				<div class="grid gap-2">
@@ -744,11 +759,16 @@
 					method="POST"
 					action="?/updateInstallmentTotal"
 					class="grid gap-3 border-t border-foreground/10 pt-4"
-					use:enhance={() =>
-						closeOnSuccess(() => {
+					use:enhance={dialogFormSubmit({
+						onSuccess: () => {
 							editing = null;
 							editingInstallmentTotal = false;
-						})}
+							editError = null;
+						},
+						onError: (message) => {
+							editError = message;
+						}
+					})}
 				>
 					<input type="hidden" name="transactionId" value={editing.id} />
 					<div class="grid gap-2">

@@ -6,12 +6,15 @@
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
 	import { CATEGORY_ICON_OPTIONS, resolveCategoryIcon } from '$lib/category-icon';
+	import { dialogFormSubmit } from '$lib/dialog-form';
 	import type { DefaultCategoryView } from '$lib/server/admin-api';
 
 	let { data, form } = $props();
 
 	let createOpen = $state(false);
+	let createError = $state<string | null>(null);
 	let editing = $state<DefaultCategoryView | null>(null);
+	let editError = $state<string | null>(null);
 	/** Compartilhado entre os dois dialogs (só um fica aberto por vez). */
 	let pickedIcon = $state('');
 	let iconSearch = $state('');
@@ -25,26 +28,15 @@
 	function openCreate() {
 		pickedIcon = '';
 		iconSearch = '';
+		createError = null;
 		createOpen = true;
 	}
 
 	function openEdit(category: DefaultCategoryView) {
 		pickedIcon = category.icon;
 		iconSearch = '';
+		editError = null;
 		editing = category;
-	}
-
-	function closeOnSuccess(close: () => void) {
-		return async ({
-			result,
-			update
-		}: {
-			result: { type: string };
-			update: () => Promise<void>;
-		}) => {
-			if (result.type === 'success') close();
-			await update();
-		};
 	}
 </script>
 
@@ -120,7 +112,7 @@
 		workspaces já existentes.
 	</p>
 
-	{#if form?.message && !createOpen && !editing}
+	{#if form?.message}
 		<p class="text-sm text-destructive">{form.message}</p>
 	{/if}
 
@@ -175,14 +167,22 @@
 		<Dialog.Header>
 			<Dialog.Title>Adicionar categoria padrão</Dialog.Title>
 		</Dialog.Header>
-		{#if form?.message}
-			<p class="text-sm text-destructive">{form.message}</p>
+		{#if createError}
+			<p class="text-sm text-destructive">{createError}</p>
 		{/if}
 		<form
 			method="POST"
 			action="?/create"
 			class="grid gap-4"
-			use:enhance={() => closeOnSuccess(() => (createOpen = false))}
+			use:enhance={dialogFormSubmit({
+				onSuccess: () => {
+					createOpen = false;
+					createError = null;
+				},
+				onError: (message) => {
+					createError = message;
+				}
+			})}
 		>
 			{@render categoryFields('new')}
 			<Dialog.Footer>
@@ -192,20 +192,36 @@
 	</Dialog.Content>
 </Dialog.Root>
 
-<Dialog.Root open={editing !== null} onOpenChange={(open) => !open && (editing = null)}>
+<Dialog.Root
+	open={editing !== null}
+	onOpenChange={(open) => {
+		if (!open) {
+			editing = null;
+			editError = null;
+		}
+	}}
+>
 	<Dialog.Content>
 		<Dialog.Header>
 			<Dialog.Title>Editar categoria padrão</Dialog.Title>
 		</Dialog.Header>
-		{#if form?.message}
-			<p class="text-sm text-destructive">{form.message}</p>
+		{#if editError}
+			<p class="text-sm text-destructive">{editError}</p>
 		{/if}
 		{#if editing}
 			<form
 				method="POST"
 				action="?/update"
 				class="grid gap-4"
-				use:enhance={() => closeOnSuccess(() => (editing = null))}
+				use:enhance={dialogFormSubmit({
+					onSuccess: () => {
+						editing = null;
+						editError = null;
+					},
+					onError: (message) => {
+						editError = message;
+					}
+				})}
 			>
 				<input type="hidden" name="categoryId" value={editing.id} />
 				{@render categoryFields('edit', editing)}

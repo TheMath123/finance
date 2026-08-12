@@ -7,6 +7,7 @@
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
+	import { dialogFormSubmit } from '$lib/dialog-form';
 	import { formatCents } from '$lib/money';
 	import type { AccountView } from '$lib/server/account-api';
 
@@ -17,21 +18,9 @@
 	);
 
 	let createOpen = $state(false);
+	let createError = $state<string | null>(null);
 	let editing = $state<AccountView | null>(null);
-
-	/** Fecha o dialog quando a action termina sem erro; o update() recarrega a lista. */
-	function closeOnSuccess(close: () => void) {
-		return async ({
-			result,
-			update
-		}: {
-			result: { type: string };
-			update: () => Promise<void>;
-		}) => {
-			if (result.type === 'success') close();
-			await update();
-		};
-	}
+	let editError = $state<string | null>(null);
 
 	const TYPE_LABELS: Record<string, string> = {
 		checking: 'Conta corrente',
@@ -90,11 +79,16 @@
 <div class="flex flex-col gap-6">
 	{#if canManage}
 		<div class="flex justify-end">
-			<Button onclick={() => (createOpen = true)}>Adicionar conta</Button>
+			<Button
+				onclick={() => {
+					createError = null;
+					createOpen = true;
+				}}>Adicionar conta</Button
+			>
 		</div>
 	{/if}
 
-	{#if form?.message && !createOpen && !editing}
+	{#if form?.message}
 		<p class="text-sm text-destructive">{form.message}</p>
 	{/if}
 
@@ -122,7 +116,14 @@
 				<div class="flex shrink-0 items-center gap-3">
 					<span class="text-sm font-medium">{formatCents(account.balance)}</span>
 					{#if canManage}
-						<Button variant="outline" size="sm" onclick={() => (editing = account)}>Editar</Button>
+						<Button
+							variant="outline"
+							size="sm"
+							onclick={() => {
+								editError = null;
+								editing = account;
+							}}>Editar</Button
+						>
 						{#if !account.archivedAt}
 							<form method="POST" action="?/archive" use:enhance>
 								<input type="hidden" name="accountId" value={account.id} />
@@ -148,14 +149,22 @@
 			<Dialog.Title>Adicionar conta</Dialog.Title>
 			<Dialog.Description>O saldo atual é sempre derivado das transações.</Dialog.Description>
 		</Dialog.Header>
-		{#if form?.message}
-			<p class="text-sm text-destructive">{form.message}</p>
+		{#if createError}
+			<p class="text-sm text-destructive">{createError}</p>
 		{/if}
 		<form
 			method="POST"
 			action="?/create"
 			class="grid gap-4"
-			use:enhance={() => closeOnSuccess(() => (createOpen = false))}
+			use:enhance={dialogFormSubmit({
+				onSuccess: () => {
+					createOpen = false;
+					createError = null;
+				},
+				onError: (message) => {
+					createError = message;
+				}
+			})}
 		>
 			{@render accountFields('new')}
 			<Dialog.Footer>
@@ -165,20 +174,36 @@
 	</Dialog.Content>
 </Dialog.Root>
 
-<Dialog.Root open={editing !== null} onOpenChange={(open) => !open && (editing = null)}>
+<Dialog.Root
+	open={editing !== null}
+	onOpenChange={(open) => {
+		if (!open) {
+			editing = null;
+			editError = null;
+		}
+	}}
+>
 	<Dialog.Content>
 		<Dialog.Header>
 			<Dialog.Title>Editar conta</Dialog.Title>
 		</Dialog.Header>
-		{#if form?.message}
-			<p class="text-sm text-destructive">{form.message}</p>
+		{#if editError}
+			<p class="text-sm text-destructive">{editError}</p>
 		{/if}
 		{#if editing}
 			<form
 				method="POST"
 				action="?/update"
 				class="grid gap-4"
-				use:enhance={() => closeOnSuccess(() => (editing = null))}
+				use:enhance={dialogFormSubmit({
+					onSuccess: () => {
+						editing = null;
+						editError = null;
+					},
+					onError: (message) => {
+						editError = message;
+					}
+				})}
 			>
 				<input type="hidden" name="accountId" value={editing.id} />
 				{@render accountFields('edit', editing)}

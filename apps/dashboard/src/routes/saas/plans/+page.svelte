@@ -5,15 +5,19 @@
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
+	import { dialogFormSubmit } from '$lib/dialog-form';
 	import { formatCents } from '$lib/money';
 	import type { PaymentMethod, PlanPriceView, PlanView } from '$lib/server/admin-api';
 
 	let { data, form } = $props();
 
 	let createOpen = $state(false);
+	let createError = $state<string | null>(null);
 	let editing = $state<PlanView | null>(null);
+	let editError = $state<string | null>(null);
 	let priceDialogPlan = $state<PlanView | null>(null);
 	let editingPrice = $state<PlanPriceView | null>(null);
+	let priceError = $state<string | null>(null);
 
 	const INTERVAL_LABELS: Record<string, string> = {
 		day: 'dia',
@@ -43,25 +47,14 @@
 		return `${formatCents(price.priceCents)} / ${interval}`;
 	}
 
-	function closeOnSuccess(close: () => void) {
-		return async ({
-			result,
-			update
-		}: {
-			result: { type: string };
-			update: () => Promise<void>;
-		}) => {
-			if (result.type === 'success') close();
-			await update();
-		};
-	}
-
 	function openAddPrice(plan: PlanView) {
+		priceError = null;
 		priceDialogPlan = plan;
 		editingPrice = null;
 	}
 
 	function openEditPrice(plan: PlanView, price: PlanPriceView) {
+		priceError = null;
 		priceDialogPlan = plan;
 		editingPrice = price;
 	}
@@ -237,10 +230,15 @@
 <div class="flex flex-col gap-6">
 	<div class="flex items-center justify-between gap-4">
 		<h1 class="text-xl font-semibold">Planos</h1>
-		<Button onclick={() => (createOpen = true)}>Novo plano</Button>
+		<Button
+			onclick={() => {
+				createError = null;
+				createOpen = true;
+			}}>Novo plano</Button
+		>
 	</div>
 
-	{#if form?.message && !createOpen && !editing && !priceDialogPlan}
+	{#if form?.message}
 		<p class="text-sm text-destructive">{form.message}</p>
 	{/if}
 
@@ -264,7 +262,14 @@
 							<p class="text-xs text-primary">{plan.trialDays} dias de trial</p>
 						{/if}
 					</div>
-					<Button variant="outline" size="sm" onclick={() => (editing = plan)}>Editar</Button>
+					<Button
+						variant="outline"
+						size="sm"
+						onclick={() => {
+							editError = null;
+							editing = plan;
+						}}>Editar</Button
+					>
 				</div>
 
 				<div class="flex flex-col gap-1">
@@ -340,14 +345,22 @@
 		<Dialog.Header>
 			<Dialog.Title>Novo plano</Dialog.Title>
 		</Dialog.Header>
-		{#if form?.message}
-			<p class="text-sm text-destructive">{form.message}</p>
+		{#if createError}
+			<p class="text-sm text-destructive">{createError}</p>
 		{/if}
 		<form
 			method="POST"
 			action="?/create"
 			class="grid gap-4"
-			use:enhance={() => closeOnSuccess(() => (createOpen = false))}
+			use:enhance={dialogFormSubmit({
+				onSuccess: () => {
+					createOpen = false;
+					createError = null;
+				},
+				onError: (message) => {
+					createError = message;
+				}
+			})}
 		>
 			{@render planFields()}
 			<Dialog.Footer>
@@ -357,20 +370,36 @@
 	</Dialog.Content>
 </Dialog.Root>
 
-<Dialog.Root open={editing !== null} onOpenChange={(open) => !open && (editing = null)}>
+<Dialog.Root
+	open={editing !== null}
+	onOpenChange={(open) => {
+		if (!open) {
+			editing = null;
+			editError = null;
+		}
+	}}
+>
 	<Dialog.Content>
 		<Dialog.Header>
 			<Dialog.Title>Editar plano</Dialog.Title>
 		</Dialog.Header>
-		{#if form?.message}
-			<p class="text-sm text-destructive">{form.message}</p>
+		{#if editError}
+			<p class="text-sm text-destructive">{editError}</p>
 		{/if}
 		{#if editing}
 			<form
 				method="POST"
 				action="?/update"
 				class="grid gap-4"
-				use:enhance={() => closeOnSuccess(() => (editing = null))}
+				use:enhance={dialogFormSubmit({
+					onSuccess: () => {
+						editing = null;
+						editError = null;
+					},
+					onError: (message) => {
+						editError = message;
+					}
+				})}
 			>
 				<input type="hidden" name="id" value={editing.id} />
 				{@render planFields(editing)}
@@ -384,25 +413,36 @@
 
 <Dialog.Root
 	open={priceDialogPlan !== null}
-	onOpenChange={(open) => !open && (priceDialogPlan = null)}
+	onOpenChange={(open) => {
+		if (!open) {
+			priceDialogPlan = null;
+			editingPrice = null;
+			priceError = null;
+		}
+	}}
 >
 	<Dialog.Content>
 		<Dialog.Header>
 			<Dialog.Title>{editingPrice ? 'Editar preço' : 'Adicionar preço'}</Dialog.Title>
 		</Dialog.Header>
-		{#if form?.message}
-			<p class="text-sm text-destructive">{form.message}</p>
+		{#if priceError}
+			<p class="text-sm text-destructive">{priceError}</p>
 		{/if}
 		{#if priceDialogPlan}
 			<form
 				method="POST"
 				action={editingPrice ? '?/updatePrice' : '?/addPrice'}
 				class="grid gap-4"
-				use:enhance={() =>
-					closeOnSuccess(() => {
+				use:enhance={dialogFormSubmit({
+					onSuccess: () => {
 						priceDialogPlan = null;
 						editingPrice = null;
-					})}
+						priceError = null;
+					},
+					onError: (message) => {
+						priceError = message;
+					}
+				})}
 			>
 				<input type="hidden" name="planId" value={priceDialogPlan.id} />
 				{#if editingPrice}
