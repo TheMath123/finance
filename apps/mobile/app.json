@@ -55,7 +55,9 @@
           "photosPermission": "Usamos sua galeria pra anexar comprovantes às transações.",
           "cameraPermission": "Usamos a câmera pra fotografar comprovantes das transações."
         }
-      ]
+      ],
+      "expo-image",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true,
