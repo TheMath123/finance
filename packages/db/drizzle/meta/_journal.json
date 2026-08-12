@@ -232,6 +232,13 @@
       "when": 1786501175643,
       "tag": "0032_restore_csv_import_flag",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1786502853153,
+      "tag": "0033_add_alimentacao_default_category",
+      "breakpoints": true
     }
   ]
 }
