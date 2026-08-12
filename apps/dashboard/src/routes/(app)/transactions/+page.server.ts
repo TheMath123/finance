@@ -69,6 +69,8 @@ export const load: PageServerLoad = async ({ parent, locals, url }) => {
 		categories: categories.ok ? categories.value : [],
 		accounts: accounts.ok ? accounts.value : [],
 		cards: cards.ok ? cards.value : [],
+		cardCsvImportEnabled: locals.session.featureFlags.card_invoice_csv_import === true,
+		accountCsvImportEnabled: locals.session.featureFlags.account_csv_import === true,
 		filters,
 		formulas: formulas.ok ? formulas.value : [],
 		formulaSummary: formulaSummary.ok

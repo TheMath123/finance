@@ -4,6 +4,7 @@
 	import ArrowCounterClockwiseIcon from 'phosphor-svelte/lib/ArrowCounterClockwiseIcon';
 	import CalculatorIcon from 'phosphor-svelte/lib/Calculator';
 	import PencilSimpleIcon from 'phosphor-svelte/lib/PencilSimpleIcon';
+	import UploadSimpleIcon from 'phosphor-svelte/lib/UploadSimpleIcon';
 	import { dndzone } from 'svelte-dnd-action';
 
 	import { enhance } from '$app/forms';
@@ -14,6 +15,7 @@
 
 	import { resolveCategoryIcon } from '$lib/category-icon';
 	import FormulaDialog from '$lib/components/calculator/formula-dialog.svelte';
+	import ImportCsvDialog from '$lib/components/transactions/import-csv-dialog.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { Input } from '$lib/components/ui/input';
@@ -71,6 +73,8 @@
 
 	let createOpen = $state(false);
 	let createError = $state<string | null>(null);
+	let importOpen = $state(false);
+	const csvImportAvailable = $derived(data.cardCsvImportEnabled || data.accountCsvImportEnabled);
 	let editing = $state<TransactionView | null>(null);
 	let editError = $state<string | null>(null);
 	let editingInstallmentTotal = $state(false);
@@ -149,6 +153,12 @@
 				<CalculatorIcon size={16} />
 				Calculadora
 			</Button>
+			{#if canManage && csvImportAvailable}
+				<Button variant="outline" onclick={() => (importOpen = true)}>
+					<UploadSimpleIcon size={16} />
+					Importar
+				</Button>
+			{/if}
 			{#if canManage}
 				<Button
 					onclick={() => {
@@ -820,4 +830,17 @@
 	values={formulaCatalog.values}
 	formulas={data.formulas}
 	{form}
+/>
+
+<ImportCsvDialog
+	bind:open={importOpen}
+	cards={data.cards}
+	accounts={data.accounts}
+	categories={data.categories}
+	cardCsvImportEnabled={data.cardCsvImportEnabled}
+	accountCsvImportEnabled={data.accountCsvImportEnabled}
+	ondone={async () => {
+		importOpen = false;
+		await invalidateAll();
+	}}
 />
