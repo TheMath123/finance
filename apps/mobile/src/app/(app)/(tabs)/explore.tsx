@@ -121,6 +121,7 @@ function TransactionRow({
 }) {
   const isExpense = transaction.type === 'expense';
   const isInstallment = transaction.installmentTotal !== null;
+  const locked = transaction.invoicePaid === true;
   const Icon = resolveCategoryIcon(category?.icon);
   const accentColor = isExpense ? BrandColors.destructive : BrandColors.success;
   const logoUrl = getMerchantLogoUrl(transaction.description);
@@ -129,8 +130,20 @@ function TransactionRow({
 
   return (
     <Pressable
-      onPress={onPress}
-      className="w-full flex-row gap-2 border-t border-foreground/10 px-4 py-5 active:opacity-70"
+      onPress={() => {
+        if (locked) {
+          Alert.alert(
+            'Fatura já paga',
+            'Esta transação não pode mais ser editada. Arquive-a e lance uma nova.'
+          );
+          return;
+        }
+        onPress();
+      }}
+      className={cn(
+        'w-full flex-row gap-2 border-t border-foreground/10 px-4 py-5 active:opacity-70',
+        locked && 'opacity-60'
+      )}
     >
       <View
         className={cn(
@@ -182,6 +195,11 @@ function TransactionRow({
           {!isInstallment && transaction.hasActiveSplit && (
             <Text className="text-[12px] font-normal leading-tight text-muted-foreground">
               Dividido
+            </Text>
+          )}
+          {locked && (
+            <Text className="text-[12px] font-normal leading-tight text-muted-foreground">
+              Fatura paga
             </Text>
           )}
           <Text

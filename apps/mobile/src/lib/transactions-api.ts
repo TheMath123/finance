@@ -25,6 +25,8 @@ export interface Transaction {
   attachmentKey: string | null;
   /** Computado (não é coluna) — indicador visual de despesa dividida (M3-03), só presente na listagem. */
   hasActiveSplit?: boolean;
+  /** Computado — fatura já paga, transação imutável (só arquivar + lançar de novo), só presente na listagem. */
+  invoicePaid?: boolean;
 }
 
 export interface ListTransactionsFilters {
