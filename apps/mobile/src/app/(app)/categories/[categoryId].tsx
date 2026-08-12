@@ -12,7 +12,8 @@ import { categoriesApi } from '@/lib/categories-api';
 
 export default function EditCategoryScreen() {
   const { categoryId } = useLocalSearchParams<{ categoryId: string }>();
-  const { workspaceId } = useSession();
+  const { workspaceId, featureFlags } = useSession();
+  const canManageCategories = featureFlags.custom_category_creation === true;
 
   const { data: categories, isLoading } = useQuery({
     queryKey: ['categories', workspaceId],
@@ -22,11 +23,16 @@ export default function EditCategoryScreen() {
 
   const category = categories?.find((c) => c.id === categoryId);
 
-  // Categoria padrão não é editável — não deveria nem chegar aqui pela UI,
-  // mas protege contra navegação direta/deep link.
+  // Categoria padrão não é editável, nem com a flag desligada — não deveria
+  // nem chegar aqui pela UI, mas protege contra navegação direta/deep link.
   useEffect(() => {
-    if (!isLoading && (!category || category.isDefault)) router.back();
-  }, [isLoading, category]);
+    if (
+      !isLoading &&
+      (!category || category.isDefault || !canManageCategories)
+    ) {
+      router.back();
+    }
+  }, [isLoading, category, canManageCategories]);
 
   return (
     <Screen className="gap-6">

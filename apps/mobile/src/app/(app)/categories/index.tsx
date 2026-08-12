@@ -16,7 +16,8 @@ import { ApiError } from '@/lib/api-client';
 import { type Category, categoriesApi } from '@/lib/categories-api';
 
 export default function CategoriesScreen() {
-  const { workspaceId } = useSession();
+  const { workspaceId, featureFlags } = useSession();
+  const canManageCategories = featureFlags.custom_category_creation === true;
   const queryClient = useQueryClient();
 
   const { data: categories, isLoading } = useQuery({
@@ -63,19 +64,21 @@ export default function CategoriesScreen() {
           </Pressable>
           <ThemedText type="subtitle">Categorias</ThemedText>
         </View>
-        <Pressable
-          onPress={() => router.push('/categories/new')}
-          className="h-9 w-9 items-center justify-center rounded-full bg-primary/10 active:opacity-70"
-        >
-          <PlusIcon size={18} color="#2563EB" weight="bold" />
-        </Pressable>
+        {canManageCategories && (
+          <Pressable
+            onPress={() => router.push('/categories/new')}
+            className="h-9 w-9 items-center justify-center rounded-full bg-primary/10 active:opacity-70"
+          >
+            <PlusIcon size={18} color="#2563EB" weight="bold" />
+          </Pressable>
+        )}
       </View>
 
       {isLoading ? (
         <ActivityIndicator />
       ) : categories && categories.length > 0 ? (
         categories.map((category) =>
-          category.isDefault ? (
+          category.isDefault || !canManageCategories ? (
             <Card
               key={category.id}
               className="flex-row items-center justify-between"
@@ -87,9 +90,11 @@ export default function CategoriesScreen() {
                 />
                 <ThemedText type="smallBold">{category.name}</ThemedText>
               </View>
-              <ThemedText type="small" themeColor="textSecondary">
-                Padrão
-              </ThemedText>
+              {category.isDefault && (
+                <ThemedText type="small" themeColor="textSecondary">
+                  Padrão
+                </ThemedText>
+              )}
             </Card>
           ) : (
             <Card
