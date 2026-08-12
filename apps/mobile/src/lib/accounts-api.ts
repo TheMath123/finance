@@ -1,6 +1,10 @@
-import type { AccountType } from '@finance/shared';
+import type { AccountType, TransactionType } from '@finance/shared';
 
-import { apiRequest } from '@/lib/api-client';
+import {
+  apiRequest,
+  apiRequestUpload,
+  type UploadFile,
+} from '@/lib/api-client';
 
 export interface Account {
   id: string;
@@ -58,4 +62,61 @@ export const accountsApi = {
     apiRequest<void>(`/workspaces/${workspaceId}/accounts/${accountId}`, {
       method: 'DELETE',
     }),
+
+  previewCsvImport: (
+    workspaceId: string,
+    accountId: string,
+    file: UploadFile
+  ) =>
+    apiRequestUpload<AccountCsvImportPreviewResult>(
+      `/workspaces/${workspaceId}/accounts/${accountId}/csv-import/preview`,
+      file
+    ),
+
+  confirmCsvImport: (
+    workspaceId: string,
+    accountId: string,
+    input: ConfirmAccountCsvImportInput
+  ) =>
+    apiRequest<ConfirmAccountCsvImportResult>(
+      `/workspaces/${workspaceId}/accounts/${accountId}/csv-import/confirm`,
+      { method: 'POST', body: input }
+    ),
 };
+
+export type AccountCsvImportRowStatus = 'new' | 'duplicate' | 'invalid';
+
+/** Espelha AccountCsvImportPreviewRow (backend) — sem installment, ao contrário do import de fatura. */
+export interface AccountCsvImportPreviewRow {
+  rowIndex: number;
+  raw: string[];
+  date: string | null;
+  description: string | null;
+  amount: number | null;
+  type: TransactionType | null;
+  status: AccountCsvImportRowStatus;
+  suggestedCategoryId: string | null;
+}
+
+export interface AccountCsvImportPreviewResult {
+  delimiter: string;
+  headerDetected: boolean;
+  rows: AccountCsvImportPreviewRow[];
+}
+
+export interface ConfirmAccountCsvImportRow {
+  date: string;
+  description: string;
+  amount: number;
+  categoryId: string;
+}
+
+export interface ConfirmAccountCsvImportInput {
+  method: 'pix' | 'debit' | 'cash';
+  rows: ConfirmAccountCsvImportRow[];
+}
+
+export interface ConfirmAccountCsvImportResult {
+  created: number;
+  skippedDuplicates: number;
+}

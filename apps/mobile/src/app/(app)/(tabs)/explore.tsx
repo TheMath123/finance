@@ -12,6 +12,7 @@ import {
   ReceiptIcon,
   RepeatIcon,
   TrashIcon,
+  UploadSimpleIcon,
   XIcon,
 } from 'phosphor-react-native';
 import { useEffect, useState } from 'react';
@@ -29,6 +30,7 @@ import { formatIsoDate } from '@/components/form/date-field';
 import { CreateRecurringForm } from '@/components/forms/create-recurring-form';
 import { CreateTransactionForm } from '@/components/forms/create-transaction-form';
 import { EditTransactionForm } from '@/components/forms/edit-transaction-form';
+import { ImportCsvForm } from '@/components/forms/import-csv-form';
 import { ThemedText } from '@/components/themed-text';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -457,10 +459,11 @@ function RecurringManagerDialog({
 }
 
 export default function TransactionsScreen() {
-  const { workspaceId } = useSession();
+  const { workspaceId, featureFlags } = useSession();
   const queryClient = useQueryClient();
   const theme = useTheme();
   const [createOpen, setCreateOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [recurringManagerOpen, setRecurringManagerOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] =
     useState<Transaction | null>(null);
@@ -619,6 +622,15 @@ export default function TransactionsScreen() {
           </HeaderChip>
         )}
         <View className="flex-row items-center gap-4">
+          {(featureFlags.card_invoice_csv_import === true ||
+            featureFlags.account_csv_import === true) && (
+            <HeaderChip
+              onPress={() => setImportOpen(true)}
+              accessibilityLabel="Importar CSV"
+            >
+              <UploadSimpleIcon size={16} color={theme.textSecondary} />
+            </HeaderChip>
+          )}
           <HeaderChip
             onPress={() => setRecurringManagerOpen(true)}
             accessibilityLabel="Recorrências"
@@ -814,6 +826,26 @@ export default function TransactionsScreen() {
             <DialogTitle>Nova transação</DialogTitle>
           </DialogHeader>
           <CreateTransactionForm onDone={() => setCreateOpen(false)} />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={importOpen} onOpenChange={setImportOpen}>
+        <DialogContent className="w-full max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Importar CSV</DialogTitle>
+          </DialogHeader>
+          {importOpen && (
+            <ImportCsvForm
+              cards={cards ?? []}
+              accounts={accounts ?? []}
+              categories={categories ?? []}
+              cardCsvImportEnabled={
+                featureFlags.card_invoice_csv_import === true
+              }
+              accountCsvImportEnabled={featureFlags.account_csv_import === true}
+              onDone={() => setImportOpen(false)}
+            />
+          )}
         </DialogContent>
       </Dialog>
 
