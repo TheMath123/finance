@@ -18,6 +18,7 @@
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
+	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { dialogFormSubmit } from '$lib/dialog-form';
 	import { buildClientFormulaCatalog } from '$lib/formula-catalog';
 	import { getMerchantLogoUrl } from '$lib/merchant-logo';
@@ -390,6 +391,40 @@
 												<ArrowCounterClockwiseIcon size={16} />
 											</Button>
 										</form>
+									{:else if transaction.invoicePaid}
+										<Tooltip.Root>
+											<Tooltip.Trigger>
+												{#snippet child({ props })}
+													<span {...props} role="button" tabindex="0">
+														<Button
+															variant="ghost"
+															size="icon-sm"
+															aria-label="Editar (indisponível)"
+															disabled
+															tabindex={-1}
+														>
+															<PencilSimpleIcon size={16} />
+														</Button>
+													</span>
+												{/snippet}
+											</Tooltip.Trigger>
+											<Tooltip.Content>
+												Fatura já paga — a transação não pode mais ser editada. Arquive-a e lance
+												uma nova.
+											</Tooltip.Content>
+										</Tooltip.Root>
+										<form method="POST" action="?/remove" use:enhance>
+											<input type="hidden" name="transactionId" value={transaction.id} />
+											<Button
+												type="submit"
+												variant="ghost"
+												size="icon-sm"
+												title="Arquivar"
+												aria-label="Arquivar"
+											>
+												<ArchiveIcon size={16} />
+											</Button>
+										</form>
 									{:else}
 										<Button
 											variant="ghost"
@@ -660,16 +695,6 @@
 							value={(editing.amount / 100).toFixed(2).replace('.', ',')}
 							required
 						/>
-						{#if locked}
-							<!-- Input disabled não entra no FormData — sem este hidden, salvar só
-							     descrição/categoria de uma parcela falhava (amount ausente,
-							     obrigatório no schema). -->
-							<input
-								type="hidden"
-								name="amount"
-								value={(editing.amount / 100).toFixed(2).replace('.', ',')}
-							/>
-						{/if}
 					</div>
 					<div class="grid gap-2">
 						<Label for="edit-date">Data</Label>
@@ -681,9 +706,6 @@
 							value={editing.date}
 							required
 						/>
-						{#if locked}
-							<input type="hidden" name="date" value={editing.date} />
-						{/if}
 					</div>
 				</div>
 				<div class="grid gap-2">

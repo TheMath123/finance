@@ -37,9 +37,11 @@ export const transactionFormSchema = z
 
 export const transactionEditSchema = z.object({
 	description: z.string().min(1, 'Informe uma descrição').max(200),
-	amount: z.number().int().positive('Informe um valor maior que zero'),
+	// Ausentes quando a transação é uma parcela (campos travados, nunca enviados pelo form) —
+	// distinto de "usuário mandou vazio", que continua inválido nos casos não travados.
+	amount: z.number().int().positive('Informe um valor maior que zero').optional(),
 	categoryId: z.string().min(1, 'Escolha uma categoria'),
-	date: dateFormat,
+	date: dateFormat.optional(),
 	accountId: z.string().optional(),
 	cardId: z.string().optional()
 });

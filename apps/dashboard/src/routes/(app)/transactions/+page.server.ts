@@ -97,8 +97,11 @@ function numberField(form: FormData, key: string): number | undefined {
 	return Number.isFinite(value) ? value : undefined;
 }
 
-function centsField(form: FormData, key: string): number {
-	return parseReaisToCents(form.get(key)?.toString() ?? '') ?? Number.NaN;
+/** `undefined` quando o campo nem veio no form (ex.: input disabled de parcela travada) — distinto de "veio mas não deu pra parsear" (`NaN`, ainda inválido onde for obrigatório). */
+function centsField(form: FormData, key: string): number | undefined {
+	const raw = form.get(key);
+	if (raw === null) return undefined;
+	return parseReaisToCents(raw.toString()) ?? Number.NaN;
 }
 
 function textField(form: FormData, key: string): string | undefined {
@@ -147,9 +150,14 @@ export const actions: Actions = {
 
 		const raw = {
 			description: textField(form, 'description') ?? '',
+			// amount/date ausentes = parcela travada (input disabled, sem name) — o form
+			// não tenta mais mandar o valor atual pra "preencher" o schema; ausente aqui
+			// significa ausente pro backend também, que é o que libera a edição só de
+			// descrição/categoria (ver update-transaction.ts: trava se input.amount/date
+			// estiverem *presentes*, não se mudaram de valor).
 			amount: centsField(form, 'amount'),
 			categoryId: textField(form, 'categoryId') ?? '',
-			date: textField(form, 'date') ?? '',
+			date: textField(form, 'date'),
 			accountId: textField(form, 'accountId'),
 			cardId: textField(form, 'cardId')
 		};

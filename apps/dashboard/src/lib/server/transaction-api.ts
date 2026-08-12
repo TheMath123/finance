@@ -27,6 +27,8 @@ export interface TransactionView {
 	createdAt: string;
 	updatedAt: string;
 	hasActiveSplit: boolean;
+	/** Fatura já paga — transação imutável (só arquivar + lançar de novo). */
+	invoicePaid: boolean;
 }
 
 export interface ListTransactionsFilters {
