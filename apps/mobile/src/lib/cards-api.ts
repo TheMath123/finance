@@ -104,6 +104,12 @@ export const cardsApi = {
       body: input,
     }),
 
+  undoPayment: (workspaceId: string, invoiceId: string) =>
+    apiRequest<void>(
+      `/workspaces/${workspaceId}/invoices/${invoiceId}/undo-payment`,
+      { method: 'POST' }
+    ),
+
   previewCsvImport: (
     workspaceId: string,
     cardId: string,

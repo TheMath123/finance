@@ -19,7 +19,7 @@
 		InvoiceView
 	} from '$lib/server/invoice-api';
 
-	let { data } = $props();
+	let { data, form } = $props();
 
 	let paying = $state<InvoiceView | null>(null);
 	let payError = $state<string | null>(null);
@@ -255,6 +255,10 @@
 		<h1 class="text-xl font-semibold">Faturas — {data.card.name}</h1>
 	</div>
 
+	{#if form?.message}
+		<p class="text-sm text-destructive">{form.message}</p>
+	{/if}
+
 	{#if data.current}
 		<div class="rounded-xl border border-foreground/10 bg-foreground/[0.02] p-5">
 			<div class="flex items-start justify-between gap-4">
@@ -350,6 +354,24 @@
 							<Button variant="outline" size="sm" onclick={() => openPayDialog(invoice)}>
 								Pagar
 							</Button>
+						{:else if invoice.effectiveStatus === 'paid'}
+							<form
+								method="POST"
+								action="?/undoPayment"
+								use:enhance
+								onsubmit={(event) => {
+									if (
+										!confirm(
+											'Desfazer o pagamento? Isso reabre a fatura e exclui a transação de pagamento da conta.'
+										)
+									) {
+										event.preventDefault();
+									}
+								}}
+							>
+								<input type="hidden" name="invoiceId" value={invoice.id} />
+								<Button type="submit" variant="destructive" size="sm">Desfazer pagamento</Button>
+							</form>
 						{/if}
 					</div>
 				</div>

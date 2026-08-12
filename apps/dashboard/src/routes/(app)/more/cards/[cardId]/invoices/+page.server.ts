@@ -93,5 +93,20 @@ export const actions: Actions = {
 		});
 		if (!result.ok) return fail(result.error.status || 500, { message: result.error.message });
 		return { success: true };
+	},
+
+	undoPayment: async ({ request, cookies, locals }) => {
+		if (!locals.session) redirect(303, '/login');
+		const form = await request.formData();
+		const invoiceId = form.get('invoiceId')?.toString() ?? '';
+		const workspaceId = getActiveWorkspaceId(cookies) ?? locals.session.defaultWorkspaceId;
+
+		const result = await invoiceApi.undoInvoicePayment(
+			locals.session.accessToken,
+			workspaceId,
+			invoiceId
+		);
+		if (!result.ok) return fail(result.error.status || 500, { message: result.error.message });
+		return { success: true };
 	}
 };

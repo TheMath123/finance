@@ -60,6 +60,17 @@ export function payInvoice(
 	});
 }
 
+export function undoInvoicePayment(
+	accessToken: string,
+	workspaceId: string,
+	invoiceId: string
+): Promise<Either<ApiError, InvoiceView>> {
+	return apiRequest(`/workspaces/${workspaceId}/invoices/${invoiceId}/undo-payment`, {
+		method: 'POST',
+		accessToken
+	});
+}
+
 /** Espelha CsvImportRowInstallment (backend, use-cases/card/preview-invoice-csv-import.ts). */
 export interface CsvImportRowInstallment {
 	number: number;

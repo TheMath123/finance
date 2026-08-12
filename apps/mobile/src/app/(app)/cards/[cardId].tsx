@@ -109,6 +109,38 @@ export default function CardDetailScreen() {
     },
   });
 
+  const undoPaymentMutation = useMutation({
+    mutationFn: (invoiceId: string) =>
+      cardsApi.undoPayment(workspaceId!, invoiceId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['invoices', workspaceId] });
+      queryClient.invalidateQueries({ queryKey: ['cards', workspaceId] });
+      queryClient.invalidateQueries({ queryKey: ['summary', workspaceId] });
+      queryClient.invalidateQueries({ queryKey: ['accounts', workspaceId] });
+    },
+    onError: (error) => {
+      Alert.alert(
+        'Não foi possível desfazer',
+        error instanceof ApiError ? error.message : 'Erro inesperado'
+      );
+    },
+  });
+
+  const confirmUndoPayment = (invoiceId: string) => {
+    Alert.alert(
+      'Desfazer pagamento',
+      'Isso reabre a fatura e exclui a transação de pagamento da conta. Continuar?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Desfazer',
+          style: 'destructive',
+          onPress: () => undoPaymentMutation.mutate(invoiceId),
+        },
+      ]
+    );
+  };
+
   const confirmDelete = () => {
     Alert.alert('Excluir cartão', `Deseja excluir "${cardItem?.name}"?`, [
       { text: 'Cancelar', style: 'cancel' },
@@ -201,13 +233,21 @@ export default function CardDetailScreen() {
                   {formatCents(invoice.total)}
                 </ThemedText>
               </View>
-              {invoice.effectiveStatus !== 'paid' && (
+              {invoice.effectiveStatus !== 'paid' ? (
                 <Button
                   variant="outline"
                   size="sm"
                   onPress={() => setPayingInvoice(invoice)}
                 >
                   Pagar
+                </Button>
+              ) : (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onPress={() => confirmUndoPayment(invoice.id)}
+                >
+                  Desfazer pagamento
                 </Button>
               )}
             </Card>
