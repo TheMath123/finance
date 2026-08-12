@@ -47,12 +47,6 @@
 							{flag.enabled ? 'Ativa' : 'Inativa'}
 						</Button>
 					</form>
-					{#if !flag.isSystem}
-						<form method="POST" action="?/remove" use:enhance>
-							<input type="hidden" name="key" value={flag.key} />
-							<Button type="submit" variant="destructive" size="sm">Excluir</Button>
-						</form>
-					{/if}
 				</div>
 			</div>
 		{:else}

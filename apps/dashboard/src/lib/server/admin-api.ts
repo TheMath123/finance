@@ -133,7 +133,7 @@ export interface FeatureFlagView {
 	key: string;
 	enabled: boolean;
 	description: string | null;
-	/** Flag predefinida da plataforma (seed via migration) — não pode ser excluída. */
+	/** Flag predefinida da plataforma no seed original (seed via migration). */
 	isSystem: boolean;
 	createdAt: string;
 	updatedAt: string;
@@ -155,13 +155,6 @@ export function updateFeatureFlag(
 		body: input,
 		accessToken
 	});
-}
-
-export function deleteFeatureFlag(
-	accessToken: string,
-	key: string
-): Promise<Either<ApiError, unknown>> {
-	return apiRequest(`/admin/feature-flags/${key}`, { method: 'DELETE', accessToken });
 }
 
 /** Espelha PlatformMetrics (backend, use-cases/admin/get-platform-metrics.ts). */

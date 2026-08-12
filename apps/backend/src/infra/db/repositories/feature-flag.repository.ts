@@ -23,8 +23,5 @@ export function createFeatureFlagRepository(
       if (!row) throw new Error('falha ao salvar feature flag');
       return row;
     },
-    async delete(key) {
-      await db.delete(featureFlags).where(eq(featureFlags.key, key));
-    },
   };
 }

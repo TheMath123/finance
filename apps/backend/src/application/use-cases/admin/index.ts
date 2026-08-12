@@ -4,7 +4,6 @@ export { createDefaultCategory } from './create-default-category';
 export { createPlan } from './create-plan';
 export { activatePlan, deactivatePlan } from './deactivate-plan';
 export { deleteDefaultCategory } from './delete-default-category';
-export { deleteFeatureFlag } from './delete-feature-flag';
 export { deletePlanPrice } from './delete-plan-price';
 export type { AdminError } from './errors';
 export { getAiSettings } from './get-ai-settings';

@@ -24,5 +24,4 @@ export interface FeatureFlagRepository {
   findByKey(key: string): Promise<FeatureFlag | undefined>;
   /** Cria se `key` não existir, atualiza se existir. */
   upsert(key: string, data: FeatureFlagInput): Promise<FeatureFlag>;
-  delete(key: string): Promise<void>;
 }

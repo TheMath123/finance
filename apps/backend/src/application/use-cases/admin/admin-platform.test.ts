@@ -18,7 +18,6 @@ import { readDailyTokenBudget } from '../../services/ai-settings-cache';
 import { isFeatureEnabled } from '../../services/feature-flags';
 import { register } from '../auth';
 import {
-  deleteFeatureFlag,
   getAiSettings,
   getPlatformMetrics,
   listFeatureFlags,
@@ -80,53 +79,52 @@ describe('admin: orçamento de IA', () => {
 
 /**
  * Flags só existem via seed em código (migration) — o use-case
- * `updateFeatureFlag` nunca cria. Aqui simulamos esse seed inserindo direto
- * no banco, do jeito que uma migration faria.
+ * `updateFeatureFlag` nunca cria, e não existe mais endpoint de exclusão.
+ * Aqui simulamos esse seed inserindo direto no banco, do jeito que uma
+ * migration faria, e limpamos direto no banco ao final (infra de teste,
+ * não a API pública — essa não tem mais exclusão).
  */
 async function seedFlag(key: string) {
   await db.insert(featureFlags).values({ key, enabled: false });
 }
 
 describe('admin: feature flags', () => {
-  test('update + isFeatureEnabled + delete', async () => {
+  test('update + isFeatureEnabled', async () => {
     const deps = createTestDeps(db);
     const adminUserId = await registerAdmin(deps);
     const key = uniqueFlagKey();
     await seedFlag(key);
 
-    expect(await isFeatureEnabled(deps, key)).toBe(false);
+    try {
+      expect(await isFeatureEnabled(deps, key)).toBe(false);
 
-    const created = await updateFeatureFlag(deps, adminUserId, key, {
-      enabled: true,
-    });
-    expect(created.ok).toBe(true);
-    if (created.ok) expect(created.value.enabled).toBe(true);
-    expect(await isFeatureEnabled(deps, key)).toBe(true);
+      const created = await updateFeatureFlag(deps, adminUserId, key, {
+        enabled: true,
+      });
+      expect(created.ok).toBe(true);
+      if (created.ok) expect(created.value.enabled).toBe(true);
+      expect(await isFeatureEnabled(deps, key)).toBe(true);
 
-    const updated = await updateFeatureFlag(deps, adminUserId, key, {
-      enabled: false,
-    });
-    expect(updated.ok).toBe(true);
-    if (updated.ok) expect(updated.value.enabled).toBe(false);
-    expect(await isFeatureEnabled(deps, key)).toBe(false);
+      const updated = await updateFeatureFlag(deps, adminUserId, key, {
+        enabled: false,
+      });
+      expect(updated.ok).toBe(true);
+      if (updated.ok) expect(updated.value.enabled).toBe(false);
+      expect(await isFeatureEnabled(deps, key)).toBe(false);
 
-    const list = await listFeatureFlags(deps);
-    expect(list.some((f) => f.key === key)).toBe(true);
+      const list = await listFeatureFlags(deps);
+      expect(list.some((f) => f.key === key)).toBe(true);
 
-    const deleted = await deleteFeatureFlag(deps, adminUserId, key);
-    expect(deleted.ok).toBe(true);
-    expect(await isFeatureEnabled(deps, key)).toBe(false);
-
-    const listAfterDelete = await listFeatureFlags(deps);
-    expect(listAfterDelete.some((f) => f.key === key)).toBe(false);
-
-    const auditRows = await db
-      .select()
-      .from(adminAuditLogs)
-      .where(eq(adminAuditLogs.entityId, key));
-    const actions = auditRows.map((r) => r.action);
-    expect(actions).toContain('update_feature_flag');
-    expect(actions).toContain('delete_feature_flag');
+      const auditRows = await db
+        .select()
+        .from(adminAuditLogs)
+        .where(eq(adminAuditLogs.entityId, key));
+      expect(auditRows.some((r) => r.action === 'update_feature_flag')).toBe(
+        true
+      );
+    } finally {
+      await db.delete(featureFlags).where(eq(featureFlags.key, key));
+    }
   });
 
   test('não é possível atualizar uma flag que não existe', async () => {
@@ -139,30 +137,6 @@ describe('admin: feature flags', () => {
     });
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.error).toBe('feature_flag_not_found');
-  });
-
-  test('não é possível deletar uma flag de sistema, mas uma flag comum pode ser deletada', async () => {
-    const deps = createTestDeps(db);
-    const adminUserId = await registerAdmin(deps);
-
-    // Flag de sistema real, seedada via migration (0030) — não criada pelo teste.
-    const systemResult = await deleteFeatureFlag(
-      deps,
-      adminUserId,
-      'csv_export'
-    );
-    expect(systemResult.ok).toBe(false);
-    if (!systemResult.ok) {
-      expect(systemResult.error).toBe('cannot_delete_system_feature_flag');
-    }
-    expect(await isFeatureEnabled(deps, 'csv_export')).toBe(true);
-
-    const key = uniqueFlagKey();
-    await seedFlag(key);
-    await updateFeatureFlag(deps, adminUserId, key, { enabled: true });
-    const regularResult = await deleteFeatureFlag(deps, adminUserId, key);
-    expect(regularResult.ok).toBe(true);
-    expect(await isFeatureEnabled(deps, key)).toBe(false);
   });
 });
 

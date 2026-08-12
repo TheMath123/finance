@@ -1,6 +1,5 @@
 import { Elysia } from 'elysia';
 import {
-  deleteFeatureFlag,
   listFeatureFlags,
   updateFeatureFlag,
 } from '../../../../application/use-cases/admin';
@@ -35,22 +34,5 @@ export const updateFeatureFlagRoute = (deps: AppDeps) =>
         input.value
       );
       return respond(set, result, ADMIN_ERRORS);
-    }
-  );
-
-export const deleteFeatureFlagRoute = (deps: AppDeps) =>
-  new Elysia().delete(
-    '/admin/feature-flags/:key',
-    async ({ request, params, set }) => {
-      const p = validateParams(featureFlagParamsSchema, params);
-      if (!p.ok) return fail(set, p.error);
-      const auth = await requireSuperadmin(deps, request);
-      if (!auth.ok) return fail(set, auth.error);
-      const result = await deleteFeatureFlag(
-        deps,
-        auth.value.userId,
-        p.value.key
-      );
-      return respond(set, result, ADMIN_ERRORS, 204);
     }
   );

@@ -7,11 +7,7 @@ import {
   listDefaultCategoriesRoute,
   updateDefaultCategoryRoute,
 } from './default-categories';
-import {
-  deleteFeatureFlagRoute,
-  listFeatureFlagsRoute,
-  updateFeatureFlagRoute,
-} from './feature-flags';
+import { listFeatureFlagsRoute, updateFeatureFlagRoute } from './feature-flags';
 import { listUsersRoute } from './list-users';
 import { getPlatformMetricsRoute } from './metrics';
 import {
@@ -45,7 +41,6 @@ export function adminRoutes(deps: AppDeps) {
     .use(updateAiSettingsRoute(deps))
     .use(listFeatureFlagsRoute(deps))
     .use(updateFeatureFlagRoute(deps))
-    .use(deleteFeatureFlagRoute(deps))
     .use(getPlatformMetricsRoute(deps))
     .use(listPlansRoute(deps))
     .use(createPlanRoute(deps))

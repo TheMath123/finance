@@ -326,8 +326,8 @@
     "/admin/feature-flags/{key}": {
       "put": {
         "tags": ["Administração (Superadmin)"],
-        "summary": "Criar ou atualizar feature flag",
-        "description": "Cria a flag se `key` não existir, ou atualiza se já existir (upsert). Nunca permite alterar `isSystem` — esse campo só é definido pelo seed.",
+        "summary": "Atualizar feature flag",
+        "description": "Liga/desliga uma feature flag já existente. Nunca cria: flags são definidas em código (seed via migration); `404 feature_flag_not_found` se `key` ainda não existir. Nunca permite alterar `isSystem` — esse campo só é definido pelo seed.",
         "security": [{ "bearerAuth": [] }],
         "parameters": [
           {
@@ -346,17 +346,14 @@
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/AdminUpsertFeatureFlagBody" },
-              "example": {
-                "enabled": true,
-                "description": "Libera o assistente de IA no WhatsApp para todos os workspaces."
-              }
+              "schema": { "$ref": "#/components/schemas/AdminUpdateFeatureFlagBody" },
+              "example": { "enabled": true }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "Feature flag criada ou atualizada.",
+            "description": "Feature flag atualizada.",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/AdminFeatureFlag" }
@@ -364,37 +361,7 @@
             }
           },
           "4XX": {
-            "description": "400 `validation_error`, 401 `unauthorized`, 403 `forbidden`, 404 (path param `key` malformado), 429 `rate_limited`.",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
-              }
-            }
-          }
-        }
-      },
-      "delete": {
-        "tags": ["Administração (Superadmin)"],
-        "summary": "Excluir feature flag",
-        "description": "Exclui uma feature flag. Nunca é possível excluir uma flag de sistema (`isSystem: true`) — só o toggle `enabled` é editável nela via PUT.",
-        "security": [{ "bearerAuth": [] }],
-        "parameters": [
-          {
-            "name": "key",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "pattern": "^[a-z0-9_-]+$",
-              "minLength": 1,
-              "maxLength": 80
-            }
-          }
-        ],
-        "responses": {
-          "204": { "description": "Feature flag excluída (sem corpo)." },
-          "4XX": {
-            "description": "401 `unauthorized`, 403 `forbidden`, 404 `feature_flag_not_found`, 409 `cannot_delete_system_feature_flag`, 429 `rate_limited`.",
+            "description": "400 `validation_error`, 401 `unauthorized`, 403 `forbidden`, 404 `feature_flag_not_found`, 429 `rate_limited`.",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/ErrorResponse" }
@@ -994,16 +961,11 @@
           "updatedAt": { "type": "string", "format": "date-time" }
         }
       },
-      "AdminUpsertFeatureFlagBody": {
+      "AdminUpdateFeatureFlagBody": {
         "type": "object",
         "required": ["enabled"],
         "properties": {
-          "enabled": { "type": "boolean" },
-          "description": {
-            "type": "string",
-            "maxLength": 200,
-            "nullable": true
-          }
+          "enabled": { "type": "boolean" }
         }
       },
       "AdminPlatformMetrics": {

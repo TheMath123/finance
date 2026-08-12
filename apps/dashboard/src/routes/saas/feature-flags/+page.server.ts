@@ -23,15 +23,5 @@ export const actions: Actions = {
 		});
 		if (!result.ok) return fail(result.error.status || 500, { message: result.error.message });
 		return { success: true };
-	},
-
-	remove: async ({ request, locals }) => {
-		if (!locals.session) redirect(303, '/login');
-		const form = await request.formData();
-		const key = form.get('key')?.toString() ?? '';
-
-		const result = await adminApi.deleteFeatureFlag(locals.session.accessToken, key);
-		if (!result.ok) return fail(result.error.status || 500, { message: result.error.message });
-		return { success: true };
 	}
 };

@@ -63,9 +63,4 @@ export const ADMIN_ERRORS: Record<AdminError, HttpError> = {
     code: 'feature_flag_not_found',
     message: 'Feature flag não encontrada.',
   },
-  cannot_delete_system_feature_flag: {
-    status: 409,
-    code: 'cannot_delete_system_feature_flag',
-    message: 'Esta feature flag é do sistema e não pode ser excluída.',
-  },
 };
