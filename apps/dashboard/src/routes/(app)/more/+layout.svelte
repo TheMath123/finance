@@ -13,7 +13,7 @@
 	] as const;
 </script>
 
-<div class="mx-auto flex max-w-3xl flex-col gap-6">
+<div class="mx-auto flex max-w-5xl flex-col gap-6">
 	<h1 class="text-xl font-semibold">Mais</h1>
 
 	<!-- Abas em pílula translúcida — mesma linguagem dos chips do Figma. -->

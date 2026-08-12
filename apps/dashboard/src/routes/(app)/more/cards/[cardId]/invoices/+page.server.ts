@@ -17,16 +17,16 @@ export const load: PageServerLoad = async ({ parent, locals, params, url }) => {
 	const accessToken = locals.session.accessToken;
 	const workspaceId = activeWorkspace.id;
 
-	// Filtro por competência (<input type="month">, formato YYYY-MM) — pula
-	// direto pra fatura daquele mês, sem precisar paginar até achar.
-	const monthParam = url.searchParams.get('month');
-	const [yearFilter, monthFilter] = monthParam?.match(/^\d{4}-\d{2}$/)
-		? [Number(monthParam.slice(0, 4)), Number(monthParam.slice(5, 7))]
-		: [undefined, undefined];
+	// Filtro por competência — dois selects (mês/ano) em vez de um <input type="month">.
+	const monthParam = Number(url.searchParams.get('month'));
+	const yearParam = Number(url.searchParams.get('year'));
+	const monthFilter =
+		Number.isInteger(monthParam) && monthParam >= 1 && monthParam <= 12 ? monthParam : undefined;
+	const yearFilter = Number.isInteger(yearParam) && yearParam >= 2000 ? yearParam : undefined;
 	const page = Math.max(1, Number(url.searchParams.get('page') ?? '1'));
 	const offset = (page - 1) * PAGE_SIZE;
 
-	const [cards, invoices, accounts, categories] = await Promise.all([
+	const [cards, invoices, accounts, categories, allInvoices] = await Promise.all([
 		cardApi.listCards(accessToken, workspaceId),
 		invoiceApi.listInvoices(accessToken, workspaceId, params.cardId, {
 			limit: PAGE_SIZE,
@@ -35,11 +35,26 @@ export const load: PageServerLoad = async ({ parent, locals, params, url }) => {
 			year: yearFilter
 		}),
 		accountApi.listAccounts(accessToken, workspaceId),
-		categoryApi.listCategories(accessToken, workspaceId)
+		categoryApi.listCategories(accessToken, workspaceId),
+		// Busca leve, sem paginação/filtro — só pra saber quais meses/anos têm
+		// fatura de verdade e popular os selects do filtro (nunca deixa o
+		// usuário escolher uma combinação vazia).
+		invoiceApi.listInvoices(accessToken, workspaceId, params.cardId, { limit: 500 })
 	]);
 
 	const card = cards.ok ? cards.value.find((c) => c.id === params.cardId) : undefined;
 	if (!card) error(404, 'Cartão não encontrado.');
+
+	const availablePeriods = allInvoices.ok
+		? [
+				...new Map(
+					allInvoices.value.invoices.map((i) => [
+						`${i.yearReference}-${i.monthReference}`,
+						{ month: i.monthReference, year: i.yearReference }
+					])
+				).values()
+			].sort((a, b) => b.year - a.year || b.month - a.month)
+		: [];
 
 	return {
 		card,
@@ -48,7 +63,9 @@ export const load: PageServerLoad = async ({ parent, locals, params, url }) => {
 		current: invoices.ok ? invoices.value.current : null,
 		page,
 		pageSize: PAGE_SIZE,
-		monthFilter: monthParam ?? '',
+		monthFilter,
+		yearFilter,
+		availablePeriods,
 		accounts: accounts.ok ? accounts.value.filter((a) => !a.archivedAt) : [],
 		categories: categories.ok ? categories.value : [],
 		csvImportEnabled: locals.session.featureFlags.card_invoice_csv_import === true

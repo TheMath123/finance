@@ -1,4 +1,6 @@
 <script lang="ts">
+	import ArrowLeftIcon from 'phosphor-svelte/lib/ArrowLeftIcon';
+
 	import { enhance } from '$app/forms';
 	import { goto, invalidateAll } from '$app/navigation';
 	import { resolve } from '$app/paths';
@@ -20,6 +22,16 @@
 	let { data, form } = $props();
 
 	let paying = $state<InvoiceView | null>(null);
+	// Confirmação extra pra pagar fatura ainda aberta (não fechada) — pagar
+	// antes do fechamento trava novas compras que cairiam nela (imutabilidade
+	// de fatura paga já existe no backend), então avisa e exige um passo a mais.
+	let confirmedEarlyPayment = $state(false);
+	const isEarlyPayment = $derived(paying?.effectiveStatus === 'open');
+
+	function openPayDialog(invoice: InvoiceView) {
+		confirmedEarlyPayment = false;
+		paying = invoice;
+	}
 
 	// --- Import de CSV de fatura (feature-flagged) ---
 
@@ -47,7 +59,9 @@
 	};
 
 	function defaultCsvMonth(): string {
-		if (data.monthFilter) return data.monthFilter;
+		if (data.monthFilter && data.yearFilter) {
+			return `${data.yearFilter}-${String(data.monthFilter).padStart(2, '0')}`;
+		}
 		if (data.current) {
 			return `${data.current.yearReference}-${String(data.current.monthReference).padStart(2, '0')}`;
 		}
@@ -195,19 +209,56 @@
 	// na lista de histórico quando ela cair na página/filtro atual.
 	const historyInvoices = $derived(data.invoices.filter((i) => i.id !== data.current?.id));
 	const totalPages = $derived(Math.max(1, Math.ceil(data.total / data.pageSize)));
+
+	// --- Filtro de histórico (mês/ano) — dois selects, nunca uma combinação vazia ---
+
+	// availablePeriods já vem ordenado desc (ano, mês); Set preserva a ordem de
+	// primeira ocorrência, então os anos saem do mais recente pro mais antigo.
+	const filterYears = $derived([...new Set(data.availablePeriods.map((p) => p.year))]);
+	let filterYear = $state<number | undefined>(undefined);
+	let filterMonth = $state<number | undefined>(undefined);
+
+	// Ressincroniza os selects com o filtro real aplicado no servidor (Filtrar,
+	// Limpar, paginação ou URL direta) — um `$state` só captura o valor inicial
+	// de `data`, então sem isso "Limpar" deixava os selects presos no mês antigo
+	// mesmo com a lista já destravada.
+	$effect(() => {
+		filterYear = data.yearFilter ?? data.availablePeriods[0]?.year;
+		filterMonth = data.monthFilter ?? data.availablePeriods[0]?.month;
+	});
+
+	const filterMonthsForYear = $derived(
+		data.availablePeriods
+			.filter((p) => p.year === filterYear)
+			.map((p) => p.month)
+			.sort((a, b) => a - b)
+	);
+
+	// Trocar o ano no select (antes de enviar o form) pode deixar o mês
+	// escolhido sem fatura naquele ano — reancora no mês mais recente
+	// disponível pro ano selecionado.
+	$effect(() => {
+		if (
+			filterMonthsForYear.length > 0 &&
+			(filterMonth === undefined || !filterMonthsForYear.includes(filterMonth))
+		) {
+			filterMonth = filterMonthsForYear[filterMonthsForYear.length - 1]!;
+		}
+	});
 </script>
 
 <svelte:head>
 	<title>Faturas — {data.card.name} — Marcelus</title>
 </svelte:head>
 
-<div class="mx-auto flex max-w-3xl flex-col gap-6">
-	<div>
+<div class="flex flex-col gap-6">
+	<div class="flex items-center gap-3">
 		<a
 			href={resolve('/more/cards')}
-			class="text-sm text-muted-foreground underline-offset-4 hover:underline"
+			class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary transition-colors hover:bg-primary/20"
+			aria-label="Voltar para Cartões"
 		>
-			← Cartões
+			<ArrowLeftIcon size={18} />
 		</a>
 		<h1 class="text-xl font-semibold">Faturas — {data.card.name}</h1>
 	</div>
@@ -232,7 +283,7 @@
 				</Badge>
 			</div>
 			{#if data.current.total > 0}
-				<Button class="mt-4" onclick={() => (paying = data.current)}>Pagar fatura</Button>
+				<Button class="mt-4" onclick={() => openPayDialog(data.current!)}>Pagar fatura</Button>
 			{/if}
 		</div>
 	{:else if data.invoices.length === 0 && !data.monthFilter}
@@ -250,30 +301,45 @@
 						Importar CSV
 					</Button>
 				{/if}
-				<form method="GET" class="flex items-center gap-2">
-					<Input
-						type="month"
-						name="month"
-						value={data.monthFilter}
-						class="h-8 w-40"
-						aria-label="Filtrar por mês"
-					/>
-					<Button type="submit" variant="outline" size="sm">Filtrar</Button>
-					{#if data.monthFilter}
-						<Button
-							type="button"
-							variant="ghost"
-							size="sm"
-							onclick={() => {
-								// "?" (mesma rota, sem query) não é um caminho fixo que resolve() aceite.
-								// eslint-disable-next-line svelte/no-navigation-without-resolve
-								goto('?');
-							}}
+				{#if data.availablePeriods.length > 0}
+					<form method="GET" class="flex items-center gap-2">
+						<select
+							name="month"
+							bind:value={filterMonth}
+							aria-label="Mês"
+							class="h-8 rounded-lg border border-foreground/10 bg-transparent px-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
 						>
-							Limpar
-						</Button>
-					{/if}
-				</form>
+							{#each filterMonthsForYear as month (month)}
+								<option value={month}>{MONTH_NAMES[month - 1]}</option>
+							{/each}
+						</select>
+						<select
+							name="year"
+							bind:value={filterYear}
+							aria-label="Ano"
+							class="h-8 rounded-lg border border-foreground/10 bg-transparent px-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+						>
+							{#each filterYears as year (year)}
+								<option value={year}>{year}</option>
+							{/each}
+						</select>
+						<Button type="submit" variant="outline" size="sm">Filtrar</Button>
+						{#if data.monthFilter && data.yearFilter}
+							<Button
+								type="button"
+								variant="ghost"
+								size="sm"
+								onclick={() => {
+									// "?" (mesma rota, sem query) não é um caminho fixo que resolve() aceite.
+									// eslint-disable-next-line svelte/no-navigation-without-resolve
+									goto('?');
+								}}
+							>
+								Limpar
+							</Button>
+						{/if}
+					</form>
+				{/if}
 			</div>
 		</div>
 
@@ -293,7 +359,9 @@
 					<div class="flex shrink-0 items-center gap-3">
 						<span class="text-sm font-medium tabular-nums">{formatCents(invoice.total)}</span>
 						{#if invoice.effectiveStatus !== 'paid' && invoice.total > 0}
-							<Button variant="outline" size="sm" onclick={() => (paying = invoice)}>Pagar</Button>
+							<Button variant="outline" size="sm" onclick={() => openPayDialog(invoice)}>
+								Pagar
+							</Button>
 						{/if}
 					</div>
 				</div>
@@ -309,7 +377,8 @@
 		{#if totalPages > 1}
 			<div class="flex items-center justify-center gap-2 pt-2">
 				<form method="GET">
-					<input type="hidden" name="month" value={data.monthFilter} />
+					<input type="hidden" name="month" value={data.monthFilter ?? ''} />
+					<input type="hidden" name="year" value={data.yearFilter ?? ''} />
 					<input type="hidden" name="page" value={data.page - 1} />
 					<Button type="submit" variant="outline" size="sm" disabled={data.page <= 1}>
 						Anterior
@@ -317,7 +386,8 @@
 				</form>
 				<span class="text-sm text-muted-foreground">Página {data.page} de {totalPages}</span>
 				<form method="GET">
-					<input type="hidden" name="month" value={data.monthFilter} />
+					<input type="hidden" name="month" value={data.monthFilter ?? ''} />
+					<input type="hidden" name="year" value={data.yearFilter ?? ''} />
 					<input type="hidden" name="page" value={data.page + 1} />
 					<Button type="submit" variant="outline" size="sm" disabled={data.page >= totalPages}>
 						Próxima
@@ -348,6 +418,18 @@
 				use:enhance={() => closeOnSuccess(() => (paying = null))}
 			>
 				<input type="hidden" name="invoiceId" value={paying.id} />
+				{#if isEarlyPayment}
+					<div class="grid gap-2 rounded-lg border border-destructive/30 bg-destructive/10 p-3">
+						<p class="text-sm">
+							Essa fatura ainda está aberta (fecha dia {data.card.closingDay}). Pagar agora trava
+							novas compras que cairiam nela até lá — elas vão falhar até a próxima fatura.
+						</p>
+						<label class="flex items-center gap-2 text-sm font-medium">
+							<input type="checkbox" bind:checked={confirmedEarlyPayment} class="h-4 w-4" />
+							Entendo, quero pagar mesmo assim
+						</label>
+					</div>
+				{/if}
 				<div class="grid gap-2">
 					<Label for="pay-account">Conta</Label>
 					<select
@@ -379,7 +461,9 @@
 					</div>
 				</div>
 				<Dialog.Footer>
-					<Button type="submit">Confirmar pagamento</Button>
+					<Button type="submit" disabled={isEarlyPayment && !confirmedEarlyPayment}>
+						Confirmar pagamento
+					</Button>
 				</Dialog.Footer>
 			</form>
 		{/if}
