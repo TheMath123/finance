@@ -126,6 +126,18 @@
 		params.set('to', '');
 		return params.toString();
 	}
+
+	/** Reverso do "Ver tudo" — remove from/to da URL (em vez de deixá-los vazios) pra o load recalcular o default (mês atual), preservando os demais filtros. */
+	function restoreDefaultPeriodQuery(): string {
+		const params = new SvelteURLSearchParams(page.url.searchParams);
+		params.delete('from');
+		params.delete('to');
+		return params.toString();
+	}
+
+	// "" explícito (setado pelo clearPeriodQuery) é o estado "ver tudo" — diferente
+	// de ausente na URL, que o load já preenche com o mês atual antes de chegar aqui.
+	const isShowingAllPeriods = $derived(!data.filters.from && !data.filters.to);
 </script>
 
 <svelte:head>
@@ -270,8 +282,13 @@
 		<div class="flex gap-2">
 			<Button type="submit" variant="outline" class="flex-1 sm:flex-none">Filtrar</Button>
 			<a
-				href="{resolve('/transactions')}?{clearPeriodQuery()}"
-				class="flex items-center rounded-lg px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-primary/10 hover:text-foreground"
+				href="{resolve('/transactions')}?{isShowingAllPeriods
+					? restoreDefaultPeriodQuery()
+					: clearPeriodQuery()}"
+				aria-current={isShowingAllPeriods ? 'true' : undefined}
+				class="flex items-center rounded-lg px-3 py-1.5 text-sm transition-colors {isShowingAllPeriods
+					? 'bg-primary/10 font-medium text-primary hover:bg-primary/20'
+					: 'text-muted-foreground hover:bg-primary/10 hover:text-foreground'}"
 			>
 				Ver tudo
 			</a>
