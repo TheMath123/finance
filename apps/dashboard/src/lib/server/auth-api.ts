@@ -48,6 +48,7 @@ export function logout(refreshToken: string): Promise<Either<ApiError, void>> {
 export interface MeOutput {
 	user: SessionUser;
 	defaultWorkspaceId: string;
+	featureFlags: Record<string, boolean>;
 }
 
 export function me(accessToken: string): Promise<Either<ApiError, MeOutput>> {

@@ -24,6 +24,7 @@ export interface ResolvedSession {
 	user: SessionUser;
 	defaultWorkspaceId: string;
 	accessToken: string;
+	featureFlags: Record<string, boolean>;
 }
 
 /** Grava os dois tokens da sessão em cookies httpOnly — o client nunca vê nenhum deles. */
@@ -68,9 +69,13 @@ export async function resolveSession(cookies: Cookies): Promise<ResolvedSession 
 	}
 
 	setSessionCookies(cookies, renewed.value);
+	// AuthSession (login/register/refresh) não traz featureFlags — só /auth/me.
+	// Fica vazio nesta resposta pontual; a próxima resolução (já com o token
+	// novo) passa pelo branch de cima e preenche certinho.
 	return {
 		user: renewed.value.user,
 		defaultWorkspaceId: renewed.value.defaultWorkspaceId,
-		accessToken: renewed.value.accessToken
+		accessToken: renewed.value.accessToken,
+		featureFlags: {}
 	};
 }

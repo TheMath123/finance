@@ -3,6 +3,7 @@ import { error, fail, redirect } from '@sveltejs/kit';
 import * as accountApi from '$lib/server/account-api';
 import { getActiveWorkspaceId } from '$lib/server/active-workspace';
 import * as cardApi from '$lib/server/card-api';
+import * as categoryApi from '$lib/server/category-api';
 import * as invoiceApi from '$lib/server/invoice-api';
 
 import type { Actions, PageServerLoad } from './$types';
@@ -25,7 +26,7 @@ export const load: PageServerLoad = async ({ parent, locals, params, url }) => {
 	const page = Math.max(1, Number(url.searchParams.get('page') ?? '1'));
 	const offset = (page - 1) * PAGE_SIZE;
 
-	const [cards, invoices, accounts] = await Promise.all([
+	const [cards, invoices, accounts, categories] = await Promise.all([
 		cardApi.listCards(accessToken, workspaceId),
 		invoiceApi.listInvoices(accessToken, workspaceId, params.cardId, {
 			limit: PAGE_SIZE,
@@ -33,7 +34,8 @@ export const load: PageServerLoad = async ({ parent, locals, params, url }) => {
 			month: monthFilter,
 			year: yearFilter
 		}),
-		accountApi.listAccounts(accessToken, workspaceId)
+		accountApi.listAccounts(accessToken, workspaceId),
+		categoryApi.listCategories(accessToken, workspaceId)
 	]);
 
 	const card = cards.ok ? cards.value.find((c) => c.id === params.cardId) : undefined;
@@ -47,7 +49,9 @@ export const load: PageServerLoad = async ({ parent, locals, params, url }) => {
 		page,
 		pageSize: PAGE_SIZE,
 		monthFilter: monthParam ?? '',
-		accounts: accounts.ok ? accounts.value.filter((a) => !a.archivedAt) : []
+		accounts: accounts.ok ? accounts.value.filter((a) => !a.archivedAt) : [],
+		categories: categories.ok ? categories.value : [],
+		csvImportEnabled: locals.session.featureFlags.card_invoice_csv_import === true
 	};
 };
 

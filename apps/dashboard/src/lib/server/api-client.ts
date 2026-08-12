@@ -71,6 +71,51 @@ export async function apiRequest<T>(
 }
 
 /**
+ * Variante multipart (upload de arquivo) — sem Content-Type manual, o fetch
+ * define o boundary sozinho quando o body é FormData.
+ */
+export async function apiRequestMultipart<T>(
+	path: string,
+	options: { formData: FormData; accessToken?: string }
+): Promise<Either<ApiError, T>> {
+	const headers: Record<string, string> = {};
+	if (options.accessToken) headers.Authorization = `Bearer ${options.accessToken}`;
+
+	let response: Response;
+	try {
+		response = await fetch(new URL(path, env.API_URL), {
+			method: 'POST',
+			headers,
+			body: options.formData,
+			signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS)
+		});
+	} catch {
+		return left({
+			status: 0,
+			code: 'network_error',
+			message: 'Não foi possível falar com o servidor. Tente novamente.'
+		});
+	}
+
+	if (!response.ok) {
+		const fallback: ApiError = {
+			status: response.status,
+			code: 'unknown_error',
+			message: 'Erro inesperado no servidor.'
+		};
+		try {
+			const payload = (await response.json()) as { error?: Omit<ApiError, 'status'> };
+			if (!payload.error) return left(fallback);
+			return left({ status: response.status, ...payload.error });
+		} catch {
+			return left(fallback);
+		}
+	}
+
+	return right((await response.json()) as T);
+}
+
+/**
  * Variante crua pra respostas não-JSON (ex.: CSV) — devolve a Response direto
  * pro caller decidir status/headers/corpo. Mesma regra de "só o servidor
  * fala com o backend".
