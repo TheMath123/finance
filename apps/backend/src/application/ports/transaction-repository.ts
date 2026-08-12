@@ -38,6 +38,7 @@ export interface TransactionPatch {
   cardId?: string;
   invoiceId?: string;
   attachmentKey?: string | null;
+  recurringId?: string;
 }
 
 export interface TransactionFilters {

@@ -1,5 +1,6 @@
 import { Elysia } from 'elysia';
 import type { AppDeps } from '../../../deps';
+import { convertToRecurringRoute } from './convert-to-recurring';
 import { createTransactionRoute } from './create-transaction';
 import { deleteAttachmentRoute } from './delete-attachment';
 import { deleteTransactionRoute } from './delete-transaction';
@@ -17,6 +18,7 @@ export function transactionRoutes(deps: AppDeps) {
     .use(createTransactionRoute(deps))
     .use(updateTransactionRoute(deps))
     .use(updateInstallmentTotalRoute(deps))
+    .use(convertToRecurringRoute(deps))
     .use(deleteTransactionRoute(deps))
     .use(restoreTransactionRoute(deps))
     .use(exportTransactionsRoute(deps))

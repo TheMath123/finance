@@ -18,8 +18,11 @@ import {
 import { occurrencesInMonth } from '../../../domain/services/occurrence-rules';
 import { createTestDeps, getTestPlanId } from '../../../test/deps';
 import type { Actor, UseCaseDeps } from '../../deps';
+import { payInvoice } from '../card/pay-invoice';
 import { monthlySummary } from '../summary/monthly-summary';
+import { createTransaction } from '../transaction/create-transaction';
 import { confirmOccurrence } from './confirm-occurrence';
+import { convertToRecurring } from './convert-to-recurring';
 import { createRecurring } from './create-recurring';
 import { listPendingOccurrences } from './list-pending-occurrences';
 
@@ -329,5 +332,228 @@ describe('visão mensal e projeção', () => {
     // conta (pendingExpense) — a projeção não deve mudar por causa dela.
     const after = await monthlySummary(deps, actor, YEAR, MONTH);
     expect(after.projectedAvailable).toBe(before.projectedAvailable);
+  });
+});
+
+describe('convertToRecurring', () => {
+  test('transforma transação avulsa na primeira ocorrência de uma recorrência nova', async () => {
+    const created = await createTransaction(deps, actor, {
+      description: 'Academia',
+      amount: 9_000,
+      type: 'expense',
+      method: 'pix',
+      date: '2026-03-10',
+      categoryId: housingCategoryId,
+      accountId,
+    });
+    if (!created.ok) throw new Error('setup falhou');
+    const tx = created.value[0]!;
+
+    const result = await convertToRecurring(deps, actor, {
+      transactionId: tx.id,
+      frequency: 'monthly',
+      dayOfReference: 10,
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.recurringId).toBeDefined();
+
+    const reloaded = await deps.repos.transaction.findInWorkspace(
+      actor.workspaceId,
+      tx.id
+    );
+    expect(reloaded?.recurringId).toBe(result.value.recurringId);
+  });
+
+  test('transaction_not_found para id inexistente', async () => {
+    const result = await convertToRecurring(deps, actor, {
+      transactionId: crypto.randomUUID(),
+      frequency: 'monthly',
+      dayOfReference: 10,
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toBe('transaction_not_found');
+  });
+
+  test('already_recurring ao tentar converter de novo', async () => {
+    const created = await createTransaction(deps, actor, {
+      description: 'Plano de saúde',
+      amount: 25_000,
+      type: 'expense',
+      method: 'pix',
+      date: '2026-03-15',
+      categoryId: housingCategoryId,
+      accountId,
+    });
+    if (!created.ok) throw new Error('setup falhou');
+    const tx = created.value[0]!;
+
+    const first = await convertToRecurring(deps, actor, {
+      transactionId: tx.id,
+      frequency: 'monthly',
+      dayOfReference: 15,
+    });
+    expect(first.ok).toBe(true);
+
+    const second = await convertToRecurring(deps, actor, {
+      transactionId: tx.id,
+      frequency: 'monthly',
+      dayOfReference: 15,
+    });
+    expect(second.ok).toBe(false);
+    if (!second.ok) expect(second.error).toBe('already_recurring');
+  });
+
+  test('installment_field_locked: parcela não pode virar recorrência', async () => {
+    const [bank] = await db
+      .insert(banks)
+      .values({
+        workspaceId: actor.workspaceId,
+        name: 'Banco Parcelas',
+        bankCode: 'parcelas',
+      })
+      .returning();
+    const [card] = await db
+      .insert(cards)
+      .values({
+        workspaceId: actor.workspaceId,
+        bankId: bank!.id,
+        name: 'Cartão Parcelas',
+        limit: 500_000,
+        closingDay: 10,
+        dueDay: 17,
+      })
+      .returning();
+
+    const created = await createTransaction(deps, actor, {
+      description: 'Compra parcelada',
+      amount: 30_000,
+      type: 'expense',
+      method: 'credit',
+      date: '2028-06-05',
+      categoryId: housingCategoryId,
+      cardId: card!.id,
+      installments: 3,
+    });
+    if (!created.ok) throw new Error('setup falhou');
+
+    const result = await convertToRecurring(deps, actor, {
+      transactionId: created.value[0]!.id,
+      frequency: 'monthly',
+      dayOfReference: 5,
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toBe('installment_field_locked');
+  });
+
+  test('invoice_paid: transação em fatura já paga não pode virar recorrência', async () => {
+    const [bank] = await db
+      .insert(banks)
+      .values({
+        workspaceId: actor.workspaceId,
+        name: 'Banco Fatura Paga',
+        bankCode: 'fatura-paga',
+      })
+      .returning();
+    const [card] = await db
+      .insert(cards)
+      .values({
+        workspaceId: actor.workspaceId,
+        bankId: bank!.id,
+        name: 'Cartão Fatura Paga',
+        limit: 500_000,
+        closingDay: 10,
+        dueDay: 17,
+      })
+      .returning();
+
+    const created = await createTransaction(deps, actor, {
+      description: 'Compra no crédito',
+      amount: 4_000,
+      type: 'expense',
+      method: 'credit',
+      date: '2028-07-05',
+      categoryId: housingCategoryId,
+      cardId: card!.id,
+    });
+    if (!created.ok) throw new Error('setup falhou');
+    const tx = created.value[0]!;
+
+    const paid = await payInvoice(deps, actor, tx.invoiceId!, {
+      accountId,
+      date: '2028-07-06',
+      method: 'pix',
+    });
+    expect(paid.ok).toBe(true);
+
+    const result = await convertToRecurring(deps, actor, {
+      transactionId: tx.id,
+      frequency: 'monthly',
+      dayOfReference: 5,
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toBe('invoice_paid');
+  });
+
+  test('invalid_method_fields: transferência não pode virar recorrência', async () => {
+    const [bank] = await db
+      .insert(banks)
+      .values({
+        workspaceId: actor.workspaceId,
+        name: 'Banco Transfer',
+        bankCode: 'transfer',
+      })
+      .returning();
+    const [destAccount] = await db
+      .insert(bankAccounts)
+      .values({
+        workspaceId: actor.workspaceId,
+        bankId: bank!.id,
+        name: 'Conta destino',
+        type: 'checking',
+        initialBalance: 0,
+      })
+      .returning();
+
+    const transfer = await createTransaction(deps, actor, {
+      description: 'Transferência entre contas',
+      amount: 10_000,
+      type: 'expense',
+      method: 'transfer',
+      date: '2026-03-21',
+      categoryId: housingCategoryId,
+      accountId,
+      toAccountId: destAccount!.id,
+    });
+    if (!transfer.ok) throw new Error('setup falhou');
+
+    const result = await convertToRecurring(deps, actor, {
+      transactionId: transfer.value[0]!.id,
+      frequency: 'monthly',
+      dayOfReference: 21,
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toBe('invalid_method_fields');
+  });
+
+  test('invalid_rule: dia incompatível com a frequência é rejeitado', async () => {
+    const created = await createTransaction(deps, actor, {
+      description: 'Assinatura semanal',
+      amount: 3_000,
+      type: 'expense',
+      method: 'pix',
+      date: '2026-03-25',
+      categoryId: housingCategoryId,
+      accountId,
+    });
+    if (!created.ok) throw new Error('setup falhou');
+
+    const result = await convertToRecurring(deps, actor, {
+      transactionId: created.value[0]!.id,
+      frequency: 'weekly',
+      dayOfReference: 8,
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toBe('invalid_rule');
   });
 });

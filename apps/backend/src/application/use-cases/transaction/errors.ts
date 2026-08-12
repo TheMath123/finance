@@ -7,4 +7,5 @@ export type TransactionError =
   | 'invoice_paid'
   | 'installment_field_locked'
   | 'not_installment_purchase'
-  | 'total_below_paid_amount';
+  | 'total_below_paid_amount'
+  | 'already_recurring';

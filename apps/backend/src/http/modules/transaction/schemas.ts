@@ -1,4 +1,8 @@
-import { TRANSACTION_METHODS, TRANSACTION_TYPES } from '@finance/shared';
+import {
+  RECURRENCE_FREQUENCIES,
+  TRANSACTION_METHODS,
+  TRANSACTION_TYPES,
+} from '@finance/shared';
 import { z } from 'zod';
 
 export const dateSchema = z
@@ -36,6 +40,12 @@ export const updateTransactionSchema = z.object({
 
 export const updateInstallmentTotalSchema = z.object({
   newTotalAmount: z.number().int().positive(),
+});
+
+export const convertToRecurringSchema = z.object({
+  frequency: z.enum(RECURRENCE_FREQUENCIES),
+  dayOfReference: z.number().int().min(0).max(31),
+  monthOfReference: z.number().int().min(1).max(12).optional(),
 });
 
 export const listTransactionsSchema = z.object({

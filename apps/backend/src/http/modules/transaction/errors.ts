@@ -49,6 +49,11 @@ export const TRANSACTION_ERRORS: Record<TransactionError, HttpError> = {
     message:
       'O novo valor total é menor do que o já pago nas parcelas anteriores.',
   },
+  already_recurring: {
+    status: 409,
+    code: 'already_recurring',
+    message: 'Essa transação já é uma recorrência.',
+  },
 };
 
 export const ATTACHMENT_ERRORS: Record<AttachmentError, HttpError> = {
