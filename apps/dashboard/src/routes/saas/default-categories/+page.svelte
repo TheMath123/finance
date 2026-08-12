@@ -120,7 +120,7 @@
 		workspaces já existentes.
 	</p>
 
-	{#if form?.message}
+	{#if form?.message && !createOpen && !editing}
 		<p class="text-sm text-destructive">{form.message}</p>
 	{/if}
 
@@ -175,6 +175,9 @@
 		<Dialog.Header>
 			<Dialog.Title>Adicionar categoria padrão</Dialog.Title>
 		</Dialog.Header>
+		{#if form?.message}
+			<p class="text-sm text-destructive">{form.message}</p>
+		{/if}
 		<form
 			method="POST"
 			action="?/create"
@@ -194,6 +197,9 @@
 		<Dialog.Header>
 			<Dialog.Title>Editar categoria padrão</Dialog.Title>
 		</Dialog.Header>
+		{#if form?.message}
+			<p class="text-sm text-destructive">{form.message}</p>
+		{/if}
 		{#if editing}
 			<form
 				method="POST"

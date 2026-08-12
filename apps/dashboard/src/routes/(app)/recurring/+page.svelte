@@ -73,7 +73,7 @@
 		{/if}
 	</div>
 
-	{#if form?.message}
+	{#if form?.message && !createOpen && !editing}
 		<p class="text-sm text-destructive">{form.message}</p>
 	{/if}
 
@@ -208,6 +208,9 @@
 		<Dialog.Header>
 			<Dialog.Title>Nova recorrência</Dialog.Title>
 		</Dialog.Header>
+		{#if form?.message}
+			<p class="text-sm text-destructive">{form.message}</p>
+		{/if}
 		<form
 			method="POST"
 			action="?/create"
@@ -325,6 +328,9 @@
 		<Dialog.Header>
 			<Dialog.Title>Editar recorrência</Dialog.Title>
 		</Dialog.Header>
+		{#if form?.message}
+			<p class="text-sm text-destructive">{form.message}</p>
+		{/if}
 		{#if editing}
 			{@const editFrequency = editing.frequency}
 			{@const editMethod = editing.cardId ? 'credit' : 'pix'}

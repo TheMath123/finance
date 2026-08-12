@@ -70,7 +70,7 @@
 		</div>
 	{/if}
 
-	{#if form?.message}
+	{#if form?.message && !createOpen && !editing}
 		<p class="text-sm text-destructive">{form.message}</p>
 	{/if}
 
@@ -122,6 +122,9 @@
 			<Dialog.Title>Adicionar banco</Dialog.Title>
 			<Dialog.Description>O banco agrupa suas contas e cartões.</Dialog.Description>
 		</Dialog.Header>
+		{#if form?.message}
+			<p class="text-sm text-destructive">{form.message}</p>
+		{/if}
 		<form
 			method="POST"
 			action="?/create"
@@ -141,6 +144,9 @@
 		<Dialog.Header>
 			<Dialog.Title>Editar banco</Dialog.Title>
 		</Dialog.Header>
+		{#if form?.message}
+			<p class="text-sm text-destructive">{form.message}</p>
+		{/if}
 		{#if editing}
 			<form
 				method="POST"

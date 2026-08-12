@@ -82,7 +82,7 @@
 		<Button type="submit">Buscar</Button>
 	</form>
 
-	{#if form?.message}
+	{#if form?.message && !changingPlan}
 		<p class="text-sm text-destructive">{form.message}</p>
 	{/if}
 
@@ -148,6 +148,9 @@
 		<Dialog.Header>
 			<Dialog.Title>Mudar plano — {changingPlan?.name}</Dialog.Title>
 		</Dialog.Header>
+		{#if form?.message}
+			<p class="text-sm text-destructive">{form.message}</p>
+		{/if}
 		{#if changingPlan}
 			<form
 				method="POST"

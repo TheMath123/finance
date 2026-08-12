@@ -94,7 +94,7 @@
 		</div>
 	{/if}
 
-	{#if form?.message}
+	{#if form?.message && !createOpen && !editing}
 		<p class="text-sm text-destructive">{form.message}</p>
 	{/if}
 
@@ -148,6 +148,9 @@
 			<Dialog.Title>Adicionar conta</Dialog.Title>
 			<Dialog.Description>O saldo atual é sempre derivado das transações.</Dialog.Description>
 		</Dialog.Header>
+		{#if form?.message}
+			<p class="text-sm text-destructive">{form.message}</p>
+		{/if}
 		<form
 			method="POST"
 			action="?/create"
@@ -167,6 +170,9 @@
 		<Dialog.Header>
 			<Dialog.Title>Editar conta</Dialog.Title>
 		</Dialog.Header>
+		{#if form?.message}
+			<p class="text-sm text-destructive">{form.message}</p>
+		{/if}
 		{#if editing}
 			<form
 				method="POST"

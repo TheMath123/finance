@@ -103,7 +103,7 @@
 		</div>
 	{/if}
 
-	{#if form?.message}
+	{#if form?.message && !createOpen && !editing}
 		<p class="text-sm text-destructive">{form.message}</p>
 	{/if}
 
@@ -163,6 +163,9 @@
 			<Dialog.Title>Adicionar cartão</Dialog.Title>
 			<Dialog.Description>O limite disponível é derivado das faturas em aberto.</Dialog.Description>
 		</Dialog.Header>
+		{#if form?.message}
+			<p class="text-sm text-destructive">{form.message}</p>
+		{/if}
 		<form
 			method="POST"
 			action="?/create"
@@ -182,6 +185,9 @@
 		<Dialog.Header>
 			<Dialog.Title>Editar cartão</Dialog.Title>
 		</Dialog.Header>
+		{#if form?.message}
+			<p class="text-sm text-destructive">{form.message}</p>
+		{/if}
 		{#if editing}
 			<form
 				method="POST"
