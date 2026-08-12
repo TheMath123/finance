@@ -1,7 +1,8 @@
+import { RECURRENCE_FREQUENCIES } from '@finance/shared';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useEffect, useState } from 'react';
+import { useController, useForm, useWatch } from 'react-hook-form';
 import { View } from 'react-native';
 
 import { DateField } from '@/components/form/date-field';
@@ -10,12 +11,16 @@ import { SelectField } from '@/components/form/select-field';
 import { TextField } from '@/components/form/text-field';
 import { ThemedText } from '@/components/themed-text';
 import { Button } from '@/components/ui/button';
+import { NumberInput } from '@/components/ui/number-input';
+import { Select } from '@/components/ui/select';
 import { useSession } from '@/context/session';
 import { accountsApi } from '@/lib/accounts-api';
 import { ApiError } from '@/lib/api-client';
 import { cardsApi } from '@/lib/cards-api';
 import { useCategories } from '@/lib/hooks/use-categories';
 import {
+  type ConvertToRecurringInput,
+  convertToRecurringSchema,
   type EditTransactionInput,
   editTransactionSchema,
   type InstallmentTotalInput,
@@ -24,6 +29,137 @@ import {
 import { type Transaction, transactionsApi } from '@/lib/transactions-api';
 import { AttachmentField } from './attachment-field';
 import { CreateSplitForm } from './create-split-form';
+
+const FREQUENCY_LABELS: Record<
+  (typeof RECURRENCE_FREQUENCIES)[number],
+  string
+> = {
+  weekly: 'Semanal',
+  monthly: 'Mensal',
+  yearly: 'Anual',
+};
+const FREQUENCY_OPTIONS = RECURRENCE_FREQUENCIES.map((frequency) => ({
+  label: FREQUENCY_LABELS[frequency],
+  value: frequency,
+}));
+
+const MONTH_LABELS = [
+  'Janeiro',
+  'Fevereiro',
+  'Março',
+  'Abril',
+  'Maio',
+  'Junho',
+  'Julho',
+  'Agosto',
+  'Setembro',
+  'Outubro',
+  'Novembro',
+  'Dezembro',
+];
+const MONTH_OPTIONS = MONTH_LABELS.map((label, index) => ({
+  label,
+  value: String(index + 1),
+}));
+
+const WEEKDAY_LABELS = [
+  'Domingo',
+  'Segunda',
+  'Terça',
+  'Quarta',
+  'Quinta',
+  'Sexta',
+  'Sábado',
+];
+
+/** Dia do mês (1-31) pra monthly/yearly, ou dia da semana 0-6 pra weekly — não
+ * reaproveita o `DayOfReferenceField` de create-recurring-form.tsx porque lá
+ * o `control` é acoplado a `RecurringInput` completo, não a este sub-form. */
+function ConvertDayOfReferenceField({
+  control,
+  frequency,
+}: {
+  control: ReturnType<typeof useForm<ConvertToRecurringInput>>['control'];
+  frequency: ConvertToRecurringInput['frequency'];
+}) {
+  const { field, fieldState } = useController({
+    control,
+    name: 'dayOfReference',
+  });
+  const isWeekly = frequency === 'weekly';
+
+  return (
+    <View className="gap-1.5">
+      <ThemedText type="smallBold">
+        {isWeekly ? 'Dia da semana' : 'Dia do mês'}
+      </ThemedText>
+      {isWeekly ? (
+        <Select
+          className={fieldState.error ? 'border-destructive' : undefined}
+          placeholder="Selecione o dia da semana"
+          options={WEEKDAY_LABELS.map((label, value) => ({
+            label,
+            value: String(value),
+          }))}
+          value={field.value !== undefined ? String(field.value) : undefined}
+          onValueChange={(value) => field.onChange(Number(value))}
+        />
+      ) : (
+        <NumberInput
+          value={field.value}
+          onValueChange={field.onChange}
+          min={1}
+          max={31}
+        />
+      )}
+      {fieldState.error?.message && (
+        <ThemedText type="small" style={{ color: '#DC2626' }}>
+          {fieldState.error.message}
+        </ThemedText>
+      )}
+    </View>
+  );
+}
+
+function ConvertMonthOfReferenceField({
+  control,
+}: {
+  control: ReturnType<typeof useForm<ConvertToRecurringInput>>['control'];
+}) {
+  const { field, fieldState } = useController({
+    control,
+    name: 'monthOfReference',
+  });
+
+  return (
+    <View className="gap-1.5">
+      <ThemedText type="smallBold">Mês</ThemedText>
+      <Select
+        className={fieldState.error ? 'border-destructive' : undefined}
+        placeholder="Selecione o mês"
+        options={MONTH_OPTIONS}
+        value={field.value !== undefined ? String(field.value) : undefined}
+        onValueChange={(value) => field.onChange(Number(value))}
+      />
+      {fieldState.error?.message && (
+        <ThemedText type="small" style={{ color: '#DC2626' }}>
+          {fieldState.error.message}
+        </ThemedText>
+      )}
+    </View>
+  );
+}
+
+/** Pré-preenche frequência/dia da recorrência a partir da data da própria transação. */
+function dayOfMonthFromDate(date: string): number {
+  return Number(date.slice(8, 10));
+}
+function dayOfWeekFromDate(date: string): number {
+  return new Date(`${date}T00:00:00`).getDay();
+}
+function monthFromDate(date: string): number {
+  return Number(date.slice(5, 7));
+}
 
 /**
  * Tipo/método nunca mudam depois de criada (regra da API). Conta (métodos
@@ -44,6 +180,7 @@ export function EditTransactionForm({
   const queryClient = useQueryClient();
   const [splitting, setSplitting] = useState(false);
   const [editingInstallmentTotal, setEditingInstallmentTotal] = useState(false);
+  const [convertingToRecurring, setConvertingToRecurring] = useState(false);
 
   const { data: categories } = useCategories(workspaceId);
 
@@ -112,6 +249,61 @@ export function EditTransactionForm({
         queryKey: ['transactions', workspaceId],
       });
       queryClient.invalidateQueries({ queryKey: ['summary', workspaceId] });
+      onDone();
+    },
+  });
+
+  const canConvertToRecurring =
+    !isParceled &&
+    !isTransfer &&
+    !transaction.recurringId &&
+    !transaction.invoicePaid;
+
+  const {
+    control: convertToRecurringControl,
+    handleSubmit: handleConvertToRecurringSubmit,
+    setValue: setConvertToRecurringValue,
+  } = useForm<ConvertToRecurringInput>({
+    resolver: zodResolver(convertToRecurringSchema),
+    mode: 'onTouched',
+    defaultValues: {
+      frequency: 'monthly',
+      dayOfReference: dayOfMonthFromDate(transaction.date),
+      monthOfReference: monthFromDate(transaction.date),
+    },
+  });
+
+  const convertToRecurringFrequency = useWatch({
+    control: convertToRecurringControl,
+    name: 'frequency',
+  });
+
+  // Trocar a frequência recalcula o dia a partir da data original da transação.
+  useEffect(() => {
+    setConvertToRecurringValue(
+      'dayOfReference',
+      convertToRecurringFrequency === 'weekly'
+        ? dayOfWeekFromDate(transaction.date)
+        : dayOfMonthFromDate(transaction.date)
+    );
+  }, [
+    convertToRecurringFrequency,
+    transaction.date,
+    setConvertToRecurringValue,
+  ]);
+
+  const convertToRecurringMutation = useMutation({
+    mutationFn: (input: ConvertToRecurringInput) =>
+      transactionsApi.convertToRecurring(workspaceId!, transaction.id, input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ['transactions', workspaceId],
+      });
+      queryClient.invalidateQueries({ queryKey: ['summary', workspaceId] });
+      queryClient.invalidateQueries({ queryKey: ['recurring', workspaceId] });
+      queryClient.invalidateQueries({
+        queryKey: ['recurring-pending', workspaceId],
+      });
       onDone();
     },
   });
@@ -218,6 +410,56 @@ export function EditTransactionForm({
         <ThemedText type="small" themeColor="textSecondary">
           Cartão travado — compra parcelada não pode trocar de cartão.
         </ThemedText>
+      )}
+      {canConvertToRecurring && (
+        <>
+          <Button
+            variant="outline"
+            onPress={() => setConvertingToRecurring((v) => !v)}
+          >
+            {convertingToRecurring
+              ? 'Cancelar recorrência'
+              : 'Tornar recorrente'}
+          </Button>
+          {convertingToRecurring && (
+            <View className="gap-3 border-t border-neutral-200 pt-4 dark:border-neutral-800">
+              <SelectField
+                control={convertToRecurringControl}
+                name="frequency"
+                label="Frequência"
+                options={FREQUENCY_OPTIONS}
+              />
+              <ConvertDayOfReferenceField
+                control={convertToRecurringControl}
+                frequency={convertToRecurringFrequency}
+              />
+              {convertToRecurringFrequency === 'yearly' && (
+                <ConvertMonthOfReferenceField
+                  control={convertToRecurringControl}
+                />
+              )}
+              <ThemedText type="small" themeColor="textSecondary">
+                Esta transação vira a primeira ocorrência da recorrência — as
+                próximas são lançadas automaticamente.
+              </ThemedText>
+              {convertToRecurringMutation.isError && (
+                <ThemedText type="small" style={{ color: '#DC2626' }}>
+                  {convertToRecurringMutation.error instanceof ApiError
+                    ? convertToRecurringMutation.error.message
+                    : 'Erro inesperado'}
+                </ThemedText>
+              )}
+              <Button
+                loading={convertToRecurringMutation.isPending}
+                onPress={handleConvertToRecurringSubmit((input) =>
+                  convertToRecurringMutation.mutate(input)
+                )}
+              >
+                Confirmar recorrência
+              </Button>
+            </View>
+          )}
+        </>
       )}
       <AttachmentField workspaceId={workspaceId!} transaction={transaction} />
       {mutation.isError && (

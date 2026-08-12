@@ -115,6 +115,16 @@ export const recurringSchema = z
   });
 export type RecurringInput = z.infer<typeof recurringSchema>;
 
+/** Converter transação avulsa existente em recorrência — só frequência/dia, o resto vem da transação. */
+export const convertToRecurringSchema = z.object({
+  frequency: z.enum(RECURRENCE_FREQUENCIES, {
+    error: 'Selecione a frequência',
+  }),
+  dayOfReference: z.number().int().min(0).max(31),
+  monthOfReference: z.number().int().min(1).max(12).optional(),
+});
+export type ConvertToRecurringInput = z.infer<typeof convertToRecurringSchema>;
+
 export const createTransferSchema = z.object({
   /** Telefone ou e-mail de um usuário existente na plataforma. */
   recipient: z.string().min(3, 'Informe telefone ou e-mail'),

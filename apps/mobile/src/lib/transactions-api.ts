@@ -1,4 +1,8 @@
-import type { TransactionMethod, TransactionType } from '@finance/shared';
+import type {
+  RecurrenceFrequency,
+  TransactionMethod,
+  TransactionType,
+} from '@finance/shared';
 
 import { apiRequest } from '@/lib/api-client';
 
@@ -23,6 +27,8 @@ export interface Transaction {
   installmentGroupId: string | null;
   /** Não é a key em si, só indica se tem comprovante anexado (M3-04) — a key nunca é exposta direto. */
   attachmentKey: string | null;
+  /** Presente quando a transação é a primeira ocorrência de uma recorrência. */
+  recurringId: string | null;
   /** Computado (não é coluna) — indicador visual de despesa dividida (M3-03), só presente na listagem. */
   hasActiveSplit?: boolean;
   /** Computado — fatura já paga, transação imutável (só arquivar + lançar de novo), só presente na listagem. */
@@ -70,6 +76,12 @@ export interface UpdateTransactionInput {
   cardId?: string;
 }
 
+export interface ConvertToRecurringInput {
+  frequency: RecurrenceFrequency;
+  dayOfReference: number;
+  monthOfReference?: number;
+}
+
 export const transactionsApi = {
   list: (workspaceId: string, filters: ListTransactionsFilters = {}) => {
     const query = new URLSearchParams(
@@ -114,6 +126,20 @@ export const transactionsApi = {
       {
         method: 'PATCH',
         body: { newTotalAmount },
+      }
+    ),
+
+  /** Transforma a transação avulsa na primeira ocorrência de uma recorrência nova. */
+  convertToRecurring: (
+    workspaceId: string,
+    transactionId: string,
+    input: ConvertToRecurringInput
+  ) =>
+    apiRequest<Transaction>(
+      `/workspaces/${workspaceId}/transactions/${transactionId}/convert-to-recurring`,
+      {
+        method: 'POST',
+        body: input,
       }
     ),
 
