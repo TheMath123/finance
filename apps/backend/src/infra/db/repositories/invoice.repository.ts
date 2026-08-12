@@ -44,6 +44,14 @@ export function createInvoiceRepository(db: DbHandle): InvoiceRepository {
       if (!raced) throw new Error('falha ao criar fatura');
       return raced;
     },
+    findByCardAndPeriod: (cardId, period) =>
+      db.query.cardInvoices.findFirst({
+        where: and(
+          eq(cardInvoices.cardId, cardId),
+          eq(cardInvoices.monthReference, period.month),
+          eq(cardInvoices.yearReference, period.year)
+        ),
+      }),
     listByCard: (cardId) =>
       db.query.cardInvoices.findMany({
         where: eq(cardInvoices.cardId, cardId),

@@ -14,6 +14,11 @@ export interface InvoiceRepository {
     cardId: string,
     period: InvoicePeriod
   ): Promise<CardInvoice>;
+  /** Leitura pura por cartão+período — sem criar (preview de import de CSV não pode ter efeito colateral). */
+  findByCardAndPeriod(
+    cardId: string,
+    period: InvoicePeriod
+  ): Promise<CardInvoice | undefined>;
   listByCard(cardId: string): Promise<CardInvoice[]>;
   /** Paginada e com filtro opcional por competência — usada pela tela de faturas (dashboard). */
   listByCardPaginated(

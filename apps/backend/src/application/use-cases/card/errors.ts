@@ -5,4 +5,7 @@ export type CardError =
   | 'invoice_not_found'
   | 'invoice_already_paid'
   | 'invoice_empty'
-  | 'account_not_found';
+  | 'account_not_found'
+  | 'csv_empty'
+  | 'file_too_large'
+  | 'category_not_found';

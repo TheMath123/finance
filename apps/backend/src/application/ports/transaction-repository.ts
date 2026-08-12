@@ -62,6 +62,8 @@ export interface TransactionRepository {
   /** Sem escopo de workspace — só pra uso interno quando a propriedade já foi validada por outro caminho (ex.: criador de um split, M3-03). */
   findById(id: string): Promise<Transaction | undefined>;
   listByGroup(installmentGroupId: string): Promise<Transaction[]>;
+  /** Não-deletadas de uma fatura — usado pelo dedup do import de CSV (M6-01). */
+  listByInvoice(invoiceId: string): Promise<Transaction[]>;
   update(id: string, patch: TransactionPatch): Promise<Transaction>;
   softDelete(id: string): Promise<void>;
   restore(id: string): Promise<void>;

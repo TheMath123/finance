@@ -40,6 +40,13 @@ export function createTransactionRepository(
         where: eq(transactions.installmentGroupId, installmentGroupId),
         orderBy: asc(transactions.installmentNumber),
       }),
+    listByInvoice: (invoiceId) =>
+      db.query.transactions.findMany({
+        where: and(
+          eq(transactions.invoiceId, invoiceId),
+          isNull(transactions.deletedAt)
+        ),
+      }),
     async update(id, patch) {
       const [row] = await db
         .update(transactions)
