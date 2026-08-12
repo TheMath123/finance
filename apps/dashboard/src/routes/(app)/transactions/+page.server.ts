@@ -3,16 +3,19 @@ import { type Cookies, fail, redirect } from '@sveltejs/kit';
 import { parseReaisToCents } from '$lib/money';
 import { pinFormulaSchema, reorderFormulasSchema, savedFormulaSchema } from '$lib/schemas/formula';
 import { convertToRecurringSchema } from '$lib/schemas/recurring';
+import { createSplitSchema } from '$lib/schemas/split';
 import {
 	installmentTotalSchema,
 	transactionEditSchema,
 	transactionFormSchema
 } from '$lib/schemas/transaction';
 import * as accountApi from '$lib/server/account-api';
+import * as attachmentApi from '$lib/server/attachment-api';
 import { getActiveWorkspaceId } from '$lib/server/active-workspace';
 import * as cardApi from '$lib/server/card-api';
 import * as categoryApi from '$lib/server/category-api';
 import * as formulaApi from '$lib/server/formula-api';
+import * as splitApi from '$lib/server/split-api';
 import * as summaryApi from '$lib/server/summary-api';
 import * as transactionApi from '$lib/server/transaction-api';
 
@@ -204,6 +207,41 @@ export const actions: Actions = {
 		return { success: true };
 	},
 
+	uploadAttachment: async ({ request, cookies, locals }) => {
+		if (!locals.session) redirect(303, '/login');
+		const form = await request.formData();
+		const transactionId = form.get('transactionId')?.toString() ?? '';
+		const workspaceId = resolveWorkspaceId(cookies, locals.session.defaultWorkspaceId);
+		const file = form.get('file');
+		if (!(file instanceof File) || file.size === 0) {
+			return fail(400, { message: 'Selecione um arquivo.' });
+		}
+
+		const result = await attachmentApi.uploadAttachment(
+			locals.session.accessToken,
+			workspaceId,
+			transactionId,
+			file
+		);
+		if (!result.ok) return fail(result.error.status || 500, { message: result.error.message });
+		return { success: true };
+	},
+
+	deleteAttachment: async ({ request, cookies, locals }) => {
+		if (!locals.session) redirect(303, '/login');
+		const form = await request.formData();
+		const transactionId = form.get('transactionId')?.toString() ?? '';
+		const workspaceId = resolveWorkspaceId(cookies, locals.session.defaultWorkspaceId);
+
+		const result = await attachmentApi.deleteAttachment(
+			locals.session.accessToken,
+			workspaceId,
+			transactionId
+		);
+		if (!result.ok) return fail(result.error.status || 500, { message: result.error.message });
+		return { success: true };
+	},
+
 	/** Converte a transação avulsa em recorrência — vira a primeira ocorrência, sem recriar o lançamento. */
 	convertToRecurring: async ({ request, cookies, locals }) => {
 		if (!locals.session) redirect(303, '/login');
@@ -225,6 +263,30 @@ export const actions: Actions = {
 			workspaceId,
 			transactionId,
 			parsed.data
+		);
+		if (!result.ok) return fail(result.error.status || 500, { message: result.error.message });
+		return { success: true };
+	},
+
+	/** Divide uma despesa entre participantes (usuários da plataforma ou externos). */
+	createSplit: async ({ request, cookies, locals }) => {
+		if (!locals.session) redirect(303, '/login');
+		const form = await request.formData();
+		const transactionId = form.get('transactionId')?.toString() ?? '';
+		const workspaceId = resolveWorkspaceId(cookies, locals.session.defaultWorkspaceId);
+
+		const parsed = createSplitSchema.safeParse({
+			participantsJson: form.get('participantsJson')?.toString() ?? '[]'
+		});
+		if (!parsed.success) {
+			return fail(400, { message: parsed.error.issues[0]?.message ?? 'Dados inválidos.' });
+		}
+
+		const result = await splitApi.createSplit(
+			locals.session.accessToken,
+			workspaceId,
+			transactionId,
+			parsed.data.participantsJson
 		);
 		if (!result.ok) return fail(result.error.status || 500, { message: result.error.message });
 		return { success: true };

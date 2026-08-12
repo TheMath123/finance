@@ -14,12 +14,18 @@
 					{ route: '/more/accounts', label: 'Contas' },
 					{ route: '/more/cards', label: 'Cartões' },
 					{ route: '/more/banks', label: 'Bancos' },
-					{ route: '/more/categories', label: 'Categorias' }
+					{ route: '/more/categories', label: 'Categorias' },
+					{ route: '/more/transfers', label: 'Transferências' },
+					{ route: '/more/splits', label: 'Splits' },
+					{ route: '/more/variable-expense', label: 'Gasto variável' }
 				] as const)
 			: ([
 					{ route: '/more/accounts', label: 'Contas' },
 					{ route: '/more/cards', label: 'Cartões' },
-					{ route: '/more/banks', label: 'Bancos' }
+					{ route: '/more/banks', label: 'Bancos' },
+					{ route: '/more/transfers', label: 'Transferências' },
+					{ route: '/more/splits', label: 'Splits' },
+					{ route: '/more/variable-expense', label: 'Gasto variável' }
 				] as const)
 	);
 </script>

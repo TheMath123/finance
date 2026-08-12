@@ -15,6 +15,7 @@
 
 	import { resolveCategoryIcon } from '$lib/category-icon';
 	import FormulaDialog from '$lib/components/calculator/formula-dialog.svelte';
+	import AttachmentField from '$lib/components/transactions/attachment-field.svelte';
 	import ImportCsvDialog from '$lib/components/transactions/import-csv-dialog.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import * as Dialog from '$lib/components/ui/dialog';
@@ -81,6 +82,33 @@
 	let editingInstallmentTotal = $state(false);
 	let editingRecurring = $state(false);
 	let recurringFrequency = $state<'weekly' | 'monthly' | 'yearly'>('monthly');
+
+	interface SplitRow {
+		key: string;
+		type: 'user' | 'external';
+		value: string;
+		amount: string;
+	}
+	let splittingTransaction = $state(false);
+	let splitEqual = $state(true);
+	let splitRows = $state<SplitRow[]>([]);
+	let splitRowKeySeq = 0;
+
+	/** Chave só pra lista local do form — não precisa de aleatoriedade criptográfica. */
+	function newSplitRow(type: SplitRow['type']): SplitRow {
+		splitRowKeySeq += 1;
+		return { key: `row-${splitRowKeySeq}`, type, value: '', amount: '' };
+	}
+	function updateSplitRow(key: string, patch: Partial<SplitRow>) {
+		splitRows = splitRows.map((r) => (r.key === key ? { ...r, ...patch } : r));
+	}
+	const splitParticipants = $derived(
+		splitRows.map((r) => ({
+			type: r.type,
+			...(r.type === 'user' ? { contact: r.value.trim() } : { name: r.value.trim() }),
+			...(splitEqual ? {} : { amount: parseReaisToCents(r.amount) ?? 0 })
+		}))
+	);
 
 	const WEEKDAY_LABELS = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
 
@@ -673,6 +701,7 @@
 			editing = null;
 			editingInstallmentTotal = false;
 			editingRecurring = false;
+			splittingTransaction = false;
 			editError = null;
 		}
 	}}
@@ -808,9 +837,129 @@
 							{editingRecurring ? 'Cancelar recorrência' : 'Tornar recorrente'}
 						</Button>
 					{/if}
+					{#if editing.type === 'expense' && editing.method !== 'transfer' && editing.accountId && !editing.hasActiveSplit}
+						<Button
+							type="button"
+							variant="outline"
+							size="sm"
+							class="sm:mr-auto"
+							onclick={() => {
+								splittingTransaction = !splittingTransaction;
+								if (splittingTransaction) {
+									splitEqual = true;
+									splitRows = [newSplitRow('user')];
+								}
+							}}
+						>
+							{splittingTransaction ? 'Cancelar divisão' : 'Dividir despesa'}
+						</Button>
+					{/if}
 					<Button type="submit">Salvar</Button>
 				</Dialog.Footer>
 			</form>
+
+			<div class="border-t border-foreground/10 pt-4">
+				<AttachmentField
+					transaction={editing}
+					onerror={(message) => {
+						editError = message;
+					}}
+				/>
+			</div>
+
+			{#if splittingTransaction}
+				<!-- Form separado — divide a despesa entre participantes (usuários da
+				     plataforma ou externos), sem tocar na transação original. -->
+				<form
+					method="POST"
+					action="?/createSplit"
+					class="grid gap-3 border-t border-foreground/10 pt-4"
+					use:enhance={dialogFormSubmit({
+						onSuccess: () => {
+							editing = null;
+							splittingTransaction = false;
+							editError = null;
+						},
+						onError: (message) => {
+							editError = message;
+						}
+					})}
+				>
+					<input type="hidden" name="transactionId" value={editing.id} />
+					<input type="hidden" name="participantsJson" value={JSON.stringify(splitParticipants)} />
+
+					<div class="grid gap-2">
+						{#each splitRows as row, i (row.key)}
+							<div class="flex items-center gap-2">
+								<select
+									value={row.type}
+									onchange={(e) =>
+										updateSplitRow(row.key, {
+											type: e.currentTarget.value as SplitRow['type']
+										})}
+									class="h-9 rounded-lg border border-foreground/10 bg-transparent px-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+								>
+									<option value="user">Usuário</option>
+									<option value="external">Externo</option>
+								</select>
+								<Input
+									placeholder={row.type === 'user' ? 'Telefone ou e-mail' : 'Nome'}
+									value={row.value}
+									oninput={(e) => updateSplitRow(row.key, { value: e.currentTarget.value })}
+									class="flex-1"
+								/>
+								{#if !splitEqual}
+									<Input
+										placeholder="Valor (R$)"
+										inputmode="decimal"
+										value={row.amount}
+										oninput={(e) => updateSplitRow(row.key, { amount: e.currentTarget.value })}
+										class="w-28"
+									/>
+								{/if}
+								{#if splitRows.length > 1}
+									<Button
+										type="button"
+										variant="ghost"
+										size="icon-sm"
+										onclick={() => (splitRows = splitRows.filter((_, idx) => idx !== i))}
+									>
+										×
+									</Button>
+								{/if}
+							</div>
+						{/each}
+					</div>
+
+					<div class="flex gap-2">
+						<Button
+							type="button"
+							variant="outline"
+							size="sm"
+							class="flex-1"
+							onclick={() => (splitRows = [...splitRows, newSplitRow('user')])}
+						>
+							+ Usuário
+						</Button>
+						<Button
+							type="button"
+							variant="outline"
+							size="sm"
+							class="flex-1"
+							onclick={() => (splitRows = [...splitRows, newSplitRow('external')])}
+						>
+							+ Externo
+						</Button>
+					</div>
+
+					<label class="flex items-center gap-2 text-sm">
+						<input type="checkbox" bind:checked={splitEqual} />
+						Dividir igualmente entre todos (você incluído)
+					</label>
+
+					<Button type="submit" class="justify-self-end">Confirmar divisão</Button>
+				</form>
+			{/if}
 
 			{#if !locked && editingRecurring}
 				{@const prefilledDay =

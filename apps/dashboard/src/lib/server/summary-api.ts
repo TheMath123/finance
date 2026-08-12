@@ -38,3 +38,26 @@ export function getMonthlySummary(
 		accessToken
 	});
 }
+
+/** Espelha VariableExpenseCategoryEstimate (backend, use-cases/summary/estimate-variable-expense.ts). */
+export interface VariableExpenseCategoryEstimate {
+	categoryId: string;
+	name: string;
+	color: string;
+	estimated: number;
+}
+
+export interface VariableExpenseEstimate {
+	byCategory: VariableExpenseCategoryEstimate[];
+	total: number;
+}
+
+/** Média dos últimos 3 meses por categoria — exclui recorrência e parcela. */
+export function getVariableExpenseEstimate(
+	accessToken: string,
+	workspaceId: string
+): Promise<Either<ApiError, VariableExpenseEstimate>> {
+	return apiRequest(`/workspaces/${workspaceId}/summary/variable-expense-estimate`, {
+		accessToken
+	});
+}
