@@ -24,3 +24,9 @@ export const cardFormSchema = z.object({
 	closingDay: z.number().int().min(1).max(28, 'Dia entre 1 e 28'),
 	dueDay: z.number().int().min(1).max(28, 'Dia entre 1 e 28')
 });
+
+export const categoryFormSchema = z.object({
+	name: z.string().min(1, 'Informe um nome').max(60),
+	icon: z.string().min(1, 'Escolha um ícone'),
+	color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Cor inválida')
+});

@@ -2,15 +2,26 @@
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 
-	let { children } = $props();
+	let { data, children } = $props();
 
 	// resolve() inline no template (regra svelte/no-navigation-without-resolve).
-	// Mesmo agrupamento da aba "Mais" do app mobile.
-	const TABS = [
-		{ route: '/more/accounts', label: 'Contas' },
-		{ route: '/more/cards', label: 'Cartões' },
-		{ route: '/more/banks', label: 'Bancos' }
-	] as const;
+	// Mesmo agrupamento da aba "Mais" do app mobile. `as const` em cada branch
+	// (não no ternário todo) — senão o spread condicional larga pra `string`
+	// e `resolve()` (rotas tipadas) para de aceitar `tab.route`.
+	const TABS = $derived(
+		data.categoriesManagementEnabled
+			? ([
+					{ route: '/more/accounts', label: 'Contas' },
+					{ route: '/more/cards', label: 'Cartões' },
+					{ route: '/more/banks', label: 'Bancos' },
+					{ route: '/more/categories', label: 'Categorias' }
+				] as const)
+			: ([
+					{ route: '/more/accounts', label: 'Contas' },
+					{ route: '/more/cards', label: 'Cartões' },
+					{ route: '/more/banks', label: 'Bancos' }
+				] as const)
+	);
 </script>
 
 <div class="mx-auto flex max-w-5xl flex-col gap-6">
