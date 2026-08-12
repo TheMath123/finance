@@ -16,6 +16,19 @@ export const errorHandler = (logger: Logger) =>
 
       if (code === 'NOT_FOUND') {
         set.status = 404;
+        // warn (não error): rota errada não é falha do servidor, mas sem
+        // isso fica impossível depurar um client batendo no path errado —
+        // ninguém via nada nos logs quando isso acontecia.
+        logger.warn(
+          {
+            scope: 'http',
+            event: 'route_not_found',
+            requestId,
+            method: request.method,
+            path: new URL(request.url).pathname,
+          },
+          'route_not_found'
+        );
         return {
           error: { code: 'not_found', message: 'Rota não encontrada.' },
         };
