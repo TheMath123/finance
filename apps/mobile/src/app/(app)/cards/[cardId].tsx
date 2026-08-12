@@ -55,7 +55,7 @@ export default function CardDetailScreen() {
   const { cardId } = useLocalSearchParams<{ cardId: string }>();
   const { workspaceId, featureFlags } = useSession();
   const queryClient = useQueryClient();
-  const [payingInvoiceId, setPayingInvoiceId] = useState<string | null>(null);
+  const [payingInvoice, setPayingInvoice] = useState<Invoice | null>(null);
   const [editing, setEditing] = useState(false);
   const [csvImportOpen, setCsvImportOpen] = useState(false);
   const csvImportEnabled = featureFlags.card_invoice_csv_import === true;
@@ -205,7 +205,7 @@ export default function CardDetailScreen() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onPress={() => setPayingInvoiceId(invoice.id)}
+                  onPress={() => setPayingInvoice(invoice)}
                 >
                   Pagar
                 </Button>
@@ -222,18 +222,20 @@ export default function CardDetailScreen() {
       </View>
 
       <Dialog
-        open={payingInvoiceId !== null}
-        onOpenChange={(open) => !open && setPayingInvoiceId(null)}
+        open={payingInvoice !== null}
+        onOpenChange={(open) => !open && setPayingInvoice(null)}
       >
         <DialogContent className="w-full max-w-sm">
           <DialogHeader>
             <DialogTitle>Pagar fatura</DialogTitle>
           </DialogHeader>
-          {payingInvoiceId && (
+          {payingInvoice && cardItem && (
             <PayInvoiceForm
-              invoiceId={payingInvoiceId}
+              invoiceId={payingInvoice.id}
+              isEarlyPayment={payingInvoice.effectiveStatus === 'open'}
+              closingDay={cardItem.closingDay}
               accounts={accounts ?? []}
-              onDone={() => setPayingInvoiceId(null)}
+              onDone={() => setPayingInvoice(null)}
             />
           )}
         </DialogContent>
