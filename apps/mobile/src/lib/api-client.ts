@@ -205,7 +205,11 @@ export async function apiRequestText(
  * aceitar esse "blob" à mão). `UploadTask` fala direto com o módulo nativo de
  * upload do Expo, sem passar pelo polyfill de `FormData`.
  */
-async function rawUploadRequest<T>(path: string, file: UploadFile): Promise<T> {
+async function rawUploadRequest<T>(
+  path: string,
+  file: UploadFile,
+  parameters?: Record<string, string>
+): Promise<T> {
   const accessToken = await tokenStore.getAccessToken();
   const { signal, cancel } = withTimeout(UPLOAD_TIMEOUT_MS);
 
@@ -219,6 +223,7 @@ async function rawUploadRequest<T>(path: string, file: UploadFile): Promise<T> {
         uploadType: UploadType.MULTIPART,
         fieldName: 'file',
         mimeType: file.type,
+        parameters,
         headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
         signal,
       }
@@ -257,13 +262,19 @@ async function rawUploadRequest<T>(path: string, file: UploadFile): Promise<T> {
   return data as T;
 }
 
-/** Anexo de comprovante (M3-04) — nunca JSON.stringify no body. */
+/**
+ * Anexo de comprovante (M3-04) — nunca JSON.stringify no body. `parameters`
+ * (opcional) manda campos extras no mesmo multipart (ex.: month/year do
+ * import de CSV de fatura, M6-01) — o módulo nativo de upload já suporta
+ * isso via `UploadOptions.parameters`, sem precisar de uma segunda função.
+ */
 export async function apiRequestUpload<T>(
   path: string,
-  file: UploadFile
+  file: UploadFile,
+  parameters?: Record<string, string>
 ): Promise<T> {
   try {
-    return await rawUploadRequest<T>(path, file);
+    return await rawUploadRequest<T>(path, file, parameters);
   } catch (error) {
     if (!(error instanceof ApiError) || error.status !== 401) throw error;
 
@@ -285,6 +296,6 @@ export async function apiRequestUpload<T>(
     }
 
     await tokenStore.setTokens(session.accessToken, session.refreshToken);
-    return rawUploadRequest<T>(path, file);
+    return rawUploadRequest<T>(path, file, parameters);
   }
 }

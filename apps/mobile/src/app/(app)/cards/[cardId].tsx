@@ -11,6 +11,7 @@ import { useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, View } from 'react-native';
 
 import { CreateCardForm } from '@/components/forms/create-card-form';
+import { CsvImportForm } from '@/components/forms/csv-import-form';
 import { PayInvoiceForm } from '@/components/forms/pay-invoice-form';
 import { ThemedText } from '@/components/themed-text';
 import { Button } from '@/components/ui/button';
@@ -26,6 +27,7 @@ import { useSession } from '@/context/session';
 import { accountsApi } from '@/lib/accounts-api';
 import { ApiError } from '@/lib/api-client';
 import { cardsApi, type Invoice } from '@/lib/cards-api';
+import { useCategories } from '@/lib/hooks/use-categories';
 import { formatCents } from '@/lib/money';
 
 const MONTH_LABELS = [
@@ -51,10 +53,12 @@ const STATUS_LABELS: Record<Invoice['effectiveStatus'], string> = {
 
 export default function CardDetailScreen() {
   const { cardId } = useLocalSearchParams<{ cardId: string }>();
-  const { workspaceId } = useSession();
+  const { workspaceId, featureFlags } = useSession();
   const queryClient = useQueryClient();
   const [payingInvoiceId, setPayingInvoiceId] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
+  const [csvImportOpen, setCsvImportOpen] = useState(false);
+  const csvImportEnabled = featureFlags.card_invoice_csv_import === true;
 
   const { data: cards } = useQuery({
     queryKey: ['cards', workspaceId],
@@ -71,6 +75,7 @@ export default function CardDetailScreen() {
     queryFn: () => accountsApi.list(workspaceId!),
     enabled: Boolean(workspaceId),
   });
+  const { data: categories } = useCategories(workspaceId);
 
   const cardItem = cards?.find((item) => item.id === cardId);
 
@@ -165,7 +170,18 @@ export default function CardDetailScreen() {
       )}
 
       <View className="gap-3">
-        <ThemedText type="smallBold">Faturas</ThemedText>
+        <View className="flex-row items-center justify-between">
+          <ThemedText type="smallBold">Faturas</ThemedText>
+          {csvImportEnabled && (
+            <Button
+              variant="outline"
+              size="sm"
+              onPress={() => setCsvImportOpen(true)}
+            >
+              Importar CSV
+            </Button>
+          )}
+        </View>
         {loadingInvoices ? (
           <ActivityIndicator />
         ) : invoices && invoices.length > 0 ? (
@@ -218,6 +234,21 @@ export default function CardDetailScreen() {
               invoiceId={payingInvoiceId}
               accounts={accounts ?? []}
               onDone={() => setPayingInvoiceId(null)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={csvImportOpen} onOpenChange={setCsvImportOpen}>
+        <DialogContent className="w-full max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Importar CSV de fatura</DialogTitle>
+          </DialogHeader>
+          {cardId && (
+            <CsvImportForm
+              cardId={cardId}
+              categories={categories ?? []}
+              onDone={() => setCsvImportOpen(false)}
             />
           )}
         </DialogContent>

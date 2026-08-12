@@ -32,6 +32,8 @@ export interface AuthSession {
 export interface MeOutput {
   user: AuthSession['user'];
   defaultWorkspaceId: string;
+  /** key → enabled — gateia UI de features experimentais (ex. import de CSV de fatura). */
+  featureFlags: Record<string, boolean>;
 }
 
 export const authApi = {

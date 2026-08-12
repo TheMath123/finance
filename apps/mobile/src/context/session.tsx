@@ -16,6 +16,8 @@ import { tokenStore, workspaceStore } from '@/lib/secure-store';
 interface SessionContextValue {
   user: AuthSession['user'] | null;
   workspaceId: string | null;
+  /** key → enabled — gateia UI de features experimentais (ex. import de CSV de fatura). */
+  featureFlags: Record<string, boolean>;
   isLoading: boolean;
   signIn: (session: AuthSession) => Promise<void>;
   signOut: () => Promise<void>;
@@ -34,6 +36,7 @@ const SessionContext = createContext<SessionContextValue | null>(null);
 export function SessionProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthSession['user'] | null>(null);
   const [workspaceId, setWorkspaceId] = useState<string | null>(null);
+  const [featureFlags, setFeatureFlags] = useState<Record<string, boolean>>({});
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -46,6 +49,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       try {
         const me = await authApi.me();
         setUser(me.user);
+        setFeatureFlags(me.featureFlags);
         const stored = await workspaceStore.getActiveWorkspaceId();
         setWorkspaceId(stored ?? me.defaultWorkspaceId);
         void registerForPushNotifications();
@@ -64,6 +68,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     setUser(session.user);
     setWorkspaceId(session.defaultWorkspaceId);
     void registerForPushNotifications();
+    // AuthSession (login/register) não traz featureFlags — só /auth/me.
+    // Busca em segundo plano pra não atrasar a navegação pós-login.
+    void authApi
+      .me()
+      .then((me) => setFeatureFlags(me.featureFlags))
+      .catch(() => {});
   };
 
   const signOut = async () => {
@@ -72,6 +82,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     await workspaceStore.clearActiveWorkspaceId();
     setUser(null);
     setWorkspaceId(null);
+    setFeatureFlags({});
     if (refreshToken) await authApi.logout(refreshToken).catch(() => {});
     void unregisterCurrentPushToken();
   };
@@ -79,6 +90,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const refreshUser = async () => {
     const me = await authApi.me();
     setUser(me.user);
+    setFeatureFlags(me.featureFlags);
     return me.user;
   };
 
@@ -92,6 +104,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       value={{
         user,
         workspaceId,
+        featureFlags,
         isLoading,
         signIn,
         signOut,
