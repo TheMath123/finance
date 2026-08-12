@@ -10,7 +10,6 @@
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
-	import { Switch } from '$lib/components/ui/switch';
 	import { MONTH_NAMES } from '$lib/month-names';
 	import { formatCents } from '$lib/money';
 	import type {
@@ -108,7 +107,10 @@
 		formData.set('month', String(month));
 		formData.set('year', String(year));
 
-		const response = await fetch('csv-import/preview', { method: 'POST', body: formData });
+		const response = await fetch(`/more/cards/${data.card.id}/invoices/csv-import/preview`, {
+			method: 'POST',
+			body: formData
+		});
 		const payload = await response.json();
 		csvLoading = false;
 
@@ -153,7 +155,7 @@
 
 		csvLoading = true;
 		csvError = null;
-		const response = await fetch('csv-import/confirm', {
+		const response = await fetch(`/more/cards/${data.card.id}/invoices/csv-import/confirm`, {
 			method: 'POST',
 			headers: { 'content-type': 'application/json' },
 			body: JSON.stringify({ month, year, rows })
@@ -263,7 +265,7 @@
 		<h1 class="text-xl font-semibold">Faturas — {data.card.name}</h1>
 	</div>
 
-	{#if form?.message}
+	{#if form?.message && !paying}
 		<p class="text-sm text-destructive">{form.message}</p>
 	{/if}
 
@@ -410,6 +412,9 @@
 				</Dialog.Description>
 			{/if}
 		</Dialog.Header>
+		{#if form?.message}
+			<p class="text-sm text-destructive">{form.message}</p>
+		{/if}
 		{#if paying}
 			<form
 				method="POST"
@@ -549,7 +554,12 @@
 								<tr class="border-b border-foreground/5 last:border-0">
 									<td class="px-3 py-2">
 										{#if row.status === 'new'}
-											<Switch size="sm" bind:checked={row.include} />
+											<input
+												type="checkbox"
+												bind:checked={row.include}
+												aria-label="Incluir esta linha na importação"
+												class="h-4 w-4"
+											/>
 										{/if}
 									</td>
 									<td class="px-3 py-2 whitespace-nowrap tabular-nums">{row.date || '—'}</td>
