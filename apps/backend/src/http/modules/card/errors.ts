@@ -37,4 +37,19 @@ export const CARD_ERRORS: Record<CardError, HttpError> = {
     code: 'account_not_found',
     message: 'Conta não encontrada.',
   },
+  csv_empty: {
+    status: 400,
+    code: 'csv_empty',
+    message: 'CSV vazio ou sem linhas de dados.',
+  },
+  file_too_large: {
+    status: 413,
+    code: 'file_too_large',
+    message: 'Arquivo excede o limite permitido.',
+  },
+  category_not_found: {
+    status: 404,
+    code: 'category_not_found',
+    message: 'Categoria não encontrada.',
+  },
 };

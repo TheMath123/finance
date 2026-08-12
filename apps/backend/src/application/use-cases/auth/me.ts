@@ -14,6 +14,8 @@ export interface MeOutput {
     platformRole: import('@finance/shared').PlatformRole;
   };
   defaultWorkspaceId: string;
+  /** key → enabled, pra client gatear UI de features experimentais (ex. import de CSV de fatura). */
+  featureFlags: Record<string, boolean>;
 }
 
 export async function me(
@@ -22,6 +24,8 @@ export async function me(
 ): Promise<Either<AuthError, MeOutput>> {
   const user = await deps.repos.user.findById(userId);
   if (!user?.defaultWorkspaceId) return left('invalid_token');
+
+  const flags = await deps.repos.featureFlag.list();
 
   return right({
     user: {
@@ -36,5 +40,6 @@ export async function me(
       platformRole: user.platformRole,
     },
     defaultWorkspaceId: user.defaultWorkspaceId,
+    featureFlags: Object.fromEntries(flags.map((f) => [f.key, f.enabled])),
   });
 }

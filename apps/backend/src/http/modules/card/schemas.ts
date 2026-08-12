@@ -31,3 +31,29 @@ export const payInvoiceSchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   method: z.enum(['pix', 'debit']),
 });
+
+/** Campos que acompanham o arquivo no multipart do preview (chegam como string). */
+export const csvImportPreviewFieldsSchema = z.object({
+  month: z.coerce.number().int().min(1).max(12),
+  year: z.coerce.number().int().min(2000).max(2100),
+});
+
+export const csvImportRowSchema = z.object({
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  description: z.string().min(1).max(500),
+  /** Centavos, com sinal (negativo = estorno/reembolso) — mesma convenção do preview. */
+  amount: z.number().int(),
+  categoryId: z.string().uuid(),
+  installment: z
+    .object({
+      number: z.number().int().min(1),
+      total: z.number().int().min(2).max(48),
+    })
+    .nullable(),
+});
+
+export const confirmInvoiceCsvImportSchema = z.object({
+  month: z.number().int().min(1).max(12),
+  year: z.number().int().min(2000).max(2100),
+  rows: z.array(csvImportRowSchema).min(1).max(500),
+});
