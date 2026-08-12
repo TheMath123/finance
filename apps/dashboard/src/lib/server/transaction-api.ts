@@ -121,6 +121,29 @@ export function updateInstallmentTotal(
 	});
 }
 
+export interface ConvertToRecurringInput {
+	frequency: 'weekly' | 'monthly' | 'yearly';
+	dayOfReference: number;
+	monthOfReference?: number;
+}
+
+/** Transforma uma transação avulsa já lançada na primeira ocorrência de uma recorrência nova. */
+export function convertToRecurring(
+	accessToken: string,
+	workspaceId: string,
+	transactionId: string,
+	input: ConvertToRecurringInput
+): Promise<Either<ApiError, TransactionView>> {
+	return apiRequest(
+		`/workspaces/${workspaceId}/transactions/${transactionId}/convert-to-recurring`,
+		{
+			method: 'POST',
+			body: input,
+			accessToken
+		}
+	);
+}
+
 export function deleteTransaction(
 	accessToken: string,
 	workspaceId: string,

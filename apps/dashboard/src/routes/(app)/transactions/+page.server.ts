@@ -2,6 +2,7 @@ import { type Cookies, fail, redirect } from '@sveltejs/kit';
 
 import { parseReaisToCents } from '$lib/money';
 import { pinFormulaSchema, reorderFormulasSchema, savedFormulaSchema } from '$lib/schemas/formula';
+import { convertToRecurringSchema } from '$lib/schemas/recurring';
 import {
 	installmentTotalSchema,
 	transactionEditSchema,
@@ -198,6 +199,32 @@ export const actions: Actions = {
 			workspaceId,
 			transactionId,
 			parsed.data.newTotalAmount
+		);
+		if (!result.ok) return fail(result.error.status || 500, { message: result.error.message });
+		return { success: true };
+	},
+
+	/** Converte a transação avulsa em recorrência — vira a primeira ocorrência, sem recriar o lançamento. */
+	convertToRecurring: async ({ request, cookies, locals }) => {
+		if (!locals.session) redirect(303, '/login');
+		const form = await request.formData();
+		const transactionId = form.get('transactionId')?.toString() ?? '';
+		const workspaceId = resolveWorkspaceId(cookies, locals.session.defaultWorkspaceId);
+
+		const parsed = convertToRecurringSchema.safeParse({
+			frequency: form.get('frequency')?.toString(),
+			dayOfReference: numberField(form, 'dayOfReference'),
+			monthOfReference: numberField(form, 'monthOfReference')
+		});
+		if (!parsed.success) {
+			return fail(400, { message: parsed.error.issues[0]?.message ?? 'Dados inválidos.' });
+		}
+
+		const result = await transactionApi.convertToRecurring(
+			locals.session.accessToken,
+			workspaceId,
+			transactionId,
+			parsed.data
 		);
 		if (!result.ok) return fail(result.error.status || 500, { message: result.error.message });
 		return { success: true };

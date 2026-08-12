@@ -37,3 +37,22 @@ export const recurringFormSchema = z
 		message: 'Escolha o mês pra frequência anual',
 		path: ['monthOfReference']
 	});
+
+/** Converter transação avulsa existente em recorrência — só frequência/dia, o resto vem da transação. */
+export const convertToRecurringSchema = z
+	.object({
+		frequency: z.enum(RECURRENCE_FREQUENCIES),
+		dayOfReference: z.number().int().min(0).max(31),
+		monthOfReference: z.number().int().min(1).max(12).optional()
+	})
+	.refine(
+		(data) => {
+			if (data.frequency === 'weekly') return data.dayOfReference >= 0 && data.dayOfReference <= 6;
+			return data.dayOfReference >= 1 && data.dayOfReference <= 31;
+		},
+		{ message: 'Dia inválido pra frequência escolhida', path: ['dayOfReference'] }
+	)
+	.refine((data) => data.frequency !== 'yearly' || Boolean(data.monthOfReference), {
+		message: 'Escolha o mês pra frequência anual',
+		path: ['monthOfReference']
+	});

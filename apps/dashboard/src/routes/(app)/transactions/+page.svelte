@@ -25,6 +25,7 @@
 	import { buildClientFormulaCatalog } from '$lib/formula-catalog';
 	import { getMerchantLogoUrl } from '$lib/merchant-logo';
 	import { formatCents, formatReais, parseReaisToCents } from '$lib/money';
+	import { MONTH_NAMES } from '$lib/month-names';
 	import type { SavedFormulaView } from '$lib/server/formula-api';
 	import type { TransactionView } from '$lib/server/transaction-api';
 	import { formatTransactionDate, transactionSourceLabel } from '$lib/transaction-labels';
@@ -78,6 +79,21 @@
 	let editing = $state<TransactionView | null>(null);
 	let editError = $state<string | null>(null);
 	let editingInstallmentTotal = $state(false);
+	let editingRecurring = $state(false);
+	let recurringFrequency = $state<'weekly' | 'monthly' | 'yearly'>('monthly');
+
+	const WEEKDAY_LABELS = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+
+	/** Pré-preenche frequência/dia da recorrência a partir da data da própria transação. */
+	function dayOfMonthFrom(date: string): number {
+		return Number(date.slice(8, 10));
+	}
+	function dayOfWeekFrom(date: string): number {
+		return new Date(`${date}T00:00:00`).getDay();
+	}
+	function monthFrom(date: string): number {
+		return Number(date.slice(5, 7));
+	}
 
 	let newMethod = $state<'pix' | 'debit' | 'cash' | 'credit' | 'transfer'>('pix');
 	let newAmount = $state('');
@@ -656,6 +672,7 @@
 		if (!open) {
 			editing = null;
 			editingInstallmentTotal = false;
+			editingRecurring = false;
 			editError = null;
 		}
 	}}
@@ -777,10 +794,112 @@
 								? 'Cancelar alteração de valor'
 								: 'Alterar valor total da compra'}
 						</Button>
+					{:else if editing.method !== 'transfer' && !editing.recurringId && !editing.invoicePaid}
+						<Button
+							type="button"
+							variant="outline"
+							size="sm"
+							class="sm:mr-auto"
+							onclick={() => {
+								editingRecurring = !editingRecurring;
+								if (editingRecurring) recurringFrequency = 'monthly';
+							}}
+						>
+							{editingRecurring ? 'Cancelar recorrência' : 'Tornar recorrente'}
+						</Button>
 					{/if}
 					<Button type="submit">Salvar</Button>
 				</Dialog.Footer>
 			</form>
+
+			{#if !locked && editingRecurring}
+				{@const prefilledDay =
+					recurringFrequency === 'weekly'
+						? dayOfWeekFrom(editing.date)
+						: dayOfMonthFrom(editing.date)}
+				{@const prefilledMonth = monthFrom(editing.date)}
+				<!-- Form separado — a transação vira a primeira ocorrência da recorrência
+				     nova (só ganha recurringId), preservando id/auditoria/anexo. -->
+				<form
+					method="POST"
+					action="?/convertToRecurring"
+					class="grid gap-3 border-t border-foreground/10 pt-4"
+					use:enhance={dialogFormSubmit({
+						onSuccess: () => {
+							editing = null;
+							editingRecurring = false;
+							editError = null;
+						},
+						onError: (message) => {
+							editError = message;
+						}
+					})}
+				>
+					<input type="hidden" name="transactionId" value={editing.id} />
+					<div class="grid grid-cols-2 gap-4">
+						<div class="grid gap-2">
+							<Label for="edit-recurring-frequency">Frequência</Label>
+							<select
+								id="edit-recurring-frequency"
+								name="frequency"
+								bind:value={recurringFrequency}
+								class="h-9 rounded-lg border border-foreground/10 bg-transparent px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+							>
+								<option value="weekly">Semanal</option>
+								<option value="monthly">Mensal</option>
+								<option value="yearly">Anual</option>
+							</select>
+						</div>
+						<div class="grid gap-2">
+							<Label for="edit-recurring-day">
+								{recurringFrequency === 'weekly' ? 'Dia da semana' : 'Dia do mês'}
+							</Label>
+							{#if recurringFrequency === 'weekly'}
+								<select
+									id="edit-recurring-day"
+									name="dayOfReference"
+									value={prefilledDay}
+									class="h-9 rounded-lg border border-foreground/10 bg-transparent px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+								>
+									{#each WEEKDAY_LABELS as label, value (value)}
+										<option {value}>{label}</option>
+									{/each}
+								</select>
+							{:else}
+								<Input
+									id="edit-recurring-day"
+									name="dayOfReference"
+									type="number"
+									min="1"
+									max="31"
+									value={prefilledDay}
+									required
+								/>
+							{/if}
+						</div>
+					</div>
+					{#if recurringFrequency === 'yearly'}
+						<div class="grid gap-2">
+							<Label for="edit-recurring-month">Mês</Label>
+							<select
+								id="edit-recurring-month"
+								name="monthOfReference"
+								value={prefilledMonth}
+								class="h-9 rounded-lg border border-foreground/10 bg-transparent px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+							>
+								{#each MONTH_NAMES as label, index (index)}
+									<option value={index + 1}>{label}</option>
+								{/each}
+							</select>
+						</div>
+					{/if}
+					<p class="text-xs text-muted-foreground">
+						Esta transação vira a primeira ocorrência da recorrência — as próximas são lançadas
+						automaticamente.
+					</p>
+					<Button type="submit" class="justify-self-end">Confirmar recorrência</Button>
+				</form>
+			{/if}
 
 			{#if locked && editingInstallmentTotal}
 				<!-- Form separado (não pode ficar aninhado no de cima) — muda o valor TOTAL
