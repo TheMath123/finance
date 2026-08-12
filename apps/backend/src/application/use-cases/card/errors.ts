@@ -4,6 +4,7 @@ export type CardError =
   | 'card_has_transactions'
   | 'invoice_not_found'
   | 'invoice_already_paid'
+  | 'invoice_not_paid'
   | 'invoice_empty'
   | 'account_not_found'
   | 'csv_empty'

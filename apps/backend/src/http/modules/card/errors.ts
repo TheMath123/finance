@@ -27,6 +27,11 @@ export const CARD_ERRORS: Record<CardError, HttpError> = {
     code: 'invoice_already_paid',
     message: 'Fatura já está paga.',
   },
+  invoice_not_paid: {
+    status: 409,
+    code: 'invoice_not_paid',
+    message: 'Fatura não está paga.',
+  },
   invoice_empty: {
     status: 409,
     code: 'invoice_empty',

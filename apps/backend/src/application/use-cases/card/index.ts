@@ -20,4 +20,5 @@ export {
   type PreviewInvoiceCsvImportOutput,
   previewInvoiceCsvImport,
 } from './preview-invoice-csv-import';
+export { undoInvoicePayment } from './undo-invoice-payment';
 export { updateCard } from './update-card';

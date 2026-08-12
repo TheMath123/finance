@@ -8,6 +8,7 @@ import { listCardsRoute } from './list-cards';
 import { listInvoicesRoute } from './list-invoices';
 import { payInvoiceRoute } from './pay-invoice';
 import { previewInvoiceCsvImportRoute } from './preview-invoice-csv-import';
+import { undoInvoicePaymentRoute } from './undo-invoice-payment';
 import { updateCardRoute } from './update-card';
 
 export function cardRoutes(deps: AppDeps) {
@@ -19,6 +20,7 @@ export function cardRoutes(deps: AppDeps) {
     .use(deleteCardRoute(deps))
     .use(listInvoicesRoute(deps))
     .use(payInvoiceRoute(deps))
+    .use(undoInvoicePaymentRoute(deps))
     .use(previewInvoiceCsvImportRoute(deps))
     .use(confirmInvoiceCsvImportRoute(deps));
 }
