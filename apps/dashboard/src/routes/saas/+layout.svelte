@@ -14,13 +14,13 @@
 	let { data, children } = $props();
 
 	const NAV = [
-		{ route: '/saas/users', label: 'Usuários', icon: UsersIcon },
+		{ route: '/saas/metrics', label: 'Métricas', icon: ChartBarIcon },
 		{ route: '/saas/workspaces', label: 'Workspaces', icon: BuildingsIcon },
 		{ route: '/saas/plans', label: 'Planos', icon: CreditCardIcon },
+		{ route: '/saas/users', label: 'Usuários', icon: UsersIcon },
 		{ route: '/saas/default-categories', label: 'Categorias padrão', icon: TagIcon },
 		{ route: '/saas/ai-settings', label: 'Guardrails de IA', icon: SparkleIcon },
-		{ route: '/saas/feature-flags', label: 'Feature flags', icon: FlagIcon },
-		{ route: '/saas/metrics', label: 'Métricas', icon: ChartBarIcon }
+		{ route: '/saas/feature-flags', label: 'Feature flags', icon: FlagIcon }
 	] as const;
 </script>
 
