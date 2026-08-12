@@ -113,6 +113,18 @@ export function createInvoiceRepository(db: DbHandle): InvoiceRepository {
         .returning();
       return row;
     },
+    async unmarkPaid(invoiceId, status) {
+      // Condicional (WHERE status = 'paid') — mesma defesa de corrida do
+      // markPaid, na direção contrária.
+      const [row] = await db
+        .update(cardInvoices)
+        .set({ status, paymentTransactionId: null })
+        .where(
+          and(eq(cardInvoices.id, invoiceId), eq(cardInvoices.status, 'paid'))
+        )
+        .returning();
+      return row;
+    },
     async total(invoiceId) {
       const [row] = await db
         .select({ total: signedTotal })

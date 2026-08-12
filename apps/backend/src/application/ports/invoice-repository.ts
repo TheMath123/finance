@@ -33,6 +33,16 @@ export interface InvoiceRepository {
     invoiceId: string,
     paymentTransactionId: string
   ): Promise<CardInvoice | undefined>;
+  /**
+   * Reverso de `markPaid` — desfaz um pagamento lançado por engano (ex.: fatura
+   * ainda aberta paga sem querer). Condicional (`WHERE status = 'paid'`),
+   * limpa `payment_transaction_id`; `undefined` se a fatura já não estava paga
+   * (corrida ou chamada duplicada).
+   */
+  unmarkPaid(
+    invoiceId: string,
+    status: InvoiceStatus
+  ): Promise<CardInvoice | undefined>;
   /** Total derivado: Σ despesas − Σ receitas das transações não deletadas. */
   total(invoiceId: string): Promise<number>;
   /** Σ dos totais das faturas não pagas (limite disponível derivado). */
