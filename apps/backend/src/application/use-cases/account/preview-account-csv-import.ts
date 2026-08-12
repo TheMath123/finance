@@ -12,61 +12,56 @@ import {
 } from '../../../domain/services/csv-import';
 import { normalizeDescription } from '../../../domain/services/occurrence-rules';
 import type { Actor, UseCaseDeps } from '../../deps';
-import type { CardError } from './errors';
+import type { AccountError } from './errors';
 
 export { MAX_CSV_IMPORT_SIZE_BYTES };
 
-export interface PreviewInvoiceCsvImportInput {
-  cardId: string;
-  month: number;
-  year: number;
+export interface PreviewAccountCsvImportInput {
+  accountId: string;
   buffer: Uint8Array;
 }
 
 export type CsvImportRowStatus = 'new' | 'duplicate' | 'invalid';
 
-export interface CsvImportRowInstallment {
-  number: number;
-  total: number;
-}
-
-export interface CsvImportPreviewRow {
+export interface AccountCsvImportPreviewRow {
   /** Posição entre as linhas de dado (após descartar cabeçalho, se houver) — usado pra ecoar de volta no confirm. */
   rowIndex: number;
   raw: string[];
   date: string | null;
-  /** Já sem o sufixo "NN/NN" quando parcela é detectada. */
+  /** Já sem sufixo "NN/NN" de parcela, se detectado (irrelevante pra conta, mas evita colar o número na descrição). */
   description: string | null;
-  /** Centavos, com sinal (negativo = estorno/reembolso). */
+  /** Centavos, com sinal — extrato: positivo = entrada, negativo = saída. */
   amount: number | null;
   type: TransactionType | null;
   status: CsvImportRowStatus;
-  installment: CsvImportRowInstallment | null;
   suggestedCategoryId: string | null;
 }
 
-export interface PreviewInvoiceCsvImportOutput {
+export interface PreviewAccountCsvImportOutput {
   delimiter: string;
   /** false = não achou cabeçalho reconhecível, todas as linhas foram tratadas como dado (avisar na UI). */
   headerDetected: boolean;
-  rows: CsvImportPreviewRow[];
+  rows: AccountCsvImportPreviewRow[];
 }
 
 /**
  * Leitura pura: decodifica, detecta formato, parseia cada linha, classifica
- * contra o que já existe na fatura alvo (dedup) e sugere parcela/categoria —
- * nunca grava nada (ver `confirmInvoiceCsvImport`).
+ * contra o que já existe na conta no intervalo de datas do próprio arquivo
+ * (dedup) e sugere categoria — nunca grava nada (ver `confirmAccountCsvImport`).
+ *
+ * Sem fatura/parcela: ao contrário do import de cartão, não há um mês alvo
+ * escolhido — o intervalo de dedup é o min/max das datas encontradas no CSV.
  */
-export async function previewInvoiceCsvImport(
+export async function previewAccountCsvImport(
   deps: Pick<UseCaseDeps, 'repos'>,
   actor: Actor,
-  input: PreviewInvoiceCsvImportInput
-): Promise<Either<CardError, PreviewInvoiceCsvImportOutput>> {
-  const card = await deps.repos.card.findActiveInWorkspace(
+  input: PreviewAccountCsvImportInput
+): Promise<Either<AccountError, PreviewAccountCsvImportOutput>> {
+  const account = await deps.repos.account.findActiveInWorkspace(
     actor.workspaceId,
-    input.cardId
+    input.accountId
   );
-  if (!card) return left('card_not_found');
+  if (!account) return left('account_not_found');
   if (input.buffer.byteLength > MAX_CSV_IMPORT_SIZE_BYTES) {
     return left('file_too_large');
   }
@@ -80,13 +75,39 @@ export async function previewInvoiceCsvImport(
   const dataRows = mapping.headerDetected ? allRows.slice(1) : allRows;
   if (dataRows.length === 0) return left('csv_empty');
 
-  const targetInvoice = await deps.repos.invoice.findByCardAndPeriod(
-    input.cardId,
-    { month: input.month, year: input.year }
-  );
-  const existing = targetInvoice
-    ? await deps.repos.transaction.listByInvoice(targetInvoice.id)
-    : [];
+  // Parse de cada linha primeiro (sem classificar) pra descobrir o intervalo
+  // de datas real do arquivo — só então dá pra buscar o que já existe pra dedup.
+  interface ParsedRow {
+    rowIndex: number;
+    raw: string[];
+    date: string | null;
+    description: string | null;
+    amount: number | null;
+  }
+  const parsed: ParsedRow[] = dataRows.map((raw, i) => {
+    const dateRaw = raw[mapping.dateCol];
+    const descriptionRaw = raw[mapping.descriptionCol];
+    const amountRaw = raw[mapping.valueCol];
+    return {
+      rowIndex: i,
+      raw,
+      date: dateRaw !== undefined ? parseDate(dateRaw) : null,
+      description: descriptionRaw?.trim() || null,
+      amount: amountRaw !== undefined ? parseAmountCents(amountRaw) : null,
+    };
+  });
+
+  const validDates = parsed
+    .map((r) => r.date)
+    .filter((d): d is string => d !== null);
+  const existing =
+    validDates.length > 0
+      ? await deps.repos.transaction.listByAccountAndPeriod(
+          input.accountId,
+          validDates.reduce((min, d) => (d < min ? d : min)),
+          validDates.reduce((max, d) => (d > max ? d : max))
+        )
+      : [];
 
   const fallbackCategory = await deps.repos.category.findFallback(
     actor.workspaceId
@@ -109,58 +130,47 @@ export async function previewInvoiceCsvImport(
     return suggestion;
   }
 
-  const rows: CsvImportPreviewRow[] = [];
-  for (let i = 0; i < dataRows.length; i++) {
-    const raw = dataRows[i]!;
-    const dateRaw = raw[mapping.dateCol];
-    const descriptionRaw = raw[mapping.descriptionCol];
-    const amountRaw = raw[mapping.valueCol];
-
-    const date = dateRaw !== undefined ? parseDate(dateRaw) : null;
-    const descriptionTrimmed = descriptionRaw?.trim() || null;
-    const amount = amountRaw !== undefined ? parseAmountCents(amountRaw) : null;
-
-    if (date === null || descriptionTrimmed === null || amount === null) {
+  const rows: AccountCsvImportPreviewRow[] = [];
+  for (const row of parsed) {
+    if (row.date === null || row.description === null || row.amount === null) {
       rows.push({
-        rowIndex: i,
-        raw,
-        date,
-        description: descriptionTrimmed,
-        amount,
+        rowIndex: row.rowIndex,
+        raw: row.raw,
+        date: row.date,
+        description: row.description,
+        amount: row.amount,
         type: null,
         status: 'invalid',
-        installment: null,
         suggestedCategoryId: null,
       });
       continue;
     }
 
-    const installmentMatch = detectInstallment(descriptionTrimmed);
+    const installmentMatch = detectInstallment(row.description);
     const description = installmentMatch
       ? installmentMatch.cleanDescription
-      : descriptionTrimmed;
+      : row.description;
     const descriptionNormalized = normalizeDescription(description);
-    const type: TransactionType = amount < 0 ? 'income' : 'expense';
-    const absoluteAmount = Math.abs(amount);
+    // Extrato de conta: convenção invertida da fatura de cartão — positivo é
+    // entrada (crédito), negativo é saída (débito).
+    const type: TransactionType = row.amount < 0 ? 'expense' : 'income';
+    const absoluteAmount = Math.abs(row.amount);
 
     const isDuplicate = existing.some(
       (t) =>
-        t.date === date &&
+        t.date === row.date &&
         t.descriptionNormalized === descriptionNormalized &&
         t.amount === absoluteAmount
     );
 
     rows.push({
-      rowIndex: i,
-      raw,
-      date,
+      rowIndex: row.rowIndex,
+      raw: row.raw,
+      date: row.date,
       description,
-      amount,
+      amount: row.amount,
       type,
       status: isDuplicate ? 'duplicate' : 'new',
-      installment: installmentMatch
-        ? { number: installmentMatch.number, total: installmentMatch.total }
-        : null,
       suggestedCategoryId: await suggestCategory(descriptionNormalized),
     });
   }

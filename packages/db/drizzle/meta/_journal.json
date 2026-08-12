@@ -239,6 +239,13 @@
       "when": 1786502853153,
       "tag": "0033_add_alimentacao_default_category",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1786550681255,
+      "tag": "0034_seed_account_csv_import_flag",
+      "breakpoints": true
     }
   ]
 }

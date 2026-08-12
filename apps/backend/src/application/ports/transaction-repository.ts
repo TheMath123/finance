@@ -64,6 +64,12 @@ export interface TransactionRepository {
   listByGroup(installmentGroupId: string): Promise<Transaction[]>;
   /** Não-deletadas de uma fatura — usado pelo dedup do import de CSV (M6-01). */
   listByInvoice(invoiceId: string): Promise<Transaction[]>;
+  /** Não-deletadas de uma conta num intervalo de datas — dedup do import de CSV de conta. */
+  listByAccountAndPeriod(
+    accountId: string,
+    from: string,
+    to: string
+  ): Promise<Transaction[]>;
   update(id: string, patch: TransactionPatch): Promise<Transaction>;
   /** Propaga description/categoryId pra todas as parcelas não pagas do grupo — single UPDATE (subquery exclui faturas pagas), sem N+1. */
   updateGroupFields(

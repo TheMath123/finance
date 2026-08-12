@@ -54,6 +54,15 @@ export function createTransactionRepository(
           isNull(transactions.deletedAt)
         ),
       }),
+    listByAccountAndPeriod: (accountId, from, to) =>
+      db.query.transactions.findMany({
+        where: and(
+          eq(transactions.accountId, accountId),
+          gte(transactions.date, from),
+          lte(transactions.date, to),
+          isNull(transactions.deletedAt)
+        ),
+      }),
     async update(id, patch) {
       const [row] = await db
         .update(transactions)

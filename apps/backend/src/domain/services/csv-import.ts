@@ -8,6 +8,9 @@
  * gravar qualquer coisa (ver use-cases de preview/confirm).
  */
 
+/** CSV de fatura/extrato é texto puro — 2MB cobre milhares de linhas com folga. */
+export const MAX_CSV_IMPORT_SIZE_BYTES = 2 * 1024 * 1024;
+
 const DATE_HEADERS = ['data', 'date', 'dt'];
 const DESCRIPTION_HEADERS = [
   'descricao',
