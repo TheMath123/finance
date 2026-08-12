@@ -26,9 +26,9 @@ export { setWorkspacePlan } from './set-workspace-plan';
 export { suspendUser } from './suspend-user';
 export { updateAiSettings } from './update-ai-settings';
 export { updateDefaultCategory } from './update-default-category';
+export { updateFeatureFlag } from './update-feature-flag';
 export { type UpdatePlanInput, updatePlan } from './update-plan';
 export {
   type UpdatePlanPriceInput,
   updatePlanPrice,
 } from './update-plan-price';
-export { upsertFeatureFlag } from './upsert-feature-flag';

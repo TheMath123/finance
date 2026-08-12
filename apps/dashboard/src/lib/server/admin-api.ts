@@ -145,10 +145,10 @@ export function listFeatureFlags(
 	return apiRequest('/admin/feature-flags', { accessToken });
 }
 
-export function upsertFeatureFlag(
+export function updateFeatureFlag(
 	accessToken: string,
 	key: string,
-	input: { enabled: boolean; description?: string | null }
+	input: { enabled: boolean }
 ): Promise<Either<ApiError, FeatureFlagView>> {
 	return apiRequest(`/admin/feature-flags/${key}`, {
 		method: 'PUT',

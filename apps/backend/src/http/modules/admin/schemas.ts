@@ -97,7 +97,6 @@ export const featureFlagParamsSchema = z.object({
     .regex(/^[a-z0-9_-]+$/, 'Use só letras minúsculas, números, "_" ou "-".'),
 });
 
-export const upsertFeatureFlagSchema = z.object({
+export const updateFeatureFlagSchema = z.object({
   enabled: z.boolean(),
-  description: z.string().max(200).nullable().optional(),
 });

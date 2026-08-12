@@ -11,7 +11,7 @@
  * também povoam em paralelo.
  */
 import { beforeAll, describe, expect, test } from 'bun:test';
-import { adminAuditLogs, createDb, type Db } from '@finance/db';
+import { adminAuditLogs, createDb, type Db, featureFlags } from '@finance/db';
 import { eq } from 'drizzle-orm';
 import { createTestDeps } from '../../../test/deps';
 import { readDailyTokenBudget } from '../../services/ai-settings-cache';
@@ -24,7 +24,7 @@ import {
   listFeatureFlags,
   suspendUser,
   updateAiSettings,
-  upsertFeatureFlag,
+  updateFeatureFlag,
 } from '.';
 
 const uniqueEmail = () => `test-platform-${crypto.randomUUID()}@test.local`;
@@ -78,25 +78,36 @@ describe('admin: orçamento de IA', () => {
   });
 });
 
+/**
+ * Flags só existem via seed em código (migration) — o use-case
+ * `updateFeatureFlag` nunca cria. Aqui simulamos esse seed inserindo direto
+ * no banco, do jeito que uma migration faria.
+ */
+async function seedFlag(key: string) {
+  await db.insert(featureFlags).values({ key, enabled: false });
+}
+
 describe('admin: feature flags', () => {
-  test('upsert + isFeatureEnabled + delete', async () => {
+  test('update + isFeatureEnabled + delete', async () => {
     const deps = createTestDeps(db);
     const adminUserId = await registerAdmin(deps);
     const key = uniqueFlagKey();
+    await seedFlag(key);
 
     expect(await isFeatureEnabled(deps, key)).toBe(false);
 
-    const created = await upsertFeatureFlag(deps, adminUserId, key, {
+    const created = await updateFeatureFlag(deps, adminUserId, key, {
       enabled: true,
-      description: 'flag de teste',
     });
-    expect(created.enabled).toBe(true);
+    expect(created.ok).toBe(true);
+    if (created.ok) expect(created.value.enabled).toBe(true);
     expect(await isFeatureEnabled(deps, key)).toBe(true);
 
-    const updated = await upsertFeatureFlag(deps, adminUserId, key, {
+    const updated = await updateFeatureFlag(deps, adminUserId, key, {
       enabled: false,
     });
-    expect(updated.enabled).toBe(false);
+    expect(updated.ok).toBe(true);
+    if (updated.ok) expect(updated.value.enabled).toBe(false);
     expect(await isFeatureEnabled(deps, key)).toBe(false);
 
     const list = await listFeatureFlags(deps);
@@ -114,8 +125,20 @@ describe('admin: feature flags', () => {
       .from(adminAuditLogs)
       .where(eq(adminAuditLogs.entityId, key));
     const actions = auditRows.map((r) => r.action);
-    expect(actions).toContain('upsert_feature_flag');
+    expect(actions).toContain('update_feature_flag');
     expect(actions).toContain('delete_feature_flag');
+  });
+
+  test('não é possível atualizar uma flag que não existe', async () => {
+    const deps = createTestDeps(db);
+    const adminUserId = await registerAdmin(deps);
+    const key = uniqueFlagKey(); // nunca seedada
+
+    const result = await updateFeatureFlag(deps, adminUserId, key, {
+      enabled: true,
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toBe('feature_flag_not_found');
   });
 
   test('não é possível deletar uma flag de sistema, mas uma flag comum pode ser deletada', async () => {
@@ -135,7 +158,8 @@ describe('admin: feature flags', () => {
     expect(await isFeatureEnabled(deps, 'csv_export')).toBe(true);
 
     const key = uniqueFlagKey();
-    await upsertFeatureFlag(deps, adminUserId, key, { enabled: true });
+    await seedFlag(key);
+    await updateFeatureFlag(deps, adminUserId, key, { enabled: true });
     const regularResult = await deleteFeatureFlag(deps, adminUserId, key);
     expect(regularResult.ok).toBe(true);
     expect(await isFeatureEnabled(deps, key)).toBe(false);

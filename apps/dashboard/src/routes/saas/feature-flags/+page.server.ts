@@ -12,28 +12,13 @@ export const load: PageServerLoad = async ({ locals }) => {
 };
 
 export const actions: Actions = {
-	upsert: async ({ request, locals }) => {
-		if (!locals.session) redirect(303, '/login');
-		const form = await request.formData();
-		const key = form.get('key')?.toString().trim() ?? '';
-		const enabled = form.get('enabled')?.toString() === 'true';
-		const description = form.get('description')?.toString().trim() || null;
-
-		const result = await adminApi.upsertFeatureFlag(locals.session.accessToken, key, {
-			enabled,
-			description
-		});
-		if (!result.ok) return fail(result.error.status || 500, { message: result.error.message });
-		return { success: true };
-	},
-
 	toggle: async ({ request, locals }) => {
 		if (!locals.session) redirect(303, '/login');
 		const form = await request.formData();
 		const key = form.get('key')?.toString() ?? '';
 		const enabled = form.get('enabled')?.toString() === 'true';
 
-		const result = await adminApi.upsertFeatureFlag(locals.session.accessToken, key, {
+		const result = await adminApi.updateFeatureFlag(locals.session.accessToken, key, {
 			enabled
 		});
 		if (!result.ok) return fail(result.error.status || 500, { message: result.error.message });

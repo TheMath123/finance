@@ -10,7 +10,7 @@ import {
 import {
   deleteFeatureFlagRoute,
   listFeatureFlagsRoute,
-  upsertFeatureFlagRoute,
+  updateFeatureFlagRoute,
 } from './feature-flags';
 import { listUsersRoute } from './list-users';
 import { getPlatformMetricsRoute } from './metrics';
@@ -44,7 +44,7 @@ export function adminRoutes(deps: AppDeps) {
     .use(getAiSettingsRoute(deps))
     .use(updateAiSettingsRoute(deps))
     .use(listFeatureFlagsRoute(deps))
-    .use(upsertFeatureFlagRoute(deps))
+    .use(updateFeatureFlagRoute(deps))
     .use(deleteFeatureFlagRoute(deps))
     .use(getPlatformMetricsRoute(deps))
     .use(listPlansRoute(deps))
