@@ -44,7 +44,7 @@
 	competindo por largura com o conteúdo numa tela de celular).
 -->
 <aside
-	class="hidden w-56 shrink-0 flex-col gap-1 border-r border-foreground/10 bg-sidebar p-4 sm:flex"
+	class="hidden h-full w-56 shrink-0 flex-col gap-1 overflow-y-auto border-r border-foreground/10 bg-sidebar p-4 sm:flex"
 >
 	<div class="mb-4 flex items-center gap-2 px-3">
 		<img src="/logo.svg" alt="" class="h-6 w-6 shrink-0" />

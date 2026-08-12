@@ -25,7 +25,7 @@
 </script>
 
 <header
-	class="flex items-center justify-between gap-2 border-b border-foreground/10 px-3 py-2 sm:px-6 sm:py-3"
+	class="flex shrink-0 items-center justify-between gap-2 overflow-x-auto border-b border-foreground/10 px-3 py-2 sm:px-6 sm:py-3"
 >
 	<div class="min-w-0 flex-1">
 		<WorkspaceSwitcher {workspaces} {activeWorkspace} />

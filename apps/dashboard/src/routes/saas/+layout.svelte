@@ -28,9 +28,10 @@
 	<title>SaaS — Marcelus</title>
 </svelte:head>
 
-<div class="flex min-h-screen">
+<!-- App shell: mesmo padrão de routes/(app)/+layout.svelte — só o <main> rola verticalmente. -->
+<div class="flex h-screen overflow-hidden">
 	<aside
-		class="hidden w-56 shrink-0 flex-col gap-1 border-r border-foreground/10 bg-sidebar p-4 sm:flex"
+		class="hidden h-full w-56 shrink-0 flex-col gap-1 overflow-y-auto border-r border-foreground/10 bg-sidebar p-4 sm:flex"
 	>
 		<p class="mb-1 px-3 text-lg font-semibold text-sidebar-foreground">SaaS</p>
 		<p class="mb-4 truncate px-3 text-xs text-muted-foreground">{data.user.name}</p>
@@ -57,7 +58,7 @@
 		</a>
 	</aside>
 
-	<main class="flex-1 p-4 sm:p-8">
+	<main class="flex-1 overflow-y-auto p-4 sm:p-8">
 		{@render children()}
 	</main>
 </div>
