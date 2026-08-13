@@ -16,7 +16,7 @@ no fim). Lista completa das envs que os workflows de deploy usam.
 | Secret | De onde vem | Pra quê serve |
 |---|---|---|
 | `DATABASE_URL` | Neon → connection string **pooled** do projeto de produção (já vem com `?sslmode=require`) | Roda `drizzle-kit migrate` a partir do runner, antes do deploy |
-| `FLY_API_TOKEN` | `fly tokens create deploy -a finance-guide-api` (local, depois de `fly apps create`) | Autentica o `flyctl deploy` |
+| `FLY_API_TOKEN` | `fly tokens create deploy -a marcelus-app` (local, depois de `fly apps create marcelus-app`) | Autentica o `flyctl deploy` |
 
 ## Não vão pro GitHub (ficam só no Fly, setados uma vez)
 
@@ -26,7 +26,7 @@ O resto das envs do backend (`JWT_SECRET`, `REDIS_URL`, `SMTP_*`,
 persiste secrets entre deploys, então bastam ser setadas uma vez direto lá:
 
 ```
-fly secrets set JWT_SECRET=... REDIS_URL=... SMTP_HOST=... -a finance-guide-api
+fly secrets set JWT_SECRET=... REDIS_URL=... SMTP_HOST=... -a marcelus-app
 ```
 
 Lista completa + comando pronto em `tasks/in-progress/ci-cd-deploy.md`.

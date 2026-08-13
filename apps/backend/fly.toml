@@ -1,8 +1,8 @@
-# app é só um placeholder — troque pelo nome real criado com `fly apps create`
-# (ver runbook em tasks/in-progress/ci-cd-deploy.md). O deploy roda a partir
-# da raiz do repo (`flyctl deploy --config apps/backend/fly.toml`), por isso
+# Precisa bater com o app criado via `fly apps create marcelus-app` (ver
+# runbook em tasks/in-progress/ci-cd-deploy.md). O deploy roda a partir da
+# raiz do repo (`flyctl deploy --config apps/backend/fly.toml`), por isso
 # o dockerfile abaixo é relativo à raiz, não a esta pasta.
-app = "finance-guide-api"
+app = "marcelus-app"
 primary_region = "gru"
 
 [build]

@@ -64,8 +64,7 @@ Nada disso eu consigo criar — são contas/tokens de serviços externos.
 
 1. Criar o Worker (pode ser via `wrangler deploy` na primeira vez, que cria
    automaticamente, ou pelo painel) — o nome tem que bater com `name` em
-   `apps/dashboard/wrangler.toml` (hoje `finance-guide-dashboard`, é
-   placeholder).
+   `apps/dashboard/wrangler.toml` (`marcelus-dashboard`).
 2. Gerar um API Token com permissão **Workers Scripts:Edit** (Dashboard
    Cloudflare → My Profile → API Tokens).
 3. Pegar o **Account ID** (aparece na barra lateral de qualquer domínio no
@@ -75,9 +74,9 @@ Nada disso eu consigo criar — são contas/tokens de serviços externos.
 
 ### Fly.io (backend)
 
-1. `fly auth login` local, depois `fly apps create` (nome tem que bater com
-   `app` em `apps/backend/fly.toml`, hoje `finance-guide-api`).
-2. Gerar um token de deploy: `fly tokens create deploy -a finance-guide-api`.
+1. `fly auth login` local, depois `fly apps create marcelus-app` (nome tem
+   que bater com `app` em `apps/backend/fly.toml`).
+2. Gerar um token de deploy: `fly tokens create deploy -a marcelus-app`.
 3. No GitHub: adicionar secret `FLY_API_TOKEN`.
 4. Setar os secrets do backend **uma vez**, direto no Fly (não ficam no
    GitHub — o Fly persiste entre deploys):
@@ -89,12 +88,12 @@ Nada disso eu consigo criar — são contas/tokens de serviços externos.
      SMTP_HOST=smtp.resend.com SMTP_PORT=465 SMTP_USER=resend SMTP_PASS=... \
      MAIL_FROM="Finance <no-reply@seu-dominio>" \
      TERMS_VERSION=2026-07-13 \
-     DASHBOARD_ORIGIN=https://<worker>.workers.dev \
+     DASHBOARD_ORIGIN=https://marcelus-dashboard.<sua-conta>.workers.dev \
      WHATSAPP_PHONE_NUMBER_ID=... WHATSAPP_ACCESS_TOKEN=... WHATSAPP_VERIFY_TOKEN=... WHATSAPP_APP_SECRET=... \
      OPENROUTER_API_KEY=... \
      STORAGE_BUCKET=... STORAGE_ENDPOINT=... STORAGE_ACCESS_KEY_ID=... STORAGE_SECRET_ACCESS_KEY=... \
      STRIPE_SECRET_KEY=... STRIPE_WEBHOOK_SECRET=... \
-     -a finance-guide-api
+     -a marcelus-app
    ```
    (lista espelha `apps/backend/.env.example` — só falta o que já vem de
    Neon/Upstash, ver abaixo).
