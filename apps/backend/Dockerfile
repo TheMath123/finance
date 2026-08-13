@@ -9,7 +9,7 @@ WORKDIR /app
 # Camada de deps: só os manifests de cada workspace usado pelo backend, pra
 # cachear `bun install` enquanto só código muda (sem tocar em package.json).
 FROM base AS deps
-COPY package.json bun.lock ./
+COPY package.json bun.lock bunfig.toml ./
 COPY apps/backend/package.json apps/backend/package.json
 # dashboard/mobile não são usados em runtime pelo backend, mas o bun.lock é
 # único pro monorepo inteiro (workspaces "apps/*") — sem os manifests deles

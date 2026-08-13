@@ -11,9 +11,9 @@
   },
   "dependencies": {
     "@finance/shared": "workspace:*",
-    "expr-eval": "^2.0.2"
+    "expr-eval": "2.0.2"
   },
   "devDependencies": {
-    "typescript": "^5.8.0"
+    "typescript": "5.9.3"
   }
 }

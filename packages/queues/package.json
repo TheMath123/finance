@@ -10,10 +10,10 @@
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
-    "typescript": "^5.8.0"
+    "typescript": "5.9.3"
   },
   "dependencies": {
-    "bullmq": "^5.80.5",
-    "ioredis": "^5.11.1"
+    "bullmq": "5.80.5",
+    "ioredis": "5.11.1"
   }
 }

@@ -1,0 +1,7 @@
+# Equivalente Bun das regras de segurança do .npmrc (save-exact, ignore-scripts,
+# min-release-age). O Bun não tem uma opção nativa equivalente a "allow-git" do
+# npm (bloquear dependências git) — não existe flag pra isso na documentação.
+[install]
+exact = true
+ignoreScripts = true
+minimumReleaseAge = 604800 # 7 dias em segundos (npm usa dias, Bun usa segundos)
