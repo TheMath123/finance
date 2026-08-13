@@ -6,9 +6,15 @@ node_modules
 .turbo
 **/.turbo
 
-# Apps que não entram na imagem do backend
-apps/mobile
-apps/dashboard
+# Apps que não entram na imagem do backend — mas o package.json de cada um
+# ainda precisa chegar no builder pro `bun install --frozen-lockfile` (ver
+# comentário no Dockerfile). Excluir a pasta inteira (em vez do conteúdo)
+# impede re-incluir arquivos dentro dela depois: por isso o padrão abaixo
+# exclui só os FILHOS de cada pasta (apps/mobile/*), não a pasta em si.
+apps/mobile/*
+apps/dashboard/*
+!apps/mobile/package.json
+!apps/dashboard/package.json
 
 # Artefatos de build/dev que não fazem sentido dentro do container
 **/.svelte-kit
