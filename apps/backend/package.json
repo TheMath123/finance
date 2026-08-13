@@ -20,7 +20,7 @@
     "@finance/queues": "workspace:*",
     "@finance/shared": "workspace:*",
     "@finance/storage": "workspace:*",
-    "drizzle-orm": "^0.44.0",
+    "drizzle-orm": "^0.45.2",
     "elysia": "latest",
     "ioredis": "^5.11.1",
     "jose": "^6.2.3",
