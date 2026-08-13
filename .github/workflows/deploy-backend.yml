@@ -36,7 +36,13 @@ jobs:
       # main; uma tag só deve ser cortada de um commit que já passou lá.
 
       - name: Migrações (Neon, produção)
-        run: bun --cwd packages/db run migrate
+        # `bun --cwd DIR run script` (--cwd com valor separado por espaço)
+        # NÃO funciona: o parser do Bun perde o argumento do `run`, que
+        # imprime o próprio help e sai com código 0 (sucesso) sem nunca
+        # chamar `drizzle-kit migrate`. É por isso que o Neon nunca recebeu
+        # as tabelas apesar do deploy "passar" nesta etapa — silenciosamente
+        # não fazia nada. `--cwd=DIR` (com igual) funciona normalmente.
+        run: bun --cwd=packages/db run migrate
 
       - name: Setup flyctl
         uses: superfly/flyctl-actions/setup-flyctl@master

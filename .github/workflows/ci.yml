@@ -44,7 +44,11 @@ jobs:
         run: bun run lint
 
       - name: Migrações
-        run: bun --cwd packages/db run migrate
+        # `--cwd DIR` (espaço) quebra o parser do `run script` — vira só
+        # `bun run` sem argumento, imprime o help e sai com 0. `--cwd=DIR`
+        # (igual) funciona. Ver comentário equivalente em
+        # deploy-backend.yml.
+        run: bun --cwd=packages/db run migrate
 
       - name: Testes
         run: bun --cwd apps/backend test
