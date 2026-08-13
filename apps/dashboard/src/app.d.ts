@@ -4,6 +4,9 @@
 import type { ResolvedSession } from '$lib/server/session';
 
 declare global {
+	/** Injetada em build-time pelo `define` do vite.config.ts — vem do `version` do package.json. */
+	const __APP_VERSION__: string;
+
 	namespace App {
 		// interface Error {}
 		interface Locals {

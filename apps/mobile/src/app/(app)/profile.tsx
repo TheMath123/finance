@@ -1,3 +1,4 @@
+import Constants from 'expo-constants';
 import { router } from 'expo-router';
 import {
   ArrowLeftIcon,
@@ -155,6 +156,14 @@ export default function ProfileScreen() {
       >
         Sair da conta
       </Button>
+
+      <ThemedText
+        type="small"
+        themeColor="textSecondary"
+        style={{ textAlign: 'center' }}
+      >
+        Versão {Constants.expoConfig?.version}
+      </ThemedText>
 
       <Dialog open={editingName} onOpenChange={setEditingName}>
         <DialogContent>

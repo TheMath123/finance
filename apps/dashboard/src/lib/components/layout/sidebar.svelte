@@ -62,6 +62,7 @@
 			{item.label}
 		</a>
 	{/each}
+	<p class="mt-auto px-3 pt-2 text-xs text-muted-foreground/60">v{__APP_VERSION__}</p>
 </aside>
 
 <nav

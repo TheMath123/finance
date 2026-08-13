@@ -3,7 +3,14 @@ import adapter from '@sveltejs/adapter-cloudflare';
 import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vite';
 
+import pkg from './package.json' with { type: 'json' };
+
 export default defineConfig({
+	// Substituição em tempo de build (nunca lido em runtime) — única fonte de
+	// verdade é o `version` deste package.json, exibido no rodapé da sidebar.
+	define: {
+		__APP_VERSION__: JSON.stringify(pkg.version)
+	},
 	plugins: [
 		tailwindcss(),
 		sveltekit({
