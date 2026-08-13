@@ -11,6 +11,12 @@ WORKDIR /app
 FROM base AS deps
 COPY package.json bun.lock ./
 COPY apps/backend/package.json apps/backend/package.json
+# dashboard/mobile não são usados em runtime pelo backend, mas o bun.lock é
+# único pro monorepo inteiro (workspaces "apps/*") — sem os manifests deles
+# aqui, `bun install --frozen-lockfile` acha que o lockfile mudou (membros
+# de workspace "sumiram") e recusa instalar.
+COPY apps/dashboard/package.json apps/dashboard/package.json
+COPY apps/mobile/package.json apps/mobile/package.json
 COPY packages/db/package.json packages/db/package.json
 COPY packages/email/package.json packages/email/package.json
 COPY packages/formula/package.json packages/formula/package.json
