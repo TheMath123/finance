@@ -1,7 +1,9 @@
 # Precisa bater com o app criado via `fly apps create marcelus-app` (ver
-# runbook em tasks/in-progress/ci-cd-deploy.md). O deploy roda a partir da
-# raiz do repo (`flyctl deploy --config apps/backend/fly.toml`), por isso
-# o dockerfile abaixo é relativo à raiz, não a esta pasta.
+# runbook em tasks/in-progress/ci-cd-deploy.md). O dockerfile abaixo é
+# relativo à RAIZ do repo, não a esta pasta — por isso o deploy precisa
+# rodar com `flyctl deploy . --config apps/backend/fly.toml` (o `.`
+# explícito é obrigatório: sem ele, o flyctl usa o diretório deste arquivo
+# como contexto de build, não o cwd, e duplica o caminho do dockerfile).
 app = "marcelus-app"
 primary_region = "gru"
 
