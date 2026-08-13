@@ -30,9 +30,13 @@ jobs:
         run: bun run build --filter=@finance/dashboard
 
       - name: Deploy no Cloudflare Workers
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          workingDirectory: apps/dashboard
-          command: deploy
+        # bunx direto em vez de cloudflare/wrangler-action@v3 — a action tenta
+        # instalar o wrangler sozinha via npm quando não encontra um binário
+        # local (não é o caso, mas o instalador dela quebra mesmo assim nos
+        # runners com Node 24 default). Como wrangler já é devDependency do
+        # projeto (bun install acima), só falta rodar.
+        working-directory: apps/dashboard
+        run: bunx wrangler deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
