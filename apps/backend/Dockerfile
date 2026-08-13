@@ -23,7 +23,16 @@ COPY packages/formula/package.json packages/formula/package.json
 COPY packages/queues/package.json packages/queues/package.json
 COPY packages/shared/package.json packages/shared/package.json
 COPY packages/storage/package.json packages/storage/package.json
-RUN bun install --frozen-lockfile --production
+# --linker=hoisted: o Bun 1.3 usa por padrão o linker "isolated" (estilo
+# pnpm), que cria um node_modules PRÓPRIO dentro de cada workspace member
+# (apps/backend/node_modules, packages/*/node_modules) com symlinks pro
+# store — em vez de hoisted só na raiz. O estágio `runtime` abaixo faz COPY
+# do código-fonte de apps/backend e packages a partir do contexto de build
+# (sem node_modules), o que sobrescreveria essas pastas isoladas e quebraria
+# os imports em runtime (ex: "Cannot find module '@elysiajs/cors'"). Forçar
+# o linker clássico resolve tudo num único node_modules na raiz, que é o que
+# o runtime já copia.
+RUN bun install --frozen-lockfile --production --linker=hoisted
 
 # Camada final: node_modules já resolvido + código-fonte completo. O comando
 # real (web vs worker) é definido pelos `[processes]` do fly.toml, não aqui.
