@@ -1,14 +1,23 @@
 # Precisa bater com o app criado via `fly apps create marcelus-app` (ver
-# runbook em tasks/in-progress/ci-cd-deploy.md). O dockerfile abaixo é
-# relativo à RAIZ do repo, não a esta pasta — por isso o deploy precisa
-# rodar com `flyctl deploy . --config apps/backend/fly.toml` (o `.`
-# explícito é obrigatório: sem ele, o flyctl usa o diretório deste arquivo
-# como contexto de build, não o cwd, e duplica o caminho do dockerfile).
+# runbook em tasks/in-progress/ci-cd-deploy.md).
+#
+# Duas regras de resolução de caminho DIFERENTES entram em jogo aqui (fonte:
+# fly.io/docs/launch/monorepo e community.fly.io/t/dockerfile-path-and-
+# relative-files-during-container-build/4788):
+# - O CONTEXTO de build (o que os `COPY` do Dockerfile enxergam) é relativo
+#   ao diretório de trabalho passado pro `flyctl deploy` — por isso o deploy
+#   roda com `flyctl deploy . --config apps/backend/fly.toml` a partir da
+#   raiz do repo: o Dockerfile precisa ver `packages/*` via workspace.
+# - Já o campo `dockerfile` ABAIXO é relativo à pasta ONDE ESTE ARQUIVO
+#   fly.toml está (apps/backend/), não ao diretório de trabalho do comando.
+#   Como o Dockerfile mora na mesma pasta deste fly.toml, o valor é só
+#   "Dockerfile" — colocar "apps/backend/Dockerfile" aqui duplicava o
+#   prefixo (apps/backend/apps/backend/Dockerfile).
 app = "marcelus-app"
 primary_region = "gru"
 
 [build]
-  dockerfile = "apps/backend/Dockerfile"
+  dockerfile = "Dockerfile"
 
 # Dois processos rodando a mesma imagem: `web` serve HTTP, `worker` consome a
 # fila BullMQ (packages/queues) — nenhum dos dois roda sozinho em produção.
