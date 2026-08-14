@@ -65,6 +65,11 @@
 </script>
 
 {#if PUBLIC_GOOGLE_CLIENT_ID}
+	<div class="my-4 flex items-center gap-2">
+		<div class="h-px flex-1 bg-border"></div>
+		<span class="text-xs text-muted-foreground">ou</span>
+		<div class="h-px flex-1 bg-border"></div>
+	</div>
 	<div class="grid gap-2">
 		<div class="flex justify-center" bind:this={container}></div>
 		<p class="text-center text-xs text-muted-foreground">
