@@ -1,4 +1,6 @@
+import { useMutation } from '@tanstack/react-query';
 import Constants from 'expo-constants';
+import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import {
   ArrowLeftIcon,
@@ -12,7 +14,7 @@ import {
   XIcon,
 } from 'phosphor-react-native';
 import { useState } from 'react';
-import { Alert, Pressable, Switch, View } from 'react-native';
+import { Alert, Image, Pressable, Switch, View } from 'react-native';
 
 import { EditNameForm } from '@/components/forms/edit-name-form';
 import { ThemedText } from '@/components/themed-text';
@@ -27,9 +29,18 @@ import {
 import { Screen } from '@/components/ui/screen';
 import { useBiometricLock } from '@/context/biometric-lock';
 import { useSession } from '@/context/session';
+import { ApiError } from '@/lib/api-client';
+import { authApi } from '@/lib/auth-api';
+
+function inferMimeType(uri: string): string {
+  const ext = uri.split('.').pop()?.toLowerCase();
+  if (ext === 'png') return 'image/png';
+  if (ext === 'webp') return 'image/webp';
+  return 'image/jpeg';
+}
 
 export default function ProfileScreen() {
-  const { user, signOut } = useSession();
+  const { user, signOut, refreshUser } = useSession();
   const {
     available: biometricsAvailable,
     enabled: biometricsEnabled,
@@ -37,6 +48,57 @@ export default function ProfileScreen() {
   } = useBiometricLock();
   const [signingOut, setSigningOut] = useState(false);
   const [editingName, setEditingName] = useState(false);
+
+  const uploadAvatar = useMutation({
+    mutationFn: (asset: ImagePicker.ImagePickerAsset) =>
+      authApi.uploadAvatar({
+        uri: asset.uri,
+        name:
+          asset.fileName ??
+          `avatar.${(asset.mimeType ?? 'image/jpeg').split('/')[1]}`,
+        type: asset.mimeType ?? inferMimeType(asset.uri),
+      }),
+    onSuccess: () => refreshUser(),
+    onError: (err) => {
+      if (!(err instanceof ApiError)) console.error('[avatar upload]', err);
+      Alert.alert(
+        'Erro',
+        err instanceof ApiError
+          ? err.message
+          : 'Não foi possível atualizar a foto.'
+      );
+    },
+  });
+
+  const removeAvatar = useMutation({
+    mutationFn: () => authApi.removeAvatar(),
+    onSuccess: () => refreshUser(),
+    onError: (err) =>
+      Alert.alert(
+        'Erro',
+        err instanceof ApiError
+          ? err.message
+          : 'Não foi possível remover a foto.'
+      ),
+  });
+
+  const pickAvatar = async () => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert(
+        'Permissão necessária',
+        'Precisamos acessar sua galeria pra atualizar a foto.'
+      );
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      quality: 0.7,
+      allowsEditing: true,
+      aspect: [1, 1],
+    });
+    if (!result.canceled) uploadAvatar.mutate(result.assets[0]!);
+  };
 
   const handleSignOut = async () => {
     setSigningOut(true);
@@ -67,23 +129,62 @@ export default function ProfileScreen() {
         <ThemedText type="subtitle">Perfil</ThemedText>
       </View>
 
-      <Card className="flex-row items-center gap-3">
-        <View className="h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-          <UserIcon size={22} color="#2563EB" />
+      <Card className="gap-3">
+        <View className="flex-row items-center gap-3">
+          <Pressable
+            onPress={pickAvatar}
+            disabled={uploadAvatar.isPending}
+            className="active:opacity-70"
+          >
+            {user?.avatarUrl ? (
+              <Image
+                source={{ uri: user.avatarUrl }}
+                className="h-12 w-12 rounded-full"
+              />
+            ) : (
+              <View className="h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+                <UserIcon size={22} color="#2563EB" />
+              </View>
+            )}
+          </Pressable>
+          <View className="flex-1">
+            <ThemedText type="smallBold">{user?.name}</ThemedText>
+            <ThemedText type="small" themeColor="textSecondary">
+              {user?.email}
+            </ThemedText>
+          </View>
+          <Button
+            variant="ghost"
+            icon={<PencilSimpleIcon size={18} />}
+            onPress={() => setEditingName(true)}
+          >
+            Editar
+          </Button>
         </View>
-        <View className="flex-1">
-          <ThemedText type="smallBold">{user?.name}</ThemedText>
-          <ThemedText type="small" themeColor="textSecondary">
-            {user?.email}
-          </ThemedText>
+        <View className="flex-row gap-3">
+          <Pressable
+            onPress={pickAvatar}
+            disabled={uploadAvatar.isPending}
+            hitSlop={8}
+            className="active:opacity-60"
+          >
+            <ThemedText type="small" style={{ color: '#2563EB' }}>
+              {uploadAvatar.isPending ? 'Enviando…' : 'Alterar foto'}
+            </ThemedText>
+          </Pressable>
+          {user?.avatarUrl && (
+            <Pressable
+              onPress={() => removeAvatar.mutate()}
+              disabled={removeAvatar.isPending}
+              hitSlop={8}
+              className="active:opacity-60"
+            >
+              <ThemedText type="small" style={{ color: '#DC2626' }}>
+                Remover foto
+              </ThemedText>
+            </Pressable>
+          )}
         </View>
-        <Button
-          variant="ghost"
-          icon={<PencilSimpleIcon size={18} />}
-          onPress={() => setEditingName(true)}
-        >
-          Editar
-        </Button>
       </Card>
 
       {!user?.emailVerifiedAt && (

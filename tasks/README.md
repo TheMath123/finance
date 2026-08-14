@@ -165,6 +165,14 @@ cadastrado.
   [`backlog/m5-06b-google-login-mobile.md`](backlog/m5-06b-google-login-mobile.md),
   bloqueada esperando o usuário criar Client IDs iOS/Android no Google
   Cloud Console.
+- [M5-07 — Vínculo de conta Google pelo perfil + avatar de usuário](done/m5-07-vinculo-google-avatar.md):
+  concluída em 2026-08-14, validada com testes reais contra Postgres +
+  typecheck/lint/build em backend, dashboard e mobile. Vincular/desvincular
+  Google pela tela de conta (exige e-mail igual, rejeita Google já
+  vinculado a outro usuário); avatar com prioridade upload manual > foto
+  do Google > iniciais, reaproveitando `Storage.getSignedReadUrl` sem rota
+  pública nova. Avatar entra também no mobile; vincular Google no mobile
+  fica junto do M5-06b (mesmo bloqueio externo).
 
 ## M4 — Dashboard web (Svelte)
 

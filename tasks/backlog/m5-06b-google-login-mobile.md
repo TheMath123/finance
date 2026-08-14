@@ -46,3 +46,15 @@ de dentro do repo.
 - Backend: `GOOGLE_CLIENT_IDS` passa a levar 3 valores (web + iOS +
   Android), separados por vírgula — `flyctl secrets set` com a lista
   completa.
+- Botão de "Vincular Google" na tela de perfil (mobile) — mesmo motivo:
+  precisa do `idToken` via `expo-auth-session`, então fica bloqueado junto.
+  O backend (`linkGoogleAccount`) já está pronto e não muda quando isso
+  destravar.
+
+## Atualização (M5-07, 2026-08-14)
+
+Avatar (upload manual + exibição da foto do Google) **não estava bloqueado
+por isso** e já foi implementado nesta rodada — mobile mostra/edita a foto
+de perfil normalmente (`profile.tsx`), independente do login social
+funcionar ali ou não. Só o botão de **vincular/logar com Google**
+continua esperando os Client IDs.

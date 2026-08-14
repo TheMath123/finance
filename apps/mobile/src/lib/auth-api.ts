@@ -1,4 +1,8 @@
-import { apiRequest } from '@/lib/api-client';
+import {
+  apiRequest,
+  apiRequestUpload,
+  type UploadFile,
+} from '@/lib/api-client';
 import type {
   ChangePasswordInput,
   ConfirmAccountDeletionInput,
@@ -23,6 +27,7 @@ export interface AuthSession {
     phone: string | null;
     emailVerifiedAt: string | null;
     pendingEmail: string | null;
+    avatarUrl: string | null;
   };
   defaultWorkspaceId: string;
   accessToken: string;
@@ -113,6 +118,11 @@ export const authApi = {
       method: 'POST',
       body: input,
     }),
+
+  uploadAvatar: (file: UploadFile) =>
+    apiRequestUpload<{ avatarKey: string }>('/auth/me/avatar', file),
+
+  removeAvatar: () => apiRequest<void>('/auth/me/avatar', { method: 'DELETE' }),
 
   /** Anexa o refresh token atual — só ele sobrevive à revogação das sessões (ver change-password.ts no backend). */
   changePassword: async ({
