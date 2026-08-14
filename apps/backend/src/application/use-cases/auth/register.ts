@@ -3,6 +3,7 @@ import type { User } from '../../../domain/entities/user';
 import { VERIFY_EMAIL_TOKEN_TTL_MS } from '../../../infra/security/jose-token-service';
 import type { UseCaseDeps } from '../../deps';
 import { isUniqueConstraintError } from '../../errors';
+import { createPersonalWorkspace } from './create-personal-workspace';
 import type { AuthError } from './errors';
 import { type AuthSession, issueSession } from './session';
 
@@ -21,11 +22,6 @@ export async function register(
 
   const passwordHash = await deps.hasher.hash(input.password);
 
-  const freePlan = await deps.repos.plan.findByKey('free');
-  if (!freePlan) throw new Error('plano free não encontrado');
-  const freePlanPrice =
-    freePlan.prices.find((p) => p.isDefault) ?? freePlan.prices[0];
-
   let created: { user: User; workspaceId: string };
   try {
     created = await deps.uow.run(async (repos) => {
@@ -37,44 +33,9 @@ export async function register(
         termsVersion: deps.termsVersion,
       });
 
-      const workspace = await repos.workspace.create({
-        name: 'Pessoal',
-        type: 'personal',
-        planId: freePlan.id,
-        planPriceId: freePlanPrice?.id,
-      });
-      await repos.user.setDefaultWorkspace(user.id, workspace.id);
-      await repos.workspace.addMember({
-        workspaceId: workspace.id,
-        userId: user.id,
-        role: 'owner',
-      });
-      const defaultCategories = await repos.defaultCategory.list();
-      await repos.category.createMany(
-        workspace.id,
-        defaultCategories.map((c) => ({
-          name: c.name,
-          icon: c.icon,
-          color: c.color,
-          isFallback: c.isFallback,
-          isDefault: true,
-        }))
-      );
+      const { workspaceId } = await createPersonalWorkspace(repos, user.id);
 
-      // Banco + conta padrão — usuário começa com algo pra lançar transação sem
-      // precisar cadastrar banco/conta manualmente primeiro.
-      const bank = await repos.bank.create(workspace.id, {
-        name: 'Minha carteira',
-        bankCode: 'other',
-      });
-      await repos.account.create(workspace.id, {
-        name: 'Conta principal',
-        bankId: bank.id,
-        type: 'checking',
-        initialBalance: 0,
-      });
-
-      return { user, workspaceId: workspace.id };
+      return { user, workspaceId };
     });
   } catch (error) {
     // Corrida: dois registros simultâneos do mesmo e-mail — o unique index decide

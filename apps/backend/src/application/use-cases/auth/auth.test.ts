@@ -9,6 +9,7 @@ import {
   categories,
   createDb,
   type Db,
+  oauthAccounts,
   refreshTokens,
   users,
   workspaceMembers,
@@ -17,11 +18,13 @@ import {
 import { eq } from 'drizzle-orm';
 import { updateNameSchema } from '../../../http/modules/auth/schemas';
 import { createTestDeps, type DispatchedJob } from '../../../test/deps';
+import type { GoogleIdentity } from '../../ports/google-identity-verifier';
 import {
   changePassword,
   confirmAccountDeletion,
   confirmEmailChange,
   forgotPassword,
+  googleSignIn,
   login,
   logout,
   me,
@@ -36,6 +39,14 @@ import {
 } from '.';
 
 const uniqueEmail = () => `test-${crypto.randomUUID()}@test.local`;
+
+const fakeGoogleIdentity = (overrides: Partial<GoogleIdentity> = {}) => ({
+  sub: crypto.randomUUID(),
+  email: uniqueEmail(),
+  emailVerified: true,
+  name: 'Teste Google',
+  ...overrides,
+});
 
 let db: Db;
 
@@ -131,6 +142,192 @@ describe('auth: registro', () => {
     const second = await register(deps, input);
     expect(second.ok).toBe(false);
     if (!second.ok) expect(second.error).toBe('email_taken');
+  });
+});
+
+describe('auth: login social Google', () => {
+  test('token inválido/não verificável rejeita', async () => {
+    const deps = createTestDeps(db, [], new Map());
+
+    const result = await googleSignIn(deps, {
+      idToken: 'token-que-nao-existe-no-fake',
+      termsAccepted: true,
+    });
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toBe('google_token_invalid');
+  });
+
+  test('e-mail não verificado pelo Google rejeita', async () => {
+    const identity = fakeGoogleIdentity({ emailVerified: false });
+    const deps = createTestDeps(
+      db,
+      [],
+      new Map([['token-nao-verificado', identity]])
+    );
+
+    const result = await googleSignIn(deps, {
+      idToken: 'token-nao-verificado',
+      termsAccepted: true,
+    });
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toBe('google_email_unverified');
+  });
+
+  test('e-mail já cadastrado por senha rejeita com google_email_registered', async () => {
+    const email = uniqueEmail();
+    const deps = createTestDeps(db);
+    expect(
+      (
+        await register(deps, {
+          name: 'Já tem senha',
+          email,
+          password: 'senha-forte-123',
+        })
+      ).ok
+    ).toBe(true);
+
+    const identity = fakeGoogleIdentity({ email });
+    const googleDeps = createTestDeps(
+      db,
+      [],
+      new Map([['token-email-existente', identity]])
+    );
+    const result = await googleSignIn(googleDeps, {
+      idToken: 'token-email-existente',
+      termsAccepted: true,
+    });
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toBe('google_email_registered');
+  });
+
+  test('usuário novo: cria conta, workspace pessoal, vínculo oauth e e-mail já verificado', async () => {
+    const identity = fakeGoogleIdentity();
+    const deps = createTestDeps(
+      db,
+      [],
+      new Map([['token-usuario-novo', identity]])
+    );
+
+    const result = await googleSignIn(deps, {
+      idToken: 'token-usuario-novo',
+      termsAccepted: true,
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.accessToken).toBeTruthy();
+    expect(result.value.user.emailVerifiedAt).toBeTruthy();
+    expect(result.value.user.email).toBe(identity.email);
+
+    const members = await db
+      .select()
+      .from(workspaceMembers)
+      .where(eq(workspaceMembers.workspaceId, result.value.defaultWorkspaceId));
+    expect(members).toHaveLength(1);
+    expect(members[0]?.role).toBe('owner');
+
+    const cats = await db
+      .select()
+      .from(categories)
+      .where(eq(categories.workspaceId, result.value.defaultWorkspaceId));
+    expect(cats.length).toBeGreaterThanOrEqual(9);
+
+    const workspaceBanks = await db
+      .select()
+      .from(banks)
+      .where(eq(banks.workspaceId, result.value.defaultWorkspaceId));
+    expect(workspaceBanks).toHaveLength(1);
+
+    const linked = await db
+      .select()
+      .from(oauthAccounts)
+      .where(eq(oauthAccounts.providerAccountId, identity.sub));
+    expect(linked).toHaveLength(1);
+    expect(linked[0]?.provider).toBe('google');
+    expect(linked[0]?.userId).toBe(result.value.user.id);
+
+    // Confirma que o e-mail já sai marcado como verificado no banco, não só na sessão
+    const [row] = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, result.value.user.id));
+    expect(row?.emailVerifiedAt).toBeTruthy();
+  });
+
+  test('usuário Google já vinculado: login de retorno na mesma conta/workspace', async () => {
+    const identity = fakeGoogleIdentity();
+    const deps = createTestDeps(
+      db,
+      [],
+      new Map([['token-primeiro-login', identity]])
+    );
+
+    const first = await googleSignIn(deps, {
+      idToken: 'token-primeiro-login',
+      termsAccepted: true,
+    });
+    expect(first.ok).toBe(true);
+    if (!first.ok) return;
+
+    // Novo ID token (o do Google muda a cada login), mesmo `sub` — mesmo fake resolve os dois.
+    const returnDeps = createTestDeps(
+      db,
+      [],
+      new Map([['token-segundo-login', identity]])
+    );
+    const second = await googleSignIn(returnDeps, {
+      idToken: 'token-segundo-login',
+      termsAccepted: true,
+    });
+
+    expect(second.ok).toBe(true);
+    if (!second.ok) return;
+    expect(second.value.user.id).toBe(first.value.user.id);
+    expect(second.value.defaultWorkspaceId).toBe(
+      first.value.defaultWorkspaceId
+    );
+
+    const linked = await db
+      .select()
+      .from(oauthAccounts)
+      .where(eq(oauthAccounts.providerAccountId, identity.sub));
+    expect(linked).toHaveLength(1);
+  });
+
+  test('conta Google suspensa rejeita login de retorno', async () => {
+    const identity = fakeGoogleIdentity();
+    const deps = createTestDeps(
+      db,
+      [],
+      new Map([['token-primeiro-login-susp', identity]])
+    );
+    const first = await googleSignIn(deps, {
+      idToken: 'token-primeiro-login-susp',
+      termsAccepted: true,
+    });
+    expect(first.ok).toBe(true);
+    if (!first.ok) return;
+
+    await db
+      .update(users)
+      .set({ suspendedAt: new Date() })
+      .where(eq(users.id, first.value.user.id));
+
+    const returnDeps = createTestDeps(
+      db,
+      [],
+      new Map([['token-segundo-login-susp', identity]])
+    );
+    const second = await googleSignIn(returnDeps, {
+      idToken: 'token-segundo-login-susp',
+      termsAccepted: true,
+    });
+
+    expect(second.ok).toBe(false);
+    if (!second.ok) expect(second.error).toBe('account_suspended');
   });
 });
 

@@ -11,6 +11,7 @@ import { createLogger } from '../infra/observability/logger';
 import { createSecurityLogger } from '../infra/observability/pino-security-logger';
 import { createRedisNotificationBus } from '../infra/realtime/redis-notification-bus';
 import { bunPasswordHasher } from '../infra/security/bun-password-hasher';
+import { createGoogleIdentityVerifier } from '../infra/security/google-identity-verifier';
 import { createTokenService } from '../infra/security/jose-token-service';
 import { createRedisRateLimiter } from '../infra/security/redis-rate-limiter';
 import { createStripeGateway } from '../infra/stripe/stripe-gateway';
@@ -55,6 +56,7 @@ export function createAppDeps(env: Env): AppDeps {
     termsVersion: env.TERMS_VERSION,
     trustProxy: env.TRUST_PROXY,
     dashboardOrigin: env.DASHBOARD_ORIGIN,
+    googleIdentity: createGoogleIdentityVerifier(env.GOOGLE_CLIENT_IDS),
     httpLogger: logger,
   };
 }

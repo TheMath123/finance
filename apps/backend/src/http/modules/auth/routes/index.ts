@@ -5,6 +5,7 @@ import { changePasswordRoute } from './change-password';
 import { confirmAccountDeletionRoute } from './confirm-account-deletion';
 import { confirmEmailChangeRoute } from './confirm-email-change';
 import { forgotPasswordRoute } from './forgot-password';
+import { googleSignInRoute } from './google-sign-in';
 import { loginRoute } from './login';
 import { logoutRoute } from './logout';
 import { meRoute } from './me';
@@ -26,6 +27,7 @@ import { verifyResetCodeRoute } from './verify-reset-code';
 const RATE_LIMITS: Record<string, { max: number; windowMs: number }> = {
   'POST /auth/register': { max: 5, windowMs: 3_600_000 },
   'POST /auth/login': { max: 10, windowMs: 60_000 },
+  'POST /auth/google': { max: 10, windowMs: 60_000 },
   'POST /auth/refresh': { max: 30, windowMs: 60_000 },
   'POST /auth/forgot-password': { max: 5, windowMs: 3_600_000 },
   'POST /auth/verify-reset-code': { max: 10, windowMs: 60_000 },
@@ -67,6 +69,7 @@ export function authRoutes(deps: AppDeps) {
     })
     .use(registerRoute(deps))
     .use(loginRoute(deps))
+    .use(googleSignInRoute(deps))
     .use(refreshRoute(deps))
     .use(logoutRoute(deps))
     .use(forgotPasswordRoute(deps))

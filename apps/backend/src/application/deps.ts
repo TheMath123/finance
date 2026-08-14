@@ -1,6 +1,7 @@
 import type { QueueDispatcher } from '@finance/queues';
 import type { Storage } from '@finance/storage';
 import type { Cache } from './ports/cache';
+import type { GoogleIdentityVerifier } from './ports/google-identity-verifier';
 import type { SecurityLogger } from './ports/logger';
 import type { NotificationBus } from './ports/notification-bus';
 import type { PasswordHasher } from './ports/password-hasher';
@@ -33,6 +34,8 @@ export interface UseCaseDeps {
   termsVersion: string;
   /** Origem do dashboard web (env DASHBOARD_ORIGIN) — usada pra montar o link de confirmação de e-mail enviado por e-mail (ver register.ts). */
   dashboardOrigin: string;
+  /** Valida ID token do login social com Google (ver google-sign-in.ts). */
+  googleIdentity: GoogleIdentityVerifier;
 }
 
 /** Ator autenticado e autorizado num workspace (montado pela camada http). */

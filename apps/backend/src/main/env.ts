@@ -35,6 +35,26 @@ const envSchema = z.object({
    * cadastro (`${DASHBOARD_ORIGIN}/verify-email?token=...` — ver register.ts).
    */
   DASHBOARD_ORIGIN: z.string().url().default('http://localhost:5173'),
+  /**
+   * Client IDs do Google OAuth aceitos como audience no login social —
+   * separados por vírgula. Hoje só o client "Web" (usado pelo dashboard via
+   * Google Identity Services); a Fase 2 (mobile) soma os clients iOS/Android
+   * nesta mesma variável, sem precisar de env nova (ver google-sign-in.ts).
+   *
+   * Default vazio (nunca casa nenhuma audience) em vez de obrigatório — sem
+   * isso, todo ambiente existente (dev, CI, produção) pararia de subir só
+   * por falta dessa env; login com Google simplesmente fica indisponível
+   * (`google_token_invalid` sempre) até a env ser configurada de verdade.
+   */
+  GOOGLE_CLIENT_IDS: z
+    .string()
+    .default('')
+    .transform((v) =>
+      v
+        .split(',')
+        .map((id) => id.trim())
+        .filter(Boolean)
+    ),
 });
 
 export type Env = z.infer<typeof envSchema>;

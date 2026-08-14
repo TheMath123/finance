@@ -17,6 +17,12 @@ export const refreshSchema = z.object({
   refreshToken: z.string().min(1),
 });
 
+/** Login social com Google — `idToken` é o credential do Google Identity Services (web) ou de expo-auth-session (mobile, Fase 2). */
+export const googleSignInSchema = z.object({
+  idToken: z.string().min(1),
+  termsAccepted: z.literal(true, { error: 'aceite dos termos é obrigatório' }),
+});
+
 export const forgotPasswordSchema = z.object({
   email: z.string().email().toLowerCase(),
 });

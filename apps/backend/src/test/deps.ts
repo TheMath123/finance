@@ -3,12 +3,14 @@ import type { JobName, JobPayloads } from '@finance/queues';
 import { createInMemoryStorage } from '@finance/storage';
 import { eq } from 'drizzle-orm';
 import type { UseCaseDeps } from '../application/deps';
+import type { GoogleIdentity } from '../application/ports/google-identity-verifier';
 import { createInMemoryTokenBudget } from '../infra/ai/in-memory-token-budget';
 import { createInMemoryCache } from '../infra/cache/in-memory-cache';
 import { createRepositories } from '../infra/db/repositories';
 import { createUnitOfWork } from '../infra/db/unit-of-work';
 import { createInMemoryNotificationBus } from '../infra/realtime/in-memory-notification-bus';
 import { bunPasswordHasher } from '../infra/security/bun-password-hasher';
+import { createFakeGoogleIdentityVerifier } from '../infra/security/fake-google-identity-verifier';
 import { createInMemoryRateLimiter } from '../infra/security/in-memory-rate-limiter';
 import { createTokenService } from '../infra/security/jose-token-service';
 import { createFakePaymentGateway } from '../infra/stripe/fake-payment-gateway';
@@ -18,7 +20,8 @@ export type DispatchedJob = { name: JobName; payload: JobPayloads[JobName] };
 /** Monta UseCaseDeps reais (mesmas fábricas do composition root) para testes contra Postgres. */
 export function createTestDeps(
   db: Db,
-  jobs: DispatchedJob[] = []
+  jobs: DispatchedJob[] = [],
+  googleResponses: Map<string, GoogleIdentity | null> = new Map()
 ): UseCaseDeps {
   return {
     repos: createRepositories(db),
@@ -37,6 +40,7 @@ export function createTestDeps(
     payments: createFakePaymentGateway(),
     termsVersion: 'test',
     dashboardOrigin: 'http://localhost:5173',
+    googleIdentity: createFakeGoogleIdentityVerifier(googleResponses),
   };
 }
 

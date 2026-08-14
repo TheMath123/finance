@@ -42,4 +42,21 @@ export const AUTH_ERRORS: Record<AuthError, HttpError> = {
     code: 'account_suspended',
     message: 'Sua conta foi suspensa. Entre em contato com o suporte.',
   },
+  google_token_invalid: {
+    status: 401,
+    code: 'google_token_invalid',
+    message: 'Não foi possível confirmar sua conta Google. Tente novamente.',
+  },
+  google_email_unverified: {
+    status: 401,
+    code: 'google_email_unverified',
+    message:
+      'Seu e-mail do Google ainda não foi verificado pela própria Google.',
+  },
+  google_email_registered: {
+    status: 409,
+    code: 'google_email_registered',
+    message:
+      'Este e-mail já tem uma conta com senha. Entre com sua senha ou clique em "Esqueci minha senha".',
+  },
 };

@@ -9,6 +9,7 @@ export {
 } from './confirm-email-change';
 export type { AuthError } from './errors';
 export { type ForgotPasswordInput, forgotPassword } from './forgot-password';
+export { type GoogleSignInInput, googleSignIn } from './google-sign-in';
 export { type LoginInput, login } from './login';
 export { logout } from './logout';
 export { type MeOutput, me } from './me';
