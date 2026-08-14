@@ -19,11 +19,14 @@
 
 	let container = $state<HTMLDivElement>();
 	let formEl = $state<HTMLFormElement>();
-	let idTokenValue = $state('');
+	let idTokenInput = $state<HTMLInputElement>();
 	let submitting = $state(false);
 
 	function handleCredential(response: GoogleCredentialResponse) {
-		idTokenValue = response.credential;
+		// Escreve direto no DOM (não via `value={...}` reativo) — a atualização
+		// do binding do Svelte não é síncrona, então `requestSubmit()` chamado
+		// logo em seguida enviava o form com o campo ainda vazio.
+		if (idTokenInput) idTokenInput.value = response.credential;
 		formEl?.requestSubmit();
 	}
 
@@ -47,7 +50,7 @@
 			};
 		}}
 	>
-		<input type="hidden" name="idToken" value={idTokenValue} />
+		<input type="hidden" name="idToken" bind:this={idTokenInput} />
 	</form>
 	<div class="flex justify-center" bind:this={container} aria-busy={submitting}></div>
 {/if}

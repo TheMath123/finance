@@ -52,7 +52,11 @@
 			href={resolve('/account')}
 			class="flex items-center gap-2 rounded-lg px-2 py-1 text-sm text-muted-foreground transition-colors hover:bg-primary/10 hover:text-foreground"
 		>
-			<UserCircleIcon size={18} />
+			{#if user.avatarUrl}
+				<img src={user.avatarUrl} alt="" class="h-[18px] w-[18px] rounded-full object-cover" />
+			{:else}
+				<UserCircleIcon size={18} />
+			{/if}
 			<span class="hidden sm:inline">{user.name}</span>
 		</a>
 	</div>
