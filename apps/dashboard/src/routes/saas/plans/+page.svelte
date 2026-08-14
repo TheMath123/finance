@@ -25,6 +25,7 @@
 	});
 	let editing = $state<PlanView | null>(null);
 	let editError = $state<string | null>(null);
+	let makePrivate = $state(false);
 	let priceDialogPlan = $state<PlanView | null>(null);
 	let editingPrice = $state<PlanPriceView | null>(null);
 	let priceError = $state<string | null>(null);
@@ -74,13 +75,7 @@
 	<title>Planos — SaaS</title>
 </svelte:head>
 
-{#snippet planFields(plan?: PlanView, hideKey = false)}
-	{#if !plan && !hideKey}
-		<div class="grid gap-2">
-			<Label for="key">Chave</Label>
-			<Input id="key" name="key" placeholder="premium" required />
-		</div>
-	{/if}
+{#snippet planFields(plan?: PlanView)}
 	<div class="grid gap-3 sm:grid-cols-2">
 		<div class="grid gap-2">
 			<Label for="name">Nome</Label>
@@ -108,6 +103,24 @@
 			Tornar público (remove o vínculo privado com {plan.restrictedToWorkspaceName ??
 				plan.restrictedToWorkspaceId})
 		</label>
+	{:else if plan}
+		<div class="grid gap-2 rounded-lg border border-foreground/10 p-3">
+			<label class="flex items-center gap-2 text-sm">
+				<input type="checkbox" bind:checked={makePrivate} />
+				Tornar privado (restringe a um workspace específico)
+			</label>
+			{#if makePrivate}
+				<div class="grid gap-2">
+					<Label for="restrictedToWorkspaceId" class="text-xs">ID do workspace</Label>
+					<Input
+						id="restrictedToWorkspaceId"
+						name="restrictedToWorkspaceId"
+						placeholder="uuid do workspace"
+						required
+					/>
+				</div>
+			{/if}
+		</div>
 	{/if}
 	<div class="grid gap-2 rounded-lg border border-foreground/10 p-3">
 		<p class="text-xs font-medium text-muted-foreground">Limites</p>
@@ -290,6 +303,7 @@
 						onclick={() => {
 							editError = null;
 							editing = plan;
+							makePrivate = false;
 						}}>Editar</Button
 					>
 				</div>
@@ -393,7 +407,7 @@
 			{#if forWorkspaceId}
 				<input type="hidden" name="forWorkspaceId" value={forWorkspaceId} />
 			{/if}
-			{@render planFields(undefined, !!forWorkspaceId)}
+			{@render planFields()}
 			{#if forWorkspaceId}
 				<div class="grid gap-2 rounded-lg border border-foreground/10 p-3">
 					<p class="text-xs font-medium text-muted-foreground">Preço</p>

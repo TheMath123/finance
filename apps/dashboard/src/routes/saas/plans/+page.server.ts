@@ -18,6 +18,22 @@ export const load: PageServerLoad = async ({ locals }) => {
 	};
 };
 
+// Marcas diacríticas combinantes (U+0300–U+036F) que sobram após normalize('NFD')
+// separar uma letra acentuada em base + acento — construído via \u pra não depender
+// de como o editor/terminal exibe o caractere combinante em si.
+const DIACRITICS_PATTERN = /[̀-ͯ]/g;
+
+/** Chave estável derivada do nome — nunca digitada à mão; unicidade é checada pelo backend (plan_key_taken). */
+function slugify(text: string): string {
+	return text
+		.normalize('NFD')
+		.replace(DIACRITICS_PATTERN, '')
+		.toLowerCase()
+		.replace(/[^a-z0-9]+/g, '-')
+		.replace(/^-+|-+$/g, '')
+		.slice(0, 40);
+}
+
 function parsePlanFields(form: FormData): Omit<adminApi.PlanInput, 'key'> {
 	return {
 		name: form.get('name')?.toString().trim() ?? '',
@@ -65,10 +81,8 @@ export const actions: Actions = {
 			return { success: true };
 		}
 
-		const input = {
-			key: form.get('key')?.toString().trim() ?? '',
-			...parsePlanFields(form)
-		};
+		const fields = parsePlanFields(form);
+		const input = { key: slugify(fields.name), ...fields };
 
 		const result = await adminApi.createPlan(locals.session.accessToken, input);
 		if (!result.ok) return fail(result.error.status || 500, { message: result.error.message });
@@ -80,9 +94,18 @@ export const actions: Actions = {
 		const form = await request.formData();
 		const id = form.get('id')?.toString() ?? '';
 		const patch = parsePlanFields(form);
-		// Presente só quando o plano editado já era privado — desmarcado por padrão,
-		// então só mexe no vínculo quando o admin pede explicitamente pra tornar público.
-		if (form.get('makePublic') === 'on') patch.restrictedToWorkspaceId = null;
+		// makePublic só existe no form quando o plano editado já era privado —
+		// desmarcado por padrão, então só mexe no vínculo quando o admin pede
+		// explicitamente. restrictedToWorkspaceId (texto) só existe quando o
+		// plano era público e o admin marcou "tornar privado" + colou o id do
+		// workspace de destino — o backend valida existência e que o plano não
+		// esteja compartilhado por mais de um workspace.
+		if (form.get('makePublic') === 'on') {
+			patch.restrictedToWorkspaceId = null;
+		} else {
+			const workspaceId = form.get('restrictedToWorkspaceId')?.toString().trim();
+			if (workspaceId) patch.restrictedToWorkspaceId = workspaceId;
+		}
 
 		const result = await adminApi.updatePlan(locals.session.accessToken, id, patch);
 		if (!result.ok) return fail(result.error.status || 500, { message: result.error.message });
