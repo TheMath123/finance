@@ -154,6 +154,17 @@ cadastrado.
   Stripe, além do trial baseado em tempo do M5-03. **Smoke test com Stripe
   de verdade (conta ainda não existe) fica pendente** — todo o resto foi
   validado com um gateway fake.
+- [M5-06 — Auth em padrão OAuth + login social com Google (Fase 1: backend + dashboard)](done/m5-06-oauth-login-social-google.md):
+  concluída em 2026-08-14, validada com testes reais contra Postgres +
+  typecheck/lint/build em backend e dashboard. Backend só valida o ID
+  token (Google Identity Services no browser) — nenhum client secret,
+  nenhum redirect OAuth conduzido pelo backend; tabela nova
+  `oauth_accounts` (não campo em `users`) já deixa multi-provedor barato.
+  E-mail do Google que já tem conta por senha é rejeitado (pede login com
+  senha ou reset) — vínculo manual fica pra depois. Fase 2 (mobile) em
+  [`backlog/m5-06b-google-login-mobile.md`](backlog/m5-06b-google-login-mobile.md),
+  bloqueada esperando o usuário criar Client IDs iOS/Android no Google
+  Cloud Console.
 
 ## M4 — Dashboard web (Svelte)
 

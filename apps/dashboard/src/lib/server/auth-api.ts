@@ -36,6 +36,13 @@ export function register(input: {
 	return apiRequest('/auth/register', { method: 'POST', body: input });
 }
 
+export function googleSignIn(input: {
+	idToken: string;
+	termsAccepted: true;
+}): Promise<Either<ApiError, AuthSession>> {
+	return apiRequest('/auth/google', { method: 'POST', body: input });
+}
+
 export function refresh(refreshToken: string): Promise<Either<ApiError, AuthSession>> {
 	return apiRequest('/auth/refresh', { method: 'POST', body: { refreshToken } });
 }
