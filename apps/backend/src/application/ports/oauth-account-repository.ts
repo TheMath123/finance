@@ -5,10 +5,16 @@ export interface OauthAccountRepository {
     provider: string,
     providerAccountId: string
   ): Promise<OauthAccount | undefined>;
+  /** Vínculo/desvínculo pelo perfil (M5-07) — existe algum provedor já linkado a este usuário? */
+  findByUserAndProvider(
+    userId: string,
+    provider: string
+  ): Promise<OauthAccount | undefined>;
   create(data: {
     userId: string;
     provider: string;
     providerAccountId: string;
     email: string;
   }): Promise<void>;
+  deleteByUserAndProvider(userId: string, provider: string): Promise<void>;
 }

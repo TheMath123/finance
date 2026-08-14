@@ -9,4 +9,11 @@ export type AuthError =
   | 'account_suspended'
   | 'google_token_invalid'
   | 'google_email_unverified'
-  | 'google_email_registered';
+  | 'google_email_registered'
+  | 'google_link_email_mismatch'
+  | 'google_account_linked_elsewhere'
+  | 'google_already_linked'
+  | 'google_not_linked'
+  | 'invalid_file_type'
+  | 'file_too_large'
+  | 'avatar_not_found';

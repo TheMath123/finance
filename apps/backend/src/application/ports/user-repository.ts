@@ -6,6 +6,8 @@ export interface CreateUserData {
   passwordHash: string;
   termsAcceptedAt: Date;
   termsVersion: string;
+  /** URL do avatar do provedor (Google) no momento do cadastro — ver google-sign-in.ts. */
+  avatarUrl?: string | null;
 }
 
 export interface UserRepository {
@@ -40,6 +42,10 @@ export interface UserRepository {
   /** Suspensão administrativa (M4-08, superadmin) — bloqueia login até reativar. */
   suspend(userId: string): Promise<void>;
   reactivate(userId: string): Promise<void>;
+  /** URL externa do avatar (Google) — `null` limpa. Ver resolve-avatar-url.ts. */
+  updateAvatarUrl(userId: string, url: string | null): Promise<void>;
+  /** Chave do avatar enviado manualmente — `null` remove (volta a valer `avatarUrl`). */
+  updateAvatarKey(userId: string, key: string | null): Promise<void>;
   /** Listagem paginada pro painel de superadmin — busca por nome ou e-mail. */
   listAll(params: {
     search?: string;

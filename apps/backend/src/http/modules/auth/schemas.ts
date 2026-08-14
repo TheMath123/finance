@@ -23,6 +23,11 @@ export const googleSignInSchema = z.object({
   termsAccepted: z.literal(true, { error: 'aceite dos termos é obrigatório' }),
 });
 
+/** Vínculo de conta Google pelo perfil (M5-07) — sem `termsAccepted`, os termos já foram aceitos no cadastro original. */
+export const linkGoogleSchema = z.object({
+  idToken: z.string().min(1),
+});
+
 export const forgotPasswordSchema = z.object({
   email: z.string().email().toLowerCase(),
 });

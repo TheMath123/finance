@@ -16,4 +16,6 @@ export interface GoogleIdentity {
   /** Google só marca `true` quando verificou a posse do e-mail de verdade — nunca confiar em e-mail com isso `false`. */
   emailVerified: boolean;
   name: string;
+  /** URL da foto de perfil do Google (M5-07, avatar) — `null` quando a conta não tem foto. */
+  picture: string | null;
 }

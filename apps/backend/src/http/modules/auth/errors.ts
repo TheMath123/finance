@@ -59,4 +59,40 @@ export const AUTH_ERRORS: Record<AuthError, HttpError> = {
     message:
       'Este e-mail já tem uma conta com senha. Entre com sua senha ou clique em "Esqueci minha senha".',
   },
+  google_link_email_mismatch: {
+    status: 409,
+    code: 'google_link_email_mismatch',
+    message: 'O e-mail da conta Google precisa ser o mesmo da sua conta.',
+  },
+  google_account_linked_elsewhere: {
+    status: 409,
+    code: 'google_account_linked_elsewhere',
+    message: 'Essa conta Google já está vinculada a outro usuário.',
+  },
+  google_already_linked: {
+    status: 409,
+    code: 'google_already_linked',
+    message:
+      'Você já tem uma conta Google vinculada. Desvincule antes de vincular outra.',
+  },
+  google_not_linked: {
+    status: 409,
+    code: 'google_not_linked',
+    message: 'Você não tem nenhuma conta Google vinculada.',
+  },
+  invalid_file_type: {
+    status: 400,
+    code: 'invalid_file_type',
+    message: 'Tipo de arquivo não aceito — envie jpg, png ou webp.',
+  },
+  file_too_large: {
+    status: 400,
+    code: 'file_too_large',
+    message: 'Arquivo muito grande — limite de 2MB.',
+  },
+  avatar_not_found: {
+    status: 404,
+    code: 'avatar_not_found',
+    message: 'Você não tem nenhum avatar personalizado pra remover.',
+  },
 };

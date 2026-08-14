@@ -6,15 +6,19 @@ import { confirmAccountDeletionRoute } from './confirm-account-deletion';
 import { confirmEmailChangeRoute } from './confirm-email-change';
 import { forgotPasswordRoute } from './forgot-password';
 import { googleSignInRoute } from './google-sign-in';
+import { linkGoogleRoute } from './link-google';
 import { loginRoute } from './login';
 import { logoutRoute } from './logout';
 import { meRoute } from './me';
 import { refreshRoute } from './refresh';
 import { registerRoute } from './register';
+import { removeAvatarRoute } from './remove-avatar';
 import { requestAccountDeletionRoute } from './request-account-deletion';
 import { requestEmailChangeRoute } from './request-email-change';
 import { resetPasswordRoute } from './reset-password';
+import { unlinkGoogleRoute } from './unlink-google';
 import { updateNameRoute } from './update-name';
+import { uploadAvatarRoute } from './upload-avatar';
 import { verifyEmailRoute } from './verify-email';
 import { verifyResetCodeRoute } from './verify-reset-code';
 
@@ -39,6 +43,10 @@ const RATE_LIMITS: Record<string, { max: number; windowMs: number }> = {
   'POST /auth/me/password': { max: 5, windowMs: 3_600_000 },
   'POST /auth/me/delete/request': { max: 5, windowMs: 3_600_000 },
   'POST /auth/me/delete/confirm': { max: 10, windowMs: 15 * 60_000 },
+  'POST /auth/me/google/link': { max: 10, windowMs: 60_000 },
+  'POST /auth/me/google/unlink': { max: 10, windowMs: 60_000 },
+  'POST /auth/me/avatar': { max: 10, windowMs: 3_600_000 },
+  'DELETE /auth/me/avatar': { max: 10, windowMs: 3_600_000 },
 };
 
 export function authRoutes(deps: AppDeps) {
@@ -82,5 +90,9 @@ export function authRoutes(deps: AppDeps) {
     .use(updateNameRoute(deps))
     .use(requestEmailChangeRoute(deps))
     .use(confirmEmailChangeRoute(deps))
-    .use(changePasswordRoute(deps));
+    .use(changePasswordRoute(deps))
+    .use(linkGoogleRoute(deps))
+    .use(unlinkGoogleRoute(deps))
+    .use(uploadAvatarRoute(deps))
+    .use(removeAvatarRoute(deps));
 }

@@ -14,8 +14,25 @@ export function createOauthAccountRepository(
           eq(oauthAccounts.providerAccountId, providerAccountId)
         ),
       }),
+    findByUserAndProvider: (userId, provider) =>
+      db.query.oauthAccounts.findFirst({
+        where: and(
+          eq(oauthAccounts.userId, userId),
+          eq(oauthAccounts.provider, provider)
+        ),
+      }),
     async create(data) {
       await db.insert(oauthAccounts).values(data);
+    },
+    async deleteByUserAndProvider(userId, provider) {
+      await db
+        .delete(oauthAccounts)
+        .where(
+          and(
+            eq(oauthAccounts.userId, userId),
+            eq(oauthAccounts.provider, provider)
+          )
+        );
     },
   };
 }

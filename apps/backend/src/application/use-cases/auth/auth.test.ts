@@ -17,6 +17,7 @@ import {
 } from '@finance/db';
 import { eq } from 'drizzle-orm';
 import { updateNameSchema } from '../../../http/modules/auth/schemas';
+import { createFakeGoogleIdentityVerifier } from '../../../infra/security/fake-google-identity-verifier';
 import { createTestDeps, type DispatchedJob } from '../../../test/deps';
 import type { GoogleIdentity } from '../../ports/google-identity-verifier';
 import {
@@ -25,15 +26,19 @@ import {
   confirmEmailChange,
   forgotPassword,
   googleSignIn,
+  linkGoogleAccount,
   login,
   logout,
   me,
   refresh,
   register,
+  removeAvatar,
   requestAccountDeletion,
   requestEmailChange,
   resetPassword,
+  unlinkGoogleAccount,
   updateName,
+  uploadAvatar,
   verifyEmail,
   verifyResetCode,
 } from '.';
@@ -45,6 +50,7 @@ const fakeGoogleIdentity = (overrides: Partial<GoogleIdentity> = {}) => ({
   email: uniqueEmail(),
   emailVerified: true,
   name: 'Teste Google',
+  picture: null,
   ...overrides,
 });
 
@@ -328,6 +334,308 @@ describe('auth: login social Google', () => {
 
     expect(second.ok).toBe(false);
     if (!second.ok) expect(second.error).toBe('account_suspended');
+  });
+});
+
+describe('auth: vínculo de conta Google (perfil)', () => {
+  async function newPasswordUser(deps: ReturnType<typeof createTestDeps>) {
+    const email = uniqueEmail();
+    const result = await register(deps, {
+      name: 'Teste Vínculo',
+      email,
+      password: 'senha-forte-123',
+    });
+    if (!result.ok) throw new Error('setup falhou');
+    return { userId: result.value.user.id, email };
+  }
+
+  test('e-mail da conta Google diferente do e-mail da conta rejeita', async () => {
+    const deps = createTestDeps(db);
+    const { userId } = await newPasswordUser(deps);
+    const identity = fakeGoogleIdentity({ email: uniqueEmail() });
+    deps.googleIdentity = createFakeGoogleIdentityVerifier(
+      new Map([['token-mismatch', identity]])
+    );
+
+    const result = await linkGoogleAccount(deps, {
+      userId,
+      idToken: 'token-mismatch',
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toBe('google_link_email_mismatch');
+  });
+
+  test('conta Google já vinculada a outro usuário rejeita', async () => {
+    const deps = createTestDeps(db);
+    const { userId: ownerId } = await newPasswordUser(deps);
+    const { userId: otherUserId, email: otherEmail } =
+      await newPasswordUser(deps);
+
+    const identity = fakeGoogleIdentity({ email: otherEmail });
+    deps.googleIdentity = createFakeGoogleIdentityVerifier(
+      new Map([['token-owner', identity]])
+    );
+    const first = await linkGoogleAccount(deps, {
+      userId: otherUserId,
+      idToken: 'token-owner',
+    });
+    expect(first.ok).toBe(true);
+
+    // Mesmo `sub`, mas agora tentando vincular ao usuário dono da conta original —
+    // o e-mail bateria (usamos o e-mail dele), mas o Google já é de outro.
+    const identitySameSub = {
+      ...identity,
+      email: (await deps.repos.user.findById(ownerId))!.email,
+    };
+    deps.googleIdentity = createFakeGoogleIdentityVerifier(
+      new Map([['token-conflito', identitySameSub]])
+    );
+    const second = await linkGoogleAccount(deps, {
+      userId: ownerId,
+      idToken: 'token-conflito',
+    });
+    expect(second.ok).toBe(false);
+    if (!second.ok)
+      expect(second.error).toBe('google_account_linked_elsewhere');
+  });
+
+  test('usuário que já tem outra conta Google vinculada rejeita a segunda', async () => {
+    const deps = createTestDeps(db);
+    const { userId, email } = await newPasswordUser(deps);
+
+    const first = fakeGoogleIdentity({ email });
+    deps.googleIdentity = createFakeGoogleIdentityVerifier(
+      new Map([['token-primeiro', first]])
+    );
+    expect(
+      (await linkGoogleAccount(deps, { userId, idToken: 'token-primeiro' })).ok
+    ).toBe(true);
+
+    const second = fakeGoogleIdentity({ email });
+    deps.googleIdentity = createFakeGoogleIdentityVerifier(
+      new Map([['token-segundo', second]])
+    );
+    const result = await linkGoogleAccount(deps, {
+      userId,
+      idToken: 'token-segundo',
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toBe('google_already_linked');
+  });
+
+  test('vínculo bem-sucedido preenche avatarUrl só se estava vazio, e é idempotente', async () => {
+    const deps = createTestDeps(db);
+    const { userId, email } = await newPasswordUser(deps);
+    const identity = fakeGoogleIdentity({
+      email,
+      picture: 'https://lh3.googleusercontent.com/foto.jpg',
+    });
+    deps.googleIdentity = createFakeGoogleIdentityVerifier(
+      new Map([['token-link', identity]])
+    );
+
+    const result = await linkGoogleAccount(deps, {
+      userId,
+      idToken: 'token-link',
+    });
+    expect(result.ok).toBe(true);
+
+    const me1 = await me(deps, userId);
+    expect(me1.ok).toBe(true);
+    if (!me1.ok) return;
+    expect(me1.value.user.googleLinked).toBe(true);
+    expect(me1.value.user.avatarUrl).toBe(identity.picture);
+
+    // Vincular de novo (mesmo Google) é idempotente — não duplica nem falha.
+    const again = await linkGoogleAccount(deps, {
+      userId,
+      idToken: 'token-link',
+    });
+    expect(again.ok).toBe(true);
+
+    const linked = await deps.repos.oauthAccount.findByUserAndProvider(
+      userId,
+      'google'
+    );
+    expect(linked).toBeDefined();
+  });
+});
+
+describe('auth: desvincular conta Google (perfil)', () => {
+  test('sem vínculo existente rejeita', async () => {
+    const deps = createTestDeps(db);
+    const email = uniqueEmail();
+    const registered = await register(deps, {
+      name: 'Sem Google',
+      email,
+      password: 'senha-forte-123',
+    });
+    if (!registered.ok) throw new Error('setup falhou');
+
+    const result = await unlinkGoogleAccount(deps, {
+      userId: registered.value.user.id,
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toBe('google_not_linked');
+  });
+
+  test('com vínculo remove a linha e googleLinked cai pra false no /me seguinte', async () => {
+    const deps = createTestDeps(db);
+    const email = uniqueEmail();
+    const registered = await register(deps, {
+      name: 'Com Google',
+      email,
+      password: 'senha-forte-123',
+    });
+    if (!registered.ok) throw new Error('setup falhou');
+    const userId = registered.value.user.id;
+
+    const identity = fakeGoogleIdentity({ email });
+    deps.googleIdentity = createFakeGoogleIdentityVerifier(
+      new Map([['token-link', identity]])
+    );
+    expect(
+      (await linkGoogleAccount(deps, { userId, idToken: 'token-link' })).ok
+    ).toBe(true);
+
+    const unlinked = await unlinkGoogleAccount(deps, { userId });
+    expect(unlinked.ok).toBe(true);
+
+    const after = await me(deps, userId);
+    expect(after.ok).toBe(true);
+    if (after.ok) expect(after.value.user.googleLinked).toBe(false);
+  });
+});
+
+describe('auth: avatar (upload manual)', () => {
+  test('tipo de arquivo inválido rejeita', async () => {
+    const deps = createTestDeps(db);
+    const email = uniqueEmail();
+    const registered = await register(deps, {
+      name: 'Avatar',
+      email,
+      password: 'senha-forte-123',
+    });
+    if (!registered.ok) throw new Error('setup falhou');
+
+    const result = await uploadAvatar(deps, registered.value.user.id, {
+      buffer: new Uint8Array([1]),
+      contentType: 'application/pdf',
+      size: 1,
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toBe('invalid_file_type');
+  });
+
+  test('arquivo maior que o limite rejeita', async () => {
+    const deps = createTestDeps(db);
+    const email = uniqueEmail();
+    const registered = await register(deps, {
+      name: 'Avatar',
+      email,
+      password: 'senha-forte-123',
+    });
+    if (!registered.ok) throw new Error('setup falhou');
+
+    const result = await uploadAvatar(deps, registered.value.user.id, {
+      buffer: new Uint8Array([1]),
+      contentType: 'image/png',
+      size: 3 * 1024 * 1024,
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toBe('file_too_large');
+  });
+
+  test('upload seta avatarKey e /me expõe uma URL assinada; segundo upload deleta o anterior', async () => {
+    const deps = createTestDeps(db);
+    const email = uniqueEmail();
+    const registered = await register(deps, {
+      name: 'Avatar',
+      email,
+      password: 'senha-forte-123',
+    });
+    if (!registered.ok) throw new Error('setup falhou');
+    const userId = registered.value.user.id;
+
+    const first = await uploadAvatar(deps, userId, {
+      buffer: new Uint8Array([1]),
+      contentType: 'image/jpeg',
+      size: 1,
+    });
+    expect(first.ok).toBe(true);
+    if (!first.ok) return;
+
+    const meResult = await me(deps, userId);
+    expect(meResult.ok).toBe(true);
+    if (meResult.ok) {
+      expect(meResult.value.user.avatarUrl).toContain(first.value.avatarKey);
+    }
+
+    const second = await uploadAvatar(deps, userId, {
+      buffer: new Uint8Array([2]),
+      contentType: 'image/webp',
+      size: 1,
+    });
+    expect(second.ok).toBe(true);
+    if (!second.ok) return;
+    expect(second.value.avatarKey).not.toBe(first.value.avatarKey);
+
+    // A key antiga não existe mais no storage (foi deletada na substituição).
+    await expect(
+      deps.storage.getSignedReadUrl(first.value.avatarKey, 60)
+    ).rejects.toThrow();
+  });
+
+  test('remover sem avatar próprio rejeita', async () => {
+    const deps = createTestDeps(db);
+    const email = uniqueEmail();
+    const registered = await register(deps, {
+      name: 'Avatar',
+      email,
+      password: 'senha-forte-123',
+    });
+    if (!registered.ok) throw new Error('setup falhou');
+
+    const result = await removeAvatar(deps, registered.value.user.id);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toBe('avatar_not_found');
+  });
+
+  test('remover limpa avatarKey e reverte pro avatarUrl do Google, se existir', async () => {
+    const deps = createTestDeps(db);
+    const email = uniqueEmail();
+    const registered = await register(deps, {
+      name: 'Avatar',
+      email,
+      password: 'senha-forte-123',
+    });
+    if (!registered.ok) throw new Error('setup falhou');
+    const userId = registered.value.user.id;
+
+    const identity = fakeGoogleIdentity({
+      email,
+      picture: 'https://lh3.googleusercontent.com/foto.jpg',
+    });
+    deps.googleIdentity = createFakeGoogleIdentityVerifier(
+      new Map([['token-link', identity]])
+    );
+    expect(
+      (await linkGoogleAccount(deps, { userId, idToken: 'token-link' })).ok
+    ).toBe(true);
+
+    const uploaded = await uploadAvatar(deps, userId, {
+      buffer: new Uint8Array([1]),
+      contentType: 'image/jpeg',
+      size: 1,
+    });
+    expect(uploaded.ok).toBe(true);
+
+    const removed = await removeAvatar(deps, userId);
+    expect(removed.ok).toBe(true);
+
+    const after = await me(deps, userId);
+    expect(after.ok).toBe(true);
+    if (after.ok) expect(after.value.user.avatarUrl).toBe(identity.picture);
   });
 });
 

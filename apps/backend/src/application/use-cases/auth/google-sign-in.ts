@@ -61,6 +61,7 @@ export async function googleSignIn(
           passwordHash,
           termsAcceptedAt: new Date(),
           termsVersion: deps.termsVersion,
+          avatarUrl: identity.picture,
         });
         const { workspaceId: newWorkspaceId } = await createPersonalWorkspace(
           repos,

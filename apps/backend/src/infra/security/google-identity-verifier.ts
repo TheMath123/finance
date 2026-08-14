@@ -31,6 +31,7 @@ export function createGoogleIdentityVerifier(
           email: payload.email,
           emailVerified: payload.email_verified ?? false,
           name: payload.name ?? payload.email,
+          picture: payload.picture ?? null,
         };
       } catch {
         // Assinatura inválida, audience errado, token expirado etc. — tudo

@@ -85,6 +85,18 @@ export function createUserRepository(db: DbHandle): UserRepository {
         .set({ suspendedAt: null })
         .where(eq(users.id, userId));
     },
+    async updateAvatarUrl(userId, url) {
+      await db
+        .update(users)
+        .set({ avatarUrl: url })
+        .where(eq(users.id, userId));
+    },
+    async updateAvatarKey(userId, key) {
+      await db
+        .update(users)
+        .set({ avatarKey: key })
+        .where(eq(users.id, userId));
+    },
     async listAll({ search, limit, offset }) {
       const where = search
         ? or(
