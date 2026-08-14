@@ -50,6 +50,8 @@ export function createWorkspaceRepository(db: DbHandle): WorkspaceRepository {
         role: m.role,
         name: m.user.name,
         email: m.user.email,
+        avatarKey: m.user.avatarKey,
+        avatarUrl: m.user.avatarUrl,
       }));
     },
     async countOwners(workspaceId) {

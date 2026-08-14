@@ -6,11 +6,18 @@ import type {
 import type { Workspace } from '../../domain/entities/workspace';
 import type { Plan, PlanPrice } from './plan-repository';
 
+/**
+ * `avatarKey`/`avatarUrl` são o par bruto do domínio `User` (M5-07) — nunca
+ * devem sair daqui pro client como estão; `list-members.ts` resolve pra um
+ * `avatarUrl` final antes de expor na tela de membros.
+ */
 export interface WorkspaceMemberView {
   userId: string;
   role: WorkspaceRole;
   name: string;
   email: string;
+  avatarKey: string | null;
+  avatarUrl: string | null;
 }
 
 export interface AdminWorkspaceRow {

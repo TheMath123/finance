@@ -11,12 +11,13 @@ export interface WorkspaceSummary {
 	role: string;
 }
 
-/** Espelha WorkspaceMemberView (backend, ports/workspace-repository.ts). */
+/** Espelha WorkspaceMemberSummary (backend, use-cases/workspace/list-members.ts). */
 export interface WorkspaceMemberView {
 	userId: string;
 	role: 'owner' | 'admin' | 'member' | 'viewer';
 	name: string;
 	email: string;
+	avatarUrl: string | null;
 }
 
 /** Espelha WorkspaceInvite (backend, domain/entities/workspace.ts — datas serializadas). */

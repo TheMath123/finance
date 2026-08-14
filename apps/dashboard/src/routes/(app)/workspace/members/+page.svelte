@@ -1,4 +1,6 @@
 <script lang="ts">
+	import UserCircleIcon from 'phosphor-svelte/lib/UserCircleIcon';
+
 	import { enhance } from '$app/forms';
 
 	import { Button } from '$lib/components/ui/button';
@@ -83,9 +85,20 @@
 	<div>
 		{#each data.members as member (member.userId)}
 			<div class="flex items-center justify-between gap-4 border-t border-foreground/10 px-2 py-4">
-				<div class="min-w-0">
-					<p class="truncate text-sm font-medium">{member.name}</p>
-					<p class="truncate text-sm text-muted-foreground">{member.email}</p>
+				<div class="flex min-w-0 items-center gap-3">
+					{#if member.avatarUrl}
+						<img
+							src={member.avatarUrl}
+							alt=""
+							class="h-9 w-9 shrink-0 rounded-full object-cover"
+						/>
+					{:else}
+						<UserCircleIcon size={36} class="shrink-0 text-muted-foreground" weight="light" />
+					{/if}
+					<div class="min-w-0">
+						<p class="truncate text-sm font-medium">{member.name}</p>
+						<p class="truncate text-sm text-muted-foreground">{member.email}</p>
+					</div>
 				</div>
 				{#if canManage && member.role !== 'owner' && member.userId !== data.user.id}
 					<div class="flex items-center gap-2">

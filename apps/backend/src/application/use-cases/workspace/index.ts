@@ -3,7 +3,10 @@ export { type CreateInviteInput, createInvite } from './create-invite';
 export { type CreateWorkspaceInput, createWorkspace } from './create-workspace';
 export type { WorkspaceError } from './errors';
 export { listActivity } from './list-activity';
-export { listMembers } from './list-members';
+export {
+  listMembers,
+  type WorkspaceMemberSummary,
+} from './list-members';
 export { listMyInvites, type MyInviteView } from './list-my-invites';
 export { listMyWorkspaces, type WorkspaceSummary } from './list-my-workspaces';
 export { listWorkspaceInvites } from './list-workspace-invites';
