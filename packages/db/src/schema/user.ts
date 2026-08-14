@@ -8,6 +8,7 @@ import {
   uuid,
 } from 'drizzle-orm/pg-core';
 import { createdAt, id, updatedAt } from './helpers';
+import { oauthAccounts } from './oauth-accounts';
 import { refreshTokens } from './refresh-token';
 import { workspaces } from './workspace';
 import { workspaceMembers } from './workspace-member';
@@ -49,6 +50,7 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   }),
   memberships: many(workspaceMembers),
   refreshTokens: many(refreshTokens),
+  oauthAccounts: many(oauthAccounts),
 }));
 
 export type User = typeof users.$inferSelect;
