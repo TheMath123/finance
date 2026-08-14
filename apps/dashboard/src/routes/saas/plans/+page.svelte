@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import { page } from '$app/state';
 
 	import { Button } from '$lib/components/ui/button';
 	import * as Dialog from '$lib/components/ui/dialog';
@@ -11,8 +12,17 @@
 
 	let { data, form } = $props();
 
+	// Chegando de "Criar plano privado" (tela de Workspaces) — pré-abre o
+	// dialog de criação já no modo privado, vinculado a este workspace.
+	const forWorkspaceId = $derived(page.url.searchParams.get('forWorkspaceId'));
+	const forWorkspaceName = $derived(page.url.searchParams.get('forWorkspaceName'));
+
 	let createOpen = $state(false);
 	let createError = $state<string | null>(null);
+
+	$effect(() => {
+		if (forWorkspaceId) createOpen = true;
+	});
 	let editing = $state<PlanView | null>(null);
 	let editError = $state<string | null>(null);
 	let priceDialogPlan = $state<PlanView | null>(null);
@@ -64,8 +74,8 @@
 	<title>Planos — SaaS</title>
 </svelte:head>
 
-{#snippet planFields(plan?: PlanView)}
-	{#if !plan}
+{#snippet planFields(plan?: PlanView, hideKey = false)}
+	{#if !plan && !hideKey}
 		<div class="grid gap-2">
 			<Label for="key">Chave</Label>
 			<Input id="key" name="key" placeholder="premium" required />
@@ -92,6 +102,13 @@
 		<Label for="description">Descrição</Label>
 		<Input id="description" name="description" value={plan?.description ?? ''} />
 	</div>
+	{#if plan?.restrictedToWorkspaceId}
+		<label class="flex items-center gap-2 rounded-lg bg-primary/10 px-3 py-2 text-sm text-primary">
+			<input type="checkbox" name="makePublic" />
+			Tornar público (remove o vínculo privado com {plan.restrictedToWorkspaceName ??
+				plan.restrictedToWorkspaceId})
+		</label>
+	{/if}
 	<div class="grid gap-2 rounded-lg border border-foreground/10 p-3">
 		<p class="text-xs font-medium text-muted-foreground">Limites</p>
 		<div class="grid gap-3 sm:grid-cols-3">
@@ -258,6 +275,11 @@
 								<span class="text-xs text-destructive">(inativo)</span>
 							{/if}
 						</p>
+						{#if plan.restrictedToWorkspaceId}
+							<p class="text-xs text-primary">
+								Privado: {plan.restrictedToWorkspaceName ?? plan.restrictedToWorkspaceId}
+							</p>
+						{/if}
 						{#if plan.trialDays > 0}
 							<p class="text-xs text-primary">{plan.trialDays} dias de trial</p>
 						{/if}
@@ -343,8 +365,14 @@
 <Dialog.Root bind:open={createOpen}>
 	<Dialog.Content>
 		<Dialog.Header>
-			<Dialog.Title>Novo plano</Dialog.Title>
+			<Dialog.Title>{forWorkspaceId ? 'Novo plano privado' : 'Novo plano'}</Dialog.Title>
 		</Dialog.Header>
+		{#if forWorkspaceId}
+			<p class="rounded-lg bg-primary/10 px-3 py-2 text-sm text-primary">
+				Criando plano privado para <strong>{forWorkspaceName ?? forWorkspaceId}</strong> — não aparece
+				no catálogo público e só vale pra este workspace.
+			</p>
+		{/if}
 		{#if createError}
 			<p class="text-sm text-destructive">{createError}</p>
 		{/if}
@@ -362,7 +390,16 @@
 				}
 			})}
 		>
-			{@render planFields()}
+			{#if forWorkspaceId}
+				<input type="hidden" name="forWorkspaceId" value={forWorkspaceId} />
+			{/if}
+			{@render planFields(undefined, !!forWorkspaceId)}
+			{#if forWorkspaceId}
+				<div class="grid gap-2 rounded-lg border border-foreground/10 p-3">
+					<p class="text-xs font-medium text-muted-foreground">Preço</p>
+					{@render priceFields()}
+				</div>
+			{/if}
 			<Dialog.Footer>
 				<Button type="submit">Criar</Button>
 			</Dialog.Footer>

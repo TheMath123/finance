@@ -14,7 +14,7 @@
 	let { data, children } = $props();
 
 	const NAV = [
-		{ route: '/saas/metrics', label: 'Métricas', icon: ChartBarIcon },
+		{ route: '/saas/dashboard', label: 'Dashboard', icon: ChartBarIcon },
 		{ route: '/saas/workspaces', label: 'Workspaces', icon: BuildingsIcon },
 		{ route: '/saas/plans', label: 'Planos', icon: CreditCardIcon },
 		{ route: '/saas/users', label: 'Usuários', icon: UsersIcon },

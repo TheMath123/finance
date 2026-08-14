@@ -222,6 +222,10 @@ export interface PlanView {
 	features: string[];
 	isActive: boolean;
 	sortOrder: number;
+	/** Plano privado (sob medida pra um workspace): nunca aparece no catálogo, nunca é assinável. */
+	restrictedToWorkspaceId: string | null;
+	/** Nome do workspace de `restrictedToWorkspaceId` — nulo se plano público. */
+	restrictedToWorkspaceName: string | null;
 	prices: PlanPriceView[];
 	createdAt: string;
 	updatedAt: string;
@@ -234,6 +238,17 @@ export interface PlanInput {
 	trialDays: number;
 	limits: PlanLimitsView;
 	features: string[];
+	restrictedToWorkspaceId?: string | null;
+}
+
+/** Painel `/saas/workspaces`: cria plano privado sob medida + já vincula a este workspace. */
+export interface CreatePrivatePlanInput {
+	name: string;
+	description?: string | null;
+	trialDays: number;
+	limits: PlanLimitsView;
+	features: string[];
+	price: PlanPriceInput;
 }
 
 export function listPlans(accessToken: string): Promise<Either<ApiError, PlanView[]>> {
@@ -341,6 +356,18 @@ export function setWorkspacePlan(
 	return apiRequest(`/admin/workspaces/${workspaceId}/plan`, {
 		method: 'PATCH',
 		body: { planId, planPriceId },
+		accessToken
+	});
+}
+
+export function createPrivatePlanForWorkspace(
+	accessToken: string,
+	workspaceId: string,
+	input: CreatePrivatePlanInput
+): Promise<Either<ApiError, AdminWorkspaceView>> {
+	return apiRequest(`/admin/workspaces/${workspaceId}/private-plan`, {
+		method: 'POST',
+		body: input,
 		accessToken
 	});
 }

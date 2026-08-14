@@ -52,6 +52,19 @@ export const actions: Actions = {
 	create: async ({ request, locals }) => {
 		if (!locals.session) redirect(303, '/login');
 		const form = await request.formData();
+		const forWorkspaceId = form.get('forWorkspaceId')?.toString().trim();
+
+		if (forWorkspaceId) {
+			const { name, description, trialDays, limits, features } = parsePlanFields(form);
+			const result = await adminApi.createPrivatePlanForWorkspace(
+				locals.session.accessToken,
+				forWorkspaceId,
+				{ name, description, trialDays, limits, features, price: parsePlanPriceFields(form) }
+			);
+			if (!result.ok) return fail(result.error.status || 500, { message: result.error.message });
+			return { success: true };
+		}
+
 		const input = {
 			key: form.get('key')?.toString().trim() ?? '',
 			...parsePlanFields(form)
@@ -67,6 +80,9 @@ export const actions: Actions = {
 		const form = await request.formData();
 		const id = form.get('id')?.toString() ?? '';
 		const patch = parsePlanFields(form);
+		// Presente só quando o plano editado já era privado — desmarcado por padrão,
+		// então só mexe no vínculo quando o admin pede explicitamente pra tornar público.
+		if (form.get('makePublic') === 'on') patch.restrictedToWorkspaceId = null;
 
 		const result = await adminApi.updatePlan(locals.session.accessToken, id, patch);
 		if (!result.ok) return fail(result.error.status || 500, { message: result.error.message });
