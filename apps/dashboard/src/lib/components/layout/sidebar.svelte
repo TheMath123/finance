@@ -4,9 +4,16 @@
 	import RepeatIcon from 'phosphor-svelte/lib/RepeatIcon';
 	import SquaresFour from 'phosphor-svelte/lib/SquaresFour';
 	import UsersThree from 'phosphor-svelte/lib/UsersThree';
+	import { mode } from 'mode-watcher';
 
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
+
+	// Tema claro tem fundo do sidebar quase-branco (precisa da marca escura);
+	// tema escuro tem fundo quase-preto (precisa da marca em teal vibrante).
+	const logoSrc = $derived(
+		mode.current === 'light' ? '/marcelus-logo-light.svg' : '/marcelus-logo.svg'
+	);
 
 	const NAV = [
 		{ route: '/', label: 'Início', icon: House, match: (p: string) => p === resolve('/') },
@@ -47,7 +54,7 @@
 	class="hidden h-full w-56 shrink-0 flex-col gap-1 overflow-y-auto border-r border-foreground/10 bg-sidebar p-4 sm:flex"
 >
 	<div class="mb-4 flex items-center gap-2 px-3">
-		<img src="/logo.svg" alt="" class="h-6 w-6 shrink-0" />
+		<img src={logoSrc} alt="" class="h-6 w-6 shrink-0 object-contain" />
 		<p class="text-lg font-semibold text-sidebar-foreground">Marcelus</p>
 	</div>
 	{#each NAV as item (item.route)}

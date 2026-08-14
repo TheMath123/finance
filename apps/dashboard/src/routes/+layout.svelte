@@ -2,11 +2,10 @@
 	import { ModeWatcher } from 'mode-watcher';
 
 	import './layout.css';
-	import favicon from '$lib/assets/favicon.svg';
 
 	let { children } = $props();
 </script>
 
-<svelte:head><link rel="icon" href={favicon} /></svelte:head>
+<!-- Favicon já é servido por /favicon.svg (static/) via <link> em app.html — sem duplicar aqui. -->
 <ModeWatcher />
 {@render children()}
