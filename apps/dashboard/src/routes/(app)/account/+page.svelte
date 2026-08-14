@@ -10,6 +10,8 @@
 
 	import { enhance } from '$app/forms';
 
+	import AvatarField from '$lib/components/account/avatar-field.svelte';
+	import GoogleLinkButton from '$lib/components/auth/google-link-button.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import * as Card from '$lib/components/ui/card';
 	import * as Dialog from '$lib/components/ui/dialog';
@@ -60,12 +62,18 @@
 				{/if}
 			</Card.Description>
 		</Card.Header>
-		<Card.Content class="flex items-center justify-between gap-4">
-			<p class="truncate text-sm font-medium">{data.user.name}</p>
-			<Button variant="outline" size="sm" onclick={() => (nameOpen = true)}>
-				<PencilSimpleIcon size={16} />
-				Editar nome
-			</Button>
+		<Card.Content class="flex flex-col gap-4">
+			<AvatarField avatarUrl={data.user.avatarUrl} />
+			{#if form?.avatarMessage}
+				<p class="text-sm text-destructive">{form.avatarMessage}</p>
+			{/if}
+			<div class="flex items-center justify-between gap-4">
+				<p class="truncate text-sm font-medium">{data.user.name}</p>
+				<Button variant="outline" size="sm" onclick={() => (nameOpen = true)}>
+					<PencilSimpleIcon size={16} />
+					Editar nome
+				</Button>
+			</div>
 		</Card.Content>
 	</Card.Root>
 
@@ -76,6 +84,35 @@
 		<Card.Content class="flex flex-wrap gap-2">
 			<Button variant="outline" onclick={() => (passwordOpen = true)}>Trocar senha</Button>
 			<Button variant="outline" onclick={() => (emailOpen = true)}>Trocar e-mail</Button>
+		</Card.Content>
+	</Card.Root>
+
+	<Card.Root>
+		<Card.Header>
+			<Card.Title>Conta Google</Card.Title>
+			<Card.Description>
+				{#if data.user.googleLinked}
+					Sua conta está vinculada ao Google — dá pra entrar com ele além da senha.
+				{:else}
+					Vincule sua conta Google (mesmo e-mail) pra também poder entrar com ele.
+				{/if}
+			</Card.Description>
+		</Card.Header>
+		<Card.Content class="flex flex-col gap-2">
+			{#if data.user.googleLinked}
+				<form method="POST" action="?/unlinkGoogle" use:enhance class="w-fit">
+					<Button type="submit" variant="outline" size="sm">Desvincular Google</Button>
+				</form>
+				<p class="text-xs text-muted-foreground">
+					Se desvincular, você ainda consegue entrar com sua senha, ou redefini-la a qualquer
+					momento em "Esqueci minha senha".
+				</p>
+			{:else}
+				<GoogleLinkButton />
+			{/if}
+			{#if form?.googleMessage}
+				<p class="text-sm text-destructive">{form.googleMessage}</p>
+			{/if}
 		</Card.Content>
 	</Card.Root>
 

@@ -89,6 +89,48 @@ export const actions: Actions = {
 		return { whatsappRevoked: true };
 	},
 
+	linkGoogle: async ({ request, locals }) => {
+		if (!locals.session) redirect(303, '/login');
+		const form = await request.formData();
+		const idToken = form.get('idToken')?.toString() ?? '';
+		if (!idToken) return fail(400, { googleMessage: 'Token do Google ausente.' });
+
+		const result = await authApi.linkGoogle(locals.session.accessToken, idToken);
+		if (!result.ok)
+			return fail(result.error.status || 500, { googleMessage: result.error.message });
+		return { googleLinked: true };
+	},
+
+	unlinkGoogle: async ({ locals }) => {
+		if (!locals.session) redirect(303, '/login');
+		const result = await authApi.unlinkGoogle(locals.session.accessToken);
+		if (!result.ok)
+			return fail(result.error.status || 500, { googleMessage: result.error.message });
+		return { googleUnlinked: true };
+	},
+
+	uploadAvatar: async ({ request, locals }) => {
+		if (!locals.session) redirect(303, '/login');
+		const form = await request.formData();
+		const file = form.get('file');
+		if (!(file instanceof File) || file.size === 0) {
+			return fail(400, { avatarMessage: 'Selecione uma imagem.' });
+		}
+
+		const result = await authApi.uploadAvatar(locals.session.accessToken, file);
+		if (!result.ok)
+			return fail(result.error.status || 500, { avatarMessage: result.error.message });
+		return { avatarUploaded: true };
+	},
+
+	removeAvatar: async ({ locals }) => {
+		if (!locals.session) redirect(303, '/login');
+		const result = await authApi.removeAvatar(locals.session.accessToken);
+		if (!result.ok)
+			return fail(result.error.status || 500, { avatarMessage: result.error.message });
+		return { avatarRemoved: true };
+	},
+
 	requestDeletion: async ({ request, locals }) => {
 		if (!locals.session) redirect(303, '/login');
 		const form = await request.formData();

@@ -1,6 +1,6 @@
 import type { Either, PlatformRole } from '@finance/shared';
 
-import { apiRequest, type ApiError } from './api-client';
+import { apiRequest, apiRequestMultipart, type ApiError } from './api-client';
 
 /** Espelha o AuthSession do backend (application/use-cases/auth/session.ts). */
 export interface SessionUser {
@@ -11,6 +11,9 @@ export interface SessionUser {
 	emailVerifiedAt: string | null;
 	pendingEmail: string | null;
 	platformRole: PlatformRole;
+	avatarUrl: string | null;
+	/** Tem uma conta Google vinculada (login social ou vínculo manual pelo perfil, M5-07)? */
+	googleLinked: boolean;
 }
 
 export interface AuthSession {
@@ -41,6 +44,31 @@ export function googleSignIn(input: {
 	termsAccepted: true;
 }): Promise<Either<ApiError, AuthSession>> {
 	return apiRequest('/auth/google', { method: 'POST', body: input });
+}
+
+/** Vínculo de conta Google pelo perfil (M5-07) — usuário já autenticado. */
+export function linkGoogle(
+	accessToken: string,
+	idToken: string
+): Promise<Either<ApiError, unknown>> {
+	return apiRequest('/auth/me/google/link', { method: 'POST', body: { idToken }, accessToken });
+}
+
+export function unlinkGoogle(accessToken: string): Promise<Either<ApiError, unknown>> {
+	return apiRequest('/auth/me/google/unlink', { method: 'POST', accessToken });
+}
+
+export function uploadAvatar(
+	accessToken: string,
+	file: File
+): Promise<Either<ApiError, { avatarKey: string }>> {
+	const formData = new FormData();
+	formData.set('file', file);
+	return apiRequestMultipart('/auth/me/avatar', { formData, accessToken });
+}
+
+export function removeAvatar(accessToken: string): Promise<Either<ApiError, unknown>> {
+	return apiRequest('/auth/me/avatar', { method: 'DELETE', accessToken });
 }
 
 export function refresh(refreshToken: string): Promise<Either<ApiError, AuthSession>> {

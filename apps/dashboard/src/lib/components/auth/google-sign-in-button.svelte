@@ -3,15 +3,17 @@
 
 	import { PUBLIC_GOOGLE_CLIENT_ID } from '$env/static/public';
 
+	import { renderGoogleButton } from '$lib/google-identity';
+
 	import type { GoogleCredentialResponse } from './google-identity';
 
 	/**
-	 * Login social com Google via Google Identity Services (GIS) — script
-	 * carregado direto do Google, sem SDK/pacote novo. O `callback` recebe o
+	 * Login social com Google via Google Identity Services (GIS) — carregamento
+	 * do script e render do botão ficam em `$lib/google-identity.ts`
+	 * (compartilhado com `google-link-button.svelte`). O `callback` recebe o
 	 * ID token (`credential`) no próprio JS do browser; a verificação de
 	 * verdade acontece no backend (`POST /auth/google`), este componente só
 	 * repassa o token pro endpoint `/login/google` da própria dashboard.
-	 * Tipagem do `window.google` fica em ./google-identity.d.ts.
 	 */
 
 	let container = $state<HTMLDivElement>();
@@ -38,29 +40,7 @@
 
 	onMount(() => {
 		if (!PUBLIC_GOOGLE_CLIENT_ID || !container) return;
-
-		const script = document.createElement('script');
-		script.src = 'https://accounts.google.com/gsi/client';
-		script.async = true;
-		script.onload = () => {
-			if (!window.google || !container) return;
-			window.google.accounts.id.initialize({
-				client_id: PUBLIC_GOOGLE_CLIENT_ID,
-				callback: handleCredential
-			});
-			window.google.accounts.id.renderButton(container, {
-				theme: 'outline',
-				size: 'large',
-				width: 320,
-				text: 'continue_with',
-				locale: 'pt-BR'
-			});
-		};
-		document.head.appendChild(script);
-
-		return () => {
-			script.remove();
-		};
+		return renderGoogleButton(container, PUBLIC_GOOGLE_CLIENT_ID, handleCredential);
 	});
 </script>
 
