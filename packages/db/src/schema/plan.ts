@@ -53,6 +53,17 @@ export const plans = pgTable('plans', {
   features: jsonb('features').$type<string[]>().notNull().default([]),
   isActive: boolean('is_active').notNull().default(true),
   sortOrder: integer('sort_order').notNull().default(0),
+  /**
+   * Planos privados: sob medida pra um workspace específico (regras/preço
+   * customizados), nunca listado no catálogo de auto-atendimento
+   * (`listActive`) e nunca assinável via checkout — só o superadmin vincula,
+   * via `/saas/workspaces`. Sem `.references()` de propósito: `workspace.ts`
+   * já importa este arquivo (`workspaces.planId` → `plans.id`), então uma FK
+   * de volta pra `workspaces` aqui criaria um ciclo de tipos que o `tsc` não
+   * resolve (`implicitly has type 'any'`); a integridade referencial desse
+   * campo é garantida em SQL puro na própria migration, não no schema Drizzle.
+   */
+  restrictedToWorkspaceId: uuid('restricted_to_workspace_id'),
   createdAt: createdAt(),
   updatedAt: updatedAt(),
 });
