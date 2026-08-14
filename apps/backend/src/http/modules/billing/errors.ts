@@ -23,4 +23,9 @@ export const BILLING_ERRORS: Record<BillingError, HttpError> = {
     message:
       'Este workspace já tem uma assinatura ativa. Use o Customer Portal pra trocar de plano ou cancelar.',
   },
+  plan_not_purchasable: {
+    status: 409,
+    code: 'plan_not_purchasable',
+    message: 'Esse plano não está disponível para assinatura.',
+  },
 };

@@ -1,5 +1,5 @@
 import { planPrices, plans, workspaces } from '@finance/db';
-import { and, asc, eq, ne, sql } from 'drizzle-orm';
+import { and, asc, eq, inArray, isNull, ne, sql } from 'drizzle-orm';
 import type {
   Plan,
   PlanRepository,
@@ -15,6 +15,13 @@ function sortPrices<T extends Pick<Plan, 'prices'>>(plan: T): T {
   };
 }
 
+/** `restrictedToWorkspaceName` só é resolvido de verdade por `list()` (única tela que exibe o vínculo). */
+function withoutName<T extends object>(
+  row: T
+): T & { restrictedToWorkspaceName: null } {
+  return { ...row, restrictedToWorkspaceName: null };
+}
+
 export function createPlanRepository(db: DbHandle): PlanRepository {
   return {
     async list() {
@@ -22,34 +29,59 @@ export function createPlanRepository(db: DbHandle): PlanRepository {
         orderBy: asc(plans.sortOrder),
         with: withPrices,
       });
-      return rows.map(sortPrices);
+      const workspaceIds = [
+        ...new Set(
+          rows
+            .map((r) => r.restrictedToWorkspaceId)
+            .filter((id): id is string => id !== null)
+        ),
+      ];
+      const workspaceNameById = new Map<string, string>();
+      if (workspaceIds.length > 0) {
+        const workspaceRows = await db
+          .select({ id: workspaces.id, name: workspaces.name })
+          .from(workspaces)
+          .where(inArray(workspaces.id, workspaceIds));
+        for (const w of workspaceRows) workspaceNameById.set(w.id, w.name);
+      }
+      return rows.map((row) =>
+        sortPrices({
+          ...row,
+          restrictedToWorkspaceName: row.restrictedToWorkspaceId
+            ? (workspaceNameById.get(row.restrictedToWorkspaceId) ?? null)
+            : null,
+        })
+      );
     },
     async listActive() {
       const rows = await db.query.plans.findMany({
-        where: eq(plans.isActive, true),
+        where: and(
+          eq(plans.isActive, true),
+          isNull(plans.restrictedToWorkspaceId)
+        ),
         orderBy: asc(plans.sortOrder),
         with: withPrices,
       });
-      return rows.map(sortPrices);
+      return rows.map((row) => sortPrices(withoutName(row)));
     },
     async findById(id) {
       const row = await db.query.plans.findFirst({
         where: eq(plans.id, id),
         with: withPrices,
       });
-      return row && sortPrices(row);
+      return row && sortPrices(withoutName(row));
     },
     async findByKey(key) {
       const row = await db.query.plans.findFirst({
         where: eq(plans.key, key),
         with: withPrices,
       });
-      return row && sortPrices(row);
+      return row && sortPrices(withoutName(row));
     },
     async create(data) {
       const [row] = await db.insert(plans).values(data).returning();
       if (!row) throw new Error('falha ao criar plano');
-      return { ...row, prices: [] };
+      return withoutName({ ...row, prices: [] });
     },
     async update(id, patch) {
       const [row] = await db
@@ -62,7 +94,9 @@ export function createPlanRepository(db: DbHandle): PlanRepository {
         where: eq(plans.id, id),
         with: withPrices,
       });
-      return updated ? sortPrices(updated) : { ...row, prices: [] };
+      return updated
+        ? sortPrices(withoutName(updated))
+        : withoutName({ ...row, prices: [] });
     },
     async setActive(id, isActive) {
       const [row] = await db
@@ -75,7 +109,9 @@ export function createPlanRepository(db: DbHandle): PlanRepository {
         where: eq(plans.id, id),
         with: withPrices,
       });
-      return updated ? sortPrices(updated) : { ...row, prices: [] };
+      return updated
+        ? sortPrices(withoutName(updated))
+        : withoutName({ ...row, prices: [] });
     },
     async countWorkspacesUsingPlan(id) {
       const [row] = await db

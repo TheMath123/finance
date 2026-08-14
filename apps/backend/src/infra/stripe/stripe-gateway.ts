@@ -86,6 +86,10 @@ export function createStripeGateway(): PaymentGateway {
       return { url: session.url };
     },
 
+    async cancelSubscription(input) {
+      await client().subscriptions.cancel(input.subscriptionId);
+    },
+
     async constructEvent(rawBody, signature): Promise<PaymentEvent> {
       const event = await client().webhooks.constructEventAsync(
         rawBody,

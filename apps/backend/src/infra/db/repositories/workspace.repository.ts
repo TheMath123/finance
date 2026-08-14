@@ -159,7 +159,12 @@ export function createWorkspaceRepository(db: DbHandle): WorkspaceRepository {
           const ownerId = ownerUserIdByWorkspace.get(w.id);
           const owner = ownerId ? ownerById.get(ownerId) : undefined;
           return {
-            workspace: w,
+            workspace: {
+              ...w,
+              // `restrictedToWorkspaceName` só é resolvido por `plan.list()` — aqui o
+              // próprio `w` já identifica o workspace, então o nome não faz falta.
+              plan: { ...w.plan, restrictedToWorkspaceName: null },
+            },
             memberCount: memberCountByWorkspace.get(w.id) ?? 0,
             ownerName: owner?.name ?? null,
             ownerEmail: owner?.email ?? null,

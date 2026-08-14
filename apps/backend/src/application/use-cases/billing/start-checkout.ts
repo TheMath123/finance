@@ -25,6 +25,10 @@ export async function startCheckout(
   const plan = await deps.repos.plan.findById(input.planId);
   if (!plan) return left('plan_not_found');
 
+  // Plano privado: só o superadmin vincula (set-workspace-plan), nunca via
+  // checkout — nem pro próprio workspace dono dele.
+  if (plan.restrictedToWorkspaceId) return left('plan_not_purchasable');
+
   const planPrice = plan.prices.find((p) => p.id === input.planPriceId);
   if (!planPrice) return left('plan_price_not_found');
 

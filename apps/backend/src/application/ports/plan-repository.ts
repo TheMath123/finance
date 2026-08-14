@@ -43,6 +43,14 @@ export interface Plan {
   features: string[];
   isActive: boolean;
   sortOrder: number;
+  /**
+   * Plano privado (sob medida pra um workspace específico): nunca aparece
+   * em `listActive()` nem é assinável via checkout — só o superadmin
+   * vincula, via `/saas/workspaces`. Nulo = plano público normal.
+   */
+  restrictedToWorkspaceId: string | null;
+  /** Nome do workspace de `restrictedToWorkspaceId`, resolvido só por `list()` (exibição no admin). Nulo se plano público. */
+  restrictedToWorkspaceName: string | null;
   createdAt: Date;
   updatedAt: Date;
   /** M5-03: opções de cobrança do plano (mensal/semestral/anual etc.) — sempre ao menos 1. */
@@ -56,6 +64,7 @@ export interface PlanInput {
   trialDays: number;
   limits: PlanLimits;
   features: string[];
+  restrictedToWorkspaceId?: string | null;
 }
 
 export interface PlanRepository {

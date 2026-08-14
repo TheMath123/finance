@@ -36,7 +36,8 @@ export interface WorkspacePlanPatch {
 /** M5-05 — patch de sincronização de estado de assinatura, vindo do webhook do Stripe (distinto de `WorkspacePlanPatch`, que é atribuição manual do superadmin). */
 export interface WorkspaceSubscriptionPatch {
   stripeCustomerId?: string;
-  stripeSubscriptionId?: string;
+  /** `null` limpa o campo — usado ao cancelar a assinatura na atribuição de um plano privado. */
+  stripeSubscriptionId?: string | null;
   subscriptionStatus?: SubscriptionStatus;
   planId?: string;
   planPriceId?: string | null;

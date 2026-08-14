@@ -32,6 +32,12 @@ export interface PaymentGateway {
     returnUrl: string;
   }): Promise<{ url: string }>;
   /**
+   * Cancela a assinatura imediatamente (não é "cancelar no fim do período" —
+   * é o cancelamento usado quando o superadmin vincula um plano privado a um
+   * workspace que já tinha assinatura Stripe ativa, ver `set-workspace-plan.ts`).
+   */
+  cancelSubscription(input: { subscriptionId: string }): Promise<void>;
+  /**
    * Lança erro em assinatura inválida — nunca retorna um evento não
    * confiável. Assíncrono porque o Bun não expõe crypto síncrono pro SDK do
    * Stripe (SubtleCrypto é async-only) — `constructEvent` síncrono lança

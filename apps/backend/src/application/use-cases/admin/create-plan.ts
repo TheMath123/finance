@@ -15,6 +15,13 @@ export async function createPlan(
   const featuresValid = await validateFeatureKeys(deps, input.features);
   if (!featuresValid) return left('unknown_feature_key');
 
+  if (input.restrictedToWorkspaceId) {
+    const workspace = await deps.repos.workspace.findById(
+      input.restrictedToWorkspaceId
+    );
+    if (!workspace) return left('workspace_not_found');
+  }
+
   const created = await deps.uow.run(async (repos) => {
     const plan = await repos.plan.create(input);
     await repos.adminAudit.record({

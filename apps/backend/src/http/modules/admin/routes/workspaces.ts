@@ -1,6 +1,7 @@
 import { Elysia } from 'elysia';
 import {
   confirmWorkspacePayment,
+  createPrivatePlanForWorkspace,
   listWorkspaces,
   setWorkspacePlan,
 } from '../../../../application/use-cases/admin';
@@ -10,6 +11,7 @@ import { fail, respond } from '../../../http-error';
 import { validateBody, validateParams, validateQuery } from '../../../validate';
 import { ADMIN_ERRORS } from '../errors';
 import {
+  createPrivatePlanSchema,
   listWorkspacesQuerySchema,
   setWorkspacePlanSchema,
   workspaceParamsSchema,
@@ -40,6 +42,26 @@ export const setWorkspacePlanRoute = (deps: AppDeps) =>
         p.value.workspaceId,
         input.value.planId,
         input.value.planPriceId
+      );
+      return respond(set, result, ADMIN_ERRORS, 200);
+    }
+  );
+
+export const createPrivatePlanRoute = (deps: AppDeps) =>
+  new Elysia().post(
+    '/admin/workspaces/:workspaceId/private-plan',
+    async ({ request, params, body, set }) => {
+      const p = validateParams(workspaceParamsSchema, params);
+      if (!p.ok) return fail(set, p.error);
+      const auth = await requireSuperadmin(deps, request);
+      if (!auth.ok) return fail(set, auth.error);
+      const input = validateBody(createPrivatePlanSchema, body);
+      if (!input.ok) return fail(set, input.error);
+      const result = await createPrivatePlanForWorkspace(
+        deps,
+        auth.value.userId,
+        p.value.workspaceId,
+        input.value
       );
       return respond(set, result, ADMIN_ERRORS, 200);
     }
