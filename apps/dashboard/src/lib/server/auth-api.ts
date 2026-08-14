@@ -98,6 +98,12 @@ export function confirmAccountDeletion(
 	return apiRequest('/auth/me/delete/confirm', { method: 'POST', body: { code }, accessToken });
 }
 
+export function verifyEmail(input: {
+	token: string;
+}): Promise<Either<ApiError, { message: string }>> {
+	return apiRequest('/auth/verify-email', { method: 'POST', body: input });
+}
+
 export function forgotPassword(input: {
 	email: string;
 }): Promise<Either<ApiError, { message: string }>> {

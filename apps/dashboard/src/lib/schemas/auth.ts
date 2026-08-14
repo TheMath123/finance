@@ -30,6 +30,10 @@ export const verifyResetCodeSchema = z.object({
 	code: resetCodeSchema
 });
 
+export const verifyEmailSchema = z.object({
+	token: z.string().min(1, 'Token inválido')
+});
+
 export const newPasswordSchema = z
 	.object({
 		password: z.string().min(8, 'A senha precisa de pelo menos 8 caracteres').max(128),

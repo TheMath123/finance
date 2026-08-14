@@ -90,10 +90,12 @@ export async function register(
     tokenHash: verify.hash,
     expiresAt: new Date(Date.now() + VERIFY_EMAIL_TOKEN_TTL_MS),
   });
+  const verifyUrl = new URL('/verify-email', deps.dashboardOrigin);
+  verifyUrl.searchParams.set('token', verify.raw);
   await deps.dispatch('email.verify-email', {
     to: user.email,
     name: user.name,
-    code: verify.raw,
+    verifyUrl: verifyUrl.toString(),
   });
 
   return right(await issueSession(deps, user, workspaceId));

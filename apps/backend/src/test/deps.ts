@@ -36,6 +36,7 @@ export function createTestDeps(
     storage: createInMemoryStorage(),
     payments: createFakePaymentGateway(),
     termsVersion: 'test',
+    dashboardOrigin: 'http://localhost:5173',
   };
 }
 

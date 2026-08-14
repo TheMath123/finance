@@ -4,7 +4,8 @@
  */
 export interface JobPayloads {
   'email.password-reset': { to: string; name: string; code: string };
-  'email.verify-email': { to: string; name: string; code: string };
+  /** Link (não código) — o e-mail traz um botão que leva direto pro dashboard confirmar. */
+  'email.verify-email': { to: string; name: string; verifyUrl: string };
   'email.password-changed': { to: string; name: string };
   /** Prova de posse do e-mail novo, na troca de e-mail do perfil (mesmo padrão do reset por código). */
   'email.confirm-email-change': { to: string; name: string; code: string };

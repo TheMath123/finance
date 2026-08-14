@@ -31,6 +31,8 @@ export interface UseCaseDeps {
   /** Gateway de pagamento (M5-05, Stripe) — checkout, portal de cobrança, tradução de webhook. */
   payments: PaymentGateway;
   termsVersion: string;
+  /** Origem do dashboard web (env DASHBOARD_ORIGIN) — usada pra montar o link de confirmação de e-mail enviado por e-mail (ver register.ts). */
+  dashboardOrigin: string;
 }
 
 /** Ator autenticado e autorizado num workspace (montado pela camada http). */

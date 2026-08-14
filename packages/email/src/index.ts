@@ -34,7 +34,7 @@ export interface Mailer {
   sendEmailVerification(input: {
     to: string;
     name: string;
-    code: string;
+    verifyUrl: string;
   }): Promise<void>;
   sendPasswordChanged(input: { to: string; name: string }): Promise<void>;
   sendAccountLocked(input: {
@@ -70,8 +70,8 @@ export interface Mailer {
 export const mailer: Mailer = {
   sendPasswordReset: ({ to, name, code }) =>
     send(to, 'Redefinição de senha', PasswordResetEmail({ name, code })),
-  sendEmailVerification: ({ to, name, code }) =>
-    send(to, 'Confirme seu e-mail', VerifyEmailEmail({ name, code })),
+  sendEmailVerification: ({ to, name, verifyUrl }) =>
+    send(to, 'Confirme seu e-mail', VerifyEmailEmail({ name, verifyUrl })),
   sendPasswordChanged: ({ to, name }) =>
     send(to, 'Sua senha foi alterada', PasswordChangedEmail({ name })),
   sendAccountLocked: ({ to, name, minutes }) =>

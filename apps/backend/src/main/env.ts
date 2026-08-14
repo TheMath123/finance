@@ -30,6 +30,9 @@ const envSchema = z.object({
    * Origem permitida no CORS (dashboard web — M4). O dashboard fala com a API
    * só pelo servidor do SvelteKit (server-to-server, sem CORS envolvido), então
    * isto é defesa em profundidade caso alguma rota vire proxy direto no futuro.
+   *
+   * Também usada pra montar o link de confirmação de e-mail enviado no
+   * cadastro (`${DASHBOARD_ORIGIN}/verify-email?token=...` — ver register.ts).
    */
   DASHBOARD_ORIGIN: z.string().url().default('http://localhost:5173'),
 });

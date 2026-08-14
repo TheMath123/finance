@@ -41,9 +41,14 @@ export function EmailLayout({
 }
 
 /**
- * Código exibido como texto puro (não um link): esquemas customizados
- * (mobile://...) são removidos por Gmail/Outlook/etc. em botões de e-mail,
- * então o app pede pro usuário copiar e colar o código em vez de clicar.
+ * Códigos de 6 dígitos (reset de senha, troca de e-mail, exclusão de conta)
+ * continuam em texto puro pra copiar/colar no app — não são links.
+ *
+ * Deep links com esquema customizado (mobile://...) FORAM tentados (ver
+ * tasks/done/07-deep-link-emails-auth.md) e abandonados: Gmail/Outlook/etc.
+ * removem `<a href>` com esquema não-http(s) por segurança. Isso não se
+ * aplica a links `https://` normais (ex: verify-email.tsx, que linka pro
+ * dashboard web) — só esquemas customizados são filtrados.
  */
 export const codeBoxStyle = {
   backgroundColor: '#f4f4f5',
@@ -58,4 +63,17 @@ export const codeBoxStyle = {
   padding: '14px 16px',
   textAlign: 'center',
   wordBreak: 'break-all',
+} as const;
+
+/** Botão de ação em links `https://` (ex: confirmar e-mail) — ver comentário acima. */
+export const buttonStyle = {
+  backgroundColor: '#18181b',
+  borderRadius: 8,
+  color: '#ffffff',
+  display: 'block',
+  fontSize: 15,
+  fontWeight: 600,
+  padding: '12px 20px',
+  textAlign: 'center',
+  textDecoration: 'none',
 } as const;
