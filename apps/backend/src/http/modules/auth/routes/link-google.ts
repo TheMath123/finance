@@ -19,5 +19,5 @@ export const linkGoogleRoute = (deps: AppDeps) =>
       userId: auth.value.userId,
       idToken: input.value.idToken,
     });
-    return respond(set, result, AUTH_ERRORS);
+    return respond(set, result, AUTH_ERRORS, 204);
   });

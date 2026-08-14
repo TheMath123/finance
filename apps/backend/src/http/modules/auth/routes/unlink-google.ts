@@ -13,5 +13,5 @@ export const unlinkGoogleRoute = (deps: AppDeps) =>
     const result = await unlinkGoogleAccount(deps, {
       userId: auth.value.userId,
     });
-    return respond(set, result, AUTH_ERRORS);
+    return respond(set, result, AUTH_ERRORS, 204);
   });
