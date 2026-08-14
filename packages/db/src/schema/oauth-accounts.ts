@@ -29,6 +29,10 @@ export const oauthAccounts = pgTable(
       t.provider,
       t.providerAccountId
     ),
+    // Impede um mesmo usuário linkar duas contas Google diferentes ao mesmo
+    // tempo (M5-07, vínculo pelo perfil) — sem isso o banco não garante nada
+    // além de "esse Google não está linkado a mais ninguém".
+    uniqueIndex('oauth_accounts_user_provider_idx').on(t.userId, t.provider),
     index('oauth_accounts_user_idx').on(t.userId),
   ]
 );

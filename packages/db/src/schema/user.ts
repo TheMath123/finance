@@ -35,6 +35,10 @@ export const users = pgTable('users', {
   lockedUntil: timestamp('locked_until', { withTimezone: true }),
   /** Suspensão administrativa (M4-08, superadmin) — distinto do lockout de senha. */
   suspendedAt: timestamp('suspended_at', { withTimezone: true }),
+  /** URL externa do avatar (hoje só a `picture` do Google) — nunca apagada por um upload manual, só deixa de valer enquanto `avatarKey` estiver preenchido. */
+  avatarUrl: text('avatar_url'),
+  /** Chave no storage S3-compatible de um avatar enviado manualmente (M5-07) — mesmo padrão de `attachmentKey`. Tem prioridade sobre `avatarUrl` quando preenchida. */
+  avatarKey: text('avatar_key'),
   /** Nullable apenas pela ordem de criação (user → workspace → update); a aplicação garante preenchimento. */
   defaultWorkspaceId: uuid('default_workspace_id').references(
     () => workspaces.id
