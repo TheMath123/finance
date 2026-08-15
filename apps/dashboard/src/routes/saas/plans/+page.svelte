@@ -1,5 +1,6 @@
 <script lang="ts">
 	import InfoIcon from 'phosphor-svelte/lib/InfoIcon';
+	import { SvelteSet } from 'svelte/reactivity';
 
 	import { enhance } from '$app/forms';
 
@@ -27,7 +28,10 @@
 	// Selecionadas separado da lista filtrada — senão marcar uma feature e
 	// depois filtrar ela pra fora da busca perderia a seleção no submit
 	// (checkbox some do DOM, valor não vai junto).
-	let selectedFeatures = $state<Set<string>>(new Set());
+	// SvelteSet já é reativo por si só (mutação in-place) — nunca reatribuir
+	// a variável (ver ESLint svelte/no-unnecessary-state-wrap), sempre
+	// `.clear()` + `.add(...)` pra resetar/preencher.
+	const selectedFeatures = new SvelteSet<string>();
 	let featureSearch = $state('');
 
 	// Mesma técnica de normalização usada em +page.server.ts (slugify) — tira
@@ -46,10 +50,8 @@
 	});
 
 	function toggleFeature(key: string, checked: boolean) {
-		const next = new Set(selectedFeatures);
-		if (checked) next.add(key);
-		else next.delete(key);
-		selectedFeatures = next;
+		if (checked) selectedFeatures.add(key);
+		else selectedFeatures.delete(key);
 	}
 
 	const INTERVAL_LABELS: Record<string, string> = {
@@ -306,7 +308,7 @@
 			onclick={() => {
 				createError = null;
 				featureSearch = '';
-				selectedFeatures = new Set();
+				selectedFeatures.clear();
 				createOpen = true;
 			}}>Novo plano</Button
 		>
@@ -345,7 +347,8 @@
 						onclick={() => {
 							editError = null;
 							featureSearch = '';
-							selectedFeatures = new Set(plan.features);
+							selectedFeatures.clear();
+							for (const key of plan.features) selectedFeatures.add(key);
 							editing = plan;
 						}}>Editar</Button
 					>

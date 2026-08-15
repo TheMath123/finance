@@ -87,11 +87,7 @@
 			<div class="flex items-center justify-between gap-4 border-t border-foreground/10 px-2 py-4">
 				<div class="flex min-w-0 items-center gap-3">
 					{#if member.avatarUrl}
-						<img
-							src={member.avatarUrl}
-							alt=""
-							class="h-9 w-9 shrink-0 rounded-full object-cover"
-						/>
+						<img src={member.avatarUrl} alt="" class="h-9 w-9 shrink-0 rounded-full object-cover" />
 					{:else}
 						<UserCircleIcon size={36} class="shrink-0 text-muted-foreground" weight="light" />
 					{/if}

@@ -16,9 +16,7 @@
 		<Card.Header>
 			<Card.Title>{data.success ? 'E-mail confirmado!' : 'Não foi possível confirmar'}</Card.Title>
 			<Card.Description>
-				{data.success
-					? 'Seu e-mail foi verificado com sucesso.'
-					: data.message}
+				{data.success ? 'Seu e-mail foi verificado com sucesso.' : data.message}
 			</Card.Description>
 		</Card.Header>
 		<Card.Footer>

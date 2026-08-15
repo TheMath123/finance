@@ -59,12 +59,7 @@
 				bind:this={fileInput}
 				onchange={handleFileChange}
 			/>
-			<Button
-				type="button"
-				variant="outline"
-				size="sm"
-				onclick={() => fileInput?.click()}
-			>
+			<Button type="button" variant="outline" size="sm" onclick={() => fileInput?.click()}>
 				Alterar foto
 			</Button>
 		</form>
