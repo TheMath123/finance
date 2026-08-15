@@ -7,13 +7,14 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "bun test"
   },
   "dependencies": {
-    "@finance/shared": "workspace:*",
-    "expr-eval": "2.0.2"
+    "@finance/shared": "workspace:*"
   },
   "devDependencies": {
+    "@types/bun": "1.3.14",
     "typescript": "5.9.3"
   }
 }
