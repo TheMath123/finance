@@ -45,6 +45,17 @@ import {
 
 const uniqueEmail = () => `test-${crypto.randomUUID()}@test.local`;
 
+/**
+ * O job `email.verify-email` carrega `verifyUrl` (link clicável), não um
+ * `code` solto — o token vem embutido na query string (`?token=...`).
+ */
+const tokenFromVerifyJob = (job: DispatchedJob): string => {
+  const { verifyUrl } = job.payload as { verifyUrl: string };
+  const token = new URL(verifyUrl).searchParams.get('token');
+  if (!token) throw new Error('verifyUrl sem token');
+  return token;
+};
+
 const fakeGoogleIdentity = (overrides: Partial<GoogleIdentity> = {}) => ({
   sub: crypto.randomUUID(),
   email: uniqueEmail(),
@@ -727,7 +738,7 @@ describe('auth: verificação de e-mail e reset de senha', () => {
     // verifica o e-mail com o token capturado do job
     const verifyJob = jobs.find((j) => j.name === 'email.verify-email');
     if (!verifyJob) throw new Error('job de verificação não disparado');
-    const verifyToken = (verifyJob.payload as { code: string }).code;
+    const verifyToken = tokenFromVerifyJob(verifyJob);
     expect((await verifyEmail(deps, { token: verifyToken })).ok).toBe(true);
     // token de verificação é single-use
     expect((await verifyEmail(deps, { token: verifyToken })).ok).toBe(false);
@@ -825,7 +836,7 @@ describe('auth: verificação de e-mail e reset de senha', () => {
     if (!session.ok) throw new Error('registro falhou');
     const verifyJob = jobs.find((j) => j.name === 'email.verify-email');
     if (!verifyJob) throw new Error('job de verificação não disparado');
-    const verifyToken = (verifyJob.payload as { code: string }).code;
+    const verifyToken = tokenFromVerifyJob(verifyJob);
     expect((await verifyEmail(deps, { token: verifyToken })).ok).toBe(true);
 
     await forgotPassword(deps, { email });
@@ -867,7 +878,7 @@ describe('auth: lockout progressivo', () => {
     // reset de senha zera o lockout: verifica e-mail, pede reset e redefine
     const verifyJob = jobs.find((j) => j.name === 'email.verify-email');
     if (!verifyJob) throw new Error('job de verificação não disparado');
-    const verifyToken = (verifyJob.payload as { code: string }).code;
+    const verifyToken = tokenFromVerifyJob(verifyJob);
     expect((await verifyEmail(deps, { token: verifyToken })).ok).toBe(true);
     await forgotPassword(deps, { email });
     const resetJob = jobs.find((j) => j.name === 'email.password-reset');
