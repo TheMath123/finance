@@ -3,6 +3,7 @@
 
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
+	import { Input } from '$lib/components/ui/input';
 
 	let { data, form } = $props();
 </script>
@@ -19,6 +20,16 @@
 		</p>
 	</div>
 
+	<form method="GET" class="flex gap-2">
+		<Input
+			type="search"
+			name="q"
+			value={data.search}
+			placeholder="Buscar por título, descrição ou key"
+		/>
+		<Button type="submit">Buscar</Button>
+	</form>
+
 	{#if form?.message}
 		<p class="text-sm text-destructive">{form.message}</p>
 	{/if}
@@ -30,7 +41,8 @@
 			>
 				<div class="min-w-0">
 					<div class="flex items-center gap-2">
-						<p class="truncate text-sm font-medium">{flag.key}</p>
+						<p class="truncate text-sm font-medium">{flag.title}</p>
+						<span class="truncate font-mono text-xs text-muted-foreground">{flag.key}</span>
 						{#if flag.isSystem}
 							<Badge variant="outline">Sistema</Badge>
 						{/if}

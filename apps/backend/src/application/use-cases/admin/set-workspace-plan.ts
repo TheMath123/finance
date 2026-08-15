@@ -9,10 +9,10 @@ const STRIPE_ACTIVE_STATUSES = ['trialing', 'active', 'past_due'];
 
 /**
  * Atribui `plan`/`planPriceId` a um workspace, calcula trial, cancela
- * assinatura Stripe ativa quando o plano vinculado é privado desse mesmo
- * workspace, e grava o audit log — tudo dentro de uma única transação.
- * Reaproveitado por `setWorkspacePlan` (atribuição manual do superadmin) e
- * por `createPrivatePlanForWorkspace` (cria + já atribui, atomicamente).
+ * assinatura Stripe ativa quando o plano vinculado é privado, e grava o
+ * audit log — tudo dentro de uma única transação. Qualquer workspace pode
+ * receber qualquer plano (público ou privado) — o superadmin é quem decide
+ * isso manualmente aqui, sem restrição de vínculo prévio.
  */
 export async function assignPlanToWorkspace(
   deps: Pick<UseCaseDeps, 'repos' | 'uow' | 'payments'>,
@@ -21,13 +21,6 @@ export async function assignPlanToWorkspace(
   plan: Plan,
   planPriceId?: string
 ): Promise<Either<AdminError, Workspace>> {
-  if (
-    plan.restrictedToWorkspaceId &&
-    plan.restrictedToWorkspaceId !== workspace.id
-  ) {
-    return left('plan_restricted_to_other_workspace');
-  }
-
   let resolvedPriceId: string | null = null;
   if (planPriceId) {
     const price = await deps.repos.plan.findPriceById(planPriceId);
@@ -45,12 +38,12 @@ export async function assignPlanToWorkspace(
       : null
     : workspace.trialEndsAt;
 
-  // Plano privado vinculado a este workspace: se ele já tinha assinatura
+  // Plano privado sendo vinculado: se o workspace já tinha assinatura
   // Stripe ativa, cancela na hora — passa a ser gerenciado 100% manualmente.
   // Cancelamento roda antes da transação (chamada de rede, nunca dentro do
   // `uow.run`) — se falhar, nada no banco muda ainda.
   const shouldCancelStripe =
-    plan.restrictedToWorkspaceId === workspace.id &&
+    plan.isPrivate &&
     !!workspace.stripeSubscriptionId &&
     STRIPE_ACTIVE_STATUSES.includes(workspace.subscriptionStatus);
   if (shouldCancelStripe && workspace.stripeSubscriptionId) {

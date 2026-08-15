@@ -41,8 +41,8 @@ export const createPlanSchema = z.object({
   trialDays: z.number().int().min(0).max(365),
   limits: planLimitsSchema,
   features: z.array(z.string().min(1).max(80)).default([]),
-  /** Plano privado (sob medida pra um workspace): nunca aparece no catálogo, nunca é assinável. */
-  restrictedToWorkspaceId: z.string().uuid().nullable().optional(),
+  /** Plano privado: nunca aparece no catálogo de auto-atendimento, nunca é assinável via checkout. */
+  isPrivate: z.boolean().optional(),
 });
 
 export const updatePlanSchema = createPlanSchema.omit({ key: true }).partial();
@@ -65,16 +65,6 @@ export const updatePlanPriceSchema = createPlanPriceSchema.partial();
 export const setWorkspacePlanSchema = z.object({
   planId: z.string().uuid(),
   planPriceId: z.string().uuid().optional(),
-});
-
-/** Painel `/saas/workspaces`: cria plano privado sob medida + já vincula a este workspace, atomicamente. */
-export const createPrivatePlanSchema = z.object({
-  name: z.string().min(1).max(80),
-  description: z.string().max(300).nullable().optional(),
-  trialDays: z.number().int().min(0).max(365).default(0),
-  limits: planLimitsSchema,
-  features: z.array(z.string().min(1).max(80)).default([]),
-  price: createPlanPriceSchema,
 });
 
 export const defaultCategoryParamsSchema = z.object({
@@ -111,4 +101,8 @@ export const featureFlagParamsSchema = z.object({
 
 export const updateFeatureFlagSchema = z.object({
   enabled: z.boolean(),
+});
+
+export const listFeatureFlagsQuerySchema = z.object({
+  search: z.string().min(1).max(120).optional(),
 });

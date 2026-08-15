@@ -11,7 +11,6 @@ import {
   desc,
   eq,
   gte,
-  ilike,
   inArray,
   isNotNull,
   isNull,
@@ -22,6 +21,7 @@ import {
 } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import type { TransactionRepository } from '../../../application/ports/transaction-repository';
+import { toPrefixTsQuery } from '../full-text-search';
 import type { DbHandle } from '../handle';
 
 export function createTransactionRepository(
@@ -130,9 +130,14 @@ export function createTransactionRepository(
         );
       }
       if (filters.qNormalized) {
-        conditions.push(
-          ilike(transactions.descriptionNormalized, `%${filters.qNormalized}%`)
-        );
+        // qNormalized já chega sem acento/lowercase — config `simple` (sem
+        // stemming, mesmo texto que alimenta `searchVector` na migration).
+        const tsQuery = toPrefixTsQuery(filters.qNormalized);
+        if (tsQuery) {
+          conditions.push(
+            sql`${transactions.searchVector} @@ to_tsquery('simple', ${tsQuery})`
+          );
+        }
       }
       return db.query.transactions.findMany({
         where: and(...conditions),

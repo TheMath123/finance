@@ -21,23 +21,6 @@ export async function updatePlan(
     if (!featuresValid) return left('unknown_feature_key');
   }
 
-  if (
-    input.restrictedToWorkspaceId &&
-    input.restrictedToWorkspaceId !== existing.restrictedToWorkspaceId
-  ) {
-    const workspace = await deps.repos.workspace.findById(
-      input.restrictedToWorkspaceId
-    );
-    if (!workspace) return left('workspace_not_found');
-
-    // Não faz sentido "privatizar" um plano que ainda está em uso por mais
-    // de um workspace — só o próprio dono do vínculo (se já houver) escapa
-    // dessa checagem, já contado como 1.
-    const workspacesUsingPlan =
-      await deps.repos.plan.countWorkspacesUsingPlan(id);
-    if (workspacesUsingPlan > 1) return left('plan_shared_cannot_restrict');
-  }
-
   const updated = await deps.uow.run(async (repos) => {
     const plan = await repos.plan.update(id, input);
     await repos.adminAudit.record({

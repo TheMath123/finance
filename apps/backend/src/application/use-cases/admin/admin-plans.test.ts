@@ -20,7 +20,6 @@ import {
   addPlanPrice,
   confirmWorkspacePayment,
   createPlan,
-  createPrivatePlanForWorkspace,
   deactivatePlan,
   deletePlanPrice,
   listPlans,
@@ -518,55 +517,47 @@ describe('workspace: criar workspace usa o plano free real (M5-02)', () => {
 });
 
 describe('admin: planos privados', () => {
-  function draftPrivatePlanInput(maxSavedFormulasPerWorkspace = 10) {
-    return {
-      name: 'Plano Privado de Teste',
-      trialDays: 0,
-      limits: {
-        maxOwnedSharedWorkspaces: 1,
-        maxMembersPerWorkspace: 5,
-        maxSavedFormulasPerWorkspace,
-      },
-      features: [] as string[],
-      price: {
-        billingIntervalUnit: 'month' as const,
-        billingIntervalCount: 1,
-        priceCents: 50000,
-        maxInstallments: 1,
-        paymentMethods: ['credit_card', 'pix'] as (
-          | 'credit_card'
-          | 'debit_card'
-          | 'pix'
-        )[],
-        isDefault: true,
-        sortOrder: 0,
-      },
-    };
+  const privatePriceInput = {
+    billingIntervalUnit: 'month' as const,
+    billingIntervalCount: 1,
+    priceCents: 50000,
+    maxInstallments: 1,
+    paymentMethods: ['credit_card', 'pix'] as (
+      | 'credit_card'
+      | 'debit_card'
+      | 'pix'
+    )[],
+    isDefault: true,
+    sortOrder: 0,
+  };
+
+  async function createPrivatePlanWithPrice(
+    deps: ReturnType<typeof createTestDeps>,
+    adminUserId: string
+  ) {
+    const created = await createPlan(deps, adminUserId, {
+      ...draftPlanInput(uniquePlanKey()),
+      isPrivate: true,
+    });
+    if (!created.ok) throw new Error('falha ao criar plano privado de teste');
+    await addPlanPrice(deps, adminUserId, created.value.id, privatePriceInput);
+    const withPrice = await deps.repos.plan.findById(created.value.id);
+    if (!withPrice) throw new Error('plano privado sumiu após criar preço');
+    return withPrice;
   }
 
   test('plano privado nunca aparece no catálogo de auto-atendimento', async () => {
     const deps = createTestDeps(db);
     const adminUserId = await registerAdmin(deps);
-    const owner = await register(deps, {
-      name: 'Dono Privado',
-      email: uniqueEmail(),
-      password: 'senha-forte-123',
-    });
-    expect(owner.ok).toBe(true);
-    if (!owner.ok) return;
 
-    const created = await createPrivatePlanForWorkspace(
-      deps,
-      adminUserId,
-      owner.value.defaultWorkspaceId,
-      draftPrivatePlanInput()
-    );
-    expect(created.ok).toBe(true);
-    if (!created.ok) return;
-    expect(created.value.planId).not.toBeNull();
+    const plan = await createPrivatePlanWithPrice(deps, adminUserId);
 
     const catalog = await listAvailablePlans(deps);
-    expect(catalog.some((p) => p.id === created.value.planId)).toBe(false);
+    expect(catalog.some((p) => p.id === plan.id)).toBe(false);
+
+    // Continua listado normalmente pro admin — só some do catálogo público.
+    const adminList = await listPlans(deps);
+    expect(adminList.some((p) => p.id === plan.id)).toBe(true);
   });
 
   test('checkout rejeita plano privado, mesmo pro workspace dono dele', async () => {
@@ -580,21 +571,14 @@ describe('admin: planos privados', () => {
     expect(owner.ok).toBe(true);
     if (!owner.ok) return;
 
-    const created = await createPrivatePlanForWorkspace(
+    const plan = await createPrivatePlanWithPrice(deps, adminUserId);
+    const assigned = await setWorkspacePlan(
       deps,
       adminUserId,
       owner.value.defaultWorkspaceId,
-      draftPrivatePlanInput()
+      plan.id
     );
-    expect(created.ok).toBe(true);
-    if (!created.ok) return;
-
-    const workspaceAfter = await deps.repos.workspace.findById(
-      owner.value.defaultWorkspaceId
-    );
-    const plan = await deps.repos.plan.findById(workspaceAfter?.planId ?? '');
-    expect(plan).toBeDefined();
-    if (!plan) return;
+    expect(assigned.ok).toBe(true);
 
     const checkout = await startCheckout(
       deps,
@@ -614,7 +598,7 @@ describe('admin: planos privados', () => {
     if (!checkout.ok) expect(checkout.error).toBe('plan_not_purchasable');
   });
 
-  test('rejeita atribuir plano privado de outro workspace', async () => {
+  test('setWorkspacePlan atribui o mesmo plano privado a workspaces diferentes, sem restrição de vínculo', async () => {
     const deps = createTestDeps(db);
     const adminUserId = await registerAdmin(deps);
     const ownerA = await register(deps, {
@@ -631,31 +615,34 @@ describe('admin: planos privados', () => {
     expect(ownerB.ok).toBe(true);
     if (!ownerA.ok || !ownerB.ok) return;
 
-    const created = await createPrivatePlanForWorkspace(
+    const plan = await createPrivatePlanWithPrice(deps, adminUserId);
+
+    const assignA = await setWorkspacePlan(
       deps,
       adminUserId,
       ownerA.value.defaultWorkspaceId,
-      draftPrivatePlanInput()
+      plan.id
     );
-    expect(created.ok).toBe(true);
-    if (!created.ok) return;
+    const assignB = await setWorkspacePlan(
+      deps,
+      adminUserId,
+      ownerB.value.defaultWorkspaceId,
+      plan.id
+    );
+    expect(assignA.ok).toBe(true);
+    expect(assignB.ok).toBe(true);
 
     const workspaceA = await deps.repos.workspace.findById(
       ownerA.value.defaultWorkspaceId
     );
-
-    const crossAssign = await setWorkspacePlan(
-      deps,
-      adminUserId,
-      ownerB.value.defaultWorkspaceId,
-      workspaceA?.planId ?? ''
+    const workspaceB = await deps.repos.workspace.findById(
+      ownerB.value.defaultWorkspaceId
     );
-    expect(crossAssign.ok).toBe(false);
-    if (!crossAssign.ok)
-      expect(crossAssign.error).toBe('plan_restricted_to_other_workspace');
+    expect(workspaceA?.planId).toBe(plan.id);
+    expect(workspaceB?.planId).toBe(plan.id);
   });
 
-  test('atribuir o próprio plano privado cancela assinatura Stripe ativa', async () => {
+  test('atribuir plano privado cancela assinatura Stripe ativa do workspace', async () => {
     const deps = createTestDeps(db);
     const adminUserId = await registerAdmin(deps);
     const owner = await register(deps, {
@@ -676,59 +663,21 @@ describe('admin: planos privados', () => {
       })
       .where(eq(workspaces.id, owner.value.defaultWorkspaceId));
 
-    const created = await createPrivatePlanForWorkspace(
+    const plan = await createPrivatePlanWithPrice(deps, adminUserId);
+    const assigned = await setWorkspacePlan(
       deps,
       adminUserId,
       owner.value.defaultWorkspaceId,
-      draftPrivatePlanInput()
+      plan.id
     );
-    expect(created.ok).toBe(true);
-    if (!created.ok) return;
+    expect(assigned.ok).toBe(true);
+    if (!assigned.ok) return;
 
-    expect(created.value.subscriptionStatus).toBe('canceled');
-    expect(created.value.stripeSubscriptionId).toBeNull();
+    expect(assigned.value.subscriptionStatus).toBe('canceled');
+    expect(assigned.value.stripeSubscriptionId).toBeNull();
   });
 
-  test('createPrivatePlanForWorkspace cria e atribui atomicamente', async () => {
-    const deps = createTestDeps(db);
-    const adminUserId = await registerAdmin(deps);
-    const owner = await register(deps, {
-      name: 'Dono Plano Combinado',
-      email: uniqueEmail(),
-      password: 'senha-forte-123',
-    });
-    expect(owner.ok).toBe(true);
-    if (!owner.ok) return;
-
-    const result = await createPrivatePlanForWorkspace(
-      deps,
-      adminUserId,
-      owner.value.defaultWorkspaceId,
-      draftPrivatePlanInput(1)
-    );
-    expect(result.ok).toBe(true);
-    if (!result.ok) return;
-
-    const plan = await deps.repos.plan.findById(result.value.planId);
-    expect(plan?.restrictedToWorkspaceId).toBe(owner.value.defaultWorkspaceId);
-    expect(plan?.prices.length).toBe(1);
-    expect(plan?.isActive).toBe(true);
-
-    const auditRows = await db
-      .select()
-      .from(adminAuditLogs)
-      .where(eq(adminAuditLogs.entityId, plan?.id ?? ''));
-    expect(auditRows.some((r) => r.action === 'create_plan')).toBe(true);
-    const workspaceAudit = await db
-      .select()
-      .from(adminAuditLogs)
-      .where(eq(adminAuditLogs.entityId, owner.value.defaultWorkspaceId));
-    expect(workspaceAudit.some((r) => r.action === 'set_workspace_plan')).toBe(
-      true
-    );
-  });
-
-  test('rejeita restringir plano já compartilhado por mais de um workspace', async () => {
+  test('updatePlan pode tornar privado um plano já usado por vários workspaces, sem tirá-lo de quem já tem', async () => {
     const deps = createTestDeps(db);
     const adminUserId = await registerAdmin(deps);
     const ownerA = await register(deps, {
@@ -766,11 +715,24 @@ describe('admin: planos privados', () => {
       shared.value.id
     );
 
-    const restrict = await updatePlan(deps, adminUserId, shared.value.id, {
-      restrictedToWorkspaceId: ownerA.value.defaultWorkspaceId,
+    const madePrivate = await updatePlan(deps, adminUserId, shared.value.id, {
+      isPrivate: true,
     });
-    expect(restrict.ok).toBe(false);
-    if (!restrict.ok)
-      expect(restrict.error).toBe('plan_shared_cannot_restrict');
+    expect(madePrivate.ok).toBe(true);
+    if (madePrivate.ok) expect(madePrivate.value.isPrivate).toBe(true);
+
+    // Nenhum dos dois workspaces perde o plano por ele ter virado privado.
+    const workspaceA = await deps.repos.workspace.findById(
+      ownerA.value.defaultWorkspaceId
+    );
+    const workspaceB = await deps.repos.workspace.findById(
+      ownerB.value.defaultWorkspaceId
+    );
+    expect(workspaceA?.planId).toBe(shared.value.id);
+    expect(workspaceB?.planId).toBe(shared.value.id);
+
+    // E some do catálogo de auto-atendimento pra qualquer workspace novo.
+    const catalog = await listAvailablePlans(deps);
+    expect(catalog.some((p) => p.id === shared.value.id)).toBe(false);
   });
 });

@@ -1,4 +1,4 @@
-import { relations, sql } from 'drizzle-orm';
+import { relations, type SQL, sql } from 'drizzle-orm';
 import {
   bigint,
   date,
@@ -16,7 +16,7 @@ import { cards } from './card';
 import { cardInvoices } from './card-invoice';
 import { categories } from './category';
 import { transactionMethodEnum, transactionTypeEnum } from './enums';
-import { createdAt, id, updatedAt } from './helpers';
+import { createdAt, id, tsvector, updatedAt } from './helpers';
 import { recurringTransactions } from './recurring-transaction';
 import { users } from './user';
 import { workspaces } from './workspace';
@@ -74,9 +74,20 @@ export const transactions = pgTable(
     deletedAt: timestamp('deleted_at', { withTimezone: true }),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
+    /**
+     * Busca full-text por descrição — gerada a partir de
+     * `descriptionNormalized` (já sem acento/caixa), config `simple` (sem
+     * stemming, o texto já chega normalizado). Ver CLAUDE.md: buscas por
+     * palavra usam full-text search, nunca ILIKE.
+     */
+    searchVector: tsvector('search_vector').generatedAlwaysAs(
+      (): SQL =>
+        sql`to_tsvector('simple', ${transactions.descriptionNormalized})`
+    ),
   },
   (t) => [
     index('transactions_workspace_date_idx').on(t.workspaceId, t.date),
+    index('transactions_search_vector_idx').using('gin', t.searchVector),
     index('transactions_account_idx').on(t.accountId),
     index('transactions_invoice_idx').on(t.invoiceId),
     index('transactions_category_idx').on(t.categoryId),

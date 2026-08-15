@@ -44,7 +44,10 @@ function parsePlanFields(form: FormData): Omit<adminApi.PlanInput, 'key'> {
 			maxMembersPerWorkspace: Number(form.get('maxMembersPerWorkspace') ?? 1),
 			maxSavedFormulasPerWorkspace: Number(form.get('maxSavedFormulasPerWorkspace') ?? 0)
 		},
-		features: form.getAll('features').map((f) => f.toString())
+		features: form.getAll('features').map((f) => f.toString()),
+		// UI mostra "Público" (marcado = aparece no catálogo) — invertido aqui
+		// pro campo real do backend, que é isPrivate.
+		isPrivate: form.get('isPublic') !== 'on'
 	};
 }
 
@@ -68,19 +71,6 @@ export const actions: Actions = {
 	create: async ({ request, locals }) => {
 		if (!locals.session) redirect(303, '/login');
 		const form = await request.formData();
-		const forWorkspaceId = form.get('forWorkspaceId')?.toString().trim();
-
-		if (forWorkspaceId) {
-			const { name, description, trialDays, limits, features } = parsePlanFields(form);
-			const result = await adminApi.createPrivatePlanForWorkspace(
-				locals.session.accessToken,
-				forWorkspaceId,
-				{ name, description, trialDays, limits, features, price: parsePlanPriceFields(form) }
-			);
-			if (!result.ok) return fail(result.error.status || 500, { message: result.error.message });
-			return { success: true };
-		}
-
 		const fields = parsePlanFields(form);
 		const input = { key: slugify(fields.name), ...fields };
 
@@ -94,18 +84,6 @@ export const actions: Actions = {
 		const form = await request.formData();
 		const id = form.get('id')?.toString() ?? '';
 		const patch = parsePlanFields(form);
-		// makePublic só existe no form quando o plano editado já era privado —
-		// desmarcado por padrão, então só mexe no vínculo quando o admin pede
-		// explicitamente. restrictedToWorkspaceId (texto) só existe quando o
-		// plano era público e o admin marcou "tornar privado" + colou o id do
-		// workspace de destino — o backend valida existência e que o plano não
-		// esteja compartilhado por mais de um workspace.
-		if (form.get('makePublic') === 'on') {
-			patch.restrictedToWorkspaceId = null;
-		} else {
-			const workspaceId = form.get('restrictedToWorkspaceId')?.toString().trim();
-			if (workspaceId) patch.restrictedToWorkspaceId = workspaceId;
-		}
 
 		const result = await adminApi.updatePlan(locals.session.accessToken, id, patch);
 		if (!result.ok) return fail(result.error.status || 500, { message: result.error.message });

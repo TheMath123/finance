@@ -54,16 +54,14 @@ export const plans = pgTable('plans', {
   isActive: boolean('is_active').notNull().default(true),
   sortOrder: integer('sort_order').notNull().default(0),
   /**
-   * Planos privados: sob medida pra um workspace específico (regras/preço
-   * customizados), nunca listado no catálogo de auto-atendimento
-   * (`listActive`) e nunca assinável via checkout — só o superadmin vincula,
-   * via `/saas/workspaces`. Sem `.references()` de propósito: `workspace.ts`
-   * já importa este arquivo (`workspaces.planId` → `plans.id`), então uma FK
-   * de volta pra `workspaces` aqui criaria um ciclo de tipos que o `tsc` não
-   * resolve (`implicitly has type 'any'`); a integridade referencial desse
-   * campo é garantida em SQL puro na própria migration, não no schema Drizzle.
+   * Plano privado: não aparece no catálogo de auto-atendimento
+   * (`listActive`) nem é assinável via checkout — só o superadmin vincula
+   * manualmente a um workspace, via o `setWorkspacePlan` já existente em
+   * `/saas/workspaces` (nenhum vínculo novo aqui, é o mesmo mecanismo de
+   * sempre). Tornar um plano privado não afeta quem já está nele — só
+   * impede que workspaces novos o assinem por conta própria.
    */
-  restrictedToWorkspaceId: uuid('restricted_to_workspace_id'),
+  isPrivate: boolean('is_private').notNull().default(false),
   createdAt: createdAt(),
   updatedAt: updatedAt(),
 });

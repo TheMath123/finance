@@ -1,13 +1,14 @@
-import { relations } from 'drizzle-orm';
+import { relations, type SQL, sql } from 'drizzle-orm';
 import {
   boolean,
+  index,
   pgEnum,
   pgTable,
   text,
   timestamp,
   uuid,
 } from 'drizzle-orm/pg-core';
-import { createdAt, id, updatedAt } from './helpers';
+import { createdAt, id, tsvector, updatedAt } from './helpers';
 import { planPrices, plans } from './plan';
 import { workspaceInvites } from './workspace-invite';
 import { workspaceMembers } from './workspace-member';
@@ -28,34 +29,46 @@ export const subscriptionStatusEnum = pgEnum('subscription_status', [
   'incomplete',
 ]);
 
-export const workspaces = pgTable('workspaces', {
-  id: id(),
-  name: text('name').notNull(),
-  type: workspaceTypeEnum('type').notNull(),
-  /** M5-02: substitui o antigo enum `workspace_plan` — ver `packages/db/src/schema/plan.ts`. */
-  planId: uuid('plan_id')
-    .notNull()
-    .references(() => plans.id),
-  /** M5-03: qual opção de cobrança (recorrência) do plano atual — nullable, exibição usa o preço default do plano se vazio. */
-  planPriceId: uuid('plan_price_id').references(() => planPrices.id, {
-    onDelete: 'set null',
-  }),
-  /** M5-03: nulo = sem trial ativo; no passado = trial expirado (checks de limite/feature caem pro plano free — `resolveEffectivePlan`). */
-  trialEndsAt: timestamp('trial_ends_at', { withTimezone: true }),
-  /** M5-05 — campos de assinatura real via Stripe (nulos = nunca assinou via gateway). */
-  stripeCustomerId: text('stripe_customer_id'),
-  stripeSubscriptionId: text('stripe_subscription_id'),
-  subscriptionStatus: subscriptionStatusEnum('subscription_status')
-    .notNull()
-    .default('none'),
-  cancelAtPeriodEnd: boolean('cancel_at_period_end').notNull().default(false),
-  /** Fim do período já pago — usado pra exibir "acesso até dd/mm" quando `cancelAtPeriodEnd` for true. */
-  currentPeriodEndsAt: timestamp('current_period_ends_at', {
-    withTimezone: true,
-  }),
-  createdAt: createdAt(),
-  updatedAt: updatedAt(),
-});
+export const workspaces = pgTable(
+  'workspaces',
+  {
+    id: id(),
+    name: text('name').notNull(),
+    type: workspaceTypeEnum('type').notNull(),
+    /** M5-02: substitui o antigo enum `workspace_plan` — ver `packages/db/src/schema/plan.ts`. */
+    planId: uuid('plan_id')
+      .notNull()
+      .references(() => plans.id),
+    /** M5-03: qual opção de cobrança (recorrência) do plano atual — nullable, exibição usa o preço default do plano se vazio. */
+    planPriceId: uuid('plan_price_id').references(() => planPrices.id, {
+      onDelete: 'set null',
+    }),
+    /** M5-03: nulo = sem trial ativo; no passado = trial expirado (checks de limite/feature caem pro plano free — `resolveEffectivePlan`). */
+    trialEndsAt: timestamp('trial_ends_at', { withTimezone: true }),
+    /** M5-05 — campos de assinatura real via Stripe (nulos = nunca assinou via gateway). */
+    stripeCustomerId: text('stripe_customer_id'),
+    stripeSubscriptionId: text('stripe_subscription_id'),
+    subscriptionStatus: subscriptionStatusEnum('subscription_status')
+      .notNull()
+      .default('none'),
+    cancelAtPeriodEnd: boolean('cancel_at_period_end').notNull().default(false),
+    /** Fim do período já pago — usado pra exibir "acesso até dd/mm" quando `cancelAtPeriodEnd` for true. */
+    currentPeriodEndsAt: timestamp('current_period_ends_at', {
+      withTimezone: true,
+    }),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+    /**
+     * Busca full-text por nome (painel `/saas/workspaces`) — gerada pelo
+     * Postgres. Ver CLAUDE.md: buscas por palavra usam full-text search,
+     * nunca ILIKE.
+     */
+    searchVector: tsvector('search_vector').generatedAlwaysAs(
+      (): SQL => sql`to_tsvector('portuguese', ${workspaces.name})`
+    ),
+  },
+  (t) => [index('workspaces_search_vector_idx').using('gin', t.searchVector)]
+);
 
 export const workspacesRelations = relations(workspaces, ({ one, many }) => ({
   plan: one(plans, {

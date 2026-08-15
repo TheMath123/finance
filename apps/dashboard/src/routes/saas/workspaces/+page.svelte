@@ -30,16 +30,8 @@
 		year: 'anos'
 	};
 
-	// Nunca deixa escolher o plano privado de OUTRO workspace — só planos
-	// públicos ou o próprio plano privado (se este workspace já tiver um).
-	const selectablePlans = $derived(
-		data.plans.filter(
-			(p) => !p.restrictedToWorkspaceId || p.restrictedToWorkspaceId === changingPlan?.id
-		)
-	);
-
 	const selectedPlanPrices = $derived(
-		selectablePlans.find((p) => p.id === selectedPlanId)?.prices ?? []
+		data.plans.find((p) => p.id === selectedPlanId)?.prices ?? []
 	);
 
 	function recurrenceLabel(workspace: AdminWorkspaceView): string {
@@ -113,14 +105,6 @@
 					<Button variant="outline" size="sm" onclick={() => openChangePlan(workspace)}>
 						Mudar plano
 					</Button>
-					<a
-						href="/saas/plans?forWorkspaceId={workspace.id}&forWorkspaceName={encodeURIComponent(
-							workspace.name
-						)}"
-						class="text-xs text-muted-foreground underline hover:text-foreground"
-					>
-						Criar plano privado
-					</a>
 				</div>
 			</div>
 		{:else}
@@ -186,10 +170,10 @@
 					bind:value={selectedPlanId}
 					class="h-9 rounded-lg border border-foreground/10 bg-background px-3 text-sm"
 				>
-					{#each selectablePlans as plan (plan.id)}
+					{#each data.plans as plan (plan.id)}
 						<option value={plan.id}>
 							{plan.name}
-							{plan.restrictedToWorkspaceId ? '(privado)' : ''}
+							{plan.isPrivate ? '(privado)' : ''}
 							{plan.trialDays > 0 ? `(trial ${plan.trialDays}d)` : ''}
 						</option>
 					{/each}

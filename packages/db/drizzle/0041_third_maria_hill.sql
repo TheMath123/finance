@@ -1,0 +1,1 @@
+ALTER TABLE "plans" DROP COLUMN "restricted_to_workspace_id";

@@ -85,7 +85,7 @@ describe('admin: orçamento de IA', () => {
  * não a API pública — essa não tem mais exclusão).
  */
 async function seedFlag(key: string) {
-  await db.insert(featureFlags).values({ key, enabled: false });
+  await db.insert(featureFlags).values({ key, title: key, enabled: false });
 }
 
 describe('admin: feature flags', () => {
@@ -122,6 +122,29 @@ describe('admin: feature flags', () => {
       expect(auditRows.some((r) => r.action === 'update_feature_flag')).toBe(
         true
       );
+    } finally {
+      await db.delete(featureFlags).where(eq(featureFlags.key, key));
+    }
+  });
+
+  test('busca por título/descrição usa full-text search (nunca ILIKE)', async () => {
+    const deps = createTestDeps(db);
+    const key = uniqueFlagKey();
+    await db.insert(featureFlags).values({
+      key,
+      title: 'Exportar relatório financeiro',
+      description: 'Permite baixar um PDF consolidado do mês',
+      enabled: false,
+    });
+
+    try {
+      for (const q of ['relatório', 'exportar', 'consolidado', 'financeiro']) {
+        const found = await listFeatureFlags(deps, q);
+        expect(found.some((f) => f.key === key)).toBe(true);
+      }
+
+      const noMatch = await listFeatureFlags(deps, 'termo-que-nao-existe');
+      expect(noMatch.some((f) => f.key === key)).toBe(false);
     } finally {
       await db.delete(featureFlags).where(eq(featureFlags.key, key));
     }

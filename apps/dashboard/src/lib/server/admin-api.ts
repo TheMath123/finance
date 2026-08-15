@@ -131,6 +131,8 @@ export function updateAiSettings(
 export interface FeatureFlagView {
 	id: string;
 	key: string;
+	/** Nome legível pra identificação na UI — definido no seed, não editável via API. */
+	title: string;
 	enabled: boolean;
 	description: string | null;
 	/** Flag predefinida da plataforma no seed original (seed via migration). */
@@ -140,9 +142,11 @@ export interface FeatureFlagView {
 }
 
 export function listFeatureFlags(
-	accessToken: string
+	accessToken: string,
+	search?: string
 ): Promise<Either<ApiError, FeatureFlagView[]>> {
-	return apiRequest('/admin/feature-flags', { accessToken });
+	const query = search ? `?search=${encodeURIComponent(search)}` : '';
+	return apiRequest(`/admin/feature-flags${query}`, { accessToken });
 }
 
 export function updateFeatureFlag(
@@ -222,10 +226,8 @@ export interface PlanView {
 	features: string[];
 	isActive: boolean;
 	sortOrder: number;
-	/** Plano privado (sob medida pra um workspace): nunca aparece no catálogo, nunca é assinável. */
-	restrictedToWorkspaceId: string | null;
-	/** Nome do workspace de `restrictedToWorkspaceId` — nulo se plano público. */
-	restrictedToWorkspaceName: string | null;
+	/** Plano privado: não aparece no catálogo de auto-atendimento nem é assinável via checkout — só o superadmin vincula manualmente a um workspace. */
+	isPrivate: boolean;
 	prices: PlanPriceView[];
 	createdAt: string;
 	updatedAt: string;
@@ -238,17 +240,7 @@ export interface PlanInput {
 	trialDays: number;
 	limits: PlanLimitsView;
 	features: string[];
-	restrictedToWorkspaceId?: string | null;
-}
-
-/** Painel `/saas/workspaces`: cria plano privado sob medida + já vincula a este workspace. */
-export interface CreatePrivatePlanInput {
-	name: string;
-	description?: string | null;
-	trialDays: number;
-	limits: PlanLimitsView;
-	features: string[];
-	price: PlanPriceInput;
+	isPrivate?: boolean;
 }
 
 export function listPlans(accessToken: string): Promise<Either<ApiError, PlanView[]>> {
@@ -356,18 +348,6 @@ export function setWorkspacePlan(
 	return apiRequest(`/admin/workspaces/${workspaceId}/plan`, {
 		method: 'PATCH',
 		body: { planId, planPriceId },
-		accessToken
-	});
-}
-
-export function createPrivatePlanForWorkspace(
-	accessToken: string,
-	workspaceId: string,
-	input: CreatePrivatePlanInput
-): Promise<Either<ApiError, AdminWorkspaceView>> {
-	return apiRequest(`/admin/workspaces/${workspaceId}/private-plan`, {
-		method: 'POST',
-		body: input,
 		accessToken
 	});
 }

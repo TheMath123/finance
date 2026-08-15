@@ -2,10 +2,6 @@ export { addPlanPrice } from './add-plan-price';
 export { confirmWorkspacePayment } from './confirm-workspace-payment';
 export { createDefaultCategory } from './create-default-category';
 export { createPlan } from './create-plan';
-export {
-  type CreatePrivatePlanForWorkspaceInput,
-  createPrivatePlanForWorkspace,
-} from './create-private-plan-for-workspace';
 export { activatePlan, deactivatePlan } from './deactivate-plan';
 export { deleteDefaultCategory } from './delete-default-category';
 export { deletePlanPrice } from './delete-plan-price';

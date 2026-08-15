@@ -274,6 +274,34 @@
       "when": 1786745440587,
       "tag": "0038_daffy_lockheed",
       "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1786747766341,
+      "tag": "0039_brief_legion",
+      "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1786748837944,
+      "tag": "0040_minor_loki",
+      "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1786748858857,
+      "tag": "0041_third_maria_hill",
+      "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1786750833952,
+      "tag": "0042_light_thundra",
+      "breakpoints": true
     }
   ]
 }

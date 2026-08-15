@@ -1,34 +1,56 @@
 <script lang="ts">
+	import InfoIcon from 'phosphor-svelte/lib/InfoIcon';
+
 	import { enhance } from '$app/forms';
-	import { page } from '$app/state';
 
 	import { Button } from '$lib/components/ui/button';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
+	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { dialogFormSubmit } from '$lib/dialog-form';
 	import { formatCents } from '$lib/money';
 	import type { PaymentMethod, PlanPriceView, PlanView } from '$lib/server/admin-api';
 
 	let { data, form } = $props();
 
-	// Chegando de "Criar plano privado" (tela de Workspaces) — pré-abre o
-	// dialog de criação já no modo privado, vinculado a este workspace.
-	const forWorkspaceId = $derived(page.url.searchParams.get('forWorkspaceId'));
-	const forWorkspaceName = $derived(page.url.searchParams.get('forWorkspaceName'));
-
 	let createOpen = $state(false);
 	let createError = $state<string | null>(null);
-
-	$effect(() => {
-		if (forWorkspaceId) createOpen = true;
-	});
 	let editing = $state<PlanView | null>(null);
 	let editError = $state<string | null>(null);
-	let makePrivate = $state(false);
 	let priceDialogPlan = $state<PlanView | null>(null);
 	let editingPrice = $state<PlanPriceView | null>(null);
 	let priceError = $state<string | null>(null);
+	// Reativo pra deixar o rótulo de "a cada quantos" explícito na unidade
+	// escolhida (dias/semanas/meses/anos), em vez de um "quantos" genérico.
+	let billingIntervalUnit = $state<'day' | 'week' | 'month' | 'year'>('month');
+	// Selecionadas separado da lista filtrada — senão marcar uma feature e
+	// depois filtrar ela pra fora da busca perderia a seleção no submit
+	// (checkbox some do DOM, valor não vai junto).
+	let selectedFeatures = $state<Set<string>>(new Set());
+	let featureSearch = $state('');
+
+	// Mesma técnica de normalização usada em +page.server.ts (slugify) — tira
+	// acento pra busca funcionar digitando sem acentuação.
+	const DIACRITICS_PATTERN = /[̀-ͯ]/g;
+	function normalize(text: string): string {
+		return text.normalize('NFD').replace(DIACRITICS_PATTERN, '').toLowerCase();
+	}
+
+	const filteredFeatureFlags = $derived.by(() => {
+		const query = normalize(featureSearch.trim());
+		if (!query) return data.featureFlags;
+		return data.featureFlags.filter(
+			(flag) => normalize(flag.title).includes(query) || normalize(flag.key).includes(query)
+		);
+	});
+
+	function toggleFeature(key: string, checked: boolean) {
+		const next = new Set(selectedFeatures);
+		if (checked) next.add(key);
+		else next.delete(key);
+		selectedFeatures = next;
+	}
 
 	const INTERVAL_LABELS: Record<string, string> = {
 		day: 'dia',
@@ -42,6 +64,14 @@
 		week: 'semanas',
 		month: 'meses',
 		year: 'anos'
+	};
+
+	// "quantas" (feminino) só pra semana — o resto usa "quantos" (masculino).
+	const INTERVAL_COUNT_LABELS: Record<string, string> = {
+		day: 'quantos dias',
+		week: 'quantas semanas',
+		month: 'quantos meses',
+		year: 'quantos anos'
 	};
 
 	const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
@@ -62,12 +92,14 @@
 		priceError = null;
 		priceDialogPlan = plan;
 		editingPrice = null;
+		billingIntervalUnit = 'month';
 	}
 
 	function openEditPrice(plan: PlanView, price: PlanPriceView) {
 		priceError = null;
 		priceDialogPlan = plan;
 		editingPrice = price;
+		billingIntervalUnit = price.billingIntervalUnit;
 	}
 </script>
 
@@ -97,31 +129,20 @@
 		<Label for="description">Descrição</Label>
 		<Input id="description" name="description" value={plan?.description ?? ''} />
 	</div>
-	{#if plan?.restrictedToWorkspaceId}
-		<label class="flex items-center gap-2 rounded-lg bg-primary/10 px-3 py-2 text-sm text-primary">
-			<input type="checkbox" name="makePublic" />
-			Tornar público (remove o vínculo privado com {plan.restrictedToWorkspaceName ??
-				plan.restrictedToWorkspaceId})
-		</label>
-	{:else if plan}
-		<div class="grid gap-2 rounded-lg border border-foreground/10 p-3">
-			<label class="flex items-center gap-2 text-sm">
-				<input type="checkbox" bind:checked={makePrivate} />
-				Tornar privado (restringe a um workspace específico)
-			</label>
-			{#if makePrivate}
-				<div class="grid gap-2">
-					<Label for="restrictedToWorkspaceId" class="text-xs">ID do workspace</Label>
-					<Input
-						id="restrictedToWorkspaceId"
-						name="restrictedToWorkspaceId"
-						placeholder="uuid do workspace"
-						required
-					/>
-				</div>
-			{/if}
-		</div>
-	{/if}
+	<label class="flex items-center gap-2 rounded-lg border border-foreground/10 px-3 py-2 text-sm">
+		<input type="checkbox" name="isPublic" checked={!(plan?.isPrivate ?? false)} />
+		Público
+		<Tooltip.Root>
+			<Tooltip.Trigger>
+				<InfoIcon size={14} class="text-muted-foreground" />
+			</Tooltip.Trigger>
+			<Tooltip.Content>
+				Marcado: o plano aparece no catálogo e qualquer workspace pode assiná-lo por conta própria.
+				Desmarcado: o plano fica privado — só o superadmin vincula manualmente a um workspace, em
+				"Workspaces".
+			</Tooltip.Content>
+		</Tooltip.Root>
+	</label>
 	<div class="grid gap-2 rounded-lg border border-foreground/10 p-3">
 		<p class="text-xs font-medium text-muted-foreground">Limites</p>
 		<div class="grid gap-3 sm:grid-cols-3">
@@ -168,20 +189,41 @@
 			<p class="text-xs text-muted-foreground">
 				Nenhuma feature flag cadastrada ainda — crie em "Feature flags" antes de travar por plano.
 			</p>
+		{:else}
+			<Input
+				type="search"
+				placeholder="Buscar feature..."
+				bind:value={featureSearch}
+				class="h-8 text-sm"
+			/>
+			<div class="grid gap-1 sm:grid-cols-2">
+				{#each filteredFeatureFlags as flag (flag.key)}
+					<label class="flex items-center gap-2 text-sm">
+						<input
+							type="checkbox"
+							checked={selectedFeatures.has(flag.key)}
+							onchange={(e) => toggleFeature(flag.key, e.currentTarget.checked)}
+						/>
+						{flag.title}
+						{#if flag.description}
+							<Tooltip.Root>
+								<Tooltip.Trigger>
+									<InfoIcon size={14} class="text-muted-foreground" />
+								</Tooltip.Trigger>
+								<Tooltip.Content>{flag.description}</Tooltip.Content>
+							</Tooltip.Root>
+						{/if}
+					</label>
+				{:else}
+					<p class="text-xs text-muted-foreground sm:col-span-2">
+						Nenhuma feature encontrada pra "{featureSearch}".
+					</p>
+				{/each}
+			</div>
 		{/if}
-		<div class="grid gap-1 sm:grid-cols-2">
-			{#each data.featureFlags as flag (flag.key)}
-				<label class="flex items-center gap-2 text-sm">
-					<input
-						type="checkbox"
-						name="features"
-						value={flag.key}
-						checked={plan?.features.includes(flag.key) ?? false}
-					/>
-					{flag.key}
-				</label>
-			{/each}
-		</div>
+		{#each [...selectedFeatures] as key (key)}
+			<input type="hidden" name="features" value={key} />
+		{/each}
 	</div>
 {/snippet}
 
@@ -192,7 +234,7 @@
 			<select
 				id="billingIntervalUnit"
 				name="billingIntervalUnit"
-				value={price?.billingIntervalUnit ?? 'month'}
+				bind:value={billingIntervalUnit}
 				class="h-9 rounded-lg border border-foreground/10 bg-background px-3 text-sm"
 			>
 				<option value="day">Dia</option>
@@ -202,7 +244,7 @@
 			</select>
 		</div>
 		<div class="grid gap-2">
-			<Label for="billingIntervalCount">A cada quantos</Label>
+			<Label for="billingIntervalCount">A cada {INTERVAL_COUNT_LABELS[billingIntervalUnit]}</Label>
 			<Input
 				id="billingIntervalCount"
 				name="billingIntervalCount"
@@ -263,6 +305,8 @@
 		<Button
 			onclick={() => {
 				createError = null;
+				featureSearch = '';
+				selectedFeatures = new Set();
 				createOpen = true;
 			}}>Novo plano</Button
 		>
@@ -288,10 +332,8 @@
 								<span class="text-xs text-destructive">(inativo)</span>
 							{/if}
 						</p>
-						{#if plan.restrictedToWorkspaceId}
-							<p class="text-xs text-primary">
-								Privado: {plan.restrictedToWorkspaceName ?? plan.restrictedToWorkspaceId}
-							</p>
+						{#if plan.isPrivate}
+							<p class="text-xs text-primary">Privado</p>
 						{/if}
 						{#if plan.trialDays > 0}
 							<p class="text-xs text-primary">{plan.trialDays} dias de trial</p>
@@ -302,8 +344,9 @@
 						size="sm"
 						onclick={() => {
 							editError = null;
+							featureSearch = '';
+							selectedFeatures = new Set(plan.features);
 							editing = plan;
-							makePrivate = false;
 						}}>Editar</Button
 					>
 				</div>
@@ -379,14 +422,8 @@
 <Dialog.Root bind:open={createOpen}>
 	<Dialog.Content>
 		<Dialog.Header>
-			<Dialog.Title>{forWorkspaceId ? 'Novo plano privado' : 'Novo plano'}</Dialog.Title>
+			<Dialog.Title>Novo plano</Dialog.Title>
 		</Dialog.Header>
-		{#if forWorkspaceId}
-			<p class="rounded-lg bg-primary/10 px-3 py-2 text-sm text-primary">
-				Criando plano privado para <strong>{forWorkspaceName ?? forWorkspaceId}</strong> — não aparece
-				no catálogo público e só vale pra este workspace.
-			</p>
-		{/if}
 		{#if createError}
 			<p class="text-sm text-destructive">{createError}</p>
 		{/if}
@@ -404,16 +441,7 @@
 				}
 			})}
 		>
-			{#if forWorkspaceId}
-				<input type="hidden" name="forWorkspaceId" value={forWorkspaceId} />
-			{/if}
 			{@render planFields()}
-			{#if forWorkspaceId}
-				<div class="grid gap-2 rounded-lg border border-foreground/10 p-3">
-					<p class="text-xs font-medium text-muted-foreground">Preço</p>
-					{@render priceFields()}
-				</div>
-			{/if}
 			<Dialog.Footer>
 				<Button type="submit">Criar</Button>
 			</Dialog.Footer>

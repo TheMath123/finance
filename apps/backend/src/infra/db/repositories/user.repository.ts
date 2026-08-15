@@ -1,9 +1,10 @@
 import { users } from '@finance/db';
-import { count, eq, ilike, or } from 'drizzle-orm';
+import { count, eq, sql } from 'drizzle-orm';
 import type {
   CreateUserData,
   UserRepository,
 } from '../../../application/ports/user-repository';
+import { toPrefixTsQuery } from '../full-text-search';
 import type { DbHandle } from '../handle';
 
 export function createUserRepository(db: DbHandle): UserRepository {
@@ -98,11 +99,9 @@ export function createUserRepository(db: DbHandle): UserRepository {
         .where(eq(users.id, userId));
     },
     async listAll({ search, limit, offset }) {
-      const where = search
-        ? or(
-            ilike(users.name, `%${search}%`),
-            ilike(users.email, `%${search}%`)
-          )
+      const tsQuery = search ? toPrefixTsQuery(search) : null;
+      const where = tsQuery
+        ? sql`${users.searchVector} @@ to_tsquery('portuguese', ${tsQuery})`
         : undefined;
       const [rows, [totalRow]] = await Promise.all([
         db.query.users.findMany({

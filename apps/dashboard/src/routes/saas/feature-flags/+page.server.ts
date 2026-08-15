@@ -4,11 +4,12 @@ import * as adminApi from '$lib/server/admin-api';
 
 import type { Actions, PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async ({ locals }) => {
+export const load: PageServerLoad = async ({ locals, url }) => {
 	if (!locals.session) redirect(303, '/login');
 
-	const result = await adminApi.listFeatureFlags(locals.session.accessToken);
-	return { flags: result.ok ? result.value : [] };
+	const search = url.searchParams.get('q') ?? undefined;
+	const result = await adminApi.listFeatureFlags(locals.session.accessToken, search);
+	return { flags: result.ok ? result.value : [], search: search ?? '' };
 };
 
 export const actions: Actions = {

@@ -63,15 +63,4 @@ export const ADMIN_ERRORS: Record<AdminError, HttpError> = {
     code: 'feature_flag_not_found',
     message: 'Feature flag não encontrada.',
   },
-  plan_restricted_to_other_workspace: {
-    status: 409,
-    code: 'plan_restricted_to_other_workspace',
-    message: 'Esse plano é privado e pertence a outro workspace.',
-  },
-  plan_shared_cannot_restrict: {
-    status: 409,
-    code: 'plan_shared_cannot_restrict',
-    message:
-      'Não é possível tornar esse plano privado — ele ainda está em uso por mais de um workspace.',
-  },
 };

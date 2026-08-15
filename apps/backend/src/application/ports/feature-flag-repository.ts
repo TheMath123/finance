@@ -1,6 +1,8 @@
 export interface FeatureFlag {
   id: string;
   key: string;
+  /** Nome legível pra exibição na UI (ex.: "Chatbot de IA no WhatsApp") — só o seed decide, nunca editável via API. */
+  title: string;
   enabled: boolean;
   description: string | null;
   isSystem: boolean;
@@ -9,10 +11,10 @@ export interface FeatureFlag {
 }
 
 /**
- * Tipo de ESCRITA usado pelo `upsert` — nunca inclui `isSystem` de propósito:
- * é proteção estrutural, a rota PUT /admin/feature-flags/:key nunca consegue
- * setar/alterar esse campo via API. Só o seed (migration) decide quem é
- * `isSystem`.
+ * Tipo de ESCRITA usado pelo `upsert` — nunca inclui `isSystem`/`title` de
+ * propósito: é proteção estrutural, a rota PUT /admin/feature-flags/:key
+ * nunca consegue setar/alterar esses campos via API. Só o seed (migration)
+ * decide quem é `isSystem` e qual é o `title`.
  */
 export interface FeatureFlagInput {
   enabled: boolean;
@@ -20,7 +22,8 @@ export interface FeatureFlagInput {
 }
 
 export interface FeatureFlagRepository {
-  list(): Promise<FeatureFlag[]>;
+  /** `search` filtra por título/descrição/key via full-text search (nunca ILIKE). */
+  list(search?: string): Promise<FeatureFlag[]>;
   findByKey(key: string): Promise<FeatureFlag | undefined>;
   /** Cria se `key` não existir, atualiza se existir. */
   upsert(key: string, data: FeatureFlagInput): Promise<FeatureFlag>;

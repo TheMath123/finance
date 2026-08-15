@@ -1053,4 +1053,35 @@ describe('categorias', () => {
     );
     expect(fallbackDelete.ok).toBe(false);
   });
+
+  test('busca por descrição usa full-text search (prefixo de palavra, não substring solta)', async () => {
+    const created = await createTransaction(deps, actor, {
+      description: 'Mercado Municipal',
+      amount: 4_200,
+      type: 'expense',
+      method: 'debit',
+      date: '2026-07-09',
+      categoryId,
+      accountId,
+    });
+    if (!created.ok) throw new Error('transação de busca não criada');
+    const txId = created.value[0]!.id;
+
+    // Palavra completa e prefixo casam (full-text search).
+    for (const q of ['mercado', 'merc', 'municipal']) {
+      const found = await listTransactions(deps, actor, { q });
+      expect(found.some((t) => t.id === txId)).toBe(true);
+    }
+
+    // Substring solta no meio da palavra (não é prefixo) não casa — diferença
+    // conhecida entre full-text search e o ILIKE %termo% antigo.
+    const midWord = await listTransactions(deps, actor, { q: 'ercad' });
+    expect(midWord.some((t) => t.id === txId)).toBe(false);
+
+    // Sem resultado nenhum não deve derrubar a busca (tsquery vazia seria erro).
+    const noMatch = await listTransactions(deps, actor, {
+      q: 'termo-que-nao-existe-em-nada',
+    });
+    expect(noMatch.some((t) => t.id === txId)).toBe(false);
+  });
 });

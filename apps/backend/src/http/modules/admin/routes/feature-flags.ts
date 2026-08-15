@@ -6,15 +6,21 @@ import {
 import type { AppDeps } from '../../../deps';
 import { requireSuperadmin } from '../../../guards';
 import { fail, respond } from '../../../http-error';
-import { validateBody, validateParams } from '../../../validate';
+import { validateBody, validateParams, validateQuery } from '../../../validate';
 import { ADMIN_ERRORS } from '../errors';
-import { featureFlagParamsSchema, updateFeatureFlagSchema } from '../schemas';
+import {
+  featureFlagParamsSchema,
+  listFeatureFlagsQuerySchema,
+  updateFeatureFlagSchema,
+} from '../schemas';
 
 export const listFeatureFlagsRoute = (deps: AppDeps) =>
-  new Elysia().get('/admin/feature-flags', async ({ request, set }) => {
+  new Elysia().get('/admin/feature-flags', async ({ request, query, set }) => {
     const auth = await requireSuperadmin(deps, request);
     if (!auth.ok) return fail(set, auth.error);
-    return listFeatureFlags(deps);
+    const q = validateQuery(listFeatureFlagsQuerySchema, query);
+    if (!q.ok) return fail(set, q.error);
+    return listFeatureFlags(deps, q.value.search);
   });
 
 export const updateFeatureFlagRoute = (deps: AppDeps) =>

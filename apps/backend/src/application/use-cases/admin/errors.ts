@@ -10,6 +10,4 @@ export type AdminError =
   | 'plan_price_interval_taken'
   | 'plan_price_not_found'
   | 'plan_price_required'
-  | 'feature_flag_not_found'
-  | 'plan_restricted_to_other_workspace'
-  | 'plan_shared_cannot_restrict';
+  | 'feature_flag_not_found';

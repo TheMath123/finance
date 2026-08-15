@@ -24,7 +24,6 @@ import { reactivateUserRoute } from './reactivate-user';
 import { suspendUserRoute } from './suspend-user';
 import {
   confirmWorkspacePaymentRoute,
-  createPrivatePlanRoute,
   listWorkspacesRoute,
   setWorkspacePlanRoute,
 } from './workspaces';
@@ -53,6 +52,5 @@ export function adminRoutes(deps: AppDeps) {
     .use(deletePlanPriceRoute(deps))
     .use(listWorkspacesRoute(deps))
     .use(setWorkspacePlanRoute(deps))
-    .use(createPrivatePlanRoute(deps))
     .use(confirmWorkspacePaymentRoute(deps));
 }
