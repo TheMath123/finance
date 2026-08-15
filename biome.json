@@ -4,6 +4,7 @@
     "includes": [
       "**",
       "!**/apps/dashboard",
+      "!**/apps/landing",
       "!**/apps/mobile/android",
       "!**/apps/mobile/assets",
       "!**/packages/db/drizzle",

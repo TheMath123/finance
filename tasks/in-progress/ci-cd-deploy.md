@@ -51,10 +51,18 @@ via AskUserQuestion, sem resposta a tempo — confirmar quando possível):
   os testes criam/apagam dados reais (users/workspaces/plans) e rodar isso
   contra `DATABASE_URL` de produção seria destrutivo; a suíte completa já
   roda no CI contra Postgres efêmero a cada push pra `main`.
-- `scripts/release.ts` + `bun run release:dashboard` / `release:api` (novo,
-  mesmo padrão dos scripts de tunnel já existentes) — lê a última tag do
-  prefixo certo, sobe o número (patch por padrão) e cria+empurra a tag. Exige
-  working tree limpo e branch `main` antes de taggear.
+- `scripts/release.ts` + `bun run release:dashboard` / `release:landing` /
+  `release:api` (novo, mesmo padrão dos scripts de tunnel já existentes) — lê
+  a última tag do prefixo certo, sobe o número (patch por padrão) e
+  cria+empurra a tag. Exige working tree limpo e branch `main` antes de
+  taggear.
+- `apps/landing` (novo app, site institucional em `example.com` — dashboard
+  fica em `dash.example.com`) — mesmo padrão do dashboard:
+  `apps/landing/wrangler.toml` (`name = "marcelus-site"`),
+  `.github/workflows/deploy-landing.yml` (dispara em tags `landingpage-v*`),
+  `ci.yml` ganhou lint + build smoke test do app novo (turbo já cobre o
+  typecheck automaticamente, sem mudança — `apps/*` é genérico nas tasks do
+  `turbo.json`).
 
 ## Checklist de setup manual (só o usuário consegue fazer)
 
@@ -71,6 +79,16 @@ Nada disso eu consigo criar — são contas/tokens de serviços externos.
    painel).
 4. No GitHub: Settings → Secrets and variables → Actions → adicionar
    `CLOUDFLARE_API_TOKEN` e `CLOUDFLARE_ACCOUNT_ID`.
+
+### Cloudflare (landing)
+
+Mesmo processo do dashboard acima, Worker separado:
+
+1. Criar o Worker `marcelus-site` (via `wrangler deploy` na primeira vez ou
+   pelo painel) — nome tem que bater com `name` em `apps/landing/wrangler.toml`.
+2. Reaproveita os mesmos secrets `CLOUDFLARE_API_TOKEN`/`CLOUDFLARE_ACCOUNT_ID`
+   já configurados pro dashboard (mesma conta Cloudflare, token com permissão
+   **Workers Scripts:Edit** cobre os dois Workers).
 
 ### Fly.io (backend)
 
@@ -180,12 +198,44 @@ tempo de build via `$env/static/public`) — já nasceu com a env adicionada nos
 Sem configurar, o dashboard não injeta o script (nenhum erro, só sem
 tracking) e o mobile não inicializa o SDK.
 
+### Repository variable — `PUBLIC_APP_URL` (site institucional → dashboard)
+
+Env pública do `apps/landing` (site institucional), mesmo mecanismo dos dois
+acima (`$env/static/public`, resolvida em tempo de build) — usada pro botão
+"Entrar" e as CTAs de "Criar conta"/"Assinar" apontarem pro dashboard
+autenticado. Já nasceu com a env adicionada em `ci.yml` e
+`deploy-landing.yml`.
+
+1. Repo → Settings → Secrets and variables → Actions → aba **Variables**.
+2. Adicionar `PUBLIC_APP_URL` com a URL pública do dashboard (ex.:
+   `https://dash.example.com`, ou o `*.workers.dev` do dashboard enquanto o
+   domínio real não existe).
+
+Sem essa variable configurada, o `typecheck`/`build` do landing quebra (mesmo
+erro de `$env/static/public` já visto com `PUBLIC_GOOGLE_CLIENT_ID`) — não é
+opcional como os dois anteriores, porque o layout do landing importa direto,
+sem checar se está vazia.
+
+### Domínio customizado (pendente até o usuário decidir/comprar o domínio)
+
+Enquanto isso, os dois Workers seguem em `*.workers.dev`. Quando o domínio
+real existir:
+
+1. Adicionar o domínio à conta Cloudflare (Zone).
+2. `apps/dashboard/wrangler.toml` ganha `routes = [{ pattern =
+   "dash.<dominio>/*", custom_domain = true }]`.
+3. `apps/landing/wrangler.toml` ganha `routes = [{ pattern = "<dominio>/*",
+   custom_domain = true }]`.
+4. Atualizar `PUBLIC_APP_URL` (variable acima) e `[vars] PUBLIC_APP_URL` em
+   `apps/landing/wrangler.toml` pro domínio real.
+
 ### Cortar uma release
 
 Depois do checklist acima completo:
 
 ```
 bun run release:dashboard        # patch por padrão: dashboard-web-v1.0.0, .1, ...
+bun run release:landing minor    # landingpage-v1.0.0 → landingpage-v1.1.0
 bun run release:api minor        # api-v1.0.0 → api-v1.1.0
 ```
 
@@ -205,6 +255,9 @@ de verdade.
 
 - `bun run build --filter=@finance/dashboard` com o `adapter-cloudflare` novo
   — build local com sucesso.
+- `bun --cwd=apps/landing run lint` + `bunx turbo run typecheck
+  --filter=@finance/landing --force` + `bunx turbo run build
+  --filter=@finance/landing --force` — todos limpos.
 - `docker build` local do `apps/backend/Dockerfile` (contexto na raiz) — ver
   seção de validação final desta sessão.
 - Não foi possível validar `wrangler deploy`/`flyctl deploy` ponta a ponta —

@@ -1,9 +1,10 @@
 /**
  * Cria e empurra a tag de release que dispara o deploy (ver
- * .github/workflows/deploy-dashboard.yml e deploy-backend.yml — cada um só
- * reage ao próprio prefixo de tag). Uso:
+ * .github/workflows/deploy-dashboard.yml, deploy-landing.yml e
+ * deploy-backend.yml — cada um só reage ao próprio prefixo de tag). Uso:
  *
  *   bun run release:dashboard [patch|minor|major]  (default: patch)
+ *   bun run release:landing [patch|minor|major]
  *   bun run release:api [patch|minor|major]
  *
  * Não mexe em package.json — só lê a última tag existente do prefixo certo,
@@ -11,11 +12,12 @@
  * `git tag` errado (prefixo trocado, número duplicado, etc.).
  */
 
-type Target = 'dashboard' | 'api';
+type Target = 'dashboard' | 'landing' | 'api';
 type Bump = 'patch' | 'minor' | 'major';
 
 const TARGETS: Record<Target, { prefix: string; label: string }> = {
   dashboard: { prefix: 'dashboard-web-v', label: 'dashboard' },
+  landing: { prefix: 'landingpage-v', label: 'landing' },
   api: { prefix: 'api-v', label: 'api' },
 };
 
@@ -53,7 +55,9 @@ async function main() {
   const bump = (process.argv[3] as Bump | undefined) ?? 'patch';
 
   if (!targetArg || !(targetArg in TARGETS)) {
-    console.error('Uso: bun run release:<dashboard|api> [patch|minor|major]');
+    console.error(
+      'Uso: bun run release:<dashboard|landing|api> [patch|minor|major]'
+    );
     process.exit(1);
   }
   if (!['patch', 'minor', 'major'].includes(bump)) {

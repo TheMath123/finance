@@ -1,0 +1,54 @@
+name: Deploy landing (Cloudflare)
+
+on:
+  push:
+    tags:
+      - 'landingpage-v*'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+
+    env:
+      # Env pública (sem segredo, só aponta pro domínio do dashboard) — mas
+      # `$env/static/public` é resolvida em tempo de build, e se a chave nem
+      # existir no ambiente o SvelteKit não gera o export, quebrando o
+      # typecheck/build do landing (mesmo problema já visto no dashboard com
+      # PUBLIC_GOOGLE_CLIENT_ID/PUBLIC_CLARITY_PROJECT_ID). Repo variable
+      # (Settings → Secrets and variables → Actions → Variables), não secret.
+      PUBLIC_APP_URL: ${{ vars.PUBLIC_APP_URL }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Instalar dependências
+        run: bun install --frozen-lockfile
+
+      - name: Typecheck do landing
+        run: bun run typecheck --filter=@finance/landing
+
+      - name: Lint do landing
+        # `--cwd DIR` (espaço) quebra o parser do `run script` — vira só
+        # `bun run` sem argumento, imprime o help e sai com 0 (nunca lintava
+        # de verdade). `--cwd=DIR` (igual) funciona. Ver comentário
+        # equivalente em deploy-dashboard.yml/deploy-backend.yml.
+        run: bun --cwd=apps/landing run lint
+
+      - name: Build do landing
+        run: bun run build --filter=@finance/landing
+
+      - name: Deploy no Cloudflare Workers
+        # bunx direto em vez de cloudflare/wrangler-action@v3 — mesmo motivo
+        # documentado em deploy-dashboard.yml (a action tenta instalar o
+        # wrangler sozinha via npm e quebra nos runners com Node 24 default;
+        # wrangler já é devDependency do projeto via bun install acima).
+        working-directory: apps/landing
+        run: bunx wrangler deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

@@ -37,6 +37,9 @@ jobs:
       # Mesmo motivo/mecanismo do PUBLIC_GOOGLE_CLIENT_ID acima (env pública
       # resolvida em tempo de build) — ver +layout.svelte.
       PUBLIC_CLARITY_PROJECT_ID: ${{ vars.PUBLIC_CLARITY_PROJECT_ID }}
+      # Mesmo motivo/mecanismo acima, mas pro app novo apps/landing — ver
+      # [lang=lang]/+layout.svelte (botão "Entrar" + CTAs).
+      PUBLIC_APP_URL: ${{ vars.PUBLIC_APP_URL }}
 
     steps:
       - uses: actions/checkout@v4
@@ -54,6 +57,12 @@ jobs:
       - name: Lint (Biome)
         run: bun run lint
 
+      - name: Lint do landing
+        # Biome acima não cobre Svelte de verdade — precisa do prettier+eslint
+        # próprio do app (mesmo padrão do dashboard, que só roda esse lint em
+        # deploy-dashboard.yml).
+        run: bun --cwd=apps/landing run lint
+
       - name: Migrações
         # `--cwd DIR` (espaço) quebra o parser do `run script` — vira só
         # `bun run` sem argumento, imprime o help e sai com 0. `--cwd=DIR`
@@ -66,3 +75,6 @@ jobs:
 
       - name: Build do dashboard (smoke test do adapter)
         run: bun run build --filter=@finance/dashboard
+
+      - name: Build do landing (smoke test do adapter)
+        run: bun run build --filter=@finance/landing
