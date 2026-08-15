@@ -26,6 +26,17 @@ jobs:
 
     env:
       DATABASE_URL: postgres://finance:finance@localhost:5432/finance
+      # Env pública (sem segredo, só identifica a origem no Google Cloud
+      # Console) — mas `$env/static/public` é resolvida em tempo de build, e
+      # se a chave nem existir no ambiente o SvelteKit não gera o export,
+      # quebrando o typecheck/build do dashboard (ver
+      # google-sign-in-button.svelte / google-link-button.svelte). Repo
+      # variable (Settings → Secrets and variables → Actions → Variables),
+      # não secret.
+      PUBLIC_GOOGLE_CLIENT_ID: ${{ vars.PUBLIC_GOOGLE_CLIENT_ID }}
+      # Mesmo motivo/mecanismo do PUBLIC_GOOGLE_CLIENT_ID acima (env pública
+      # resolvida em tempo de build) — ver +layout.svelte.
+      PUBLIC_CLARITY_PROJECT_ID: ${{ vars.PUBLIC_CLARITY_PROJECT_ID }}
 
     steps:
       - uses: actions/checkout@v4

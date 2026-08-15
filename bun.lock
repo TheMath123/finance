@@ -13,7 +13,7 @@
     },
     "apps/backend": {
       "name": "@finance/backend",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "dependencies": {
         "@elysiajs/cors": "1.4.2",
         "@finance/db": "workspace:*",
@@ -41,7 +41,7 @@
     },
     "apps/dashboard": {
       "name": "@finance/dashboard",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "dependencies": {
         "@finance/formula": "workspace:*",
         "@finance/shared": "workspace:*",
@@ -84,12 +84,13 @@
     },
     "apps/mobile": {
       "name": "mobile",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "dependencies": {
         "@expo/ui": "57.0.9",
         "@finance/formula": "workspace:*",
         "@finance/shared": "workspace:*",
         "@hookform/resolvers": "5.4.0",
+        "@microsoft/react-native-clarity": "4.6.3",
         "@rn-primitives/checkbox": "1.5.2",
         "@tanstack/react-query": "5.101.2",
         "class-variance-authority": "0.7.1",
@@ -716,6 +717,8 @@
     "@jridgewell/trace-mapping": ["@jridgewell/trace-mapping@0.3.31", "", { "dependencies": { "@jridgewell/resolve-uri": "^3.1.0", "@jridgewell/sourcemap-codec": "^1.4.14" } }, "sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw=="],
 
     "@lucide/svelte": ["@lucide/svelte@1.26.0", "", { "peerDependencies": { "svelte": "^5" } }, "sha512-KUfLTlNRVrHZ460Um7jdrvh46hI/8Sw4+1k/Ttj4g6JI9bCrjD7HZVG4cqhh7LasjfDz5b+CuKrjd/k/3obYcA=="],
+
+    "@microsoft/react-native-clarity": ["@microsoft/react-native-clarity@4.6.3", "", { "peerDependencies": { "react": "*", "react-native": "*", "react-native-svg": ">=14.0.0" }, "optionalPeers": ["react-native-svg"] }, "sha512-8+RKJM2Vx+Cj3fQIydBaE+YHrlFgWXtAHsyqdV56ooWqohM4HC2cTIXyC9xtIaPiv6nX6Y0H7XKJArxcobp3ww=="],
 
     "@msgpackr-extract/msgpackr-extract-darwin-arm64": ["@msgpackr-extract/msgpackr-extract-darwin-arm64@3.0.4", "", { "os": "darwin", "cpu": "arm64" }, "sha512-LCkGo6JDfaBhgST7UpPWgNgLINpcpabaHfyz5OBx75nUYxBsaEPxjnyNjWpeb/xBup/682QnBfRBy2/LvPutZQ=="],
 

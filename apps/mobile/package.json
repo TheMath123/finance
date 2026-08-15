@@ -7,6 +7,7 @@
     "@finance/formula": "workspace:*",
     "@finance/shared": "workspace:*",
     "@hookform/resolvers": "5.4.0",
+    "@microsoft/react-native-clarity": "4.6.3",
     "@rn-primitives/checkbox": "1.5.2",
     "@tanstack/react-query": "5.101.2",
     "class-variance-authority": "0.7.1",

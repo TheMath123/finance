@@ -119,6 +119,67 @@ Nada disso eu consigo criar — são contas/tokens de serviços externos.
    antes do deploy real acontecer, já que o job da API roda migração de
    banco antes do `fly deploy`.
 
+### ⚠️ `.env` do dashboard precisa existir DENTRO de `apps/dashboard/`
+
+Achado ao investigar o erro de deploy: existia (e ainda existe, propositalmente)
+um `.env` na raiz do monorepo com `API_URL`/`PUBLIC_GOOGLE_CLIENT_ID`. O Bun
+carrega esse arquivo automaticamente quando `bun run typecheck` é invocado a
+partir da raiz, então esses valores acabam no `process.env` do processo pai —
+mas o Vite/SvelteKit do dashboard resolve `$env/static/public` a partir do
+`envDir` do próprio projeto Vite (`apps/dashboard`, já que não há `envDir`
+customizado em `vite.config.ts`), **não herda esse `process.env`** pra gerar
+os tipos ambient (`svelte-kit sync`). Resultado: o `.env` da raiz nunca teve
+efeito real nenhum sobre o dashboard — só passava despercebido porque o Turbo
+cacheia por hash de conteúdo de arquivo (não por env var), e um `typecheck`
+antigo (de quando alguém rodou com o `.env` no lugar certo) ficava sendo
+reproduzido via cache em vez de re-executado de verdade. Só apareceu com
+`--force` (bypass de cache).
+
+**Correção:** criado `apps/dashboard/.env` de verdade (mesmo conteúdo do
+`.env.example`, valores reais). O `.env` da raiz do monorepo ficou como está
+— não é usado pelo dashboard, mas não vale a pena mexer nele sem necessidade.
+Se for criar env pública nova pro dashboard no futuro, o `.env` que importa é
+sempre `apps/dashboard/.env`, e **sempre validar com `--force`** (bypassar
+cache do Turbo) antes de considerar confirmado — cache hit não prova nada
+sobre env var.
+
+### Repository variable — `PUBLIC_GOOGLE_CLIENT_ID` (login social)
+
+Env pública do dashboard (M5-06), lida via `$env/static/public` — resolvida
+em **tempo de build**, não runtime. Se a chave não existir no ambiente do
+runner, o SvelteKit nem gera o export e o `typecheck`/`build` quebra (foi o
+erro visto num deploy real: `Module "$env/static/public" has no exported
+member 'PUBLIC_GOOGLE_CLIENT_ID'`). Corrigido adicionando essa env aos jobs
+de `ci.yml` e `deploy-dashboard.yml` — mas o valor em si só existe se você
+configurar:
+
+1. Repo → Settings → Secrets and variables → Actions → aba **Variables**
+   (não Secrets — não é segredo, só identifica a origem autorizada no Google
+   Cloud Console).
+2. Adicionar `PUBLIC_GOOGLE_CLIENT_ID` com o mesmo Client ID já usado em
+   `GOOGLE_CLIENT_IDS` no Fly (backend) e no `.env` local do dashboard.
+
+Sem essa variable configurada, os workflows continuam passando (o valor cai
+pra string vazia, e os componentes `google-sign-in-button.svelte`/
+`google-link-button.svelte` já escondem o botão quando vazio) — só o botão de
+login social é que não aparece em produção até isso ser configurado.
+
+### Repository variable — `PUBLIC_CLARITY_PROJECT_ID` (analytics/heatmap)
+
+Mesmo mecanismo do `PUBLIC_GOOGLE_CLIENT_ID` acima (env pública resolvida em
+tempo de build via `$env/static/public`) — já nasceu com a env adicionada nos
+2 workflows, pra não repetir o mesmo erro.
+
+1. Criar o projeto em https://clarity.microsoft.com/ e pegar o Project ID.
+2. Repo → Settings → Secrets and variables → Actions → aba **Variables** →
+   adicionar `PUBLIC_CLARITY_PROJECT_ID`.
+3. Mesmo valor entra em `EXPO_PUBLIC_CLARITY_PROJECT_ID` no `.env` do mobile
+   (não passa por CI/build do GitHub — é embutido no build do EAS, fora
+   deste runbook).
+
+Sem configurar, o dashboard não injeta o script (nenhum erro, só sem
+tracking) e o mobile não inicializa o SDK.
+
 ### Cortar uma release
 
 Depois do checklist acima completo:

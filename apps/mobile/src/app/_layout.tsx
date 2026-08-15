@@ -1,3 +1,4 @@
+import ClarityRN from '@microsoft/react-native-clarity';
 import { QueryClientProvider } from '@tanstack/react-query';
 import {
   DarkTheme,
@@ -27,6 +28,15 @@ export default function RootLayout() {
 
   useEffect(() => {
     SplashScreen.hideAsync();
+  }, []);
+
+  useEffect(() => {
+    // Heatmap + gravação de sessão (analytics). Sem project ID configurado,
+    // não inicializa nada — e em dev (Expo Go/dev client local) fica de fora
+    // de propósito pra não poluir o painel com sessões de desenvolvimento.
+    const projectId = process.env.EXPO_PUBLIC_CLARITY_PROJECT_ID;
+    if (!projectId || __DEV__) return;
+    ClarityRN.initialize(projectId);
   }, []);
 
   useEffect(() => {
