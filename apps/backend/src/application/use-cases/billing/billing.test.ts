@@ -11,9 +11,11 @@ import {
   activatePlan,
   addPlanPrice,
   createPlan,
+  deactivatePlan,
   setWorkspacePlan,
 } from '../admin';
 import { register } from '../auth';
+import { listAvailablePlans } from './list-available-plans';
 import { startBillingPortal } from './start-billing-portal';
 import { startCheckout } from './start-checkout';
 import { syncStripeWebhookEvent } from './sync-stripe-webhook-event';
@@ -73,6 +75,34 @@ async function createTestPlanWithPrice(
 
   return { planId: plan.value.id, planPriceId: price.value.id };
 }
+
+describe('billing: listAvailablePlans (pública — sem gate de autenticação)', () => {
+  test('lista plano ativo com preço, sem exigir actor/token', async () => {
+    const deps = createTestDeps(db);
+    const owner = await registerOwner(deps);
+    const { planId } = await createTestPlanWithPrice(deps, owner.userId);
+
+    // Note a ausência de qualquer actor/token no argumento — o use-case
+    // não recebe (nem precisa de) identidade de chamador; é isso que torna
+    // a rota HTTP correspondente segura de deixar 100% pública (usada pelo
+    // site institucional, sem sessão).
+    const plans = await listAvailablePlans(deps);
+
+    const found = plans.find((p) => p.id === planId);
+    expect(found).toBeTruthy();
+    expect(found?.prices.length).toBeGreaterThan(0);
+  });
+
+  test('não lista plano desativado', async () => {
+    const deps = createTestDeps(db);
+    const owner = await registerOwner(deps);
+    const { planId } = await createTestPlanWithPrice(deps, owner.userId);
+    await deactivatePlan(deps, owner.userId, planId);
+
+    const plans = await listAvailablePlans(deps);
+    expect(plans.find((p) => p.id === planId)).toBeUndefined();
+  });
+});
 
 describe('billing: checkout e portal (gateway fake)', () => {
   test('startCheckout sincroniza stripeProductId/stripePriceId lazy e devolve URL', async () => {

@@ -4,25 +4,16 @@
       "get": {
         "tags": ["Cobrança e Assinatura"],
         "summary": "Listar planos disponíveis",
-        "description": "Lista os planos ativos disponíveis para assinatura (autoatendimento). Diferente de `GET /admin/plans`: aberta a qualquer usuário autenticado, sem exigir superadmin, e retorna só planos ativos.",
-        "security": [{ "bearerAuth": [] }],
+        "description": "Lista os planos ativos disponíveis para assinatura (autoatendimento) — planos privados (`isPrivate: true`) nunca aparecem aqui. Rota pública, sem autenticação: usada tanto pelo dashboard (autoatendimento de troca de plano) quanto pelo site institucional (página de Planos, sem sessão).",
         "responses": {
           "200": {
-            "description": "Lista de planos ativos.",
+            "description": "Lista de planos ativos e não-privados.",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "array",
                   "items": { "$ref": "#/components/schemas/BillingPlan" }
                 }
-              }
-            }
-          },
-          "4XX": {
-            "description": "401 `unauthorized`, 429 `rate_limited`.",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
               }
             }
           }
@@ -270,6 +261,11 @@
             "example": ["ai_whatsapp_assistant", "custom_categories"]
           },
           "isActive": { "type": "boolean", "example": true },
+          "isPrivate": {
+            "type": "boolean",
+            "example": false,
+            "description": "Plano privado (vinculado manualmente pelo superadmin) nunca aparece em `GET /plans`."
+          },
           "sortOrder": { "type": "integer", "example": 1 },
           "createdAt": { "type": "string", "format": "date-time" },
           "updatedAt": { "type": "string", "format": "date-time" },
