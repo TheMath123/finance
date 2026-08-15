@@ -36,6 +36,11 @@ export interface SavedFormulaRepository {
   update(formulaId: string, patch: SavedFormulaPatch): Promise<SavedFormula>;
   delete(formulaId: string): Promise<void>;
   countByWorkspace(workspaceId: string): Promise<number>;
+  /** Quantas fórmulas estão fixadas nessa tela agora — base do enforcement de downgrade (ver `create-saved-formula.ts`/`update-saved-formula.ts`): fórmula em excesso não é apagada, só não pode mais ser fixada além do limite do plano efetivo. */
+  countPinned(
+    workspaceId: string,
+    field: SavedFormulaOrderField
+  ): Promise<number>;
   /** Maior valor de `homeOrder`/`transactionsOrder` já usado no workspace, ou -1 se nenhuma fórmula fixada tiver ordem ainda — próxima posição é o retorno + 1. */
   maxOrder(workspaceId: string, field: SavedFormulaOrderField): Promise<number>;
 }

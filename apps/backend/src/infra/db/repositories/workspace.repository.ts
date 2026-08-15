@@ -1,6 +1,7 @@
 import { users, workspaceMembers, workspaces } from '@finance/db';
-import { and, count, eq, ilike, inArray, sql } from 'drizzle-orm';
+import { and, asc, count, eq, inArray, sql } from 'drizzle-orm';
 import type { WorkspaceRepository } from '../../../application/ports/workspace-repository';
+import { toPrefixTsQuery } from '../full-text-search';
 import type { DbHandle } from '../handle';
 
 export function createWorkspaceRepository(db: DbHandle): WorkspaceRepository {
@@ -33,6 +34,16 @@ export function createWorkspaceRepository(db: DbHandle): WorkspaceRepository {
       });
       return member?.role ?? null;
     },
+    async findOwnerUserId(workspaceId) {
+      const owner = await db.query.workspaceMembers.findFirst({
+        where: and(
+          eq(workspaceMembers.workspaceId, workspaceId),
+          eq(workspaceMembers.role, 'owner')
+        ),
+        orderBy: asc(workspaceMembers.createdAt),
+      });
+      return owner?.userId ?? null;
+    },
     async listByUser(userId) {
       const memberships = await db.query.workspaceMembers.findMany({
         where: eq(workspaceMembers.userId, userId),
@@ -52,6 +63,7 @@ export function createWorkspaceRepository(db: DbHandle): WorkspaceRepository {
         email: m.user.email,
         avatarKey: m.user.avatarKey,
         avatarUrl: m.user.avatarUrl,
+        createdAt: m.createdAt,
       }));
     },
     async countOwners(workspaceId) {
@@ -117,7 +129,10 @@ export function createWorkspaceRepository(db: DbHandle): WorkspaceRepository {
       return row;
     },
     async listAllForAdmin({ search, limit, offset }) {
-      const where = search ? ilike(workspaces.name, `%${search}%`) : undefined;
+      const tsQuery = search ? toPrefixTsQuery(search) : null;
+      const where = tsQuery
+        ? sql`${workspaces.searchVector} @@ to_tsquery('portuguese', ${tsQuery})`
+        : undefined;
       const [rows, [totalRow]] = await Promise.all([
         db.query.workspaces.findMany({
           where,

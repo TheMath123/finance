@@ -574,9 +574,8 @@ describe('workspace: enforcement de plano free (M2-03)', () => {
       .set({ planId: premiumPlanId })
       .where(eq(workspaces.id, first.id));
 
-    // Mesmo já possuindo um workspace compartilhado, criar outro só é bloqueado
-    // se o EXISTENTE ainda contar pro limite do plano free — depois do
-    // upgrade, o limite (bem maior) do premium é que passa a valer.
+    // Upgrade de QUALQUER workspace já possuído libera a quota (maior limite
+    // efetivo) pra conta toda — mesmo o workspace novo nascendo no free.
     const second = await createWorkspace(deps, actor.userId, {
       name: 'Família Premium 2',
     });
@@ -602,6 +601,33 @@ describe('workspace: enforcement de plano free (M2-03)', () => {
       );
       expect(accepted.ok).toBe(true);
     }
+  });
+
+  test('premium com trial vencido não infla a quota — cai pro limite do free', async () => {
+    const deps = createTestDeps(db);
+    const { actor } = await newOwnerActor();
+
+    const first = await mustCreateWorkspace(
+      deps,
+      actor.userId,
+      'Família Trial Vencido'
+    );
+    const premiumPlanId = await getTestPlanId(db, 'premium');
+    await db
+      .update(workspaces)
+      .set({
+        planId: premiumPlanId,
+        trialEndsAt: new Date(Date.now() - 24 * 60 * 60 * 1000), // ontem
+      })
+      .where(eq(workspaces.id, first.id));
+
+    // resolveEffectivePlan cai pro free (trial vencido) — quota continua a
+    // do free (1), então já possuindo 1 workspace, criar outro é bloqueado.
+    const second = await createWorkspace(deps, actor.userId, {
+      name: 'Família Trial Vencido 2',
+    });
+    expect(second.ok).toBe(false);
+    if (!second.ok) expect(second.error).toBe('plan_limit_reached');
   });
 });
 

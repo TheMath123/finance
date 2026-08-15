@@ -1,10 +1,13 @@
 /**
  * Testes das fórmulas customizadas (M5-01) contra o Postgres local.
  */
-import { beforeAll, describe, expect, test } from 'bun:test';
-import { createDb, type Db } from '@finance/db';
+import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
+import { createDb, type Db, workspaces } from '@finance/db';
+import { eq } from 'drizzle-orm';
+import { cleanupTestPlans } from '../../../test/cleanup-test-plans';
 import { createTestDeps } from '../../../test/deps';
 import type { Actor } from '../../deps';
+import { createPlan } from '../admin';
 import { register } from '../auth';
 import { createCard } from '../card';
 import { createTransaction } from '../transaction';
@@ -23,6 +26,10 @@ let db: Db;
 
 beforeAll(() => {
   db = createDb();
+});
+
+afterAll(async () => {
+  await cleanupTestPlans(db, ['test-guard-plan-'], []);
 });
 
 async function newOwnerActor(): Promise<Actor> {
@@ -130,6 +137,103 @@ describe('saved-formula: limite de plano (free)', () => {
     });
     expect(eleventh.ok).toBe(false);
     if (!eleventh.ok) expect(eleventh.error).toBe('plan_limit_reached');
+  });
+});
+
+describe('saved-formula: downgrade enforcement (fixação além do limite)', () => {
+  test('fórmula em excesso já fixada continua fixada; só bloqueia fixar novas além do limite', async () => {
+    const deps = createTestDeps(db);
+    const actor = await newOwnerActor();
+
+    // Plano de teste próprio com limite de 2 fórmulas — cria 2, fixa as 2 na
+    // Home (dentro do limite).
+    const roomyPlan = await createPlan(deps, actor.userId, {
+      key: `test-guard-plan-${crypto.randomUUID().slice(0, 8)}`,
+      name: 'Plano de teste (2 fórmulas)',
+      trialDays: 0,
+      limits: {
+        maxOwnedSharedWorkspaces: 1,
+        maxMembersPerWorkspace: 5,
+        maxSavedFormulasPerWorkspace: 2,
+      },
+      features: [],
+    });
+    if (!roomyPlan.ok) throw new Error('setup falhou');
+    await db
+      .update(workspaces)
+      .set({ planId: roomyPlan.value.id })
+      .where(eq(workspaces.id, actor.workspaceId));
+
+    const first = await createSavedFormula(deps, actor, {
+      name: 'Fórmula A',
+      expression: 'despesas',
+      displayFormat: 'number',
+      pinnedHome: true,
+      pinnedTransactions: false,
+    });
+    expect(first.ok).toBe(true);
+    const second = await createSavedFormula(deps, actor, {
+      name: 'Fórmula B',
+      expression: 'despesas',
+      displayFormat: 'number',
+      pinnedHome: true,
+      pinnedTransactions: false,
+    });
+    expect(second.ok).toBe(true);
+
+    // Downgrade pra um plano que só permite 1 fórmula fixada — as 2 já
+    // fixadas continuam fixadas (grandfathering, nunca desfixa à força).
+    if (!first.ok || !second.ok) return;
+    const strictPlan = await createPlan(deps, actor.userId, {
+      key: `test-guard-plan-${crypto.randomUUID().slice(0, 8)}`,
+      name: 'Plano de teste (1 fórmula fixada)',
+      trialDays: 0,
+      limits: {
+        maxOwnedSharedWorkspaces: 1,
+        maxMembersPerWorkspace: 5,
+        maxSavedFormulasPerWorkspace: 1,
+      },
+      features: [],
+    });
+    if (!strictPlan.ok) throw new Error('setup falhou');
+    await db
+      .update(workspaces)
+      .set({ planId: strictPlan.value.id })
+      .where(eq(workspaces.id, actor.workspaceId));
+
+    const stillPinned = await deps.repos.savedFormula.findInWorkspace(
+      actor.workspaceId,
+      first.value.id
+    );
+    expect(stillPinned?.pinnedHome).toBe(true);
+
+    // Fixar uma terceira fórmula (nova, dentro do limite de contagem 2≤2?
+    // não — total já bateu o antigo limite de 2, então criação também
+    // bloqueia; o que importa aqui é o desfixar/fixar de uma JÁ existente).
+    const unpinned = await createSavedFormula(deps, actor, {
+      name: 'Fórmula C (não fixada)',
+      expression: 'despesas',
+      displayFormat: 'number',
+      pinnedHome: false,
+      pinnedTransactions: false,
+    });
+    // total já em 2 (limite antigo) — criação de uma terceira formula
+    // (mesmo não fixada) já é bloqueada pelo limite de contagem total.
+    expect(unpinned.ok).toBe(false);
+
+    // Tentar fixar a segunda fórmula (já tinha pinnedHome=true — despin +
+    // repin) — despina primeiro pra simular o caso real de fixar uma
+    // fórmula existente além do limite.
+    const despun = await updateSavedFormula(deps, actor, second.value.id, {
+      pinnedHome: false,
+    });
+    expect(despun.ok).toBe(true);
+
+    const repin = await updateSavedFormula(deps, actor, second.value.id, {
+      pinnedHome: true,
+    });
+    expect(repin.ok).toBe(false);
+    if (!repin.ok) expect(repin.error).toBe('plan_limit_reached');
   });
 });
 

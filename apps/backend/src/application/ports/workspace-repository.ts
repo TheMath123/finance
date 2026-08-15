@@ -18,6 +18,8 @@ export interface WorkspaceMemberView {
   email: string;
   avatarKey: string | null;
   avatarUrl: string | null;
+  /** Data de entrada no workspace — base do enforcement de downgrade (ver `domain/services/plan-enforcement.ts`): os membros mais antigos continuam com acesso normal, o excedente vira só leitura. */
+  createdAt: Date;
 }
 
 export interface AdminWorkspaceRow {
@@ -64,6 +66,8 @@ export interface WorkspaceRepository {
     workspaceId: string,
     userId: string
   ): Promise<WorkspaceRole | null>;
+  /** Owner mais antigo (`createdAt` do vínculo) — dono "canônico" pra fins de quota, mesmo se houver sucessão/múltiplos owners. */
+  findOwnerUserId(workspaceId: string): Promise<string | null>;
   listByUser(
     userId: string
   ): Promise<{ workspace: Workspace; role: WorkspaceRole }[]>;

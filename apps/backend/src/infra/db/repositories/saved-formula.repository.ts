@@ -56,5 +56,18 @@ export function createSavedFormulaRepository(
         .where(eq(savedFormulas.workspaceId, workspaceId));
       return row?.max ?? -1;
     },
+    async countPinned(workspaceId, field) {
+      const column =
+        field === 'homeOrder'
+          ? savedFormulas.pinnedHome
+          : savedFormulas.pinnedTransactions;
+      const [row] = await db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(savedFormulas)
+        .where(
+          and(eq(savedFormulas.workspaceId, workspaceId), eq(column, true))
+        );
+      return row?.count ?? 0;
+    },
   };
 }

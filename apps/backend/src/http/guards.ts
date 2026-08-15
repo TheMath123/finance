@@ -2,6 +2,10 @@ import type { WorkspaceRole } from '@finance/shared';
 import { type Either, left, right } from '@finance/shared';
 import type { Actor } from '../application/deps';
 import { roleAtLeast } from '../domain/services/authorization';
+import {
+  isMembershipOverQuota,
+  isWorkspaceOverQuota,
+} from '../domain/services/plan-enforcement';
 import type { AppDeps } from './deps';
 import type { HttpError } from './http-error';
 
@@ -30,9 +34,16 @@ export async function requireAuthenticated(
 /**
  * Autentica, aplica o limite por usuário e valida membership + papel mínimo no
  * workspace (spec: autorização por workspace).
+ *
+ * Downgrade enforcement (workspace ou membro acima da quota do plano
+ * efetivo, ver `domain/services/plan-enforcement.ts`): rebaixa o papel
+ * efetivo pra `viewer` — nunca apaga nada, só bloqueia escrita (rotas de
+ * leitura pedem `minRole: 'viewer'`, então continuam liberadas). O `owner`
+ * nunca é rebaixado por essa checagem: precisa manter acesso total pra
+ * resolver a situação (upgrade em algum workspace ou apagar até caber).
  */
 export async function requireWorkspaceRole(
-  deps: AppDeps,
+  deps: Pick<AppDeps, 'tokens' | 'repos' | 'rateLimiter' | 'logger'>,
   request: Request,
   workspaceId: string,
   minRole: WorkspaceRole
@@ -70,14 +81,29 @@ export async function requireWorkspaceRole(
       message: 'Workspace não encontrado.',
     });
   }
-  if (!roleAtLeast(role, minRole)) {
+
+  let effectiveRole = role;
+  if (role !== 'owner') {
+    const workspace = await deps.repos.workspace.findById(workspaceId);
+    if (workspace) {
+      const overQuota =
+        (await isWorkspaceOverQuota(deps, workspace)) ||
+        (await isMembershipOverQuota(deps, workspace, auth.value.userId));
+      if (overQuota) effectiveRole = 'viewer';
+    }
+  }
+
+  if (!roleAtLeast(effectiveRole, minRole)) {
     return left({
       status: 403,
       code: 'forbidden',
-      message: 'Papel sem permissão para esta ação.',
+      message:
+        effectiveRole !== role
+          ? 'Workspace acima do limite do plano — só leitura até resolver (upgrade ou remover workspace/membro até caber no limite).'
+          : 'Papel sem permissão para esta ação.',
     });
   }
-  return right({ userId: auth.value.userId, workspaceId, role });
+  return right({ userId: auth.value.userId, workspaceId, role: effectiveRole });
 }
 
 /**

@@ -1,6 +1,7 @@
 import { evaluateFormula } from '@finance/formula';
 import { type Either, left, right } from '@finance/shared';
 import type { SavedFormula } from '../../../domain/entities/saved-formula';
+import { resolveEffectivePlan } from '../../../domain/services/resolve-effective-plan';
 import type { Actor, UseCaseDeps } from '../../deps';
 import type { SavedFormulaPatch } from '../../ports/saved-formula-repository';
 import type { SavedFormulaError } from './errors';
@@ -23,6 +24,39 @@ export async function updateSavedFormula(
     const { values } = await buildFormulaCatalog(deps, actor, year, month);
     const evaluated = evaluateFormula(patch.expression, values);
     if (!evaluated.ok) return left(evaluated.error.type);
+  }
+
+  // Downgrade enforcement: fixar (false→true) só é permitido se ainda
+  // houver slot no limite do plano efetivo — fórmula já fixada antes do
+  // downgrade nunca é desfixada à força (grandfathering), só bloqueia
+  // fixar NOVAS além do limite.
+  const pinningHome =
+    patch.pinnedHome === true && existing.pinnedHome === false;
+  const pinningTransactions =
+    patch.pinnedTransactions === true && existing.pinnedTransactions === false;
+  if (pinningHome || pinningTransactions) {
+    const workspace = await deps.repos.workspace.findById(actor.workspaceId);
+    const plan = workspace ? await resolveEffectivePlan(deps, workspace) : null;
+    if (plan) {
+      if (pinningHome) {
+        const pinned = await deps.repos.savedFormula.countPinned(
+          actor.workspaceId,
+          'homeOrder'
+        );
+        if (pinned >= plan.limits.maxSavedFormulasPerWorkspace) {
+          return left('plan_limit_reached');
+        }
+      }
+      if (pinningTransactions) {
+        const pinned = await deps.repos.savedFormula.countPinned(
+          actor.workspaceId,
+          'transactionsOrder'
+        );
+        if (pinned >= plan.limits.maxSavedFormulasPerWorkspace) {
+          return left('plan_limit_reached');
+        }
+      }
+    }
   }
 
   // Pin/despin muda a ordem: virar `true` manda pro fim da fila do widget

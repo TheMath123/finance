@@ -20,13 +20,33 @@ export async function createSavedFormula(
   // limite nenhum, nunca de propósito. Agora sempre consulta o limite real
   // do plano efetivo (M5-03: cai pro free se o trial já venceu).
   const workspace = await deps.repos.workspace.findById(actor.workspaceId);
-  if (workspace) {
-    const plan = await resolveEffectivePlan(deps, workspace);
-    if (plan) {
-      const count = await deps.repos.savedFormula.countByWorkspace(
-        actor.workspaceId
+  const plan = workspace ? await resolveEffectivePlan(deps, workspace) : null;
+  if (plan) {
+    const count = await deps.repos.savedFormula.countByWorkspace(
+      actor.workspaceId
+    );
+    if (count >= plan.limits.maxSavedFormulasPerWorkspace) {
+      return left('plan_limit_reached');
+    }
+
+    // Downgrade enforcement: fórmula em excesso já existente nunca é
+    // apagada, só perde o direito de ser fixada além do limite do plano
+    // efetivo — nova fórmula pinada já na criação passa pela mesma regra.
+    if (input.pinnedHome) {
+      const pinned = await deps.repos.savedFormula.countPinned(
+        actor.workspaceId,
+        'homeOrder'
       );
-      if (count >= plan.limits.maxSavedFormulasPerWorkspace) {
+      if (pinned >= plan.limits.maxSavedFormulasPerWorkspace) {
+        return left('plan_limit_reached');
+      }
+    }
+    if (input.pinnedTransactions) {
+      const pinned = await deps.repos.savedFormula.countPinned(
+        actor.workspaceId,
+        'transactionsOrder'
+      );
+      if (pinned >= plan.limits.maxSavedFormulasPerWorkspace) {
         return left('plan_limit_reached');
       }
     }

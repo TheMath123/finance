@@ -1,5 +1,6 @@
 import { type Either, left, right } from '@finance/shared';
 import type { Workspace } from '../../../domain/entities/workspace';
+import { computeOwnedWorkspaceQuota } from '../../../domain/services/plan-enforcement';
 import type { UseCaseDeps } from '../../deps';
 import type { WorkspaceError } from './errors';
 
@@ -14,11 +15,23 @@ export interface CreateWorkspaceInput {
  * numa tela vazia"): categorias padrão + banco/conta zerados, pra já dar pra
  * lançar transação sem cadastro manual antes.
  *
- * Enforcement de plano (M2-03, migrado pro M5-02): limite vem do plano
- * atual de cada workspace já possuído (dado real da tabela `plans`, não
- * mais constante hardcoded). Workspace novo sempre nasce no plano `free`
- * (não existe fluxo de criar já num plano pago — cobrança é milestone
- * futuro, M5-03).
+ * Enforcement de plano (M2-03, migrado pro M5-02, revisado pro modelo
+ * "1 plano por workspace" pós-M5-05): como o plano é atribuído por
+ * workspace mas "quantos workspaces posso ter" é uma pergunta sobre a
+ * conta inteira, a quota efetiva é o MAIOR `maxOwnedSharedWorkspaces`
+ * entre os planos efetivos (via `resolveEffectivePlan` — já cai pro free
+ * se trial venceu ou assinatura foi cancelada, fechando a brecha de trial
+ * premium inflar a quota pra sempre) de todos os workspaces compartilhados
+ * que o usuário já possui como owner; a contagem é o total desses
+ * workspaces, sem filtrar por plano. Ou seja: fazer upgrade de QUALQUER
+ * um dos workspaces já possuídos libera slot pra conta toda — o workspace
+ * novo em si sempre nasce no plano `free` (não existe fluxo de criar já
+ * num plano pago).
+ *
+ * Workspace criado além da quota (ex.: dono já tinha o máximo e um dos
+ * workspaces que garantia o slot extra caiu de plano) nunca é apagado —
+ * só perde a interação (vira só leitura), ver `requireWorkspaceRole` +
+ * `isWorkspaceOverQuota`. Aqui só bloqueia a criação de um novo além dela.
  */
 export async function createWorkspace(
   deps: UseCaseDeps,
@@ -28,16 +41,8 @@ export async function createWorkspace(
   const freePlan = await deps.repos.plan.findByKey('free');
   if (!freePlan) throw new Error('plano free não encontrado');
 
-  const memberships = await deps.repos.workspace.listByUser(userId);
-  const ownedSharedOnFreePlan = memberships.filter(
-    (m) =>
-      m.role === 'owner' &&
-      m.workspace.type !== 'personal' &&
-      m.workspace.planId === freePlan.id
-  );
-  if (
-    ownedSharedOnFreePlan.length >= freePlan.limits.maxOwnedSharedWorkspaces
-  ) {
+  const { quota, ownedShared } = await computeOwnedWorkspaceQuota(deps, userId);
+  if (ownedShared.length >= quota) {
     return left('plan_limit_reached');
   }
 
