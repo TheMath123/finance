@@ -48,6 +48,7 @@ export interface Messages {
 		intervalDay: string;
 		everyNIntervals: (n: number, unit: string) => string;
 		perInterval: (unit: string) => string;
+		savePercent: (percent: number) => string;
 	};
 	cookieConsent: {
 		text: string;
@@ -128,7 +129,8 @@ export const MESSAGES: Record<Lang, Messages> = {
 			intervalWeek: 'semana',
 			intervalDay: 'dia',
 			everyNIntervals: (n, unit) => `a cada ${n} ${unit}s`,
-			perInterval: (unit) => `por ${unit}`
+			perInterval: (unit) => `por ${unit}`,
+			savePercent: (percent) => `economize ${percent}%`
 		},
 		cookieConsent: {
 			text: 'Usamos cookies necessários pro funcionamento do site e, com sua permissão, cookies de análise (Microsoft Clarity) pra entender como o produto é usado.',
@@ -205,7 +207,8 @@ export const MESSAGES: Record<Lang, Messages> = {
 			intervalWeek: 'week',
 			intervalDay: 'day',
 			everyNIntervals: (n, unit) => `every ${n} ${unit}s`,
-			perInterval: (unit) => `per ${unit}`
+			perInterval: (unit) => `per ${unit}`,
+			savePercent: (percent) => `save ${percent}%`
 		},
 		cookieConsent: {
 			text: 'We use cookies necessary for the site to work and, with your permission, analytics cookies (Microsoft Clarity) to understand how the product is used.',
@@ -285,7 +288,8 @@ export const MESSAGES: Record<Lang, Messages> = {
 			intervalWeek: 'semana',
 			intervalDay: 'día',
 			everyNIntervals: (n, unit) => `cada ${n} ${unit}s`,
-			perInterval: (unit) => `por ${unit}`
+			perInterval: (unit) => `por ${unit}`,
+			savePercent: (percent) => `ahorra ${percent}%`
 		},
 		cookieConsent: {
 			text: 'Usamos cookies necesarias para el funcionamiento del sitio y, con tu permiso, cookies de análisis (Microsoft Clarity) para entender cómo se usa el producto.',
