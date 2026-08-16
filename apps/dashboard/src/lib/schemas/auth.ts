@@ -1,20 +1,33 @@
+import { passwordValidator } from '@finance/shared';
 import { z } from 'zod';
 
 /**
  * Espelham a validação do backend (http/modules/auth/schemas.ts) pro form dar
  * feedback antes do submit — a regra de verdade continua na borda da API.
+ * Mesmo `passwordValidator` de @finance/shared usado lá: `weak` pra senha já
+ * existente (login, reconfirmação), `regular` pra senha nova (cadastro,
+ * reset, troca).
  */
+const newPasswordSchema = passwordValidator({ force: 'regular' }).max(128);
+const existingPasswordSchema = passwordValidator({ force: 'weak' });
+
 export const loginSchema = z.object({
 	email: z.email('Informe um e-mail válido').toLowerCase(),
-	password: z.string().min(1, 'Informe a senha')
+	password: existingPasswordSchema
 });
 
-export const registerSchema = z.object({
-	name: z.string().min(1, 'Informe seu nome').max(120),
-	email: z.email('Informe um e-mail válido').toLowerCase(),
-	password: z.string().min(8, 'A senha precisa de pelo menos 8 caracteres').max(128),
-	termsAccepted: z.literal(true, { error: 'É preciso aceitar os termos de uso' })
-});
+export const registerSchema = z
+	.object({
+		name: z.string().min(1, 'Informe seu nome').max(120),
+		email: z.email('Informe um e-mail válido').toLowerCase(),
+		password: newPasswordSchema,
+		confirmPassword: z.string(),
+		termsAccepted: z.literal(true, { error: 'É preciso aceitar os termos de uso' })
+	})
+	.refine((data) => data.password === data.confirmPassword, {
+		message: 'As senhas não coincidem',
+		path: ['confirmPassword']
+	});
 
 export const forgotPasswordSchema = z.object({
 	email: z.email('Informe um e-mail válido').toLowerCase()
@@ -34,9 +47,9 @@ export const verifyEmailSchema = z.object({
 	token: z.string().min(1, 'Token inválido')
 });
 
-export const newPasswordSchema = z
+export const setNewPasswordSchema = z
 	.object({
-		password: z.string().min(8, 'A senha precisa de pelo menos 8 caracteres').max(128),
+		password: newPasswordSchema,
 		confirmPassword: z.string()
 	})
 	.refine((data) => data.password === data.confirmPassword, {

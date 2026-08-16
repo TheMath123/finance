@@ -12,6 +12,18 @@ import { revokeWhatsAppLink } from '$lib/server/whatsapp-api';
 
 import type { Actions } from './$types';
 
+/**
+ * O backend devolve a mensagem genérica "E-mail ou senha inválidos." pro
+ * código `invalid_credentials` em várias rotas (login, troca de senha, troca
+ * de e-mail, exclusão de conta) — de propósito, pra não vazar se foi e-mail
+ * ou senha que errou no LOGIN. Aqui o usuário já está logado e só digitou a
+ * senha atual errada, então a mensagem genérica confunde (parece erro de
+ * login). Troca só a exibição, o backend continua genérico.
+ */
+function currentPasswordErrorMessage(error: { code: string; message: string }) {
+	return error.code === 'invalid_credentials' ? 'Senha atual incorreta.' : error.message;
+}
+
 export const actions: Actions = {
 	updateName: async ({ request, locals }) => {
 		if (!locals.session) redirect(303, '/login');
@@ -29,7 +41,8 @@ export const actions: Actions = {
 		const form = await request.formData();
 		const raw = {
 			currentPassword: form.get('currentPassword')?.toString() ?? '',
-			newPassword: form.get('newPassword')?.toString() ?? ''
+			newPassword: form.get('newPassword')?.toString() ?? '',
+			confirmNewPassword: form.get('confirmNewPassword')?.toString() ?? ''
 		};
 
 		const parsed = changePasswordSchema.safeParse(raw);
@@ -41,11 +54,14 @@ export const actions: Actions = {
 		// (senão a troca de senha deslogaria o próprio dashboard também).
 		const currentRefreshToken = getRefreshToken(cookies);
 		const result = await authApi.changePassword(locals.session.accessToken, {
-			...parsed.data,
+			currentPassword: parsed.data.currentPassword,
+			newPassword: parsed.data.newPassword,
 			currentRefreshToken
 		});
 		if (!result.ok) {
-			return fail(result.error.status || 500, { passwordMessage: result.error.message });
+			return fail(result.error.status || 500, {
+				passwordMessage: currentPasswordErrorMessage(result.error)
+			});
 		}
 		return { passwordChanged: true };
 	},
@@ -64,7 +80,10 @@ export const actions: Actions = {
 		}
 
 		const result = await authApi.requestEmailChange(locals.session.accessToken, parsed.data);
-		if (!result.ok) return fail(result.error.status || 500, { emailMessage: result.error.message });
+		if (!result.ok)
+			return fail(result.error.status || 500, {
+				emailMessage: currentPasswordErrorMessage(result.error)
+			});
 		return { emailChangeRequested: true };
 	},
 
@@ -146,7 +165,9 @@ export const actions: Actions = {
 			parsed.data.password
 		);
 		if (!result.ok) {
-			return fail(result.error.status || 500, { deleteMessage: result.error.message });
+			return fail(result.error.status || 500, {
+				deleteMessage: currentPasswordErrorMessage(result.error)
+			});
 		}
 		return { deletionRequested: true };
 	},

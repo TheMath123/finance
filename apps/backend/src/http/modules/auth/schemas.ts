@@ -1,16 +1,24 @@
+import { passwordValidator } from '@finance/shared';
 import { z } from 'zod';
+
+/** Toda senha NOVA (cadastro, reset, troca) passa por aqui — letra + número,
+ *  mesma política em toda a borda da API, não só no client. */
+const newPasswordSchema = passwordValidator({ force: 'regular' }).max(128);
+/** Senha EXISTENTE (login, reconfirmação) — só presença/tamanho, sem exigir
+ *  complexidade de algo que já foi criado sob a política vigente na época. */
+const existingPasswordSchema = passwordValidator({ force: 'weak' });
 
 /** Payloads do auth validados com Zod (spec: Validação). */
 export const registerSchema = z.object({
   name: z.string().min(1).max(120),
   email: z.string().email().toLowerCase(),
-  password: z.string().min(8).max(128),
+  password: newPasswordSchema,
   termsAccepted: z.literal(true, { error: 'aceite dos termos é obrigatório' }),
 });
 
 export const loginSchema = z.object({
   email: z.string().email().toLowerCase(),
-  password: z.string().min(1),
+  password: existingPasswordSchema,
 });
 
 export const refreshSchema = z.object({
@@ -45,7 +53,7 @@ export const verifyResetCodeSchema = z.object({
 export const resetPasswordSchema = z.object({
   email: z.string().email().toLowerCase(),
   code: resetCodeSchema,
-  password: z.string().min(8).max(128),
+  password: newPasswordSchema,
 });
 
 export const verifyEmailSchema = z.object({
@@ -53,7 +61,7 @@ export const verifyEmailSchema = z.object({
 });
 
 export const requestAccountDeletionSchema = z.object({
-  password: z.string().min(1),
+  password: existingPasswordSchema,
 });
 
 export const confirmAccountDeletionSchema = z.object({
@@ -67,7 +75,7 @@ export const updateNameSchema = z.object({
 
 export const requestEmailChangeSchema = z.object({
   newEmail: z.string().email().toLowerCase(),
-  currentPassword: z.string().min(1),
+  currentPassword: existingPasswordSchema,
 });
 
 export const confirmEmailChangeSchema = z.object({
@@ -75,8 +83,8 @@ export const confirmEmailChangeSchema = z.object({
 });
 
 export const changePasswordSchema = z.object({
-  currentPassword: z.string().min(1),
-  newPassword: z.string().min(8).max(128),
+  currentPassword: existingPasswordSchema,
+  newPassword: newPasswordSchema,
   /** Se enviado, só esta sessão sobrevive à revogação (ver change-password.ts). */
   currentRefreshToken: z.string().min(1).optional(),
 });

@@ -8,10 +8,14 @@
 	import * as Card from '$lib/components/ui/card';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
+	import { PasswordInput } from '$lib/components/ui/password-input';
+	import { PasswordRequirements } from '$lib/components/ui/password-requirements';
 
 	let { form } = $props();
 
 	let submitting = $state(false);
+	let password = $state('');
+	let confirmPassword = $state('');
 </script>
 
 <svelte:head>
@@ -59,15 +63,30 @@
 				</div>
 				<div class="grid gap-2">
 					<Label for="password">Senha</Label>
-					<Input
+					<PasswordInput
 						id="password"
 						name="password"
-						type="password"
 						autocomplete="new-password"
+						bind:value={password}
+						aria-describedby="password-requirements"
 						required
 					/>
 					{#if form?.errors?.password}
 						<p class="text-sm text-destructive">{form.errors.password}</p>
+					{/if}
+					<PasswordRequirements id="password-requirements" {password} />
+				</div>
+				<div class="grid gap-2">
+					<Label for="confirmPassword">Confirmar senha</Label>
+					<PasswordInput
+						id="confirmPassword"
+						name="confirmPassword"
+						autocomplete="new-password"
+						bind:value={confirmPassword}
+						required
+					/>
+					{#if form?.errors?.confirmPassword}
+						<p class="text-sm text-destructive">{form.errors.confirmPassword}</p>
 					{/if}
 				</div>
 				<div class="flex items-start gap-2">

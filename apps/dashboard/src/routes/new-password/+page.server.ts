@@ -1,6 +1,6 @@
 import { fail, redirect } from '@sveltejs/kit';
 
-import { newPasswordSchema } from '$lib/schemas/auth';
+import { setNewPasswordSchema } from '$lib/schemas/auth';
 import * as authApi from '$lib/server/auth-api';
 
 import type { Actions, PageServerLoad } from './$types';
@@ -26,7 +26,7 @@ export const actions: Actions = {
 			confirmPassword: form.get('confirmPassword')?.toString() ?? ''
 		};
 
-		const parsed = newPasswordSchema.safeParse(raw);
+		const parsed = setNewPasswordSchema.safeParse(raw);
 		if (!parsed.success) {
 			const errors = Object.fromEntries(
 				parsed.error.issues.map((issue) => [issue.path.join('.'), issue.message])

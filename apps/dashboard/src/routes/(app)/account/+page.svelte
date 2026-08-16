@@ -17,11 +17,14 @@
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
+	import { PasswordInput } from '$lib/components/ui/password-input';
+	import { PasswordRequirements } from '$lib/components/ui/password-requirements';
 
 	let { data, form } = $props();
 
 	let nameOpen = $state(false);
 	let passwordOpen = $state(false);
+	let newPassword = $state('');
 	let emailOpen = $state(false);
 	let deleteOpen = $state(false);
 
@@ -237,20 +240,30 @@
 		>
 			<div class="grid gap-2">
 				<Label for="currentPassword">Senha atual</Label>
-				<Input
+				<PasswordInput
 					id="currentPassword"
 					name="currentPassword"
-					type="password"
 					autocomplete="current-password"
 					required
 				/>
 			</div>
 			<div class="grid gap-2">
 				<Label for="newPassword">Nova senha</Label>
-				<Input
+				<PasswordInput
 					id="newPassword"
 					name="newPassword"
-					type="password"
+					autocomplete="new-password"
+					bind:value={newPassword}
+					aria-describedby="new-password-requirements"
+					required
+				/>
+				<PasswordRequirements id="new-password-requirements" password={newPassword} />
+			</div>
+			<div class="grid gap-2">
+				<Label for="confirmNewPassword">Confirmar nova senha</Label>
+				<PasswordInput
+					id="confirmNewPassword"
+					name="confirmNewPassword"
 					autocomplete="new-password"
 					required
 				/>
@@ -301,7 +314,12 @@
 				</div>
 				<div class="grid gap-2">
 					<Label for="email-password">Senha atual</Label>
-					<Input id="email-password" name="currentPassword" type="password" required />
+					<PasswordInput
+						id="email-password"
+						name="currentPassword"
+						autocomplete="current-password"
+						required
+					/>
 				</div>
 				{#if form?.emailMessage}
 					<p class="text-sm text-destructive">{form.emailMessage}</p>
@@ -355,10 +373,10 @@
 				<form method="POST" action="?/requestDeletion" class="grid gap-4" use:enhance>
 					<div class="grid gap-2">
 						<Label for="delete-password">Senha atual</Label>
-						<Input
+						<PasswordInput
 							id="delete-password"
 							name="password"
-							type="password"
+							autocomplete="current-password"
 							disabled={!deleteUnlocked}
 							required
 						/>

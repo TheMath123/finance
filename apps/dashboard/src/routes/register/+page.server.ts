@@ -17,6 +17,7 @@ export const actions: Actions = {
 			name: form.get('name')?.toString() ?? '',
 			email: form.get('email')?.toString() ?? '',
 			password: form.get('password')?.toString() ?? '',
+			confirmPassword: form.get('confirmPassword')?.toString() ?? '',
 			termsAccepted: form.get('terms') === 'on'
 		};
 		const values = { name: raw.name, email: raw.email };
@@ -29,7 +30,12 @@ export const actions: Actions = {
 			return fail(400, { ...values, errors });
 		}
 
-		const result = await authApi.register(parsed.data);
+		const result = await authApi.register({
+			name: parsed.data.name,
+			email: parsed.data.email,
+			password: parsed.data.password,
+			termsAccepted: parsed.data.termsAccepted
+		});
 		if (!result.ok) {
 			const message =
 				result.error.code === 'email_taken'

@@ -7,6 +7,7 @@
 	import * as Card from '$lib/components/ui/card';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
+	import { PasswordInput } from '$lib/components/ui/password-input';
 
 	let { form } = $props();
 
@@ -53,13 +54,7 @@
 					<div class="flex items-center justify-between">
 						<Label for="password">Senha</Label>
 					</div>
-					<Input
-						id="password"
-						name="password"
-						type="password"
-						autocomplete="current-password"
-						required
-					/>
+					<PasswordInput id="password" name="password" autocomplete="current-password" required />
 					{#if form?.errors?.password}
 						<p class="text-sm text-destructive">{form.errors.password}</p>
 					{/if}
