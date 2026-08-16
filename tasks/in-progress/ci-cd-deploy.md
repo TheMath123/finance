@@ -216,6 +216,33 @@ erro de `$env/static/public` já visto com `PUBLIC_GOOGLE_CLIENT_ID`) — não �
 opcional como os dois anteriores, porque o layout do landing importa direto,
 sem checar se está vazia.
 
+### Repository variable — `PUBLIC_SITE_URL` (dashboard → site institucional)
+
+Env pública do `apps/dashboard`, sentido inverso da `PUBLIC_APP_URL` acima —
+usada só pra linkar a Política de Privacidade/Termos de Uso (que vivem no
+site institucional, não no dashboard) a partir do banner de consentimento de
+cookies e do checkbox de cadastro. Mesmo mecanismo de build-time; já nasceu
+adicionada em `ci.yml` e `deploy-dashboard.yml`.
+
+1. Repo → Settings → Secrets and variables → Actions → aba **Variables**.
+2. Adicionar `PUBLIC_SITE_URL` com a URL pública do site institucional (ex.:
+   `https://example.com`, ou o `*.workers.dev` do landing enquanto o domínio
+   real não existe).
+
+Sem essa variable, o `typecheck`/`build` do dashboard quebra pelo mesmo
+motivo das outras `PUBLIC_` envs acima.
+
+### Consentimento de cookies (Clarity gated por opt-in)
+
+O Microsoft Clarity deixou de carregar incondicionalmente — agora só é
+injetado depois que o visitante aceita cookies de rastreio no banner de
+consentimento (`$lib/cookie-consent.ts` + `cookie-consent-banner.svelte`, em
+`apps/dashboard` e `apps/landing`). Decisão salva num cookie próprio
+(`cookie_consent`, 180 dias), não-httpOnly. Nada de setup manual aqui — é só
+código, mas documentando a mudança de comportamento pra quem for investigar
+por que o Clarity "parou" de aparecer imediatamente: ele só aparece depois
+do clique em "Aceitar todos" (ou em visitas seguintes, se já aceito antes).
+
 ### Domínio customizado (pendente até o usuário decidir/comprar o domínio)
 
 Enquanto isso, os dois Workers seguem em `*.workers.dev`. Quando o domínio

@@ -93,13 +93,20 @@ export const PRIVACY: Record<Lang, LegalPage> = {
 				]
 			},
 			{
-				heading: '8. Alterações desta política',
+				heading: '8. Cookies',
+				paragraphs: [
+					'Cookies necessários: usados pro funcionamento básico do site e do app (ex: manter sua sessão de login, lembrar sua escolha de idioma e a sua decisão sobre este próprio aviso de cookies). Não pedem consentimento porque o serviço não funciona sem eles.',
+					'Cookies de rastreio/análise (Microsoft Clarity): usados só com sua permissão, pra entender como o produto é usado (cliques, rolagem, gravação de sessão anonimizada) e melhorá-lo. Você escolhe se aceita ou não no banner de cookies exibido na sua primeira visita, e pode mudar de ideia a qualquer momento limpando os cookies do navegador pra esse site.'
+				]
+			},
+			{
+				heading: '9. Alterações desta política',
 				paragraphs: [
 					'Podemos atualizar esta política pra refletir mudanças no produto, na lei ou em nossas práticas. Mudanças relevantes serão avisadas no app ou por e-mail, com a data de atualização sempre visível no topo deste documento.'
 				]
 			},
 			{
-				heading: '9. Contato',
+				heading: '10. Contato',
 				paragraphs: [
 					'Dúvidas sobre privacidade ou pra exercer seus direitos como titular de dados? Escreva pra contact@marcelus.app.'
 				]
@@ -171,13 +178,20 @@ export const PRIVACY: Record<Lang, LegalPage> = {
 				]
 			},
 			{
-				heading: '8. Changes to this policy',
+				heading: '8. Cookies',
+				paragraphs: [
+					'Necessary cookies: used for the basic operation of the site and app (e.g. keeping you logged in, remembering your language choice and your decision on this cookie notice itself). These don’t require consent because the service doesn’t work without them.',
+					'Tracking/analytics cookies (Microsoft Clarity): used only with your permission, to understand how the product is used (clicks, scrolling, anonymized session recording) and improve it. You choose whether to accept them in the cookie banner shown on your first visit, and can change your mind at any time by clearing your browser’s cookies for this site.'
+				]
+			},
+			{
+				heading: '9. Changes to this policy',
 				paragraphs: [
 					'We may update this policy to reflect changes to the product, the law, or our practices. Material changes will be announced in the app or by email, with the update date always shown at the top of this document.'
 				]
 			},
 			{
-				heading: '9. Contact',
+				heading: '10. Contact',
 				paragraphs: [
 					'Questions about privacy, or want to exercise your data rights? Write to contact@marcelus.app.'
 				]
@@ -249,13 +263,20 @@ export const PRIVACY: Record<Lang, LegalPage> = {
 				]
 			},
 			{
-				heading: '8. Cambios a esta política',
+				heading: '8. Cookies',
+				paragraphs: [
+					'Cookies necesarias: usadas para el funcionamiento básico del sitio y de la app (por ejemplo, mantener tu sesión iniciada, recordar tu idioma elegido y tu decisión sobre este mismo aviso de cookies). No piden consentimiento porque el servicio no funciona sin ellas.',
+					'Cookies de rastreo/análisis (Microsoft Clarity): usadas solo con tu permiso, para entender cómo se usa el producto (clics, desplazamiento, grabación de sesión anonimizada) y mejorarlo. Eliges si las aceptas en el aviso de cookies que se muestra en tu primera visita, y puedes cambiar de opinión en cualquier momento borrando las cookies de tu navegador para este sitio.'
+				]
+			},
+			{
+				heading: '9. Cambios a esta política',
 				paragraphs: [
 					'Podemos actualizar esta política para reflejar cambios en el producto, en la ley o en nuestras prácticas. Los cambios relevantes se avisarán en la app o por correo electrónico, con la fecha de actualización siempre visible en la parte superior de este documento.'
 				]
 			},
 			{
-				heading: '9. Contacto',
+				heading: '10. Contacto',
 				paragraphs: [
 					'¿Dudas sobre privacidad o quieres ejercer tus derechos como titular de datos? Escribe a contact@marcelus.app.'
 				]

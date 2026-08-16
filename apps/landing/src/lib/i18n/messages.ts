@@ -49,6 +49,12 @@ export interface Messages {
 		everyNIntervals: (n: number, unit: string) => string;
 		perInterval: (unit: string) => string;
 	};
+	cookieConsent: {
+		text: string;
+		learnMore: string;
+		necessaryOnly: string;
+		acceptAll: string;
+	};
 }
 
 export const MESSAGES: Record<Lang, Messages> = {
@@ -123,6 +129,12 @@ export const MESSAGES: Record<Lang, Messages> = {
 			intervalDay: 'dia',
 			everyNIntervals: (n, unit) => `a cada ${n} ${unit}s`,
 			perInterval: (unit) => `por ${unit}`
+		},
+		cookieConsent: {
+			text: 'Usamos cookies necessários pro funcionamento do site e, com sua permissão, cookies de análise (Microsoft Clarity) pra entender como o produto é usado.',
+			learnMore: 'Saiba mais',
+			necessaryOnly: 'Somente necessários',
+			acceptAll: 'Aceitar todos'
 		}
 	},
 	en: {
@@ -194,6 +206,12 @@ export const MESSAGES: Record<Lang, Messages> = {
 			intervalDay: 'day',
 			everyNIntervals: (n, unit) => `every ${n} ${unit}s`,
 			perInterval: (unit) => `per ${unit}`
+		},
+		cookieConsent: {
+			text: 'We use cookies necessary for the site to work and, with your permission, analytics cookies (Microsoft Clarity) to understand how the product is used.',
+			learnMore: 'Learn more',
+			necessaryOnly: 'Necessary only',
+			acceptAll: 'Accept all'
 		}
 	},
 	es: {
@@ -268,6 +286,12 @@ export const MESSAGES: Record<Lang, Messages> = {
 			intervalDay: 'día',
 			everyNIntervals: (n, unit) => `cada ${n} ${unit}s`,
 			perInterval: (unit) => `por ${unit}`
+		},
+		cookieConsent: {
+			text: 'Usamos cookies necesarias para el funcionamiento del sitio y, con tu permiso, cookies de análisis (Microsoft Clarity) para entender cómo se usa el producto.',
+			learnMore: 'Saber más',
+			necessaryOnly: 'Solo necesarias',
+			acceptAll: 'Aceptar todas'
 		}
 	}
 };

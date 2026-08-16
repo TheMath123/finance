@@ -3,30 +3,29 @@
 
 	import { PUBLIC_CLARITY_PROJECT_ID } from '$env/static/public';
 
+	import CookieConsentBanner from '$lib/components/layout/cookie-consent-banner.svelte';
+	import { getConsent, loadClarity, type ConsentValue } from '$lib/cookie-consent';
+
 	import './layout.css';
 
 	let { children } = $props();
 
-	// Heatmap + gravação de sessão (analytics). Sem project ID configurado,
-	// o script nem é injetado — `{@html}` porque o snippet do Clarity
-	// precisa do project ID interpolado dentro do próprio script, e o
-	// Svelte não expande `{...}` dentro de tags de script de template.
-	// Conteúdo é um template literal fixo (snippet oficial do Clarity), só
-	// interpolando PUBLIC_CLARITY_PROJECT_ID (env de build, não input de
-	// usuário) — sem risco de XSS; eslint-disable abaixo é intencional.
-	const clarityScript = PUBLIC_CLARITY_PROJECT_ID
-		? `<script>(function(c,l,a,r,i,t,y){c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y)})(window, document, "clarity", "script", "${PUBLIC_CLARITY_PROJECT_ID}");</` +
-			`script>`
-		: null;
-</script>
+	// Heatmap + gravação de sessão (analytics) — só carrega depois de
+	// consentimento (banner de cookies), nunca incondicionalmente: sem
+	// project ID configurado OU sem consentimento pra cookies de rastreio,
+	// o script simplesmente não é injetado. Ver $lib/cookie-consent.ts.
+	$effect(() => {
+		if (PUBLIC_CLARITY_PROJECT_ID && getConsent() === 'all') {
+			loadClarity(PUBLIC_CLARITY_PROJECT_ID);
+		}
+	});
 
-<svelte:head>
-	{#if clarityScript}
-		<!-- eslint-disable-next-line svelte/no-at-html-tags -->
-		{@html clarityScript}
-	{/if}
-</svelte:head>
+	function handleConsent(value: ConsentValue) {
+		if (value === 'all' && PUBLIC_CLARITY_PROJECT_ID) loadClarity(PUBLIC_CLARITY_PROJECT_ID);
+	}
+</script>
 
 <!-- Favicon já é servido por /favicon.svg (static/) via <link> em app.html — sem duplicar aqui. -->
 <ModeWatcher />
+<CookieConsentBanner onConsent={handleConsent} />
 {@render children()}

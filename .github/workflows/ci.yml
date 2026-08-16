@@ -40,6 +40,11 @@ jobs:
       # Mesmo motivo/mecanismo acima, mas pro app novo apps/landing — ver
       # [lang=lang]/+layout.svelte (botão "Entrar" + CTAs).
       PUBLIC_APP_URL: ${{ vars.PUBLIC_APP_URL }}
+      # Mesmo motivo/mecanismo acima — URL do site institucional, usada só
+      # pra linkar Privacidade/Termos a partir do dashboard (banner de
+      # cookies, checkbox de cadastro). Ver cookie-consent-banner.svelte e
+      # routes/register/+page.svelte.
+      PUBLIC_SITE_URL: ${{ vars.PUBLIC_SITE_URL }}
 
     steps:
       - uses: actions/checkout@v4

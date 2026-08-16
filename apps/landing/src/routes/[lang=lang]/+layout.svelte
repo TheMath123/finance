@@ -6,6 +6,7 @@
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import { PUBLIC_APP_URL } from '$env/static/public';
+	import CookieConsentBanner from '$lib/components/cookie-consent-banner.svelte';
 	import { MESSAGES } from '$lib/i18n/messages';
 	import { SUPPORTED_LANGS, type Lang } from '../../params/lang';
 
@@ -114,3 +115,5 @@
 		</div>
 	</footer>
 </div>
+
+<CookieConsentBanner t={t.cookieConsent} lang={data.lang as Lang} />

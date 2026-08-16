@@ -22,6 +22,10 @@ jobs:
       # Mesmo motivo/mecanismo do PUBLIC_GOOGLE_CLIENT_ID acima (env pública
       # resolvida em tempo de build) — ver +layout.svelte.
       PUBLIC_CLARITY_PROJECT_ID: ${{ vars.PUBLIC_CLARITY_PROJECT_ID }}
+      # Mesmo motivo/mecanismo acima — URL do site institucional, usada só
+      # pra linkar Privacidade/Termos a partir do dashboard (banner de
+      # cookies, checkbox de cadastro).
+      PUBLIC_SITE_URL: ${{ vars.PUBLIC_SITE_URL }}
 
     steps:
       - uses: actions/checkout@v4
