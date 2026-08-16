@@ -162,3 +162,97 @@ concept-seed — extensão dentro do mundo visual já commitado acima).
   ferramenta de browser neste ambiente): recomendo `bun run dev` local e
   olhar `/pt/pricing` em desktop e mobile, alternando os 3 botões do
   seletor, antes de publicar.
+
+## Atualização — reescrita de conteúdo da home + hero split-screen + Enterprise
+
+Implementação de `tasks/in-progress/especificacao_landing_page_marcelus.md`
+(documento de copywriting/conteúdo entregue pelo usuário). Escopo: home
+inteira, nav/footer do layout, e um card novo na grade de preços — ainda
+dentro do mesmo mundo visual (editorial de luxo, ângulos retos); não é
+redesign.
+
+- **Hero reestruturado** (`[lang=lang]/+page.svelte`): H1 agora carrega
+  "Conheça o _Marcelus_" + uma 3ª linha com o propósito do produto
+  explícito ("O seu app de organização financeira pessoal e
+  compartilhada.") — os 2 requisitos de compliance do OAuth do Google
+  (nome explícito + propósito claro no primeiro texto lido) resolvidos
+  dentro do próprio H1, não como texto solto. CTA primário ganhou
+  subtítulo pequeno ("Não exige cartão de crédito. Cancele quando quiser.").
+- **Mockup split-screen novo** (`lib/components/hero-device-mockup.svelte`):
+  celular com uma conversa de WhatsApp simulada (mensagem do usuário + bolha
+  de confirmação da IA) sobreposto a um "notebook" com um resumo do
+  dashboard (saldo + 3 linhas de transação) — tudo em HTML/CSS puro, sem
+  imagem/screenshot real (nenhuma ferramenta de captura disponível neste
+  ambiente), respeitando o vocabulário do site: ângulos retos, hairline,
+  sombra com offset+blur real (não halo decorativo), tokens de cor
+  existentes. `aria-hidden="true"` (decorativo, conteúdo já coberto pelo
+  texto real da página).
+- **Seção "dor do usuário"** — nova, copy exata da especificação, tratamento
+  editorial (título serifado grande + parágrafo, sem card). A seção
+  "Segurança e Transparência" da especificação foi implementada e depois
+  **removida a pedido do usuário** (2026-08-16, mesma sessão) — julgada
+  redundante; conteúdo de segurança/LGPD já coberto em `/privacy` e
+  `/terms`. `home.securityTitle`/`securityText` removidos do i18n.
+- **Funcionalidades reduzidas de 6 para 3** (IA no WhatsApp / Finanças
+  Compartilhadas / Fórmulas e Personalização), cada uma com uma tagline em
+  itálico na cor `--primary` além da descrição — decisão deliberada da
+  especificação (menos itens, mais afiados), não uma omissão. A entrada
+  "Finanças Compartilhadas" ganhou `id="familias"`, alvo do link "Para
+  Famílias" do menu; a seção toda ganhou `id="funcionalidades"`.
+- **Header**: novos links-âncora "Funcionalidades"/"Para Famílias" (`hidden
+sm:inline` — na tela pequena o essencial, Preços/Entrar, já ocupa o
+  espaço disponível, e o conteúdo continua alcançável rolando a home).
+  "Blog" citado na especificação foi **omitido** por decisão (sem CMS/blog
+  no projeto — evita link morto; usuário não respondeu a tempo à pergunta
+  de esclarecimento, decisão tomada e sinalizada na resposta).
+- **Footer**: link "Contato e Suporte" novo, `mailto:suporte@marcelus.app`
+  — **e-mail é um placeholder plausível, não confirmado pelo usuário**
+  (mesma pergunta sem resposta a tempo); copyright mudou de "Marcelus" pra
+  "Marcelus App" (texto exato da especificação), ano continua dinâmico
+  (`new Date().getFullYear()`, não hardcoded — a especificação pede
+  "2026" mas fixar o ano é regressão óbvia).
+- **Skeleton loader em `/pricing`** (`lib/components/pricing-skeleton.svelte`
+  - `navigating` de `$app/state` no layout): como a busca de planos já é
+    feita 100% no servidor (`+page.server.ts`, nunca fetch client→backend —
+    regra arquitetural do projeto), o único momento real de "carregando" é a
+    navegação client-side pra essa rota (SvelteKit busca `__data.json` antes
+    de trocar a página) — o skeleton substitui o conteúdo antigo durante essa
+    janela, sem violar a regra de fetch só-servidor.
+- **Card "Enterprise"** na grade de preços — estático (não vem da API, é
+  "sob consulta"/sem checkout), mesmo padrão do fallback "Gratuito" já
+  existente, mas sempre visível (não condicional). CTA reaproveita o mesmo
+  `mailto:suporte@marcelus.app` do rodapé.
+- **Nav "Preços"** renomeado de "Planos" pra "Preços" (pt) — texto exato da
+  especificação; headline da própria página de preços ("Planos que cabem no
+  seu momento") não foi tocado, especificação não pediu.
+
+### Decisões sem confirmação do usuário (perguntadas, sem resposta a tempo)
+
+Sinalizado na resposta ao usuário antes de prosseguir — three perguntas
+feitas via pergunta estruturada, sem resposta dentro do timeout:
+
+1. **Blog** — omitido do menu (não criei página "em breve").
+2. **E-mail de suporte** — usei `suporte@marcelus.app` como placeholder;
+   precisa confirmação/correção do usuário.
+3. **Visual do hero** — construído como mockup ilustrativo em código
+   (opção recomendada), não como placeholder vazio.
+
+### Verificação feita (desta rodada)
+
+- `bun --cwd=apps/landing run lint` (Prettier + ESLint) — limpo.
+- `bunx turbo run typecheck --filter=@finance/landing --force` — 0 erros.
+- `node .claude/skills/impeccable/scripts/detect.mjs --json <arquivos>` — 0
+  achados.
+- `bunx turbo run build --filter=@finance/landing --force` — build completo
+  com sucesso, incluindo o adapter Cloudflare (o EPERM de lock do Windows
+  visto numa rodada anterior era transitório, não se repetiu).
+- Contraste dos elementos novos raciocinado contra os tokens reais de
+  `layout.css` (mesmo método da rodada anterior) — nenhuma combinação nova
+  introduzida fora dos pares já vetados (`text-background`/`bg-foreground`,
+  `text-primary`/`bg-primary/10` sobre `bg-background`, `text-brand-dark`
+  sobre `bg-background`).
+- **Não verificado visualmente** — sem ferramenta de browser neste
+  ambiente. Recomendo fortemente `bun run dev` e olhar a home inteira
+  (hero split-screen, dor do usuário, funcionalidades, segurança) e
+  `/pricing` (card Enterprise, skeleton ao navegar) em desktop e mobile
+  antes de publicar — é a rodada com mais superfície visual nova até agora.

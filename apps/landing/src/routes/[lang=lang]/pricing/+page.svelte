@@ -282,5 +282,26 @@
 				<!-- eslint-enable svelte/no-navigation-without-resolve -->
 			</div>
 		{/each}
+
+		<!--
+			Enterprise não é um plano real da API (sob consulta, sem checkout
+			próprio) — card estático de intenção comercial, mesmo padrão do
+			fallback "Gratuito" acima. Sempre visível (não depende do resultado
+			da API).
+		-->
+		<div class="flex flex-col gap-5 border border-border bg-background p-8">
+			<div>
+				<h2 class="font-display text-lg tracking-tight">{t.pricing.enterpriseTitle}</h2>
+				<p class="mt-1 text-sm text-muted-foreground">{t.pricing.enterpriseDescription}</p>
+			</div>
+			<p class="mt-auto font-display text-3xl">{t.pricing.enterprisePrice}</p>
+			<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- mailto, não é rota interna -->
+			<a
+				href="mailto:suporte@marcelus.app"
+				class="border border-foreground/30 px-5 py-3 text-center text-xs font-medium tracking-wide uppercase transition-colors hover:border-foreground hover:bg-accent"
+			>
+				{t.pricing.enterpriseCta}
+			</a>
+		</div>
 	</div>
 </section>

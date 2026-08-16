@@ -4,9 +4,10 @@
 
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import { page } from '$app/state';
+	import { navigating, page } from '$app/state';
 	import { PUBLIC_APP_URL } from '$lib/public-env';
 	import CookieConsentBanner from '$lib/components/cookie-consent-banner.svelte';
+	import PricingSkeleton from '$lib/components/pricing-skeleton.svelte';
 	import { MESSAGES } from '$lib/i18n/messages';
 	import { SUPPORTED_LANGS, type Lang } from '../../params/lang';
 
@@ -40,6 +41,12 @@
 		// eslint-disable-next-line svelte/no-navigation-without-resolve -- destino computado em runtime, ver hrefForLang
 		goto(hrefForLang(event.currentTarget.value as Lang));
 	}
+
+	// Skeleton só durante a navegação client-side pra /pricing (evita Layout
+	// Shift enquanto o load() da rota busca os planos na API) — nas outras
+	// rotas a navegação já é rápida o bastante (sem chamada de API) pra não
+	// precisar de estado de carregamento próprio.
+	const navigatingToPricing = $derived(navigating.to?.url.pathname.endsWith('/pricing') ?? false);
 </script>
 
 <svelte:head>
@@ -62,6 +69,23 @@
 				<span class="font-display text-xl tracking-tight">Marcelus</span>
 			</a>
 			<nav class="flex items-center gap-5 text-sm sm:gap-8">
+				<!-- Âncoras de conteúdo: só a partir de sm — na tela pequena o essencial
+				     (Preços/Entrar) já ocupa o espaço disponível, e o conteúdo continua
+				     alcançável rolando a própria home. -->
+				<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- âncora na home, resolve() não compõe hash -->
+				<a
+					href="{resolve(`/${data.lang}`)}#funcionalidades"
+					class="hidden text-[13px] tracking-wide text-muted-foreground uppercase transition-colors hover:text-foreground sm:inline"
+				>
+					{t.nav.features}
+				</a>
+				<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- âncora na home, resolve() não compõe hash -->
+				<a
+					href="{resolve(`/${data.lang}`)}#familias"
+					class="hidden text-[13px] tracking-wide text-muted-foreground uppercase transition-colors hover:text-foreground sm:inline"
+				>
+					{t.nav.families}
+				</a>
 				<a
 					href={resolve(`/${data.lang}/pricing`)}
 					class="text-[13px] tracking-wide text-muted-foreground uppercase transition-colors hover:text-foreground"
@@ -81,7 +105,11 @@
 	</header>
 
 	<main class="flex-1">
-		{@render children()}
+		{#if navigatingToPricing}
+			<PricingSkeleton />
+		{:else}
+			{@render children()}
+		{/if}
 	</main>
 
 	<footer class="border-t border-border">
@@ -109,6 +137,10 @@
 					<a href={resolve(`/${data.lang}/terms`)} class="transition-colors hover:text-foreground">
 						{t.footer.terms}
 					</a>
+					<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- mailto, não é rota interna -->
+					<a href="mailto:suporte@marcelus.app" class="transition-colors hover:text-foreground">
+						{t.footer.contact}
+					</a>
 					<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- link externo (outra app/domínio) -->
 					<a href="{PUBLIC_APP_URL}/login" class="transition-colors hover:text-foreground">
 						{t.footer.login}
@@ -134,7 +166,7 @@
 				</div>
 			</div>
 			<div class="mt-10 border-t border-border pt-6 text-xs text-muted-foreground">
-				&copy; {new Date().getFullYear()} Marcelus. {t.footer.rights}
+				&copy; {new Date().getFullYear()} Marcelus App. {t.footer.rights}
 			</div>
 		</div>
 	</footer>
