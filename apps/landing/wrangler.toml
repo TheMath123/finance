@@ -12,11 +12,27 @@ compatibility_flags = ["nodejs_compat"]
 binding = "ASSETS"
 directory = ".svelte-kit/cloudflare"
 
+# `API_URL` (endereço interno do backend no Fly.io) DELIBERADAMENTE não
+# entra aqui em `[vars]` — isso ficaria em texto plano no repositório. É um
+# Cloudflare **secret** (`wrangler secret put API_URL --name marcelus-site`),
+# configurado uma vez direto na conta Cloudflare, fora do git. Ver runbook em
+# tasks/in-progress/ci-cd-deploy.md pro valor real e o passo a passo — o
+# mesmo mecanismo `$env/dynamic/private` (nodejs_compat acima) lê secret e
+# var comum de forma idêntica em runtime, então nada muda no código.
+
 [vars]
-# URL interna do backend no Fly.io — não é segredo, só o endereço da API
-# (a página de Planos busca os dados no servidor, nunca no client).
-API_URL = "https://marcelus-app.example.dev"
 # URL pública do dashboard — pra onde apontam o botão "Entrar" e as CTAs de
-# "Criar conta"/"Assinar". Trocar pelo domínio real (dash.example.com) quando
-# o domínio existir (ver runbook).
-PUBLIC_APP_URL = "https://dash.example.com"
+# "Criar conta"/"Assinar". IMPORTANTE: esse valor aqui NÃO tem efeito nenhum
+# sobre o build do SvelteKit — `PUBLIC_APP_URL` é lida via `$env/static/public`,
+# resolvida em TEMPO DE BUILD pelo `vite build` rodado no CI, não em runtime
+# pelo Worker. O valor que realmente importa é a repository variable do
+# GitHub (Settings → Secrets and variables → Actions → Variables), consumida
+# em `.github/workflows/deploy-landing.yml`. Deixado aqui só por paridade
+# documental com o domínio real já conhecido.
+PUBLIC_APP_URL = "https://dash.marcelus.app"
+
+# Domínio customizado (marcelus.app) já é conhecido — descomentar quando a
+# Zone estiver adicionada na conta Cloudflare (ver runbook):
+# [[routes]]
+# pattern = "marcelus.app/*"
+# custom_domain = true

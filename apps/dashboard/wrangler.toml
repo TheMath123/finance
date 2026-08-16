@@ -12,7 +12,11 @@ compatibility_flags = ["nodejs_compat"]
 binding = "ASSETS"
 directory = ".svelte-kit/cloudflare"
 
-[vars]
-# URL pública do backend no Fly.io — não é segredo, só o endereço da API.
-# Trocar pelo domínio real depois que o app do Fly existir (ver runbook).
-API_URL = "https://marcelus-app.example.dev"
+# `API_URL` (endereço do backend no Fly.io) DELIBERADAMENTE não entra em
+# `[vars]` aqui — isso ficaria em texto plano no repositório. É um
+# Cloudflare **secret** (`wrangler secret put API_URL --name
+# marcelus-dashboard`), configurado uma vez direto na conta Cloudflare, fora
+# do git. Ver runbook em tasks/in-progress/ci-cd-deploy.md pro valor real e
+# o passo a passo — o mesmo mecanismo `$env/dynamic/private` (nodejs_compat
+# acima) lê secret e var comum de forma idêntica em runtime, então nada
+# muda no código.
