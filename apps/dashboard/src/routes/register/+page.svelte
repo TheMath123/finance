@@ -72,7 +72,7 @@
 				</div>
 				<div class="flex items-start gap-2">
 					<input id="terms" name="terms" type="checkbox" class="mt-1 accent-primary" required />
-					<Label for="terms" class="font-normal text-muted-foreground">
+					<Label for="terms" class="block leading-relaxed font-normal text-muted-foreground">
 						Li e aceito os
 						<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- link externo (outra app/domínio) -->
 						<a href="{PUBLIC_SITE_URL}/pt/terms" target="_blank" rel="noopener" class="underline">
