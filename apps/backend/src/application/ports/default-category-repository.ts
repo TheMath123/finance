@@ -16,7 +16,7 @@ export interface DefaultCategoryInput {
 }
 
 export interface DefaultCategoryRepository {
-  list(): Promise<DefaultCategory[]>;
+  list(search?: string): Promise<DefaultCategory[]>;
   create(data: DefaultCategoryInput): Promise<DefaultCategory>;
   update(
     id: string,

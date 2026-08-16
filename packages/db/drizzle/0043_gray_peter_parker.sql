@@ -1,0 +1,2 @@
+ALTER TABLE "default_categories" ADD COLUMN "search_vector" "tsvector" GENERATED ALWAYS AS (to_tsvector('portuguese', "default_categories"."name")) STORED;--> statement-breakpoint
+CREATE INDEX "default_categories_search_vector_idx" ON "default_categories" USING gin ("search_vector");

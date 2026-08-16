@@ -87,6 +87,10 @@ export const createDefaultCategorySchema = z.object({
 export const updateDefaultCategorySchema =
   createDefaultCategorySchema.partial();
 
+export const listDefaultCategoriesQuerySchema = z.object({
+  search: z.string().min(1).max(120).optional(),
+});
+
 export const updateAiSettingsSchema = z.object({
   dailyTokenBudgetPerUser: z.number().int().positive().max(10_000_000),
 });

@@ -8,20 +8,26 @@ import {
 import type { AppDeps } from '../../../deps';
 import { requireSuperadmin } from '../../../guards';
 import { fail, respond } from '../../../http-error';
-import { validateBody, validateParams } from '../../../validate';
+import { validateBody, validateParams, validateQuery } from '../../../validate';
 import { ADMIN_ERRORS } from '../errors';
 import {
   createDefaultCategorySchema,
   defaultCategoryParamsSchema,
+  listDefaultCategoriesQuerySchema,
   updateDefaultCategorySchema,
 } from '../schemas';
 
 export const listDefaultCategoriesRoute = (deps: AppDeps) =>
-  new Elysia().get('/admin/default-categories', async ({ request, set }) => {
-    const auth = await requireSuperadmin(deps, request);
-    if (!auth.ok) return fail(set, auth.error);
-    return listDefaultCategories(deps);
-  });
+  new Elysia().get(
+    '/admin/default-categories',
+    async ({ request, query, set }) => {
+      const auth = await requireSuperadmin(deps, request);
+      if (!auth.ok) return fail(set, auth.error);
+      const q = validateQuery(listDefaultCategoriesQuerySchema, query);
+      if (!q.ok) return fail(set, q.error);
+      return listDefaultCategories(deps, q.value.search);
+    }
+  );
 
 export const createDefaultCategoryRoute = (deps: AppDeps) =>
   new Elysia().post(

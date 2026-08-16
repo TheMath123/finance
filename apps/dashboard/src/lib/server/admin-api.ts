@@ -67,9 +67,11 @@ export interface DefaultCategoryInput {
 }
 
 export function listDefaultCategories(
-	accessToken: string
+	accessToken: string,
+	search?: string
 ): Promise<Either<ApiError, DefaultCategoryView[]>> {
-	return apiRequest('/admin/default-categories', { accessToken });
+	const query = search ? `?search=${encodeURIComponent(search)}` : '';
+	return apiRequest(`/admin/default-categories${query}`, { accessToken });
 }
 
 export function createDefaultCategory(

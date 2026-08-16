@@ -112,6 +112,11 @@
 		workspaces já existentes.
 	</p>
 
+	<form method="GET" class="flex gap-2">
+		<Input type="search" name="q" value={data.search} placeholder="Buscar por nome" />
+		<Button type="submit">Buscar</Button>
+	</form>
+
 	{#if form?.message}
 		<p class="text-sm text-destructive">{form.message}</p>
 	{/if}
@@ -157,7 +162,11 @@
 				</div>
 			</div>
 		{:else}
-			<p class="text-sm text-muted-foreground">Nenhuma categoria padrão cadastrada.</p>
+			<p class="text-sm text-muted-foreground">
+				{data.search
+					? `Nenhuma categoria encontrada pra "${data.search}".`
+					: 'Nenhuma categoria padrão cadastrada.'}
+			</p>
 		{/each}
 	</div>
 </div>

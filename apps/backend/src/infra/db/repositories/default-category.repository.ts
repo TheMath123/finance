@@ -1,16 +1,22 @@
 import { defaultCategories } from '@finance/db';
-import { asc, eq } from 'drizzle-orm';
+import { asc, eq, sql } from 'drizzle-orm';
 import type { DefaultCategoryRepository } from '../../../application/ports/default-category-repository';
+import { toPrefixTsQuery } from '../full-text-search';
 import type { DbHandle } from '../handle';
 
 export function createDefaultCategoryRepository(
   db: DbHandle
 ): DefaultCategoryRepository {
   return {
-    list: () =>
-      db.query.defaultCategories.findMany({
-        orderBy: asc(defaultCategories.createdAt),
-      }),
+    list: (search) => {
+      const tsQuery = search ? toPrefixTsQuery(search) : null;
+      return db.query.defaultCategories.findMany({
+        where: tsQuery
+          ? sql`${defaultCategories.searchVector} @@ to_tsquery('portuguese', ${tsQuery})`
+          : undefined,
+        orderBy: asc(defaultCategories.name),
+      });
+    },
     async create(data) {
       const [row] = await db.insert(defaultCategories).values(data).returning();
       if (!row) throw new Error('falha ao criar categoria padrão');
