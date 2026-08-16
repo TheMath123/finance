@@ -5,7 +5,8 @@
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
-	import { PUBLIC_APP_URL } from '$env/static/public';
+	import { PUBLIC_GOOGLE_SITE_VERIFICATION } from '$env/static/public';
+	import { PUBLIC_APP_URL } from '$lib/public-env';
 	import CookieConsentBanner from '$lib/components/cookie-consent-banner.svelte';
 	import { MESSAGES } from '$lib/i18n/messages';
 	import { SUPPORTED_LANGS, type Lang } from '../../params/lang';
@@ -42,26 +43,40 @@
 	}
 </script>
 
+<svelte:head>
+	<!--
+		Meta de verificação de propriedade do Google Search Console — exigida
+		pela revisão da tela de consentimento OAuth (o Google precisa confirmar
+		que quem configurou o app no Cloud Console também é dono do domínio da
+		"Application home page"). Sem PUBLIC_GOOGLE_SITE_VERIFICATION setada,
+		o meta simplesmente não é renderizado (mesmo padrão do Clarity/GA).
+	-->
+	{#if PUBLIC_GOOGLE_SITE_VERIFICATION}
+		<meta name="google-site-verification" content={PUBLIC_GOOGLE_SITE_VERIFICATION} />
+	{/if}
+	<meta property="og:site_name" content="Marcelus" />
+</svelte:head>
+
 <ModeWatcher />
 
 <div class="flex min-h-screen flex-col">
 	<header class="border-b border-border">
-		<div class="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-4">
-			<a href={resolve(`/${data.lang}`)} class="flex items-center gap-2 font-semibold">
-				<img src={logoSrc} alt="" class="h-8 w-8 shrink-0 object-contain" />
-				Marcelus
+		<div class="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-5">
+			<a href={resolve(`/${data.lang}`)} class="flex items-center gap-2.5">
+				<img src={logoSrc} alt="" class="h-7 w-7 shrink-0 object-contain" />
+				<span class="font-display text-xl tracking-tight">Marcelus</span>
 			</a>
-			<nav class="flex items-center gap-4 text-sm sm:gap-6">
+			<nav class="flex items-center gap-5 text-sm sm:gap-8">
 				<a
 					href={resolve(`/${data.lang}/pricing`)}
-					class="text-muted-foreground transition-colors hover:text-foreground"
+					class="text-[13px] tracking-wide text-muted-foreground uppercase transition-colors hover:text-foreground"
 				>
 					{t.nav.pricing}
 				</a>
 				<!-- eslint-disable svelte/no-navigation-without-resolve -- link externo (outra app/domínio) -->
 				<a
 					href="{PUBLIC_APP_URL}/login"
-					class="rounded-lg bg-primary px-4 py-2 font-medium text-primary-foreground transition-opacity hover:opacity-90"
+					class="border border-foreground px-5 py-2.5 text-sm font-medium tracking-wide transition-colors hover:bg-foreground hover:text-background"
 				>
 					{t.nav.login}
 				</a>
@@ -75,42 +90,56 @@
 	</main>
 
 	<footer class="border-t border-border">
-		<div
-			class="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 px-6 py-8 text-sm text-muted-foreground sm:flex-row"
-		>
-			<p>&copy; {new Date().getFullYear()} Marcelus. {t.footer.rights}</p>
-			<div class="flex flex-wrap items-center justify-center gap-4">
-				<a href={resolve(`/${data.lang}/pricing`)} class="transition-colors hover:text-foreground">
-					{t.footer.pricing}
-				</a>
-				<a href={resolve(`/${data.lang}/privacy`)} class="transition-colors hover:text-foreground">
-					{t.footer.privacy}
-				</a>
-				<a href={resolve(`/${data.lang}/terms`)} class="transition-colors hover:text-foreground">
-					{t.footer.terms}
-				</a>
-				<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- link externo (outra app/domínio) -->
-				<a href="{PUBLIC_APP_URL}/login" class="transition-colors hover:text-foreground">
-					{t.footer.login}
-				</a>
-				<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- link externo (outra app/domínio) -->
-				<a href="{PUBLIC_APP_URL}/register" class="transition-colors hover:text-foreground">
-					{t.footer.signup}
-				</a>
-				<!-- select "ghost": sem borda/fundo padrão, só realce no hover/foco, chevron próprio via CaretDownIcon (appearance-none esconde a seta nativa) -->
-				<div class="relative inline-flex items-center">
-					<select
-						value={data.lang}
-						onchange={onLangChange}
-						aria-label={t.footer.language}
-						class="cursor-pointer appearance-none rounded-lg bg-transparent py-1 pr-6 pl-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
-					>
-						{#each SUPPORTED_LANGS as lang (lang)}
-							<option value={lang}>{LANG_LABELS[lang]}</option>
-						{/each}
-					</select>
-					<CaretDownIcon size={12} class="pointer-events-none absolute right-2" />
+		<div class="mx-auto max-w-6xl px-6 py-14">
+			<div class="flex flex-col gap-10 sm:flex-row sm:justify-between">
+				<div class="flex items-center gap-2.5">
+					<img src={logoSrc} alt="" class="h-6 w-6 shrink-0 object-contain opacity-80" />
+					<span class="font-display text-lg tracking-tight">Marcelus</span>
 				</div>
+				<div
+					class="flex flex-wrap items-center gap-x-6 gap-y-3 text-xs tracking-wide text-muted-foreground uppercase"
+				>
+					<a
+						href={resolve(`/${data.lang}/pricing`)}
+						class="transition-colors hover:text-foreground"
+					>
+						{t.footer.pricing}
+					</a>
+					<a
+						href={resolve(`/${data.lang}/privacy`)}
+						class="transition-colors hover:text-foreground"
+					>
+						{t.footer.privacy}
+					</a>
+					<a href={resolve(`/${data.lang}/terms`)} class="transition-colors hover:text-foreground">
+						{t.footer.terms}
+					</a>
+					<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- link externo (outra app/domínio) -->
+					<a href="{PUBLIC_APP_URL}/login" class="transition-colors hover:text-foreground">
+						{t.footer.login}
+					</a>
+					<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- link externo (outra app/domínio) -->
+					<a href="{PUBLIC_APP_URL}/register" class="transition-colors hover:text-foreground">
+						{t.footer.signup}
+					</a>
+					<!-- select "ghost": sem borda/fundo padrão, só realce no hover/foco, chevron próprio via CaretDownIcon (appearance-none esconde a seta nativa) -->
+					<div class="relative inline-flex items-center normal-case">
+						<select
+							value={data.lang}
+							onchange={onLangChange}
+							aria-label={t.footer.language}
+							class="cursor-pointer appearance-none bg-transparent py-1 pr-6 pl-2 text-xs tracking-wide text-muted-foreground uppercase transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+						>
+							{#each SUPPORTED_LANGS as lang (lang)}
+								<option value={lang}>{LANG_LABELS[lang]}</option>
+							{/each}
+						</select>
+						<CaretDownIcon size={11} class="pointer-events-none absolute right-2" />
+					</div>
+				</div>
+			</div>
+			<div class="mt-10 border-t border-border pt-6 text-xs text-muted-foreground">
+				&copy; {new Date().getFullYear()} Marcelus. {t.footer.rights}
 			</div>
 		</div>
 	</footer>

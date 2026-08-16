@@ -45,6 +45,10 @@ jobs:
       # cookies, checkbox de cadastro). Ver cookie-consent-banner.svelte e
       # routes/register/+page.svelte.
       PUBLIC_SITE_URL: ${{ vars.PUBLIC_SITE_URL }}
+      # Mesmo motivo/mecanismo acima — meta de verificação do Google Search
+      # Console (revisão da tela de consentimento OAuth). Ver
+      # [lang=lang]/+layout.svelte.
+      PUBLIC_GOOGLE_SITE_VERIFICATION: ${{ vars.PUBLIC_GOOGLE_SITE_VERIFICATION }}
 
     steps:
       - uses: actions/checkout@v4

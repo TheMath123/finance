@@ -73,7 +73,7 @@ export const MESSAGES: Record<Lang, Messages> = {
 			title: 'Suas finanças,',
 			titleHighlight: 'sem planilha',
 			subtitle:
-				'Contas, cartões, fórmulas personalizadas e despesas divididas com quem você quiser — tudo num só lugar, com um assistente que também mora no seu WhatsApp.',
+				'Marcelus é um aplicativo de organização financeira pessoal: contas, cartões, fórmulas personalizadas e despesas divididas com quem você quiser — tudo num só lugar, com um assistente que também mora no seu WhatsApp.',
 			ctaPrimary: 'Criar conta grátis',
 			ctaSecondary: 'Já tenho conta',
 			features: [
@@ -152,7 +152,7 @@ export const MESSAGES: Record<Lang, Messages> = {
 			title: 'Your finances,',
 			titleHighlight: 'no spreadsheets',
 			subtitle:
-				'Accounts, cards, custom formulas, and expenses split with anyone you want — all in one place, with an assistant that also lives on your WhatsApp.',
+				'Marcelus is a personal finance organization app: accounts, cards, custom formulas, and expenses split with anyone you want — all in one place, with an assistant that also lives on your WhatsApp.',
 			ctaPrimary: 'Create free account',
 			ctaSecondary: 'I already have an account',
 			features: [
@@ -229,7 +229,7 @@ export const MESSAGES: Record<Lang, Messages> = {
 			title: 'Tus finanzas,',
 			titleHighlight: 'sin hojas de cálculo',
 			subtitle:
-				'Cuentas, tarjetas, fórmulas personalizadas y gastos compartidos con quien quieras — todo en un solo lugar, con un asistente que también vive en tu WhatsApp.',
+				'Marcelus es una aplicación de organización financiera personal: cuentas, tarjetas, fórmulas personalizadas y gastos compartidos con quien quieras — todo en un solo lugar, con un asistente que también vive en tu WhatsApp.',
 			ctaPrimary: 'Crear cuenta gratis',
 			ctaSecondary: 'Ya tengo una cuenta',
 			features: [
