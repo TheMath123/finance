@@ -29,23 +29,36 @@
 		return `resetCodeCooldown:${forEmail}`;
 	}
 
-	let resendAvailableAt = $state(0);
+	/**
+	 * Restaura o cooldown do localStorage (sobrevive reload/nova visita com o
+	 * mesmo e-mail) — se não existir ainda, assume que o código acabou de ser
+	 * enviado agora (é exatamente o que aconteceu: esta página só é alcançada
+	 * depois de um envio bem-sucedido em /forgot-password) e já grava.
+	 *
+	 * Chamada de forma SÍNCRONA no valor inicial do `$state` (não dentro de um
+	 * `$effect`) — um `$effect` só roda depois do primeiro paint, e nesse
+	 * primeiro frame `resendAvailableAt` ainda estaria em 0, deixando o botão
+	 * "Reenviar" clicável por uma fração de segundo até o efeito corrigir.
+	 * Calculando aqui, o próprio primeiro render já nasce com o cooldown certo.
+	 */
+	function readOrStartCooldown(forEmail: string): number {
+		if (!browser || !forEmail) return 0;
+		const key = cooldownKey(forEmail);
+		const stored = Number(localStorage.getItem(key) ?? 0);
+		if (stored > Date.now()) return stored;
+		const availableAt = Date.now() + RESEND_COOLDOWN_MS;
+		localStorage.setItem(key, String(availableAt));
+		return availableAt;
+	}
+
+	let resendAvailableAt = $state(readOrStartCooldown(data.email));
 	let now = $state(Date.now());
 
-	// Restaura o cooldown do localStorage (sobrevive reload/nova visita com o
-	// mesmo e-mail) — se não existir ainda, assume que o código acabou de ser
-	// enviado agora (é exatamente o que aconteceu: esta página só é alcançada
-	// depois de um envio bem-sucedido em /forgot-password) e já grava.
+	// Reage a troca de e-mail sem remount do componente (ex.: navegação
+	// client-side de um pedido de reset pra outro e-mail).
 	$effect(() => {
 		if (!browser || !email) return;
-		const key = cooldownKey(email);
-		const stored = Number(localStorage.getItem(key) ?? 0);
-		if (stored > now) {
-			resendAvailableAt = stored;
-		} else {
-			resendAvailableAt = Date.now() + RESEND_COOLDOWN_MS;
-			localStorage.setItem(key, String(resendAvailableAt));
-		}
+		resendAvailableAt = readOrStartCooldown(email);
 	});
 
 	// Ticker de 1s só enquanto o cooldown está de fato ativo.
