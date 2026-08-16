@@ -121,6 +121,13 @@
 	);
 
 	const WEEKDAY_LABELS = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+	const FREQUENCY_OPTIONS = [
+		{ value: 'weekly', label: 'Semanal' },
+		{ value: 'monthly', label: 'Mensal' },
+		{ value: 'yearly', label: 'Anual' }
+	];
+	const WEEKDAY_OPTIONS = WEEKDAY_LABELS.map((label, value) => ({ value: String(value), label }));
+	const MONTH_OPTIONS = MONTH_NAMES.map((label, index) => ({ value: String(index + 1), label }));
 
 	/** Pré-preenche frequência/dia da recorrência a partir da data da própria transação. */
 	function dayOfMonthFrom(date: string): number {
@@ -154,6 +161,10 @@
 		{ value: 'credit', label: 'Crédito' },
 		{ value: 'transfer', label: 'Transferência' }
 	];
+	const SPLIT_TYPE_OPTIONS = [
+		{ value: 'user', label: 'Usuário' },
+		{ value: 'external', label: 'Externo' }
+	];
 	const categoryOptions = $derived(
 		data.categories.map((category) => ({ value: category.id, label: category.name }))
 	);
@@ -163,6 +174,27 @@
 	const activeAccountOptions = $derived(
 		activeAccounts.map((account) => ({ value: account.id, label: account.name }))
 	);
+
+	// Filtros (form GET): estado local dos selects customizados (ver ui/select),
+	// sincronizado via $effect porque cada busca é uma navegação nova (o load()
+	// reexecuta e `data.filters` muda, mas o componente é reaproveitado pelo router).
+	let filterCategoryId = $state(data.filters.categoryId ?? '');
+	let filterAccountId = $state(data.filters.accountId ?? '');
+	let filterCardId = $state(data.filters.cardId ?? '');
+	$effect(() => {
+		filterCategoryId = data.filters.categoryId ?? '';
+		filterAccountId = data.filters.accountId ?? '';
+		filterCardId = data.filters.cardId ?? '';
+	});
+	const filterCategoryOptions = $derived([{ value: '', label: 'Todas' }, ...categoryOptions]);
+	const filterAccountOptions = $derived([
+		{ value: '', label: 'Todas' },
+		...data.accounts.map((account) => ({ value: account.id, label: account.name }))
+	]);
+	const filterCardOptions = $derived([
+		{ value: '', label: 'Todos' },
+		...data.cards.map((card) => ({ value: card.id, label: card.name }))
+	]);
 
 	/** Seed do primeiro item disponível — mesmo comportamento do <select> nativo
 	 *  anterior, que sempre começava selecionado na primeira <option> do DOM. */
@@ -360,45 +392,25 @@
 			</div>
 			<div class="grid gap-2">
 				<Label for="categoryId">Categoria</Label>
-				<select
+				<Select
 					id="categoryId"
 					name="categoryId"
-					value={data.filters.categoryId ?? ''}
-					class="h-9 rounded-lg border border-foreground/10 bg-transparent px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-				>
-					<option value="">Todas</option>
-					{#each data.categories as category (category.id)}
-						<option value={category.id}>{category.name}</option>
-					{/each}
-				</select>
+					options={filterCategoryOptions}
+					bind:value={filterCategoryId}
+				/>
 			</div>
 			<div class="grid gap-2">
 				<Label for="accountId">Conta</Label>
-				<select
+				<Select
 					id="accountId"
 					name="accountId"
-					value={data.filters.accountId ?? ''}
-					class="h-9 rounded-lg border border-foreground/10 bg-transparent px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-				>
-					<option value="">Todas</option>
-					{#each data.accounts as account (account.id)}
-						<option value={account.id}>{account.name}</option>
-					{/each}
-				</select>
+					options={filterAccountOptions}
+					bind:value={filterAccountId}
+				/>
 			</div>
 			<div class="grid gap-2">
 				<Label for="cardId">Cartão</Label>
-				<select
-					id="cardId"
-					name="cardId"
-					value={data.filters.cardId ?? ''}
-					class="h-9 rounded-lg border border-foreground/10 bg-transparent px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-				>
-					<option value="">Todos</option>
-					{#each data.cards as card (card.id)}
-						<option value={card.id}>{card.name}</option>
-					{/each}
-				</select>
+				<Select id="cardId" name="cardId" options={filterCardOptions} bind:value={filterCardId} />
 			</div>
 		</div>
 		<div class="flex gap-2">
@@ -938,17 +950,12 @@
 					<div class="grid gap-2">
 						{#each splitRows as row, i (row.key)}
 							<div class="flex items-center gap-2">
-								<select
+								<Select
+									options={SPLIT_TYPE_OPTIONS}
 									value={row.type}
-									onchange={(e) =>
-										updateSplitRow(row.key, {
-											type: e.currentTarget.value as SplitRow['type']
-										})}
-									class="h-9 rounded-lg border border-foreground/10 bg-transparent px-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-								>
-									<option value="user">Usuário</option>
-									<option value="external">Externo</option>
-								</select>
+									onValueChange={(v) => updateSplitRow(row.key, { type: v as SplitRow['type'] })}
+									class="w-36"
+								/>
 								<Input
 									placeholder={row.type === 'user' ? 'Telefone ou e-mail' : 'Nome'}
 									value={row.value}
@@ -1035,32 +1042,25 @@
 					<div class="grid grid-cols-2 gap-4">
 						<div class="grid gap-2">
 							<Label for="edit-recurring-frequency">Frequência</Label>
-							<select
+							<Select
 								id="edit-recurring-frequency"
 								name="frequency"
-								bind:value={recurringFrequency}
-								class="h-9 rounded-lg border border-foreground/10 bg-transparent px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-							>
-								<option value="weekly">Semanal</option>
-								<option value="monthly">Mensal</option>
-								<option value="yearly">Anual</option>
-							</select>
+								options={FREQUENCY_OPTIONS}
+								value={recurringFrequency}
+								onValueChange={(v) => (recurringFrequency = v as typeof recurringFrequency)}
+							/>
 						</div>
 						<div class="grid gap-2">
 							<Label for="edit-recurring-day">
 								{recurringFrequency === 'weekly' ? 'Dia da semana' : 'Dia do mês'}
 							</Label>
 							{#if recurringFrequency === 'weekly'}
-								<select
+								<Select
 									id="edit-recurring-day"
 									name="dayOfReference"
-									value={prefilledDay}
-									class="h-9 rounded-lg border border-foreground/10 bg-transparent px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-								>
-									{#each WEEKDAY_LABELS as label, value (value)}
-										<option {value}>{label}</option>
-									{/each}
-								</select>
+									options={WEEKDAY_OPTIONS}
+									value={String(prefilledDay)}
+								/>
 							{:else}
 								<Input
 									id="edit-recurring-day"
@@ -1077,16 +1077,12 @@
 					{#if recurringFrequency === 'yearly'}
 						<div class="grid gap-2">
 							<Label for="edit-recurring-month">Mês</Label>
-							<select
+							<Select
 								id="edit-recurring-month"
 								name="monthOfReference"
-								value={prefilledMonth}
-								class="h-9 rounded-lg border border-foreground/10 bg-transparent px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-							>
-								{#each MONTH_NAMES as label, index (index)}
-									<option value={index + 1}>{label}</option>
-								{/each}
-							</select>
+								options={MONTH_OPTIONS}
+								value={String(prefilledMonth)}
+							/>
 						</div>
 					{/if}
 					<p class="text-xs text-muted-foreground">

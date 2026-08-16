@@ -34,7 +34,8 @@
 	</Select.Trigger>
 	<Select.Portal>
 		<Select.Content
-			class="z-50 min-w-[8rem] rounded-lg border border-foreground/10 bg-popover p-1 text-popover-foreground shadow-md outline-none"
+			align="start"
+			class="z-50 w-[var(--bits-floating-anchor-width)] min-w-[8rem] rounded-lg border border-foreground/10 bg-popover p-1 text-popover-foreground shadow-md outline-none"
 		>
 			{#each options as option (option.value)}
 				<Select.Item

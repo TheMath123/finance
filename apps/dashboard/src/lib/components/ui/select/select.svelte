@@ -14,7 +14,7 @@
 	 * precisava de `name` porque nunca vive dentro de um <form> nativo.
 	 */
 	let {
-		value,
+		value = $bindable(),
 		onValueChange,
 		options,
 		placeholder,
@@ -38,7 +38,7 @@
 	const selectedLabel = $derived(options.find((o) => o.value === value)?.label);
 </script>
 
-<Select.Root type="single" {value} {onValueChange} {name} {disabled} {required}>
+<Select.Root type="single" bind:value {onValueChange} {name} {disabled} {required}>
 	<Select.Trigger
 		{id}
 		class={cn(
@@ -53,7 +53,8 @@
 	</Select.Trigger>
 	<Select.Portal>
 		<Select.Content
-			class="z-50 max-h-[300px] min-w-[8rem] overflow-y-auto rounded-lg border border-foreground/10 bg-popover p-1 text-popover-foreground shadow-md outline-none"
+			align="start"
+			class="z-50 max-h-[300px] w-[var(--bits-floating-anchor-width)] min-w-[8rem] overflow-y-auto rounded-lg border border-foreground/10 bg-popover p-1 text-popover-foreground shadow-md outline-none"
 		>
 			{#each options as option (option.value)}
 				<Select.Item

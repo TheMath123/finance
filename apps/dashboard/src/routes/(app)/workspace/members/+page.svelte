@@ -6,6 +6,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
+	import { Select } from '$lib/components/ui/select';
 	import { formatDate } from '$lib/format';
 
 	let { data, form } = $props();
@@ -20,6 +21,23 @@
 		member: 'Membro',
 		viewer: 'Visualização'
 	};
+
+	const INVITE_ROLE_OPTIONS = [
+		{ value: 'member', label: 'Membro' },
+		{ value: 'admin', label: 'Admin' },
+		{ value: 'viewer', label: 'Visualização' }
+	];
+	let inviteRole = $state('member');
+
+	const MEMBER_ROLE_OPTIONS = [
+		{ value: 'admin', label: 'Admin' },
+		{ value: 'member', label: 'Membro' },
+		{ value: 'viewer', label: 'Visualização' }
+	];
+	// Refs dos forms de troca de papel por membro — o Select custom (bits-ui)
+	// não expõe `e.currentTarget.form` como o <select> nativo, então guardamos o
+	// próprio form pra disparar `requestSubmit()` a partir do `onValueChange`.
+	const roleForms: Record<string, HTMLFormElement | undefined> = {};
 </script>
 
 <svelte:head>
@@ -45,15 +63,7 @@
 			</div>
 			<div class="grid gap-2">
 				<Label for="role">Papel</Label>
-				<select
-					id="role"
-					name="role"
-					class="h-9 rounded-lg border border-foreground/10 bg-transparent px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-				>
-					<option value="member">Membro</option>
-					<option value="admin">Admin</option>
-					<option value="viewer">Visualização</option>
-				</select>
+				<Select id="role" name="role" options={INVITE_ROLE_OPTIONS} bind:value={inviteRole} />
 			</div>
 			<Button type="submit">Convidar</Button>
 		</form>
@@ -98,18 +108,19 @@
 				</div>
 				{#if canManage && member.role !== 'owner' && member.userId !== data.user.id}
 					<div class="flex items-center gap-2">
-						<form method="POST" action="?/updateRole" use:enhance>
+						<form
+							method="POST"
+							action="?/updateRole"
+							use:enhance
+							bind:this={roleForms[member.userId]}
+						>
 							<input type="hidden" name="userId" value={member.userId} />
-							<select
+							<Select
 								name="role"
+								options={MEMBER_ROLE_OPTIONS}
 								value={member.role}
-								onchange={(e) => e.currentTarget.form?.requestSubmit()}
-								class="rounded-lg border border-foreground/10 bg-transparent px-3 py-1.5 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-							>
-								<option value="admin">Admin</option>
-								<option value="member">Membro</option>
-								<option value="viewer">Visualização</option>
-							</select>
+								onValueChange={() => roleForms[member.userId]?.requestSubmit()}
+							/>
 						</form>
 						<form method="POST" action="?/remove" use:enhance>
 							<input type="hidden" name="userId" value={member.userId} />

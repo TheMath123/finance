@@ -4,6 +4,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { Input } from '$lib/components/ui/input';
+	import { Select } from '$lib/components/ui/select';
 	import { dialogFormSubmit } from '$lib/dialog-form';
 	import { formatCents } from '$lib/money';
 	import type { AdminWorkspaceView } from '$lib/server/admin-api';
@@ -32,6 +33,21 @@
 
 	const selectedPlanPrices = $derived(
 		data.plans.find((p) => p.id === selectedPlanId)?.prices ?? []
+	);
+	const planOptions = $derived(
+		data.plans.map((plan) => ({
+			value: plan.id,
+			label: `${plan.name}${plan.isPrivate ? ' (privado)' : ''}${plan.trialDays > 0 ? ` (trial ${plan.trialDays}d)` : ''}`
+		}))
+	);
+	const planPriceOptions = $derived(
+		selectedPlanPrices.map((price) => ({
+			value: price.id,
+			label: `${formatCents(price.priceCents)} / ${INTERVAL_LABELS[price.billingIntervalUnit]}`
+		}))
+	);
+	const defaultPlanPriceId = $derived(
+		selectedPlanPrices.find((price) => price.isDefault)?.id ?? selectedPlanPrices[0]?.id ?? ''
 	);
 
 	function recurrenceLabel(workspace: AdminWorkspaceView): string {
@@ -165,30 +181,9 @@
 				})}
 			>
 				<input type="hidden" name="workspaceId" value={changingPlan.id} />
-				<select
-					name="planId"
-					bind:value={selectedPlanId}
-					class="h-9 rounded-lg border border-foreground/10 bg-background px-3 text-sm"
-				>
-					{#each data.plans as plan (plan.id)}
-						<option value={plan.id}>
-							{plan.name}
-							{plan.isPrivate ? '(privado)' : ''}
-							{plan.trialDays > 0 ? `(trial ${plan.trialDays}d)` : ''}
-						</option>
-					{/each}
-				</select>
+				<Select name="planId" options={planOptions} bind:value={selectedPlanId} />
 				{#if selectedPlanPrices.length > 0}
-					<select
-						name="planPriceId"
-						class="h-9 rounded-lg border border-foreground/10 bg-background px-3 text-sm"
-					>
-						{#each selectedPlanPrices as price (price.id)}
-							<option value={price.id} selected={price.isDefault}>
-								{formatCents(price.priceCents)} / {INTERVAL_LABELS[price.billingIntervalUnit]}
-							</option>
-						{/each}
-					</select>
+					<Select name="planPriceId" options={planPriceOptions} value={defaultPlanPriceId} />
 				{/if}
 				<Dialog.Footer>
 					<Button type="submit">Salvar</Button>

@@ -7,6 +7,7 @@
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
+	import { Select } from '$lib/components/ui/select';
 	import { dialogFormSubmit } from '$lib/dialog-form';
 	import type { BankView } from '$lib/server/bank-api';
 
@@ -20,13 +21,25 @@
 	let createError = $state<string | null>(null);
 	let editing = $state<BankView | null>(null);
 	let editError = $state<string | null>(null);
+
+	const BANK_OPTIONS = BANK_CATALOG.map((bank) => ({ value: bank.code, label: bank.name }));
+
+	// Estado dos selects (custom, não-nativo — ver ui/select) do form "novo
+	// banco"; o de "editar" é seedado com o banco clicado em `editing = ...`.
+	let newBankCode = $state(BANK_CATALOG[0]?.code ?? '');
+	let editBankCode = $state('');
 </script>
 
 <svelte:head>
 	<title>Bancos — Marcelus</title>
 </svelte:head>
 
-{#snippet bankFields(prefix: string, bank?: BankView)}
+{#snippet bankFields(
+	prefix: string,
+	bankCode: string,
+	onBankCodeChange: (value: string) => void,
+	bank?: BankView
+)}
 	<div class="grid gap-2">
 		<Label for="{prefix}-name">Nome</Label>
 		<Input
@@ -39,16 +52,13 @@
 	</div>
 	<div class="grid gap-2">
 		<Label for="{prefix}-bank">Banco</Label>
-		<select
+		<Select
 			id="{prefix}-bank"
 			name="bankCode"
-			value={bank?.bankCode}
-			class="h-9 rounded-lg border border-foreground/10 bg-transparent px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-		>
-			{#each BANK_CATALOG as option (option.code)}
-				<option value={option.code}>{option.name}</option>
-			{/each}
-		</select>
+			options={BANK_OPTIONS}
+			value={bankCode}
+			onValueChange={onBankCodeChange}
+		/>
 	</div>
 {/snippet}
 
@@ -58,6 +68,7 @@
 			<Button
 				onclick={() => {
 					createError = null;
+					newBankCode = BANK_CATALOG[0]?.code ?? '';
 					createOpen = true;
 				}}>Adicionar banco</Button
 			>
@@ -95,6 +106,7 @@
 							size="sm"
 							onclick={() => {
 								editError = null;
+								editBankCode = bank.bankCode;
 								editing = bank;
 							}}>Editar</Button
 						>
@@ -140,7 +152,7 @@
 				}
 			})}
 		>
-			{@render bankFields('new')}
+			{@render bankFields('new', newBankCode, (v) => (newBankCode = v))}
 			<Dialog.Footer>
 				<Button type="submit">Adicionar</Button>
 			</Dialog.Footer>
@@ -180,7 +192,7 @@
 				})}
 			>
 				<input type="hidden" name="bankId" value={editing.id} />
-				{@render bankFields('edit', editing)}
+				{@render bankFields('edit', editBankCode, (v) => (editBankCode = v), editing)}
 				<Dialog.Footer>
 					<Button type="submit">Salvar</Button>
 				</Dialog.Footer>

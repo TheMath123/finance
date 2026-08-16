@@ -8,6 +8,7 @@
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
+	import { Select } from '$lib/components/ui/select';
 	import { dialogFormSubmit } from '$lib/dialog-form';
 	import { formatCents } from '$lib/money';
 	import type { CardView } from '$lib/server/card-api';
@@ -22,29 +23,38 @@
 	let createError = $state<string | null>(null);
 	let editing = $state<CardView | null>(null);
 	let editError = $state<string | null>(null);
+
+	const BANK_OPTIONS = BANK_CATALOG.map((bank) => ({ value: bank.code, label: bank.name }));
+
+	// Estado do select (custom, não-nativo — ver ui/select) do form "novo
+	// cartão"; o de "editar" é seedado com o cartão clicado em `editing = ...`.
+	let newBankCode = $state(BANK_CATALOG[0]?.code ?? '');
+	let editBankCode = $state('');
 </script>
 
 <svelte:head>
 	<title>Cartões — Marcelus</title>
 </svelte:head>
 
-{#snippet cardFields(prefix: string, card?: CardView)}
+{#snippet cardFields(
+	prefix: string,
+	bankCode: string,
+	onBankCodeChange: (value: string) => void,
+	card?: CardView
+)}
 	<div class="grid gap-2">
 		<Label for="{prefix}-name">Nome</Label>
 		<Input id="{prefix}-name" name="name" value={card?.name ?? ''} required />
 	</div>
 	<div class="grid gap-2">
 		<Label for="{prefix}-bank">Banco</Label>
-		<select
+		<Select
 			id="{prefix}-bank"
 			name="bankCode"
-			value={card?.bankCode}
-			class="h-9 rounded-lg border border-foreground/10 bg-transparent px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-		>
-			{#each BANK_CATALOG as bank (bank.code)}
-				<option value={bank.code}>{bank.name}</option>
-			{/each}
-		</select>
+			options={BANK_OPTIONS}
+			value={bankCode}
+			onValueChange={onBankCodeChange}
+		/>
 	</div>
 	<div class="grid gap-2">
 		<Label for="{prefix}-limit">Limite</Label>
@@ -91,6 +101,7 @@
 			<Button
 				onclick={() => {
 					createError = null;
+					newBankCode = BANK_CATALOG[0]?.code ?? '';
 					createOpen = true;
 				}}>Adicionar cartão</Button
 			>
@@ -136,6 +147,7 @@
 							size="sm"
 							onclick={() => {
 								editError = null;
+								editBankCode = card.bankCode;
 								editing = card;
 							}}>Editar</Button
 						>
@@ -181,7 +193,7 @@
 				}
 			})}
 		>
-			{@render cardFields('new')}
+			{@render cardFields('new', newBankCode, (v) => (newBankCode = v))}
 			<Dialog.Footer>
 				<Button type="submit">Adicionar</Button>
 			</Dialog.Footer>
@@ -221,7 +233,7 @@
 				})}
 			>
 				<input type="hidden" name="cardId" value={editing.id} />
-				{@render cardFields('edit', editing)}
+				{@render cardFields('edit', editBankCode, (v) => (editBankCode = v), editing)}
 				<Dialog.Footer>
 					<Button type="submit">Salvar</Button>
 				</Dialog.Footer>

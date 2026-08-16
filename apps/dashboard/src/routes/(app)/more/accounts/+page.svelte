@@ -7,6 +7,7 @@
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
+	import { Select } from '$lib/components/ui/select';
 	import { dialogFormSubmit } from '$lib/dialog-form';
 	import { formatCents } from '$lib/money';
 	import type { AccountView } from '$lib/server/account-api';
@@ -27,42 +28,53 @@
 		savings: 'Poupança',
 		payment: 'Conta de pagamento'
 	};
+
+	const BANK_OPTIONS = BANK_CATALOG.map((bank) => ({ value: bank.code, label: bank.name }));
+	const TYPE_OPTIONS = Object.entries(TYPE_LABELS).map(([value, label]) => ({ value, label }));
+
+	// Estado dos selects (custom, não-nativo — ver ui/select) do form "nova
+	// conta"; o de "editar" é seedado com a conta clicada em `editing = ...`.
+	let newBankCode = $state(BANK_CATALOG[0]?.code ?? '');
+	let newType = $state('checking');
+	let editBankCode = $state('');
+	let editType = $state('');
 </script>
 
 <svelte:head>
 	<title>Contas — Marcelus</title>
 </svelte:head>
 
-{#snippet accountFields(prefix: string, account?: AccountView)}
+{#snippet accountFields(
+	prefix: string,
+	bankCode: string,
+	onBankCodeChange: (value: string) => void,
+	type: string,
+	onTypeChange: (value: string) => void,
+	account?: AccountView
+)}
 	<div class="grid gap-2">
 		<Label for="{prefix}-name">Nome</Label>
 		<Input id="{prefix}-name" name="name" value={account?.name ?? ''} required />
 	</div>
 	<div class="grid gap-2">
 		<Label for="{prefix}-bank">Banco</Label>
-		<select
+		<Select
 			id="{prefix}-bank"
 			name="bankCode"
-			value={account?.bankCode}
-			class="h-9 rounded-lg border border-foreground/10 bg-transparent px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-		>
-			{#each BANK_CATALOG as bank (bank.code)}
-				<option value={bank.code}>{bank.name}</option>
-			{/each}
-		</select>
+			options={BANK_OPTIONS}
+			value={bankCode}
+			onValueChange={onBankCodeChange}
+		/>
 	</div>
 	<div class="grid gap-2">
 		<Label for="{prefix}-type">Tipo</Label>
-		<select
+		<Select
 			id="{prefix}-type"
 			name="type"
-			value={account?.type}
-			class="h-9 rounded-lg border border-foreground/10 bg-transparent px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-		>
-			<option value="checking">Conta corrente</option>
-			<option value="savings">Poupança</option>
-			<option value="payment">Conta de pagamento</option>
-		</select>
+			options={TYPE_OPTIONS}
+			value={type}
+			onValueChange={onTypeChange}
+		/>
 	</div>
 	<div class="grid gap-2">
 		<Label for="{prefix}-balance">Saldo inicial</Label>
@@ -82,6 +94,8 @@
 			<Button
 				onclick={() => {
 					createError = null;
+					newBankCode = BANK_CATALOG[0]?.code ?? '';
+					newType = 'checking';
 					createOpen = true;
 				}}>Adicionar conta</Button
 			>
@@ -121,6 +135,8 @@
 							size="sm"
 							onclick={() => {
 								editError = null;
+								editBankCode = account.bankCode;
+								editType = account.type;
 								editing = account;
 							}}>Editar</Button
 						>
@@ -166,7 +182,13 @@
 				}
 			})}
 		>
-			{@render accountFields('new')}
+			{@render accountFields(
+				'new',
+				newBankCode,
+				(v) => (newBankCode = v),
+				newType,
+				(v) => (newType = v)
+			)}
 			<Dialog.Footer>
 				<Button type="submit">Adicionar</Button>
 			</Dialog.Footer>
@@ -206,7 +228,14 @@
 				})}
 			>
 				<input type="hidden" name="accountId" value={editing.id} />
-				{@render accountFields('edit', editing)}
+				{@render accountFields(
+					'edit',
+					editBankCode,
+					(v) => (editBankCode = v),
+					editType,
+					(v) => (editType = v),
+					editing
+				)}
 				<Dialog.Footer>
 					<Button type="submit">Salvar</Button>
 				</Dialog.Footer>

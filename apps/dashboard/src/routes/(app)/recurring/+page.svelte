@@ -8,6 +8,7 @@
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
+	import { Select } from '$lib/components/ui/select';
 	import { dialogFormSubmit } from '$lib/dialog-form';
 	import { formatCents } from '$lib/money';
 	import { MONTH_NAMES } from '$lib/month-names';
@@ -49,6 +50,57 @@
 
 	let newMethod = $state<'pix' | 'debit' | 'cash' | 'credit'>('pix');
 	let newFrequency = $state<'weekly' | 'monthly' | 'yearly'>('monthly');
+	// Estado dos selects (custom, não-nativo — ver ui/select) do form "nova
+	// recorrência"; os de "editar" são seedados com a recorrência clicada em
+	// `editing = r` (mesmo padrão de more/accounts/+page.svelte).
+	let newType = $state<'expense' | 'income'>('expense');
+	let newCategoryId = $state('');
+	let newCardId = $state('');
+	let newAccountId = $state('');
+	let newDayOfReference = $state('0');
+	let newMonthOfReference = $state('1');
+	let editType = $state<'expense' | 'income'>('expense');
+	let editCategoryId = $state('');
+	let editMethod = $state<'pix' | 'debit' | 'cash' | 'credit'>('pix');
+	let editFrequency = $state<'weekly' | 'monthly' | 'yearly'>('monthly');
+	let editCardId = $state('');
+	let editAccountId = $state('');
+	let editDayOfReference = $state('0');
+	let editMonthOfReference = $state('1');
+
+	/** Seed do primeiro item disponível — mesmo comportamento do <select> nativo
+	 *  anterior, que sempre começava selecionado na primeira <option> do DOM. */
+	$effect(() => {
+		if (!newCardId && activeCards[0]) newCardId = activeCards[0].id;
+		if (!newAccountId && activeAccounts[0]) newAccountId = activeAccounts[0].id;
+	});
+
+	const TYPE_OPTIONS = [
+		{ value: 'expense', label: 'Despesa' },
+		{ value: 'income', label: 'Receita' }
+	];
+	const METHOD_OPTIONS = [
+		{ value: 'pix', label: 'Pix' },
+		{ value: 'debit', label: 'Débito' },
+		{ value: 'cash', label: 'Dinheiro' },
+		{ value: 'credit', label: 'Crédito' }
+	];
+	const FREQUENCY_OPTIONS = [
+		{ value: 'weekly', label: 'Semanal' },
+		{ value: 'monthly', label: 'Mensal' },
+		{ value: 'yearly', label: 'Anual' }
+	];
+	const WEEKDAY_OPTIONS = WEEKDAY_LABELS.map((label, value) => ({ value: String(value), label }));
+	const MONTH_OPTIONS = MONTH_NAMES.map((label, index) => ({ value: String(index + 1), label }));
+	const categoryOptions = $derived(
+		data.categories.map((category) => ({ value: category.id, label: category.name }))
+	);
+	const activeCardOptions = $derived(
+		activeCards.map((card) => ({ value: card.id, label: card.name }))
+	);
+	const activeAccountOptions = $derived(
+		activeAccounts.map((account) => ({ value: account.id, label: account.name }))
+	);
 </script>
 
 <svelte:head>
@@ -62,6 +114,14 @@
 			<Button
 				onclick={() => {
 					createError = null;
+					newType = 'expense';
+					newCategoryId = data.categories[0]?.id ?? '';
+					newMethod = 'pix';
+					newFrequency = 'monthly';
+					newCardId = '';
+					newAccountId = '';
+					newDayOfReference = '0';
+					newMonthOfReference = '1';
 					createOpen = true;
 				}}>Nova recorrência</Button
 			>
@@ -122,6 +182,14 @@
 										aria-label="Editar"
 										onclick={() => {
 											editError = null;
+											editType = r.type;
+											editCategoryId = r.categoryId;
+											editMethod = r.cardId ? 'credit' : 'pix';
+											editFrequency = r.frequency;
+											editCardId = r.cardId ?? '';
+											editAccountId = r.accountId ?? '';
+											editDayOfReference = String(r.dayOfReference);
+											editMonthOfReference = String(r.monthOfReference ?? 1);
 											editing = r;
 										}}
 									>
@@ -155,7 +223,14 @@
 	</div>
 </div>
 
-{#snippet recurringFields(prefix: string, r?: RecurringView)}
+{#snippet recurringFields(
+	prefix: string,
+	type: 'expense' | 'income',
+	onTypeChange: (value: string) => void,
+	categoryId: string,
+	onCategoryIdChange: (value: string) => void,
+	r?: RecurringView
+)}
 	<div class="grid gap-2">
 		<Label for="{prefix}-description">Descrição</Label>
 		<Input id="{prefix}-description" name="description" value={r?.description ?? ''} required />
@@ -174,30 +249,25 @@
 		</div>
 		<div class="grid gap-2">
 			<Label for="{prefix}-type">Tipo</Label>
-			<select
+			<Select
 				id="{prefix}-type"
 				name="type"
-				value={r?.type ?? 'expense'}
-				class="h-9 rounded-lg border border-foreground/10 bg-transparent px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-			>
-				<option value="expense">Despesa</option>
-				<option value="income">Receita</option>
-			</select>
+				options={TYPE_OPTIONS}
+				value={type}
+				onValueChange={onTypeChange}
+			/>
 		</div>
 	</div>
 	<div class="grid gap-2">
 		<Label for="{prefix}-category">Categoria</Label>
-		<select
+		<Select
 			id="{prefix}-category"
 			name="categoryId"
-			value={r?.categoryId}
 			required
-			class="h-9 rounded-lg border border-foreground/10 bg-transparent px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-		>
-			{#each data.categories as category (category.id)}
-				<option value={category.id}>{category.name}</option>
-			{/each}
-		</select>
+			options={categoryOptions}
+			value={categoryId}
+			onValueChange={onCategoryIdChange}
+		/>
 	</div>
 {/snippet}
 
@@ -223,78 +293,71 @@
 				}
 			})}
 		>
-			{@render recurringFields('new')}
+			{@render recurringFields(
+				'new',
+				newType,
+				(v) => (newType = v as typeof newType),
+				newCategoryId,
+				(v) => (newCategoryId = v)
+			)}
 			<div class="grid grid-cols-2 gap-4">
 				<div class="grid gap-2">
 					<Label for="new-method">Método</Label>
-					<select
+					<Select
 						id="new-method"
 						name="method"
-						bind:value={newMethod}
-						class="h-9 rounded-lg border border-foreground/10 bg-transparent px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-					>
-						<option value="pix">Pix</option>
-						<option value="debit">Débito</option>
-						<option value="cash">Dinheiro</option>
-						<option value="credit">Crédito</option>
-					</select>
+						options={METHOD_OPTIONS}
+						value={newMethod}
+						onValueChange={(v) => (newMethod = v as typeof newMethod)}
+					/>
 				</div>
 				{#if newMethod === 'credit'}
 					<div class="grid gap-2">
 						<Label for="new-card">Cartão</Label>
-						<select
+						<Select
 							id="new-card"
 							name="cardId"
 							required
-							class="h-9 rounded-lg border border-foreground/10 bg-transparent px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-						>
-							{#each activeCards as card (card.id)}
-								<option value={card.id}>{card.name}</option>
-							{/each}
-						</select>
+							options={activeCardOptions}
+							value={newCardId}
+							onValueChange={(v) => (newCardId = v)}
+						/>
 					</div>
 				{:else}
 					<div class="grid gap-2">
 						<Label for="new-account">Conta</Label>
-						<select
+						<Select
 							id="new-account"
 							name="accountId"
 							required
-							class="h-9 rounded-lg border border-foreground/10 bg-transparent px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-						>
-							{#each activeAccounts as account (account.id)}
-								<option value={account.id}>{account.name}</option>
-							{/each}
-						</select>
+							options={activeAccountOptions}
+							value={newAccountId}
+							onValueChange={(v) => (newAccountId = v)}
+						/>
 					</div>
 				{/if}
 			</div>
 			<div class="grid grid-cols-2 gap-4">
 				<div class="grid gap-2">
 					<Label for="new-frequency">Frequência</Label>
-					<select
+					<Select
 						id="new-frequency"
 						name="frequency"
-						bind:value={newFrequency}
-						class="h-9 rounded-lg border border-foreground/10 bg-transparent px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-					>
-						<option value="weekly">Semanal</option>
-						<option value="monthly">Mensal</option>
-						<option value="yearly">Anual</option>
-					</select>
+						options={FREQUENCY_OPTIONS}
+						value={newFrequency}
+						onValueChange={(v) => (newFrequency = v as typeof newFrequency)}
+					/>
 				</div>
 				<div class="grid gap-2">
 					<Label for="new-day">{newFrequency === 'weekly' ? 'Dia da semana' : 'Dia do mês'}</Label>
 					{#if newFrequency === 'weekly'}
-						<select
+						<Select
 							id="new-day"
 							name="dayOfReference"
-							class="h-9 rounded-lg border border-foreground/10 bg-transparent px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-						>
-							{#each WEEKDAY_LABELS as label, value (value)}
-								<option {value}>{label}</option>
-							{/each}
-						</select>
+							options={WEEKDAY_OPTIONS}
+							value={newDayOfReference}
+							onValueChange={(v) => (newDayOfReference = v)}
+						/>
 					{:else}
 						<Input
 							id="new-day"
@@ -311,15 +374,13 @@
 			{#if newFrequency === 'yearly'}
 				<div class="grid gap-2">
 					<Label for="new-month">Mês</Label>
-					<select
+					<Select
 						id="new-month"
 						name="monthOfReference"
-						class="h-9 rounded-lg border border-foreground/10 bg-transparent px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-					>
-						{#each MONTH_NAMES as label, index (index)}
-							<option value={index + 1}>{label}</option>
-						{/each}
-					</select>
+						options={MONTH_OPTIONS}
+						value={newMonthOfReference}
+						onValueChange={(v) => (newMonthOfReference = v)}
+					/>
 				</div>
 			{/if}
 			<Dialog.Footer>
@@ -346,8 +407,6 @@
 			<p class="text-sm text-destructive">{editError}</p>
 		{/if}
 		{#if editing}
-			{@const editFrequency = editing.frequency}
-			{@const editMethod = editing.cardId ? 'credit' : 'pix'}
 			<form
 				method="POST"
 				action="?/update"
@@ -363,81 +422,72 @@
 				})}
 			>
 				<input type="hidden" name="recurringId" value={editing.id} />
-				{@render recurringFields('edit', editing)}
+				{@render recurringFields(
+					'edit',
+					editType,
+					(v) => (editType = v as typeof editType),
+					editCategoryId,
+					(v) => (editCategoryId = v),
+					editing
+				)}
 				<div class="grid grid-cols-2 gap-4">
 					<div class="grid gap-2">
 						<Label for="edit-method">Método</Label>
-						<select
+						<Select
 							id="edit-method"
 							name="method"
+							options={METHOD_OPTIONS}
 							value={editMethod}
-							class="h-9 rounded-lg border border-foreground/10 bg-transparent px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-						>
-							<option value="pix">Pix</option>
-							<option value="debit">Débito</option>
-							<option value="cash">Dinheiro</option>
-							<option value="credit">Crédito</option>
-						</select>
+							onValueChange={(v) => (editMethod = v as typeof editMethod)}
+						/>
 					</div>
 					{#if editing.cardId}
 						<div class="grid gap-2">
 							<Label for="edit-card">Cartão</Label>
-							<select
+							<Select
 								id="edit-card"
 								name="cardId"
-								value={editing.cardId}
-								class="h-9 rounded-lg border border-foreground/10 bg-transparent px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-							>
-								{#each activeCards as card (card.id)}
-									<option value={card.id}>{card.name}</option>
-								{/each}
-							</select>
+								options={activeCardOptions}
+								value={editCardId}
+								onValueChange={(v) => (editCardId = v)}
+							/>
 						</div>
 					{:else}
 						<div class="grid gap-2">
 							<Label for="edit-account">Conta</Label>
-							<select
+							<Select
 								id="edit-account"
 								name="accountId"
-								value={editing.accountId}
-								class="h-9 rounded-lg border border-foreground/10 bg-transparent px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-							>
-								{#each activeAccounts as account (account.id)}
-									<option value={account.id}>{account.name}</option>
-								{/each}
-							</select>
+								options={activeAccountOptions}
+								value={editAccountId}
+								onValueChange={(v) => (editAccountId = v)}
+							/>
 						</div>
 					{/if}
 				</div>
 				<div class="grid grid-cols-2 gap-4">
 					<div class="grid gap-2">
 						<Label for="edit-frequency">Frequência</Label>
-						<select
+						<Select
 							id="edit-frequency"
 							name="frequency"
+							options={FREQUENCY_OPTIONS}
 							value={editFrequency}
-							class="h-9 rounded-lg border border-foreground/10 bg-transparent px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-						>
-							<option value="weekly">Semanal</option>
-							<option value="monthly">Mensal</option>
-							<option value="yearly">Anual</option>
-						</select>
+							onValueChange={(v) => (editFrequency = v as typeof editFrequency)}
+						/>
 					</div>
 					<div class="grid gap-2">
 						<Label for="edit-day">
 							{editFrequency === 'weekly' ? 'Dia da semana' : 'Dia do mês'}
 						</Label>
 						{#if editFrequency === 'weekly'}
-							<select
+							<Select
 								id="edit-day"
 								name="dayOfReference"
-								value={editing.dayOfReference}
-								class="h-9 rounded-lg border border-foreground/10 bg-transparent px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-							>
-								{#each WEEKDAY_LABELS as label, value (value)}
-									<option {value}>{label}</option>
-								{/each}
-							</select>
+								options={WEEKDAY_OPTIONS}
+								value={editDayOfReference}
+								onValueChange={(v) => (editDayOfReference = v)}
+							/>
 						{:else}
 							<Input
 								id="edit-day"
@@ -454,16 +504,13 @@
 				{#if editFrequency === 'yearly'}
 					<div class="grid gap-2">
 						<Label for="edit-month">Mês</Label>
-						<select
+						<Select
 							id="edit-month"
 							name="monthOfReference"
-							value={editing.monthOfReference ?? 1}
-							class="h-9 rounded-lg border border-foreground/10 bg-transparent px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-						>
-							{#each MONTH_NAMES as label, index (index)}
-								<option value={index + 1}>{label}</option>
-							{/each}
-						</select>
+							options={MONTH_OPTIONS}
+							value={editMonthOfReference}
+							onValueChange={(v) => (editMonthOfReference = v)}
+						/>
 					</div>
 				{/if}
 				<Dialog.Footer>

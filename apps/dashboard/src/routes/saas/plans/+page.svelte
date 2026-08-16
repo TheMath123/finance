@@ -8,6 +8,7 @@
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
+	import { Select } from '$lib/components/ui/select';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { dialogFormSubmit } from '$lib/dialog-form';
 	import { formatCents } from '$lib/money';
@@ -25,6 +26,12 @@
 	// Reativo pra deixar o rótulo de "a cada quantos" explícito na unidade
 	// escolhida (dias/semanas/meses/anos), em vez de um "quantos" genérico.
 	let billingIntervalUnit = $state<'day' | 'week' | 'month' | 'year'>('month');
+	const BILLING_INTERVAL_OPTIONS = [
+		{ value: 'day', label: 'Dia' },
+		{ value: 'week', label: 'Semana' },
+		{ value: 'month', label: 'Mês' },
+		{ value: 'year', label: 'Ano' }
+	];
 	// Selecionadas separado da lista filtrada — senão marcar uma feature e
 	// depois filtrar ela pra fora da busca perderia a seleção no submit
 	// (checkbox some do DOM, valor não vai junto).
@@ -233,17 +240,13 @@
 	<div class="grid gap-3 sm:grid-cols-2">
 		<div class="grid gap-2">
 			<Label for="billingIntervalUnit">Intervalo</Label>
-			<select
+			<Select
 				id="billingIntervalUnit"
 				name="billingIntervalUnit"
-				bind:value={billingIntervalUnit}
-				class="h-9 rounded-lg border border-foreground/10 bg-background px-3 text-sm"
-			>
-				<option value="day">Dia</option>
-				<option value="week">Semana</option>
-				<option value="month">Mês</option>
-				<option value="year">Ano</option>
-			</select>
+				options={BILLING_INTERVAL_OPTIONS}
+				value={billingIntervalUnit}
+				onValueChange={(v) => (billingIntervalUnit = v as typeof billingIntervalUnit)}
+			/>
 		</div>
 		<div class="grid gap-2">
 			<Label for="billingIntervalCount">A cada {INTERVAL_COUNT_LABELS[billingIntervalUnit]}</Label>

@@ -3,6 +3,7 @@
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 
+	import { Select } from '$lib/components/ui/select';
 	import type { WorkspaceSummary } from '$lib/server/workspace-api';
 
 	let {
@@ -18,27 +19,35 @@
 	// em "+ Novo workspace" ao voltar).
 	const NEW_WORKSPACE = '__new__';
 
-	function handleChange(event: Event & { currentTarget: HTMLSelectElement }) {
-		if (event.currentTarget.value === NEW_WORKSPACE) {
-			event.currentTarget.value = activeWorkspace?.id ?? '';
+	const options = $derived([
+		...workspaces.map((workspace) => ({ value: workspace.id, label: workspace.name })),
+		{ value: NEW_WORKSPACE, label: '+ Novo workspace' }
+	]);
+
+	// Writable $derived (Svelte 5): reflete `activeWorkspace` por padrão, mas
+	// aceita reatribuição local (abaixo) até a próxima mudança de dependência.
+	let selected = $derived(activeWorkspace?.id ?? '');
+
+	let formEl = $state<HTMLFormElement>();
+
+	function handleChange(value: string) {
+		if (value === NEW_WORKSPACE) {
+			selected = activeWorkspace?.id ?? '';
 			void goto(resolve('/workspace/new'));
 			return;
 		}
-		event.currentTarget.form?.requestSubmit();
+		selected = value;
+		formEl?.requestSubmit();
 	}
 </script>
 
 <!-- Pílula translúcida teal — mesma linguagem do seletor de workspace do app (Figma). -->
-<form method="POST" action="/workspace/switch" use:enhance class="max-w-full">
-	<select
+<form method="POST" action="/workspace/switch" use:enhance bind:this={formEl} class="max-w-full">
+	<Select
 		name="workspaceId"
-		value={activeWorkspace?.id}
-		onchange={handleChange}
-		class="w-full max-w-56 cursor-pointer truncate rounded-lg border-0 bg-primary/10 px-3 py-2 text-sm font-medium text-primary outline-none focus-visible:ring-2 focus-visible:ring-ring sm:px-4"
-	>
-		{#each workspaces as workspace (workspace.id)}
-			<option value={workspace.id}>{workspace.name}</option>
-		{/each}
-		<option value={NEW_WORKSPACE}>+ Novo workspace</option>
-	</select>
+		{options}
+		value={selected}
+		onValueChange={handleChange}
+		class="w-full max-w-56 truncate border-0 bg-primary/10 font-medium text-primary hover:bg-primary/10"
+	/>
 </form>

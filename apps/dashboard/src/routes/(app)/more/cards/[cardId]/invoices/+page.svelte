@@ -10,6 +10,7 @@
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
+	import { Select } from '$lib/components/ui/select';
 	import { dialogFormSubmit } from '$lib/dialog-form';
 	import { MONTH_NAMES } from '$lib/month-names';
 	import { formatCents } from '$lib/money';
@@ -29,9 +30,23 @@
 	let confirmedEarlyPayment = $state(false);
 	const isEarlyPayment = $derived(paying?.effectiveStatus === 'open');
 
+	// Estado dos selects (custom, não-nativo — ver ui/select) do form "pagar
+	// fatura" — reseedados sempre que o dialog abre pra uma fatura diferente.
+	let payAccountId = $state('');
+	let payMethod = $state<'pix' | 'debit'>('pix');
+	const payAccountOptions = $derived(
+		data.accounts.map((account) => ({ value: account.id, label: account.name }))
+	);
+	const PAY_METHOD_OPTIONS = [
+		{ value: 'pix', label: 'Pix' },
+		{ value: 'debit', label: 'Débito' }
+	];
+
 	function openPayDialog(invoice: InvoiceView) {
 		confirmedEarlyPayment = false;
 		payError = null;
+		payAccountId = data.accounts[0]?.id ?? '';
+		payMethod = 'pix';
 		paying = invoice;
 	}
 
@@ -85,6 +100,9 @@
 	} | null>(null);
 
 	const includedCount = $derived(reviewRows.filter((r) => r.status === 'new' && r.include).length);
+	const categoryOptions = $derived(
+		data.categories.map((category) => ({ value: category.id, label: category.name }))
+	);
 
 	function openCsvImport() {
 		csvStep = 'select';
@@ -225,6 +243,12 @@
 			.map((p) => p.month)
 			.sort((a, b) => a - b)
 	);
+	const filterMonthOptions = $derived(
+		filterMonthsForYear.map((month) => ({ value: String(month), label: MONTH_NAMES[month - 1] }))
+	);
+	const filterYearOptions = $derived(
+		filterYears.map((year) => ({ value: String(year), label: String(year) }))
+	);
 
 	// Trocar o ano no select (antes de enviar o form) pode deixar o mês
 	// escolhido sem fatura naquele ano — reancora no mês mais recente
@@ -295,26 +319,24 @@
 				{/if}
 				{#if data.availablePeriods.length > 0}
 					<form method="GET" class="flex items-center gap-2">
-						<select
+						<Label for="filter-month" class="sr-only">Mês</Label>
+						<Select
+							id="filter-month"
 							name="month"
-							bind:value={filterMonth}
-							aria-label="Mês"
-							class="h-8 rounded-lg border border-foreground/10 bg-transparent px-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-						>
-							{#each filterMonthsForYear as month (month)}
-								<option value={month}>{MONTH_NAMES[month - 1]}</option>
-							{/each}
-						</select>
-						<select
+							options={filterMonthOptions}
+							value={filterMonth !== undefined ? String(filterMonth) : ''}
+							onValueChange={(v) => (filterMonth = v ? Number(v) : undefined)}
+							class="h-8 w-36"
+						/>
+						<Label for="filter-year" class="sr-only">Ano</Label>
+						<Select
+							id="filter-year"
 							name="year"
-							bind:value={filterYear}
-							aria-label="Ano"
-							class="h-8 rounded-lg border border-foreground/10 bg-transparent px-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-						>
-							{#each filterYears as year (year)}
-								<option value={year}>{year}</option>
-							{/each}
-						</select>
+							options={filterYearOptions}
+							value={filterYear !== undefined ? String(filterYear) : ''}
+							onValueChange={(v) => (filterYear = v ? Number(v) : undefined)}
+							class="h-8 w-24"
+						/>
 						<Button type="submit" variant="outline" size="sm">Filtrar</Button>
 						{#if data.monthFilter && data.yearFilter}
 							<Button
@@ -461,16 +483,13 @@
 				{/if}
 				<div class="grid gap-2">
 					<Label for="pay-account">Conta</Label>
-					<select
+					<Select
 						id="pay-account"
 						name="accountId"
 						required
-						class="h-9 rounded-lg border border-foreground/10 bg-transparent px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-					>
-						{#each data.accounts as account (account.id)}
-							<option value={account.id}>{account.name}</option>
-						{/each}
-					</select>
+						options={payAccountOptions}
+						bind:value={payAccountId}
+					/>
 				</div>
 				<div class="grid grid-cols-2 gap-4">
 					<div class="grid gap-2">
@@ -479,14 +498,13 @@
 					</div>
 					<div class="grid gap-2">
 						<Label for="pay-method">Método</Label>
-						<select
+						<Select
 							id="pay-method"
 							name="method"
-							class="h-9 rounded-lg border border-foreground/10 bg-transparent px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-						>
-							<option value="pix">Pix</option>
-							<option value="debit">Débito</option>
-						</select>
+							options={PAY_METHOD_OPTIONS}
+							value={payMethod}
+							onValueChange={(v) => (payMethod = v as typeof payMethod)}
+						/>
 					</div>
 				</div>
 				<Dialog.Footer>
@@ -614,15 +632,12 @@
 									</td>
 									<td class="px-3 py-2">
 										{#if row.status === 'new'}
-											<select
+											<Select
+												options={categoryOptions}
 												bind:value={row.categoryId}
 												disabled={!row.include}
-												class="h-8 w-full rounded-lg border border-foreground/10 bg-transparent px-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-											>
-												{#each data.categories as category (category.id)}
-													<option value={category.id}>{category.name}</option>
-												{/each}
-											</select>
+												class="h-8"
+											/>
 										{/if}
 									</td>
 									<td class="px-3 py-2">

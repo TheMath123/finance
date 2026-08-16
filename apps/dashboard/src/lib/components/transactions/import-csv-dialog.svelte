@@ -4,6 +4,7 @@
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
+	import { Select } from '$lib/components/ui/select';
 	import { formatCents } from '$lib/money';
 	import type {
 		AccountCsvImportPreviewResult,
@@ -35,6 +36,21 @@
 	const activeCards = $derived(cards.filter((c) => !c.archivedAt));
 	const activeAccounts = $derived(accounts.filter((a) => !a.archivedAt));
 	const showChoice = $derived(cardCsvImportEnabled && accountCsvImportEnabled);
+
+	const activeCardOptions = $derived(
+		activeCards.map((card) => ({ value: card.id, label: card.name }))
+	);
+	const activeAccountOptions = $derived(
+		activeAccounts.map((account) => ({ value: account.id, label: account.name }))
+	);
+	const METHOD_OPTIONS = [
+		{ value: 'pix', label: 'Pix' },
+		{ value: 'debit', label: 'Débito' },
+		{ value: 'cash', label: 'Dinheiro' }
+	];
+	const categoryOptions = $derived(
+		categories.map((category) => ({ value: category.id, label: category.name }))
+	);
 
 	type Step =
 		'choose' | 'card-select' | 'card-review' | 'account-select' | 'account-review' | 'done';
@@ -361,15 +377,7 @@
 				{/if}
 				<div class="grid gap-2">
 					<Label for="csv-card">Cartão</Label>
-					<select
-						id="csv-card"
-						bind:value={selectedCardId}
-						class="h-9 w-full rounded-lg border border-foreground/10 bg-transparent px-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-					>
-						{#each activeCards as card (card.id)}
-							<option value={card.id}>{card.name}</option>
-						{/each}
-					</select>
+					<Select id="csv-card" options={activeCardOptions} bind:value={selectedCardId} />
 				</div>
 				<div class="grid gap-2">
 					<Label for="csv-month">Mês da fatura</Label>
@@ -412,27 +420,16 @@
 				{/if}
 				<div class="grid gap-2">
 					<Label for="csv-account">Conta</Label>
-					<select
-						id="csv-account"
-						bind:value={selectedAccountId}
-						class="h-9 w-full rounded-lg border border-foreground/10 bg-transparent px-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-					>
-						{#each activeAccounts as account (account.id)}
-							<option value={account.id}>{account.name}</option>
-						{/each}
-					</select>
+					<Select id="csv-account" options={activeAccountOptions} bind:value={selectedAccountId} />
 				</div>
 				<div class="grid gap-2">
 					<Label for="csv-method">Método</Label>
-					<select
+					<Select
 						id="csv-method"
-						bind:value={selectedMethod}
-						class="h-9 w-full rounded-lg border border-foreground/10 bg-transparent px-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-					>
-						<option value="pix">Pix</option>
-						<option value="debit">Débito</option>
-						<option value="cash">Dinheiro</option>
-					</select>
+						options={METHOD_OPTIONS}
+						value={selectedMethod}
+						onValueChange={(v) => (selectedMethod = v as typeof selectedMethod)}
+					/>
 					<p class="text-xs text-muted-foreground">
 						Vale pro lote inteiro — o extrato não distingue método por linha.
 					</p>
@@ -525,15 +522,11 @@
 									</td>
 									<td class="px-3 py-2">
 										{#if row.status === 'new'}
-											<select
+											<Select
+												options={categoryOptions}
 												bind:value={row.categoryId}
 												disabled={!row.include}
-												class="h-8 w-full rounded-lg border border-foreground/10 bg-transparent px-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-											>
-												{#each categories as category (category.id)}
-													<option value={category.id}>{category.name}</option>
-												{/each}
-											</select>
+											/>
 										{/if}
 									</td>
 									<td class="px-3 py-2">
@@ -609,15 +602,11 @@
 									</td>
 									<td class="px-3 py-2">
 										{#if row.status === 'new'}
-											<select
+											<Select
+												options={categoryOptions}
 												bind:value={row.categoryId}
 												disabled={!row.include}
-												class="h-8 w-full rounded-lg border border-foreground/10 bg-transparent px-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-											>
-												{#each categories as category (category.id)}
-													<option value={category.id}>{category.name}</option>
-												{/each}
-											</select>
+											/>
 										{/if}
 									</td>
 									<td class="px-3 py-2">
