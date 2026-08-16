@@ -12,6 +12,26 @@ compatibility_flags = ["nodejs_compat"]
 binding = "ASSETS"
 directory = ".svelte-kit/cloudflare"
 
+# Observability (Cloudflare Workers Logs) — ajuda a depurar erros em
+# produção (ex.: o 500 do public-env.ts) direto no painel Cloudflare
+# (Workers & Pages → marcelus-site → Logs), sem precisar de `wrangler tail`
+# rodando na hora do erro. Traces desligado por enquanto (não usamos
+# instrumentação distribuída ainda).
+[observability]
+enabled = false
+head_sampling_rate = 1
+
+[observability.logs]
+enabled = true
+head_sampling_rate = 1
+persist = true
+invocation_logs = true
+
+[observability.traces]
+enabled = false
+persist = true
+head_sampling_rate = 1
+
 # `API_URL` (endereço interno do backend no Fly.io) DELIBERADAMENTE não
 # entra aqui em `[vars]` — isso ficaria em texto plano no repositório. É um
 # Cloudflare **secret** (`wrangler secret put API_URL --name marcelus-site`),

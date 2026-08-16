@@ -12,6 +12,24 @@ compatibility_flags = ["nodejs_compat"]
 binding = "ASSETS"
 directory = ".svelte-kit/cloudflare"
 
+# Observability (Cloudflare Workers Logs) — logs de produção direto no
+# painel Cloudflare (Workers & Pages → marcelus-dashboard → Logs). Traces
+# desligado (não usamos instrumentação distribuída ainda).
+[observability]
+enabled = false
+head_sampling_rate = 1
+
+[observability.logs]
+enabled = true
+head_sampling_rate = 1
+persist = true
+invocation_logs = true
+
+[observability.traces]
+enabled = false
+persist = true
+head_sampling_rate = 1
+
 # `API_URL` (endereço do backend no Fly.io) DELIBERADAMENTE não entra em
 # `[vars]` aqui — isso ficaria em texto plano no repositório. É um
 # Cloudflare **secret** (`wrangler secret put API_URL --name
