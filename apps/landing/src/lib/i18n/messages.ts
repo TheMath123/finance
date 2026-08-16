@@ -49,6 +49,10 @@ export interface Messages {
 		everyNIntervals: (n: number, unit: string) => string;
 		perInterval: (unit: string) => string;
 		savePercent: (percent: number) => string;
+		billingIntervalLabel: string;
+		toggleMonthly: string;
+		toggleSemiannual: string;
+		toggleAnnual: string;
 	};
 	cookieConsent: {
 		text: string;
@@ -130,7 +134,11 @@ export const MESSAGES: Record<Lang, Messages> = {
 			intervalDay: 'dia',
 			everyNIntervals: (n, unit) => `a cada ${n} ${unit}s`,
 			perInterval: (unit) => `por ${unit}`,
-			savePercent: (percent) => `economize ${percent}%`
+			savePercent: (percent) => `economize ${percent}%`,
+			billingIntervalLabel: 'Intervalo de cobrança',
+			toggleMonthly: 'Mensal',
+			toggleSemiannual: 'Semestral',
+			toggleAnnual: 'Anual'
 		},
 		cookieConsent: {
 			text: 'Usamos cookies necessários pro funcionamento do site e, com sua permissão, cookies de análise (Microsoft Clarity) pra entender como o produto é usado.',
@@ -208,7 +216,11 @@ export const MESSAGES: Record<Lang, Messages> = {
 			intervalDay: 'day',
 			everyNIntervals: (n, unit) => `every ${n} ${unit}s`,
 			perInterval: (unit) => `per ${unit}`,
-			savePercent: (percent) => `save ${percent}%`
+			savePercent: (percent) => `save ${percent}%`,
+			billingIntervalLabel: 'Billing interval',
+			toggleMonthly: 'Monthly',
+			toggleSemiannual: 'Semiannual',
+			toggleAnnual: 'Annual'
 		},
 		cookieConsent: {
 			text: 'We use cookies necessary for the site to work and, with your permission, analytics cookies (Microsoft Clarity) to understand how the product is used.',
@@ -289,7 +301,11 @@ export const MESSAGES: Record<Lang, Messages> = {
 			intervalDay: 'día',
 			everyNIntervals: (n, unit) => `cada ${n} ${unit}s`,
 			perInterval: (unit) => `por ${unit}`,
-			savePercent: (percent) => `ahorra ${percent}%`
+			savePercent: (percent) => `ahorra ${percent}%`,
+			billingIntervalLabel: 'Intervalo de facturación',
+			toggleMonthly: 'Mensual',
+			toggleSemiannual: 'Semestral',
+			toggleAnnual: 'Anual'
 		},
 		cookieConsent: {
 			text: 'Usamos cookies necesarias para el funcionamiento del sitio y, con tu permiso, cookies de análisis (Microsoft Clarity) para entender cómo se usa el producto.',

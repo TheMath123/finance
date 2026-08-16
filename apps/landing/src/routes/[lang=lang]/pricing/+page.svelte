@@ -4,6 +4,7 @@
 	import { formatCents } from '$lib/money';
 	import type { PlanPriceView, PlanView } from '$lib/server/plans-api';
 	import type { Lang } from '../../../params/lang';
+	import { fade } from 'svelte/transition';
 
 	let { data } = $props();
 
@@ -73,6 +74,78 @@
 	// página de preços vazia. Com resposta normal da API, o próprio plano
 	// gratuito já vem nela (com preço R$ 0) e a grade mostra só o que veio.
 	const showFreeFallback = $derived(data.plans.length === 0);
+
+	// Seletor de intervalo de cobrança (Mensal/Semestral/Anual) acima da
+	// grade — em vez de empilhar os 3 valores dentro de cada card (some com
+	// a leitura da lista de features), o visitante troca o intervalo uma vez
+	// e todo card atualiza o preço. Opções derivadas dos dados reais (nunca
+	// hardcoded) — só aparecem os intervalos que pelo menos um plano tem.
+	interface IntervalOption {
+		key: string;
+		months: number;
+		label: string;
+	}
+
+	function intervalKey(price: PlanPriceView): string {
+		return `${price.billingIntervalUnit}:${price.billingIntervalCount}`;
+	}
+
+	function intervalToggleLabel(unit: PlanPriceView['billingIntervalUnit'], count: number): string {
+		if (unit === 'month' && count === 1) return t.pricing.toggleMonthly;
+		if (unit === 'month' && count === 6) return t.pricing.toggleSemiannual;
+		if ((unit === 'month' && count === 12) || (unit === 'year' && count === 1)) {
+			return t.pricing.toggleAnnual;
+		}
+		// Intervalo fora dos 3 buckets comuns (raro) — rótulo genérico em vez
+		// de esconder a opção.
+		return count > 1
+			? t.pricing.everyNIntervals(count, intervalUnitLabel(unit))
+			: t.pricing.perInterval(intervalUnitLabel(unit));
+	}
+
+	const intervalOptions = $derived.by(() => {
+		const options: IntervalOption[] = [];
+		for (const plan of data.plans) {
+			for (const price of plan.prices) {
+				const key = intervalKey(price);
+				if (options.some((option) => option.key === key)) continue;
+				options.push({
+					key,
+					months: monthsInInterval(price),
+					label: intervalToggleLabel(price.billingIntervalUnit, price.billingIntervalCount)
+				});
+			}
+		}
+		return options.sort((a, b) => a.months - b.months);
+	});
+
+	// Maior economia entre os planos que têm preço nesse intervalo E um preço
+	// mensal de referência — vira selo no próprio botão do seletor (ex.: "-25%"
+	// ao lado de "Anual"). null quando nenhum plano tem base de comparação.
+	function maxSavingsForInterval(key: string): number | null {
+		let max: number | null = null;
+		for (const plan of data.plans) {
+			const price = plan.prices.find((p) => intervalKey(p) === key);
+			if (!price) continue;
+			const pct = savingsPercent(plan, price);
+			if (pct !== null && (max === null || pct > max)) max = pct;
+		}
+		return max;
+	}
+
+	let manualIntervalKey = $state<string | null>(null);
+	const activeIntervalKey = $derived(manualIntervalKey ?? intervalOptions[0]?.key ?? null);
+
+	// Preço do plano pro intervalo selecionado; sem opção nesse intervalo
+	// específico (ex.: Free só tem mensal), cai pro preço padrão do plano em
+	// vez de esconder o card.
+	function priceForInterval(plan: PlanView, key: string | null): PlanPriceView | undefined {
+		if (key) {
+			const match = plan.prices.find((p) => intervalKey(p) === key);
+			if (match) return match;
+		}
+		return defaultPrice(plan);
+	}
 </script>
 
 <svelte:head>
@@ -86,6 +159,40 @@
 </section>
 
 <section class="mx-auto max-w-5xl px-6 pb-28">
+	{#if intervalOptions.length > 1}
+		<div class="mb-12 flex justify-center">
+			<div
+				role="group"
+				aria-label={t.pricing.billingIntervalLabel}
+				class="inline-flex w-full max-w-md border border-border sm:w-fit"
+			>
+				{#each intervalOptions as option (option.key)}
+					{@const badge = maxSavingsForInterval(option.key)}
+					<button
+						type="button"
+						aria-pressed={option.key === activeIntervalKey}
+						onclick={() => (manualIntervalKey = option.key)}
+						class="flex-1 px-3 py-2.5 text-xs font-medium tracking-wide uppercase transition-colors sm:flex-none sm:px-6 {option.key ===
+						activeIntervalKey
+							? 'bg-foreground text-background'
+							: 'text-muted-foreground hover:text-foreground'}"
+					>
+						{option.label}
+						{#if badge !== null}
+							<span
+								class="normal-case {option.key === activeIntervalKey
+									? 'text-background/70'
+									: 'text-brand-dark'}"
+							>
+								&nbsp;-{badge}%
+							</span>
+						{/if}
+					</button>
+				{/each}
+			</div>
+		</div>
+	{/if}
+
 	<div class="grid gap-px sm:grid-cols-2 lg:grid-cols-3">
 		{#if showFreeFallback}
 			<div class="flex flex-col gap-5 border border-border bg-background p-8">
@@ -106,7 +213,7 @@
 		{/if}
 
 		{#each data.plans as plan (plan.id)}
-			{@const price = defaultPrice(plan)}
+			{@const price = priceForInterval(plan, activeIntervalKey)}
 			<div class="flex flex-col gap-5 border border-border bg-background p-8">
 				<div>
 					<h2 class="font-display text-lg tracking-tight">{plan.name}</h2>
@@ -143,21 +250,25 @@
 					{@const isMonthly =
 						price.billingIntervalUnit === 'month' && price.billingIntervalCount === 1}
 					<div class="mt-auto">
-						<p class="font-display text-3xl">
-							{formatCents(equivalentMonthly)}
-							<span class="font-sans text-sm font-normal text-muted-foreground normal-case">
-								{t.pricing.perInterval(t.pricing.intervalMonth)}
-							</span>
-						</p>
-						{#if !isMonthly}
-							<p class="mt-1 text-xs tracking-wide text-muted-foreground uppercase">
-								{formatCents(price.priceCents)}
-								{intervalLabel(price)}
-								{#if savings !== null}
-									<span class="text-brand-dark">· {t.pricing.savePercent(savings)}</span>
+						{#key price.id}
+							<div in:fade={{ duration: 150 }}>
+								<p class="font-display text-3xl">
+									{formatCents(equivalentMonthly)}
+									<span class="font-sans text-sm font-normal text-muted-foreground normal-case">
+										{t.pricing.perInterval(t.pricing.intervalMonth)}
+									</span>
+								</p>
+								{#if !isMonthly}
+									<p class="mt-1 text-xs tracking-wide text-muted-foreground uppercase">
+										{formatCents(price.priceCents)}
+										{intervalLabel(price)}
+										{#if savings !== null}
+											<span class="text-brand-dark">· {t.pricing.savePercent(savings)}</span>
+										{/if}
+									</p>
 								{/if}
-							</p>
-						{/if}
+							</div>
+						{/key}
 					</div>
 				{/if}
 

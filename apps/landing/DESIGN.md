@@ -98,3 +98,67 @@ achados) + lint/typecheck limpos. Recomendo abrir `bun run dev` localmente e
 olhar as 5 páginas (home/pricing/privacy/terms + banner de cookies) em
 desktop e mobile antes de publicar — isso não foi verificado visualmente por
 mim.
+
+## Atualização — seletor de intervalo de cobrança + preço mensal em destaque (pricing)
+
+Refinamento pontual de `[lang=lang]/pricing/+page.svelte` (não é um novo
+concept-seed — extensão dentro do mundo visual já commitado acima).
+
+- **Problema resolvido:** cada plano só mostrava o preço do seu intervalo
+  `isDefault` (ex.: Pro só em "a cada 12 meses"); quem quisesse comparar
+  mensal/semestral/anual não tinha como, e o valor grande do card nem sempre
+  era o mais fácil de comparar entre planos (um anual e um mensal lado a
+  lado não são comparáveis à primeira vista).
+- **Decisão de forma:** seletor segmentado (Mensal/Semestral/Anual) acima da
+  grade, sharp (sem pill — `border-border`, sem radius, versalete tracked,
+  mesmo vocabulário do resto do site) em vez de empilhar 3 preços por card
+  (poluiria a leitura da lista de features, que já é densa). Opções e rótulos
+  derivados dos dados reais (`billingIntervalUnit`/`Count` de cada plano),
+  nunca hardcoded — some sozinho se só existir 1 intervalo em todos os
+  planos.
+  - Cada card sempre mostra o **equivalente mensal** em destaque (`text-3xl`),
+    mesmo quando o intervalo escolhido é semestral/anual — é o número que
+    permite comparar planos e intervalos de cara.
+  - Linha secundária menor mostra a cobrança real ("R$ X a cada N meses") e,
+    quando o plano tem um preço mensal cadastrado como referência, o
+    percentual de economia (`economize X%`), calculado — nunca fabricado
+    sem uma base de comparação real.
+  - Selo de economia máxima repetido no próprio botão do seletor (ex.:
+    "Anual -25%") — reforça a atratividade da opção mais longa sem precisar
+    abrir os cards pra descobrir.
+  - Um "authored moment" de motion: crossfade de 150ms (`svelte/transition`
+    `fade`, escopo local por `{#key price.id}`) na troca do valor — não em
+    cada elemento da página, só nesse ponto de leitura que muda de fato.
+- **Responsivo:** botões do seletor em `flex-1` (ocupam a largura toda,
+  divididos igualmente) até `sm:`, onde viram `flex-none` compactos e
+  centralizados — não depende de media query separada pra decidir "quantas
+  colunas", só troca o comportamento do flex.
+- **Contraste verificado nos tokens reais** (não assumido): o selo de
+  economia usa `text-brand-dark` nos estados normais do seletor (calculado:
+  ~10:1 contra fundo claro do modo light, ~8.85:1 contra o fundo quase-preto
+  do modo dark — os dois modos já tinham essa variável tunada
+  separadamente em `layout.css`). No botão **ativo** do seletor, que inverte
+  localmente pra `bg-foreground`/`text-background`, `text-brand-dark` ficaria
+  ilegível nos dois modos (a variável só é tunada pros 2 fundos globais, não
+  pra essa superfície local invertida) — corrigido usando `text-background/70`
+  nesse estado específico, garantindo o mesmo par de cor do próprio rótulo do
+  botão.
+
+### Verificação feita (desta rodada)
+
+- `bun --cwd=apps/landing run lint` (Prettier + ESLint) — limpo.
+- `bunx turbo run typecheck --filter=@finance/landing --force` — 0 erros.
+- `node .claude/skills/impeccable/scripts/detect.mjs --json <arquivos>` — 0
+  achados.
+- Contraste do selo de economia calculado manualmente contra os valores reais
+  de `--brand-dark`/`--background`/`--foreground` nos dois modos (ver acima)
+  — não é suposição, é cálculo em cima do HSL real do `layout.css`.
+- **Build de produção (`bunx turbo run build --filter=@finance/landing`)**:
+  a compilação SvelteKit em si completa ("✓ built in 5.70s"), mas o adapter
+  Cloudflare falha no cleanup (`EPERM`/"Device or resource busy" ao remover
+  `.svelte-kit/cloudflare`) — mesmo lock de dev server local já documentado
+  em `tasks/in-progress/ci-cd-deploy.md`, não é regressão desta mudança.
+- **Não verificado visualmente** (mesma limitação do FINISH acima, sem
+  ferramenta de browser neste ambiente): recomendo `bun run dev` local e
+  olhar `/pt/pricing` em desktop e mobile, alternando os 3 botões do
+  seletor, antes de publicar.
