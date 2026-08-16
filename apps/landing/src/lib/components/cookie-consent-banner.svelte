@@ -1,22 +1,29 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 
-	import { getConsent, setConsent, type ConsentValue } from '$lib/cookie-consent';
+	import { setConsent, type ConsentValue } from '$lib/cookie-consent';
 	import type { Messages } from '$lib/i18n/messages';
 	import type { Lang } from '../../params/lang';
 
-	let { t, lang }: { t: Messages['cookieConsent']; lang: Lang } = $props();
+	/**
+	 * `initialConsent` vem do +layout.server.ts, que lê o cookie na própria
+	 * request (`event.cookies`) — o SSR não tem `document.cookie`, então sem
+	 * isso o HTML inicial sempre vinha com o banner visível por padrão, e só
+	 * sumia depois de hidratar e reler o cookie no client (o banner "piscava"
+	 * na tela a cada F5, mesmo pra quem já tinha decidido antes).
+	 */
+	let {
+		t,
+		lang,
+		initialConsent
+	}: { t: Messages['cookieConsent']; lang: Lang; initialConsent: ConsentValue | null } = $props();
 
-	// `dismissed` cobre o clique explícito (esconde na hora, sem esperar
-	// reler o cookie); `visible` deriva de `getConsent()` — só é lido de
-	// verdade no client (SSR não tem `document.cookie`, então nunca mostra
-	// o banner por engano durante a renderização do servidor).
-	let dismissed = $state(false);
-	let visible = $derived(!dismissed && getConsent() === null);
+	let consent = $state(initialConsent);
+	let visible = $derived(consent === null);
 
 	function choose(value: ConsentValue) {
 		setConsent(value);
-		dismissed = true;
+		consent = value;
 	}
 </script>
 

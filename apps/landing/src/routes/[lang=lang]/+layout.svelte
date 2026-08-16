@@ -180,4 +180,8 @@
 	</footer>
 </div>
 
-<CookieConsentBanner t={t.cookieConsent} lang={data.lang as Lang} />
+<CookieConsentBanner
+	t={t.cookieConsent}
+	lang={data.lang as Lang}
+	initialConsent={data.cookieConsent}
+/>
