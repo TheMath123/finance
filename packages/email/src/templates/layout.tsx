@@ -1,3 +1,4 @@
+import { BRAND_ASSETS } from '@finance/shared';
 import {
   Body,
   Container,
@@ -10,14 +11,16 @@ import type { ReactNode } from 'react';
 
 /**
  * Logo pra header do e-mail — precisa ser URL absoluta (cliente de e-mail
- * nunca resolve caminho relativo/local), por isso hospedada como asset
- * estático do site institucional, não embutida/base64 (Gmail e outros
- * cortam `<img>` muito grande em base64). Fill sólido #114A45 (variante
- * escura da marca, não o teal vívido) — legível contra o fundo branco do
- * card sem depender de dark-mode de cliente de e-mail, que boa parte não
- * suporta de verdade.
+ * nunca resolve caminho relativo/local) e servida por um host público sem
+ * autenticação (nunca o bucket de storage privado — foi exatamente isso que
+ * quebrava a imagem antes: a URL apontava pra um asset que nunca chegou a
+ * existir publicamente). Hospedada no CDN de marca (packages/shared/src/
+ * brand-assets.ts), não embutida/base64 (Gmail e outros cortam `<img>` muito
+ * grande em base64). Variante `logoLight`: fill sólido #114A45 (escura, não
+ * o teal vívido) — legível contra o fundo branco do card sem depender de
+ * dark-mode de cliente de e-mail, que boa parte não suporta de verdade.
  */
-const LOGO_URL = 'https://marcelus.app/email-logo.png';
+const LOGO_URL = BRAND_ASSETS.logo;
 
 export function EmailLayout({
   title,
