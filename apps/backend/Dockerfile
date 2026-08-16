@@ -16,6 +16,7 @@ COPY apps/backend/package.json apps/backend/package.json
 # aqui, `bun install --frozen-lockfile` acha que o lockfile mudou (membros
 # de workspace "sumiram") e recusa instalar.
 COPY apps/dashboard/package.json apps/dashboard/package.json
+COPY apps/landing/package.json apps/landing/package.json
 COPY apps/mobile/package.json apps/mobile/package.json
 COPY packages/db/package.json packages/db/package.json
 COPY packages/email/package.json packages/email/package.json
