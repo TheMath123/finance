@@ -53,8 +53,8 @@
 <aside
 	class="hidden h-full w-56 shrink-0 flex-col gap-1 overflow-y-auto border-r border-foreground/10 bg-sidebar p-4 sm:flex"
 >
-	<div class="mb-4 flex items-center gap-2 px-3">
-		<img src={logoSrc} alt="" class="h-6 w-6 shrink-0 object-contain" />
+	<div class="mb-4 flex items-center gap-2.5 px-3">
+		<img src={logoSrc} alt="" class="h-8 w-8 shrink-0 object-contain" />
 		<p class="text-lg font-semibold text-sidebar-foreground">Marcelus</p>
 	</div>
 	{#each NAV as item (item.route)}
