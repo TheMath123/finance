@@ -4,6 +4,7 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
+	import { cn } from '$lib/utils.js';
 
 	let { data, form } = $props();
 </script>
@@ -37,7 +38,12 @@
 	<div class="flex flex-col gap-2">
 		{#each data.flags as flag (flag.id)}
 			<div
-				class="flex items-center justify-between gap-4 rounded-lg border border-foreground/10 px-4 py-3"
+				class={cn(
+					'flex items-center justify-between gap-4 rounded-lg border px-4 py-3 transition-colors',
+					flag.enabled
+						? 'border-emerald-500/25 bg-emerald-500/[0.07]'
+						: 'border-foreground/10 bg-foreground/[0.03]'
+				)}
 			>
 				<div class="min-w-0">
 					<div class="flex items-center gap-2">
@@ -51,12 +57,26 @@
 						<p class="truncate text-sm text-muted-foreground">{flag.description}</p>
 					{/if}
 				</div>
-				<div class="flex shrink-0 items-center gap-2">
+				<div class="flex shrink-0 items-center gap-3">
+					<!-- Status atual (independente do botão) — o card inteiro já carrega
+					     o reforço visual (borda/fundo verde quando ativa, acinzentado
+					     quando não); o texto aqui existe pra não depender só de cor. -->
+					<span
+						class={cn(
+							'text-xs font-medium',
+							flag.enabled ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground'
+						)}
+					>
+						{flag.enabled ? 'Ativa' : 'Inativa'}
+					</span>
 					<form method="POST" action="?/toggle" use:enhance>
 						<input type="hidden" name="key" value={flag.key} />
 						<input type="hidden" name="enabled" value={(!flag.enabled).toString()} />
-						<Button type="submit" variant={flag.enabled ? 'default' : 'outline'} size="sm">
-							{flag.enabled ? 'Ativa' : 'Inativa'}
+						<!-- Rótulo do botão é a AÇÃO que o clique vai fazer, não o estado
+						     atual (que já é mostrado no indicador acima) — senão "Inativa"
+						     lia como se clicar fosse desativar algo já desativado. -->
+						<Button type="submit" variant={flag.enabled ? 'outline' : 'default'} size="sm">
+							{flag.enabled ? 'Desativar' : 'Ativar'}
 						</Button>
 					</form>
 				</div>
