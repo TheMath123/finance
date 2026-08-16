@@ -79,13 +79,6 @@
 				>
 					{t.nav.features}
 				</a>
-				<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- âncora na home, resolve() não compõe hash -->
-				<a
-					href="{resolve(`/${data.lang}`)}#familias"
-					class="hidden text-[13px] tracking-wide text-muted-foreground uppercase transition-colors hover:text-foreground sm:inline"
-				>
-					{t.nav.families}
-				</a>
 				<a
 					href={resolve(`/${data.lang}/pricing`)}
 					class="text-[13px] tracking-wide text-muted-foreground uppercase transition-colors hover:text-foreground"

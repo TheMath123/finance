@@ -19,7 +19,6 @@ export interface HeroMockup {
 export interface Messages {
 	nav: {
 		features: string;
-		families: string;
 		pricing: string;
 		login: string;
 	};
@@ -89,7 +88,6 @@ export const MESSAGES: Record<Lang, Messages> = {
 	pt: {
 		nav: {
 			features: 'Funcionalidades',
-			families: 'Para Famílias',
 			pricing: 'Preços',
 			login: 'Entrar'
 		},
@@ -186,7 +184,6 @@ export const MESSAGES: Record<Lang, Messages> = {
 	en: {
 		nav: {
 			features: 'Features',
-			families: 'For Families',
 			pricing: 'Pricing',
 			login: 'Log in'
 		},
@@ -283,7 +280,6 @@ export const MESSAGES: Record<Lang, Messages> = {
 	es: {
 		nav: {
 			features: 'Funcionalidades',
-			families: 'Para Familias',
 			pricing: 'Precios',
 			login: 'Iniciar sesión'
 		},

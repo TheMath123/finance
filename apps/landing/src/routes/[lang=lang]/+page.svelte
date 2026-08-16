@@ -14,8 +14,7 @@
 	const t = $derived(MESSAGES[data.lang as Lang]);
 
 	// Mesma ordem dos ícones em todos os idiomas — o texto vem de
-	// t.home.features (3 itens, ver especificação de conteúdo). A 2ª entrada
-	// ("Finanças Compartilhadas") é o alvo do link "Para Famílias" do menu.
+	// t.home.features (3 itens, ver especificação de conteúdo).
 	const FEATURE_ICONS = [ChatCircleIcon, UsersThreeIcon, CalculatorIcon];
 </script>
 
@@ -76,8 +75,7 @@
 		{#each t.home.features as feature, i (feature.title)}
 			{@const Icon = FEATURE_ICONS[i]}
 			<div
-				id={i === 1 ? 'familias' : undefined}
-				class="group flex scroll-mt-20 flex-col gap-4 border-b border-border py-12 transition-colors last:border-b-0 sm:flex-row sm:items-start sm:gap-12 sm:py-16"
+				class="group flex flex-col gap-4 border-b border-border py-12 transition-colors last:border-b-0 sm:flex-row sm:items-start sm:gap-12 sm:py-16"
 			>
 				<div class="flex shrink-0 items-center gap-3 sm:w-72">
 					<Icon size={20} weight="light" class="text-brand-dark" />
