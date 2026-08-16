@@ -13,7 +13,7 @@
     },
     "apps/backend": {
       "name": "@finance/backend",
-      "version": "1.0.1",
+      "version": "1.0.2",
       "dependencies": {
         "@elysiajs/cors": "1.4.2",
         "@finance/db": "workspace:*",
@@ -41,7 +41,7 @@
     },
     "apps/dashboard": {
       "name": "@finance/dashboard",
-      "version": "1.0.1",
+      "version": "1.0.3",
       "dependencies": {
         "@finance/formula": "workspace:*",
         "@finance/shared": "workspace:*",
@@ -203,6 +203,7 @@
       "name": "@finance/email",
       "version": "0.0.1",
       "dependencies": {
+        "@finance/shared": "workspace:*",
         "@react-email/components": "1.0.12",
         "@react-email/render": "2.1.0",
         "nodemailer": "9.0.3",
