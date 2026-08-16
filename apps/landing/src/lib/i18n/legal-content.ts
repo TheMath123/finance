@@ -352,7 +352,7 @@ export const TERMS: Record<Lang, LegalPage> = {
 			{
 				heading: '10. Foro e legislação aplicável',
 				paragraphs: [
-					'Estes termos são regidos pelas leis da República Federativa do Brasil. Fica eleito o foro da comarca de [cidade/comarca a definir] para dirimir eventuais controvérsias decorrentes destes termos, resguardado o direito do consumidor de optar pelo foro de seu domicílio, conforme o Código de Defesa do Consumidor.'
+					'Estes termos são regidos pelas leis da República Federativa do Brasil. Fica eleito o foro da comarca de São Paulo- SP para dirimir eventuais controvérsias decorrentes destes termos, resguardado o direito do consumidor de optar pelo foro de seu domicílio, conforme o Código de Defesa do Consumidor.'
 				]
 			},
 			{
@@ -427,7 +427,7 @@ export const TERMS: Record<Lang, LegalPage> = {
 			{
 				heading: '10. Governing law and venue',
 				paragraphs: [
-					'These terms are governed by the laws of the Federative Republic of Brazil. Any disputes arising from these terms shall be submitted to the courts of [city/venue to be defined], without prejudice to any non-waivable right you may have under applicable consumer law to choose the venue of your domicile.'
+					'These terms are governed by the laws of the Federative Republic of Brazil. Any disputes arising from these terms shall be submitted to the courts of São Paulo - SP - Brazil, without prejudice to any non-waivable right you may have under applicable consumer law to choose the venue of your domicile.'
 				]
 			},
 			{
@@ -502,7 +502,7 @@ export const TERMS: Record<Lang, LegalPage> = {
 			{
 				heading: '10. Ley aplicable y jurisdicción',
 				paragraphs: [
-					'Estos términos se rigen por las leyes de la República Federativa de Brasil. Cualquier controversia derivada de estos términos se someterá a los tribunales de [ciudad/fuero a definir], sin perjuicio de cualquier derecho irrenunciable que tengas bajo la ley de protección al consumidor aplicable de elegir el fuero de tu domicilio.'
+					'Estos términos se rigen por las leyes de la República Federativa de Brasil. Cualquier controversia derivada de estos términos se someterá a los tribunales de São Paulo - SP - Brazil, sin perjuicio de cualquier derecho irrenunciable que tengas bajo la ley de protección al consumidor aplicable de elegir el fuero de tu domicilio.'
 				]
 			},
 			{
