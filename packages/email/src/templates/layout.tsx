@@ -2,10 +2,22 @@ import {
   Body,
   Container,
   Heading,
+  Img,
   Section,
   Text,
 } from '@react-email/components';
 import type { ReactNode } from 'react';
+
+/**
+ * Logo pra header do e-mail — precisa ser URL absoluta (cliente de e-mail
+ * nunca resolve caminho relativo/local), por isso hospedada como asset
+ * estático do site institucional, não embutida/base64 (Gmail e outros
+ * cortam `<img>` muito grande em base64). Fill sólido #114A45 (variante
+ * escura da marca, não o teal vívido) — legível contra o fundo branco do
+ * card sem depender de dark-mode de cliente de e-mail, que boa parte não
+ * suporta de verdade.
+ */
+const LOGO_URL = 'https://marcelus.app/email-logo.png';
 
 export function EmailLayout({
   title,
@@ -30,6 +42,13 @@ export function EmailLayout({
           padding: 32,
         }}
       >
+        <Img
+          src={LOGO_URL}
+          alt="Marcelus"
+          width={40}
+          height={64}
+          style={{ marginBottom: 16 }}
+        />
         <Heading style={{ fontSize: 20, marginBottom: 16 }}>{title}</Heading>
         <Section>{children}</Section>
         <Text style={{ color: '#71717a', fontSize: 12, marginTop: 32 }}>
