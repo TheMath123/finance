@@ -22,12 +22,12 @@
 
 {#if visible}
 	<div
-		class="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-card px-4 py-4 shadow-lg sm:px-6"
+		class="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-card px-4 py-5 sm:px-6"
 		role="region"
 		aria-label="Cookie consent"
 	>
 		<div
-			class="mx-auto flex max-w-4xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
+			class="mx-auto flex max-w-4xl flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
 		>
 			<p class="text-sm text-muted-foreground">
 				{t.text}
@@ -35,18 +35,18 @@
 					{t.learnMore}
 				</a>.
 			</p>
-			<div class="flex shrink-0 gap-2">
+			<div class="flex shrink-0 gap-3">
 				<button
 					type="button"
 					onclick={() => choose('necessary')}
-					class="rounded-lg border border-border px-4 py-2 text-sm font-medium transition-colors hover:bg-accent"
+					class="border border-foreground/30 px-4 py-2.5 text-xs font-medium tracking-wide uppercase transition-colors hover:border-foreground hover:bg-accent"
 				>
 					{t.necessaryOnly}
 				</button>
 				<button
 					type="button"
 					onclick={() => choose('all')}
-					class="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
+					class="bg-foreground px-4 py-2.5 text-xs font-medium tracking-wide text-background uppercase transition-opacity hover:opacity-85"
 				>
 					{t.acceptAll}
 				</button>

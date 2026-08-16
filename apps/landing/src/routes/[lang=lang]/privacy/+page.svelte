@@ -11,16 +11,16 @@
 	<title>{page.title} — Marcelus</title>
 </svelte:head>
 
-<section class="mx-auto max-w-3xl px-6 py-16">
-	<h1 class="text-3xl font-bold">{page.title}</h1>
-	<p class="mt-2 text-sm text-muted-foreground">{page.updatedAt}</p>
-	<p class="mt-6 text-muted-foreground">{page.intro}</p>
+<section class="mx-auto max-w-2xl px-6 pt-20 pb-24 sm:pt-28">
+	<h1 class="font-display text-4xl tracking-tight sm:text-5xl">{page.title}</h1>
+	<p class="mt-3 text-xs tracking-wide text-muted-foreground uppercase">{page.updatedAt}</p>
+	<p class="mt-8 text-muted-foreground">{page.intro}</p>
 
-	<div class="mt-10 flex flex-col gap-8">
+	<div class="mt-14 flex flex-col">
 		{#each page.sections as section (section.heading)}
-			<div>
-				<h2 class="text-lg font-semibold">{section.heading}</h2>
-				<div class="mt-2 flex flex-col gap-2 text-sm text-muted-foreground">
+			<div class="border-t border-border py-8 first:pt-0">
+				<h2 class="font-display text-lg tracking-tight">{section.heading}</h2>
+				<div class="mt-3 flex flex-col gap-3 text-sm text-muted-foreground">
 					{#each section.paragraphs as paragraph (paragraph)}
 						<p>{paragraph}</p>
 					{/each}

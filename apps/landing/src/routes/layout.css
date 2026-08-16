@@ -1,68 +1,79 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
 @import '@fontsource-variable/inter';
+@import '@fontsource-variable/bodoni-moda';
 
 @custom-variant dark (&:is(.dark *));
 
 /*
- * Mesma paleta do dashboard/mobile (Figma hPMawz29XBa9zKrTMMz2og) — consistência de marca
- * entre o site institucional e o app: primary/destructive/success da paleta exportada do
- * Coolors (teal #2ec4b6, vermelho #fb2c36, verde #00c950); neutros na escala slate padrão
- * do Tailwind. Ver apps/dashboard/src/routes/layout.css (fonte original desses tokens).
+ * Paleta própria do site institucional — mais quente e editorial que o
+ * dashboard/mobile (aqueles seguem a paleta de produto/SaaS, ver
+ * apps/dashboard/src/routes/layout.css). --primary (teal #2ec4b6) é mantido
+ * idêntico ao resto do produto — é a cor de marca, não muda — mas o fundo,
+ * texto e bordas migram de um branco/azulado neutro pra um marfim/carvão
+ * quente (papel/tinta). Sem segundo acento de cor: elementos informativos
+ * (ícones de feature, badges) usam só --foreground/--muted-foreground —
+ * preto-e-branco puro, decisão deliberada pra manter o teal como ÚNICA cor
+ * saturada da página (reservada só pra ação), reforçando o registro
+ * editorial/luxuoso em vez de "app de produtividade" colorido.
+ * --radius zerado de propósito — ângulos retos em vez de cantos
+ * arredondados é decisão de marca do site, não do produto (o dashboard
+ * mantém o radius arredondado dele).
  */
 :root {
 	color-scheme: light;
-	--background: hsl(100 100% 99%); /* #fdfffc */
-	--foreground: hsl(217 33% 17%); /* slate-800 */
-	--card: hsl(100 100% 99%);
-	--card-foreground: hsl(217 33% 17%);
-	--popover: hsl(100 100% 99%);
-	--popover-foreground: hsl(217 33% 17%);
-	--primary: hsl(174 62% 47%); /* #2ec4b6 */
+	--background: hsl(42 26% 96%); /* marfim quente, não branco-azulado */
+	--foreground: hsl(20 12% 11%); /* tinta quase-preta, quente */
+	--card: hsl(40 22% 98%);
+	--card-foreground: hsl(20 12% 11%);
+	--popover: hsl(40 22% 98%);
+	--popover-foreground: hsl(20 12% 11%);
+	--primary: hsl(174 62% 47%); /* #2ec4b6 — marca, idêntico ao resto do produto */
 	--primary-foreground: hsl(0 0% 100%);
-	--secondary: hsl(210 40% 96%); /* slate-100 */
-	--secondary-foreground: hsl(217 33% 17%);
-	--muted: hsl(210 40% 96%); /* slate-100 */
-	--muted-foreground: hsl(215 16% 47%); /* slate-500 */
-	--accent: hsl(214 32% 91%); /* slate-200 */
-	--accent-foreground: hsl(217 33% 17%);
-	--destructive: hsl(357 96% 58%); /* #fb2c36 */
+	--secondary: hsl(38 18% 91%);
+	--secondary-foreground: hsl(20 12% 11%);
+	--muted: hsl(38 18% 91%);
+	--muted-foreground: hsl(30 9% 38%);
+	--accent: hsl(36 20% 88%);
+	--accent-foreground: hsl(20 12% 11%);
+	--destructive: hsl(357 96% 58%);
 	--destructive-foreground: hsl(0 0% 100%);
-	--success: hsl(144 100% 39%); /* #00c950 */
+	--success: hsl(144 100% 39%);
 	--success-foreground: hsl(0 0% 100%);
-	--border: hsl(214 32% 91%); /* slate-200 */
-	--input: hsl(214 32% 91%);
+	--border: hsl(32 14% 84%);
+	--input: hsl(32 14% 84%);
 	--ring: hsl(174 62% 47%);
-	--radius: 0.5rem;
+	--radius: 0px;
 }
 
 .dark {
 	color-scheme: dark;
-	--background: hsl(208 90% 4%); /* #010b14 */
-	--foreground: hsl(0 0% 100%);
-	--card: hsl(222 47% 11%); /* slate-900 */
-	--card-foreground: hsl(0 0% 100%);
-	--popover: hsl(222 47% 11%);
-	--popover-foreground: hsl(0 0% 100%);
+	--background: hsl(30 12% 7%); /* carvão/espresso quente, não azul-preto */
+	--foreground: hsl(40 24% 95%);
+	--card: hsl(30 10% 10%);
+	--card-foreground: hsl(40 24% 95%);
+	--popover: hsl(30 10% 10%);
+	--popover-foreground: hsl(40 24% 95%);
 	--primary: hsl(174 62% 47%);
 	--primary-foreground: hsl(0 0% 100%);
-	--secondary: hsl(217 33% 17%); /* slate-800 */
-	--secondary-foreground: hsl(0 0% 100%);
-	--muted: hsl(217 33% 17%);
-	--muted-foreground: hsl(215 20% 65%); /* slate-400 */
-	--accent: hsl(215 25% 27%); /* slate-700 */
-	--accent-foreground: hsl(0 0% 100%);
+	--secondary: hsl(30 8% 16%);
+	--secondary-foreground: hsl(40 24% 95%);
+	--muted: hsl(30 8% 16%);
+	--muted-foreground: hsl(36 12% 68%);
+	--accent: hsl(30 8% 20%);
+	--accent-foreground: hsl(40 24% 95%);
 	--destructive: hsl(357 75% 42%);
 	--destructive-foreground: hsl(0 0% 100%);
 	--success: hsl(144 100% 30%);
 	--success-foreground: hsl(0 0% 100%);
-	--border: hsl(217 33% 17%);
-	--input: hsl(217 33% 17%);
+	--border: hsl(30 8% 20%);
+	--input: hsl(30 8% 20%);
 	--ring: hsl(174 62% 47%);
 }
 
 @theme inline {
 	--font-sans: 'Inter Variable', sans-serif;
+	--font-display: 'Bodoni Moda Variable', serif;
 	--color-ring: var(--ring);
 	--color-input: var(--input);
 	--color-border: var(--border);
@@ -84,13 +95,13 @@
 	--color-card: var(--card);
 	--color-foreground: var(--foreground);
 	--color-background: var(--background);
-	--radius-sm: calc(var(--radius) * 0.6);
-	--radius-md: calc(var(--radius) * 0.8);
+	--radius-sm: var(--radius);
+	--radius-md: var(--radius);
 	--radius-lg: var(--radius);
-	--radius-xl: calc(var(--radius) * 1.4);
-	--radius-2xl: calc(var(--radius) * 1.8);
-	--radius-3xl: calc(var(--radius) * 2.2);
-	--radius-4xl: calc(var(--radius) * 2.6);
+	--radius-xl: var(--radius);
+	--radius-2xl: var(--radius);
+	--radius-3xl: var(--radius);
+	--radius-4xl: var(--radius);
 }
 
 @layer base {
