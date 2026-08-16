@@ -3,7 +3,12 @@
 	import CalculatorIcon from 'phosphor-svelte/lib/Calculator';
 	import CaretLeftIcon from 'phosphor-svelte/lib/CaretLeft';
 	import CaretRightIcon from 'phosphor-svelte/lib/CaretRight';
+	import TargetIcon from 'phosphor-svelte/lib/Target';
+	import TrendDownIcon from 'phosphor-svelte/lib/TrendDown';
+	import TrendUpIcon from 'phosphor-svelte/lib/TrendUp';
+	import WalletIcon from 'phosphor-svelte/lib/Wallet';
 	import { dndzone } from 'svelte-dnd-action';
+	import { fade } from 'svelte/transition';
 
 	import { invalidateAll } from '$app/navigation';
 	import { resolve } from '$app/paths';
@@ -65,9 +70,37 @@
 			: { year: data.year, month: data.month + 1 }
 	);
 
-	const maxCategoryTotal = $derived(
-		data.summary ? Math.max(1, ...data.summary.byCategory.map((c) => c.total)) : 1
+	/** "Despesas por categoria" (mês corrente, real) e "Gasto variável" (média
+	 *  de 3 meses, estimativa — ex-Mais > Gasto variável) mesclados numa aba
+	 *  só: mesmo shape de linha, mesma tabela, só troca a fonte de dado.
+	 *  A estimativa é literalmente o número que já compõe "Disponível
+	 *  projetado" acima — faz mais sentido explicado aqui do lado do que
+	 *  isolado numa aba própria. */
+	interface CategoryRow {
+		categoryId: string;
+		name: string;
+		color: string;
+		amount: number;
+	}
+	let categoryView = $state<'actual' | 'estimate'>('actual');
+	const actualRows = $derived<CategoryRow[]>(
+		data.summary
+			? data.summary.byCategory.map((c) => ({
+					categoryId: c.categoryId,
+					name: c.name,
+					color: c.color,
+					amount: c.total
+				}))
+			: []
 	);
+	const estimateRows = $derived<CategoryRow[]>(
+		[...data.variableExpense.byCategory]
+			.sort((a, b) => b.estimated - a.estimated)
+			.map((c) => ({ categoryId: c.categoryId, name: c.name, color: c.color, amount: c.estimated }))
+	);
+	const categoryRows = $derived(categoryView === 'actual' ? actualRows : estimateRows);
+	const maxCategoryTotal = $derived(Math.max(1, ...categoryRows.map((c) => c.amount)));
+	const categoryRowsTotal = $derived(categoryRows.reduce((sum, c) => sum + c.amount, 0) || 1);
 </script>
 
 <svelte:head>
@@ -103,24 +136,37 @@
 				: 'Sem workspace ativo.'}
 		</p>
 	{:else}
-		<!-- Stat tiles: um número por card, rótulo em sentence case, sem dois-pontos. -->
+		<!-- Stat tiles: um número por card, rótulo em sentence case, sem dois-pontos,
+		     ícone pequeno reforçando o tipo de número sem competir com ele. -->
 		<div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
 			<div class="rounded-lg border border-foreground/10 p-4">
-				<p class="text-sm text-muted-foreground">Saldo total</p>
+				<p class="flex items-center gap-1.5 text-sm text-muted-foreground">
+					<WalletIcon size={15} />
+					Saldo total
+				</p>
 				<p class="mt-1 text-2xl font-semibold">{formatCents(data.summary.totalBalance)}</p>
 			</div>
 			<div class="rounded-lg border border-foreground/10 p-4">
-				<p class="text-sm text-muted-foreground">Receitas</p>
+				<p class="flex items-center gap-1.5 text-sm text-muted-foreground">
+					<TrendUpIcon size={15} />
+					Receitas
+				</p>
 				<p class="mt-1 text-2xl font-semibold text-success">{formatCents(data.summary.income)}</p>
 			</div>
 			<div class="rounded-lg border border-foreground/10 p-4">
-				<p class="text-sm text-muted-foreground">Despesas</p>
+				<p class="flex items-center gap-1.5 text-sm text-muted-foreground">
+					<TrendDownIcon size={15} />
+					Despesas
+				</p>
 				<p class="mt-1 text-2xl font-semibold text-destructive">
 					{formatCents(data.summary.expense)}
 				</p>
 			</div>
 			<div class="rounded-lg border border-foreground/10 p-4">
-				<p class="text-sm text-muted-foreground">Disponível projetado</p>
+				<p class="flex items-center gap-1.5 text-sm text-muted-foreground">
+					<TargetIcon size={15} />
+					Disponível projetado
+				</p>
 				<p class="mt-1 text-2xl font-semibold">
 					{data.summary.projectedAvailable !== null
 						? formatCents(data.summary.projectedAvailable)
@@ -130,44 +176,85 @@
 		</div>
 
 		<div>
-			<h2 class="mb-3 text-sm font-medium text-muted-foreground">Despesas por categoria</h2>
+			<div class="mb-3 flex flex-wrap items-center justify-between gap-3">
+				<h2 class="text-sm font-medium text-muted-foreground">Despesas por categoria</h2>
+				<!-- Mesclado com o que era Mais > Gasto variável: mesma tabela, só troca a
+				     fonte — real (mês corrente) ou média/estimativa (últimos 3 meses, a
+				     mesma conta usada em "Disponível projetado" acima). -->
+				<div class="inline-flex rounded-lg border border-foreground/10 p-0.5 text-xs">
+					<button
+						type="button"
+						onclick={() => (categoryView = 'actual')}
+						class="rounded-md px-2.5 py-1 font-medium transition-colors {categoryView === 'actual'
+							? 'bg-primary text-primary-foreground'
+							: 'text-muted-foreground hover:text-foreground'}"
+					>
+						Este mês
+					</button>
+					<button
+						type="button"
+						onclick={() => (categoryView = 'estimate')}
+						class="rounded-md px-2.5 py-1 font-medium transition-colors {categoryView === 'estimate'
+							? 'bg-primary text-primary-foreground'
+							: 'text-muted-foreground hover:text-foreground'}"
+					>
+						Média (3 meses)
+					</button>
+				</div>
+			</div>
+			{#if categoryView === 'estimate'}
+				<p class="mb-3 text-xs text-muted-foreground">
+					Média dos últimos 3 meses — só o que não é recorrência nem parcela. É a mesma estimativa
+					usada em "Disponível projetado" (
+					<span class="font-medium text-foreground">{formatCents(data.variableExpense.total)}</span>
+					por mês).
+				</p>
+			{/if}
 			<!-- A barra é decoração dentro da célula de valor — a tabela por si só já é a "table
-			     view" acessível, sem precisar de toggle gráfico/tabela separado. -->
-			<table class="w-full text-sm">
-				<tbody>
-					{#each data.summary.byCategory as category (category.categoryId)}
-						<tr class="border-b border-foreground/10 last:border-0">
-							<td class="w-1/3 py-2 pr-3">
-								<span class="inline-flex items-center gap-2">
-									<span
-										class="h-2.5 w-2.5 shrink-0 rounded-full"
-										style="background-color: {category.color}"
-									></span>
-									<span class="truncate">{category.name}</span>
-								</span>
-							</td>
-							<td class="py-2">
-								<div class="h-2.5 bg-transparent">
-									<div
-										class="h-2.5 rounded-r"
-										style="width: {(category.total / maxCategoryTotal) *
-											100}%; background-color: {category.color}"
-									></div>
-								</div>
-							</td>
-							<td class="py-2 pl-3 text-right font-medium tabular-nums">
-								{formatCents(category.total)}
-							</td>
-						</tr>
-					{:else}
-						<tr>
-							<td colspan="3" class="py-6 text-center text-muted-foreground">
-								Nenhuma despesa neste mês.
-							</td>
-						</tr>
-					{/each}
-				</tbody>
-			</table>
+			     view" acessível, sem precisar de toggle gráfico/tabela separado. Crossfade de
+			     150ms ao trocar de aba — único "authored moment" de motion desta seção. -->
+			{#key categoryView}
+				<table class="w-full text-sm" in:fade={{ duration: 150 }}>
+					<tbody>
+						{#each categoryRows as category (category.categoryId)}
+							<tr class="border-b border-foreground/10 last:border-0">
+								<td class="w-1/3 py-2 pr-3">
+									<span class="inline-flex items-center gap-2">
+										<span
+											class="h-2.5 w-2.5 shrink-0 rounded-full"
+											style="background-color: {category.color}"
+										></span>
+										<span class="truncate">{category.name}</span>
+									</span>
+								</td>
+								<td class="py-2">
+									<div class="h-2.5 bg-transparent">
+										<div
+											class="h-2.5 rounded-r"
+											style="width: {(category.amount / maxCategoryTotal) *
+												100}%; background-color: {category.color}"
+										></div>
+									</div>
+								</td>
+								<td class="py-2 pr-1 pl-3 text-right font-medium tabular-nums">
+									{formatCents(category.amount)}
+								</td>
+								<td class="w-10 py-2 text-right text-xs text-muted-foreground tabular-nums">
+									{Math.round((category.amount / categoryRowsTotal) * 100)}%
+								</td>
+							</tr>
+						{:else}
+							<tr>
+								<td colspan="4" class="py-6 text-center text-muted-foreground">
+									{categoryView === 'actual'
+										? 'Nenhuma despesa neste mês.'
+										: 'Sem histórico suficiente ainda — a estimativa aparece depois de alguns meses de uso.'}
+								</td>
+							</tr>
+						{/each}
+					</tbody>
+				</table>
+			{/key}
 		</div>
 
 		<div>

@@ -22,18 +22,31 @@ export const load: PageServerLoad = async ({ parent, locals, url }) => {
 	const month = Number(url.searchParams.get('month')) || fallback.month;
 
 	if (!activeWorkspace || !locals.session) {
-		return { summary: null, year, month, formulas: [], accounts: [], cards: [] };
+		return {
+			summary: null,
+			year,
+			month,
+			formulas: [],
+			accounts: [],
+			cards: [],
+			variableExpense: { byCategory: [], total: 0 }
+		};
 	}
 
 	const accessToken = locals.session.accessToken;
 	// Catálogo de variáveis da calculadora (valores + rótulos) é derivado do
 	// próprio summary/accounts/cards no client (lib/formula-catalog.ts) — sem
 	// chamada extra além das que a página já precisa fazer.
-	const [summary, formulas, accounts, cards] = await Promise.all([
+	// `variableExpense` migrou de Mais > Gasto variável pra cá (M5-08-ish,
+	// fusão de UI) — é o mesmo número que já alimenta "Disponível projetado"
+	// acima, só que aberto por categoria; fazia mais sentido viver ao lado de
+	// "Despesas por categoria" do que numa aba própria isolada.
+	const [summary, formulas, accounts, cards, variableExpense] = await Promise.all([
 		summaryApi.getMonthlySummary(accessToken, activeWorkspace.id, year, month),
 		formulaApi.listFormulas(accessToken, activeWorkspace.id),
 		accountApi.listAccounts(accessToken, activeWorkspace.id),
-		cardApi.listCards(accessToken, activeWorkspace.id)
+		cardApi.listCards(accessToken, activeWorkspace.id),
+		summaryApi.getVariableExpenseEstimate(accessToken, activeWorkspace.id)
 	]);
 
 	return {
@@ -42,7 +55,8 @@ export const load: PageServerLoad = async ({ parent, locals, url }) => {
 		month,
 		formulas: formulas.ok ? formulas.value : [],
 		accounts: accounts.ok ? accounts.value : [],
-		cards: cards.ok ? cards.value : []
+		cards: cards.ok ? cards.value : [],
+		variableExpense: variableExpense.ok ? variableExpense.value : { byCategory: [], total: 0 }
 	};
 };
 

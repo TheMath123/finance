@@ -8,6 +8,10 @@
 	// Mesmo agrupamento da aba "Mais" do app mobile. `as const` em cada branch
 	// (não no ternário todo) — senão o spread condicional larga pra `string`
 	// e `resolve()` (rotas tipadas) para de aceitar `tab.route`.
+	// "Gasto variável" saiu daqui — mesclado na Home (Despesas por categoria
+	// ganhou um toggle "Este mês"/"Média (3 meses)"), já que é o mesmo dado
+	// que alimenta "Disponível projetado" ali. Fazia mais sentido junto do
+	// que numa aba própria isolada em "Mais".
 	const TABS = $derived(
 		data.categoriesManagementEnabled
 			? ([
@@ -16,16 +20,14 @@
 					{ route: '/more/banks', label: 'Bancos' },
 					{ route: '/more/categories', label: 'Categorias' },
 					{ route: '/more/transfers', label: 'Transferências' },
-					{ route: '/more/splits', label: 'Splits' },
-					{ route: '/more/variable-expense', label: 'Gasto variável' }
+					{ route: '/more/splits', label: 'Splits' }
 				] as const)
 			: ([
 					{ route: '/more/accounts', label: 'Contas' },
 					{ route: '/more/cards', label: 'Cartões' },
 					{ route: '/more/banks', label: 'Bancos' },
 					{ route: '/more/transfers', label: 'Transferências' },
-					{ route: '/more/splits', label: 'Splits' },
-					{ route: '/more/variable-expense', label: 'Gasto variável' }
+					{ route: '/more/splits', label: 'Splits' }
 				] as const)
 	);
 </script>
