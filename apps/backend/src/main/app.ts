@@ -1,5 +1,6 @@
 import { cors } from '@elysiajs/cors';
 import { Elysia } from 'elysia';
+import pkg from '../../package.json';
 import type { AppDeps } from '../http/deps';
 import { errorHandler } from '../http/error-handler';
 import { accountRoutes } from '../http/modules/account/routes';
@@ -28,7 +29,7 @@ export function createApp(deps: AppDeps) {
       .use(cors({ origin: deps.dashboardOrigin }))
       .use(requestId)
       .use(errorHandler(deps.httpLogger))
-      .get('/health', () => ({ status: 'ok' }))
+      .get('/health', () => ({ status: 'ok', version: pkg.version }))
       .use(authRoutes(deps))
       .use(workspaceRoutes(deps))
       .use(billingRoutes(deps))
