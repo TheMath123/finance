@@ -10,6 +10,8 @@
     "worker": "bun run --watch src/main/worker.ts",
     "worker:start": "bun run src/main/worker.ts",
     "test": "bun test",
+    "posttest": "bun run src/test/cleanup-test-data.ts",
+    "test:cleanup": "bun run src/test/cleanup-test-data.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
