@@ -48,8 +48,8 @@
 </section>
 
 <section class="mx-auto max-w-5xl px-6 pb-28">
-	<div class="grid gap-px bg-border sm:grid-cols-2 lg:grid-cols-3">
-		<div class="flex flex-col gap-5 bg-background p-8">
+	<div class="grid gap-px sm:grid-cols-2 lg:grid-cols-3">
+		<div class="flex flex-col gap-5 border border-border bg-background p-8">
 			<div>
 				<h2 class="font-display text-lg tracking-tight">{t.pricing.freeTitle}</h2>
 				<p class="mt-1 text-sm text-muted-foreground">{t.pricing.freeDescription}</p>
@@ -67,7 +67,7 @@
 
 		{#each paidPlans as plan (plan.id)}
 			{@const price = defaultPrice(plan)}
-			<div class="flex flex-col gap-5 bg-background p-8">
+			<div class="flex flex-col gap-5 border border-border bg-background p-8">
 				<div>
 					<h2 class="font-display text-lg tracking-tight">{plan.name}</h2>
 					{#if plan.description}
