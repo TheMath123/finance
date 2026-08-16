@@ -16,7 +16,7 @@
 	};
 </script>
 
-<div class="mx-auto flex max-w-3xl flex-col gap-6">
+<div class="flex flex-col gap-6">
 	<h2 class="text-lg font-semibold">Splits</h2>
 
 	<div class="flex gap-2">

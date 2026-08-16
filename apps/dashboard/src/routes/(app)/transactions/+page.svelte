@@ -21,6 +21,7 @@
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
+	import { Select } from '$lib/components/ui/select';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { dialogFormSubmit } from '$lib/dialog-form';
 	import { buildClientFormulaCatalog } from '$lib/formula-catalog';
@@ -76,6 +77,15 @@
 	let createOpen = $state(false);
 	let createError = $state<string | null>(null);
 	let importOpen = $state(false);
+	/** Transferência entre usuários da plataforma (M3-02) — o botão/form vivia
+	 *  em Mais > Transferências; movido pra cá porque é uma forma de lançar
+	 *  transação como qualquer outra. Envia pro form action de lá mesmo
+	 *  (`/more/transfers?/create`) — sem duplicar a lógica de servidor, só a
+	 *  entrada de UI. `update()` do dialogFormSubmit já recarrega o load()
+	 *  desta página (a transferência nasce como uma saída no workspace). */
+	let transferOpen = $state(false);
+	let transferError = $state<string | null>(null);
+	let transferAccountId = $state('');
 	const csvImportAvailable = $derived(data.cardCsvImportEnabled || data.accountCsvImportEnabled);
 	let editing = $state<TransactionView | null>(null);
 	let editError = $state<string | null>(null);
@@ -126,6 +136,59 @@
 	let newMethod = $state<'pix' | 'debit' | 'cash' | 'credit' | 'transfer'>('pix');
 	let newAmount = $state('');
 	let newInstallments = $state(1);
+	let newType = $state<'expense' | 'income'>('expense');
+	let newCategoryId = $state('');
+	let newCardId = $state('');
+	let newAccountId = $state('');
+	let newAccountFromId = $state('');
+	let newAccountToId = $state('');
+
+	const TYPE_OPTIONS = [
+		{ value: 'expense', label: 'Despesa' },
+		{ value: 'income', label: 'Receita' }
+	];
+	const METHOD_OPTIONS = [
+		{ value: 'pix', label: 'Pix' },
+		{ value: 'debit', label: 'Débito' },
+		{ value: 'cash', label: 'Dinheiro' },
+		{ value: 'credit', label: 'Crédito' },
+		{ value: 'transfer', label: 'Transferência' }
+	];
+	const categoryOptions = $derived(
+		data.categories.map((category) => ({ value: category.id, label: category.name }))
+	);
+	const activeCardOptions = $derived(
+		activeCards.map((card) => ({ value: card.id, label: card.name }))
+	);
+	const activeAccountOptions = $derived(
+		activeAccounts.map((account) => ({ value: account.id, label: account.name }))
+	);
+
+	/** Seed do primeiro item disponível — mesmo comportamento do <select> nativo
+	 *  anterior, que sempre começava selecionado na primeira <option> do DOM. */
+	$effect(() => {
+		if (!newCategoryId && data.categories[0]) newCategoryId = data.categories[0].id;
+		if (!newCardId && activeCards[0]) newCardId = activeCards[0].id;
+		if (!newAccountId && activeAccounts[0]) newAccountId = activeAccounts[0].id;
+		if (!newAccountFromId && activeAccounts[0]) newAccountFromId = activeAccounts[0].id;
+		if (!newAccountToId && activeAccounts[0]) newAccountToId = activeAccounts[0].id;
+		if (!transferAccountId && activeAccounts[0]) transferAccountId = activeAccounts[0].id;
+	});
+
+	let editCategoryId = $state('');
+	let editCardId = $state('');
+	let editAccountId = $state('');
+
+	/** Re-seed sempre que uma transação diferente entra em edição — mesmo
+	 *  papel do `value={editing.categoryId}` reativo que o <select> nativo
+	 *  fazia sozinho (aqui o Select é controlado, precisa de estado próprio). */
+	$effect(() => {
+		if (editing) {
+			editCategoryId = editing.categoryId;
+			editCardId = editing.cardId ?? '';
+			editAccountId = editing.accountId ?? '';
+		}
+	});
 
 	/** Espelha `splitInstallments` do backend (invoice-rules.ts) — resto do arredondamento na primeira parcela. */
 	function splitInstallmentsPreview(totalCents: number, count: number): number[] {
@@ -204,6 +267,15 @@
 				</Button>
 			{/if}
 			{#if canManage}
+				<Button
+					variant="outline"
+					onclick={() => {
+						transferError = null;
+						transferOpen = true;
+					}}
+				>
+					Nova transferência
+				</Button>
 				<Button
 					onclick={() => {
 						createError = null;
@@ -522,7 +594,7 @@
 </div>
 
 <Dialog.Root bind:open={createOpen}>
-	<Dialog.Content>
+	<Dialog.Content class="sm:max-w-lg">
 		<Dialog.Header>
 			<Dialog.Title>Nova transação</Dialog.Title>
 		</Dialog.Header>
@@ -567,60 +639,50 @@
 			<div class="grid grid-cols-2 gap-4">
 				<div class="grid gap-2">
 					<Label for="new-type">Tipo</Label>
-					<select
+					<Select
 						id="new-type"
 						name="type"
 						disabled={newMethod === 'transfer'}
-						class="h-9 rounded-lg border border-foreground/10 bg-transparent px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
-					>
-						<option value="expense">Despesa</option>
-						<option value="income">Receita</option>
-					</select>
+						options={TYPE_OPTIONS}
+						value={newType}
+						onValueChange={(v) => (newType = v as typeof newType)}
+					/>
 				</div>
 				<div class="grid gap-2">
 					<Label for="new-method">Método</Label>
-					<select
+					<Select
 						id="new-method"
 						name="method"
-						bind:value={newMethod}
-						class="h-9 rounded-lg border border-foreground/10 bg-transparent px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-					>
-						<option value="pix">Pix</option>
-						<option value="debit">Débito</option>
-						<option value="cash">Dinheiro</option>
-						<option value="credit">Crédito</option>
-						<option value="transfer">Transferência</option>
-					</select>
+						options={METHOD_OPTIONS}
+						value={newMethod}
+						onValueChange={(v) => (newMethod = v as typeof newMethod)}
+					/>
 				</div>
 			</div>
 			<div class="grid gap-2">
 				<Label for="new-category">Categoria</Label>
-				<select
+				<Select
 					id="new-category"
 					name="categoryId"
 					required
-					class="h-9 rounded-lg border border-foreground/10 bg-transparent px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-				>
-					{#each data.categories as category (category.id)}
-						<option value={category.id}>{category.name}</option>
-					{/each}
-				</select>
+					options={categoryOptions}
+					value={newCategoryId}
+					onValueChange={(v) => (newCategoryId = v)}
+				/>
 			</div>
 
 			{#if newMethod === 'credit'}
 				<div class="grid grid-cols-2 gap-4">
 					<div class="grid gap-2">
 						<Label for="new-card">Cartão</Label>
-						<select
+						<Select
 							id="new-card"
 							name="cardId"
 							required
-							class="h-9 rounded-lg border border-foreground/10 bg-transparent px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-						>
-							{#each activeCards as card (card.id)}
-								<option value={card.id}>{card.name}</option>
-							{/each}
-						</select>
+							options={activeCardOptions}
+							value={newCardId}
+							onValueChange={(v) => (newCardId = v)}
+						/>
 					</div>
 					<div class="grid gap-2">
 						<Label for="new-installments">Parcelas</Label>
@@ -646,44 +708,38 @@
 				<div class="grid grid-cols-2 gap-4">
 					<div class="grid gap-2">
 						<Label for="new-account-from">Conta de origem</Label>
-						<select
+						<Select
 							id="new-account-from"
 							name="accountId"
 							required
-							class="h-9 rounded-lg border border-foreground/10 bg-transparent px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-						>
-							{#each activeAccounts as account (account.id)}
-								<option value={account.id}>{account.name}</option>
-							{/each}
-						</select>
+							options={activeAccountOptions}
+							value={newAccountFromId}
+							onValueChange={(v) => (newAccountFromId = v)}
+						/>
 					</div>
 					<div class="grid gap-2">
 						<Label for="new-account-to">Conta de destino</Label>
-						<select
+						<Select
 							id="new-account-to"
 							name="toAccountId"
 							required
-							class="h-9 rounded-lg border border-foreground/10 bg-transparent px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-						>
-							{#each activeAccounts as account (account.id)}
-								<option value={account.id}>{account.name}</option>
-							{/each}
-						</select>
+							options={activeAccountOptions}
+							value={newAccountToId}
+							onValueChange={(v) => (newAccountToId = v)}
+						/>
 					</div>
 				</div>
 			{:else}
 				<div class="grid gap-2">
 					<Label for="new-account">Conta</Label>
-					<select
+					<Select
 						id="new-account"
 						name="accountId"
 						required
-						class="h-9 rounded-lg border border-foreground/10 bg-transparent px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-					>
-						{#each activeAccounts as account (account.id)}
-							<option value={account.id}>{account.name}</option>
-						{/each}
-					</select>
+						options={activeAccountOptions}
+						value={newAccountId}
+						onValueChange={(v) => (newAccountId = v)}
+					/>
 				</div>
 			{/if}
 
@@ -706,7 +762,7 @@
 		}
 	}}
 >
-	<Dialog.Content>
+	<Dialog.Content class="sm:max-w-lg">
 		<Dialog.Header>
 			<Dialog.Title>Editar transação</Dialog.Title>
 			{#if editing?.installmentGroupId}
@@ -766,47 +822,38 @@
 				</div>
 				<div class="grid gap-2">
 					<Label for="edit-category">Categoria</Label>
-					<select
+					<Select
 						id="edit-category"
 						name="categoryId"
-						value={editing.categoryId}
 						required
-						class="h-9 rounded-lg border border-foreground/10 bg-transparent px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-					>
-						{#each data.categories as category (category.id)}
-							<option value={category.id}>{category.name}</option>
-						{/each}
-					</select>
+						options={categoryOptions}
+						value={editCategoryId}
+						onValueChange={(v) => (editCategoryId = v)}
+					/>
 				</div>
 				{#if editing.method !== 'transfer'}
 					{#if editing.method === 'credit'}
 						<div class="grid gap-2">
 							<Label for="edit-card">Cartão</Label>
-							<select
+							<Select
 								id="edit-card"
 								name="cardId"
-								value={editing.cardId}
 								disabled={locked}
-								class="h-9 rounded-lg border border-foreground/10 bg-transparent px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-							>
-								{#each activeCards as card (card.id)}
-									<option value={card.id}>{card.name}</option>
-								{/each}
-							</select>
+								options={activeCardOptions}
+								value={editCardId}
+								onValueChange={(v) => (editCardId = v)}
+							/>
 						</div>
 					{:else}
 						<div class="grid gap-2">
 							<Label for="edit-account">Conta</Label>
-							<select
+							<Select
 								id="edit-account"
 								name="accountId"
-								value={editing.accountId}
-								class="h-9 rounded-lg border border-foreground/10 bg-transparent px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-							>
-								{#each activeAccounts as account (account.id)}
-									<option value={account.id}>{account.name}</option>
-								{/each}
-							</select>
+								options={activeAccountOptions}
+								value={editAccountId}
+								onValueChange={(v) => (editAccountId = v)}
+							/>
 						</div>
 					{/if}
 				{/if}
@@ -1089,6 +1136,64 @@
 				</form>
 			{/if}
 		{/if}
+	</Dialog.Content>
+</Dialog.Root>
+
+<Dialog.Root bind:open={transferOpen}>
+	<Dialog.Content class="sm:max-w-lg">
+		<Dialog.Header>
+			<Dialog.Title>Nova transferência</Dialog.Title>
+			<Dialog.Description>Envie dinheiro pra outro usuário da plataforma.</Dialog.Description>
+		</Dialog.Header>
+		{#if transferError}
+			<p class="text-sm text-destructive">{transferError}</p>
+		{/if}
+		<form
+			method="POST"
+			action="/more/transfers?/create"
+			class="grid gap-4"
+			use:enhance={dialogFormSubmit({
+				onSuccess: () => {
+					transferOpen = false;
+					transferError = null;
+				},
+				onError: (message) => {
+					transferError = message;
+				}
+			})}
+		>
+			<div class="grid gap-2">
+				<Label for="transfer-recipient">Destinatário</Label>
+				<Input id="transfer-recipient" name="recipient" placeholder="Telefone ou e-mail" required />
+			</div>
+			<div class="grid gap-2">
+				<Label for="transfer-amount">Valor</Label>
+				<Input id="transfer-amount" name="amount" inputmode="decimal" placeholder="0,00" required />
+			</div>
+			<div class="grid gap-2">
+				<Label for="transfer-description">Descrição</Label>
+				<Input
+					id="transfer-description"
+					name="description"
+					placeholder="Ex.: Aluguel dividido"
+					required
+				/>
+			</div>
+			<div class="grid gap-2">
+				<Label for="transfer-account">Conta de origem</Label>
+				<Select
+					id="transfer-account"
+					name="accountId"
+					required
+					options={activeAccountOptions}
+					value={transferAccountId}
+					onValueChange={(v) => (transferAccountId = v)}
+				/>
+			</div>
+			<Dialog.Footer>
+				<Button type="submit">Enviar transferência</Button>
+			</Dialog.Footer>
+		</form>
 	</Dialog.Content>
 </Dialog.Root>
 
