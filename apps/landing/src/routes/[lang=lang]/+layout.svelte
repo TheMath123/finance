@@ -57,9 +57,24 @@
 		home page (2º requisito da mesma revisão).
 	-->
 	<meta property="og:site_name" content="Marcelus" />
+	<!-- Defaults globais de embed (Discord/WhatsApp/Slack/etc.) — cada página
+	     (home, pricing) sobrescreve og:title/og:description/og:url no seu
+	     próprio <svelte:head>; imagem e tipo ficam só aqui, iguais em todo
+	     lugar. og-image.png é o mesmo asset usado no dashboard, pra reforçar
+	     a mesma identidade visual nos dois domínios. -->
+	<meta property="og:type" content="website" />
+	<meta property="og:image" content="https://marcelus.app/og-image.png" />
+	<meta property="og:image:width" content="1200" />
+	<meta property="og:image:height" content="630" />
+	<meta name="twitter:card" content="summary_large_image" />
+	<meta name="twitter:image" content="https://marcelus.app/og-image.png" />
 </svelte:head>
 
-<ModeWatcher />
+<!-- defaultMode="light" + track={false}: mesma decisão do dashboard — a
+     aplicação sempre abre no modo claro, não segue o dark mode do SO do
+     visitante. Modo escuro segue existindo/estilizado em layout.css, só
+     deixa de ser o ponto de entrada automático. -->
+<ModeWatcher defaultMode="light" track={false} />
 
 <div class="flex min-h-screen flex-col">
 	<header class="border-b border-border">

@@ -151,6 +151,9 @@
 <svelte:head>
 	<title>{t.pricing.title} — Marcelus</title>
 	<meta name="description" content={t.pricing.subtitle} />
+	<meta property="og:title" content="{t.pricing.title} — Marcelus" />
+	<meta property="og:description" content={t.pricing.subtitle} />
+	<meta property="og:url" content="https://marcelus.app/{data.lang}/pricing" />
 </svelte:head>
 
 <section class="mx-auto max-w-5xl px-6 pt-24 pb-16 text-center sm:pt-32">

@@ -21,6 +21,9 @@
 <svelte:head>
 	<title>Marcelus — {t.home.tagline}</title>
 	<meta name="description" content={t.home.subtitle} />
+	<meta property="og:title" content="Marcelus — {t.home.tagline}" />
+	<meta property="og:description" content={t.home.subtitle} />
+	<meta property="og:url" content="https://marcelus.app/{data.lang}" />
 </svelte:head>
 
 <section class="mx-auto max-w-6xl px-6 pt-20 pb-20 sm:pt-28 sm:pb-28">
