@@ -23,6 +23,6 @@ export const requestEmailChangeRoute = (deps: AppDeps) =>
         newEmail: input.value.newEmail,
         currentPassword: input.value.currentPassword,
       });
-      return respond(set, result, AUTH_ERRORS);
+      return respond(set, result, AUTH_ERRORS, 204);
     }
   );

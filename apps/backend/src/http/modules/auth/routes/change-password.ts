@@ -22,5 +22,5 @@ export const changePasswordRoute = (deps: AppDeps) =>
       newPassword: input.value.newPassword,
       currentRefreshToken: input.value.currentRefreshToken,
     });
-    return respond(set, result, AUTH_ERRORS);
+    return respond(set, result, AUTH_ERRORS, 204);
   });
