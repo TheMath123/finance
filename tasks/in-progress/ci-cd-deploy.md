@@ -36,8 +36,8 @@ via AskUserQuestion, sem resposta a tempo — confirmar quando possível):
 - `apps/dashboard/vite.config.ts` + `package.json` — trocado
   `@sveltejs/adapter-node` por `@sveltejs/adapter-cloudflare`.
 - `apps/dashboard/wrangler.toml` (novo) — `nodejs_compat` (necessário pro
-  `$env/dynamic/private` funcionar no Workers), `[vars] API_URL` apontando
-  pro backend.
+  `$env/dynamic/private` funcionar no Workers); `API_URL` (endereço do
+  backend) é Cloudflare secret, não `[vars]` — ver seção própria abaixo.
 - `.github/workflows/deploy-dashboard.yml` (novo) — dispara em tags
   `dashboard-web-v*`, builda e roda `wrangler deploy`.
 - `apps/backend/Dockerfile` + `/.dockerignore` (novos) — multi-stage com
@@ -79,6 +79,10 @@ Nada disso eu consigo criar — são contas/tokens de serviços externos.
    painel).
 4. No GitHub: Settings → Secrets and variables → Actions → adicionar
    `CLOUDFLARE_API_TOKEN` e `CLOUDFLARE_ACCOUNT_ID`.
+5. Setar `API_URL` como **Cloudflare secret** do Worker (nunca em `[vars]`
+   do `wrangler.toml`, que fica versionado em texto plano no git):
+   `bunx wrangler secret put API_URL --name marcelus-dashboard` (valor:
+   `https://marcelus-app.fly.dev`, ver seção própria mais abaixo).
 
 ### Cloudflare (landing)
 
@@ -89,6 +93,9 @@ Mesmo processo do dashboard acima, Worker separado:
 2. Reaproveita os mesmos secrets `CLOUDFLARE_API_TOKEN`/`CLOUDFLARE_ACCOUNT_ID`
    já configurados pro dashboard (mesma conta Cloudflare, token com permissão
    **Workers Scripts:Edit** cobre os dois Workers).
+3. Setar `API_URL` como Cloudflare secret desse Worker também:
+   `bunx wrangler secret put API_URL --name marcelus-site` (mesmo valor,
+   ver seção própria mais abaixo).
 
 ### Fly.io (backend)
 
@@ -207,14 +214,39 @@ autenticado. Já nasceu com a env adicionada em `ci.yml` e
 `deploy-landing.yml`.
 
 1. Repo → Settings → Secrets and variables → Actions → aba **Variables**.
-2. Adicionar `PUBLIC_APP_URL` com a URL pública do dashboard (ex.:
-   `https://dash.example.com`, ou o `*.workers.dev` do dashboard enquanto o
-   domínio real não existe).
+2. Adicionar `PUBLIC_APP_URL` com a URL pública do dashboard: **`https://dash.marcelus.app`**
+   (domínio real já definido — não é mais placeholder).
 
 Sem essa variable configurada, o `typecheck`/`build` do landing quebra (mesmo
 erro de `$env/static/public` já visto com `PUBLIC_GOOGLE_CLIENT_ID`) — não é
 opcional como os dois anteriores, porque o layout do landing importa direto,
 sem checar se está vazia.
+
+#### ⚠️ Diagnóstico: bug de produção — "Entrar"/"Criar conta" iam pra `/login`
+
+Reportado em produção (dev funcionava normal): os botões "Entrar" e "Criar
+conta" da landing caíam num `/login` relativo quebrado (mesma origem da
+landing, não do dashboard), em vez de abrir `https://dash.marcelus.app/login`.
+
+**Causa raiz confirmada por eliminação:** `PUBLIC_APP_URL` é inlinada no
+bundle do client **em tempo de build**, pelo job do GitHub Actions — nunca
+lida em runtime pelo Worker. Se a repository variable `PUBLIC_APP_URL` nunca
+foi de fato configurada no GitHub (só documentada aqui como passo manual,
+nunca confirmada feita), o valor cai pra string vazia no build, e
+`href="{PUBLIC_APP_URL}/login"` vira literalmente `/login` — link relativo
+quebrado, batendo exatamente com o sintoma relatado.
+
+**Ação concreta que só você consegue fazer:** confirmar/criar a repository
+variable `PUBLIC_APP_URL = https://dash.marcelus.app` (passo 1-2 acima) e
+depois cortar uma nova release da landing (`bun run release:landing`) pra
+disparar um rebuild com o valor certo.
+
+**Mitigação de código já aplicada** (`apps/landing/src/lib/public-env.ts`):
+o import de `PUBLIC_APP_URL` agora passa por um wrapper que **lança um erro
+descritivo em tempo de build/request se a env estiver vazia**, em vez de
+silenciosamente virar link quebrado — então, se a variable continuar
+faltando, o próximo deploy vai falhar alto (build quebrado ou erro 500
+visível) em vez de reproduzir esse bug silencioso de novo.
 
 ### Repository variable — `PUBLIC_SITE_URL` (dashboard → site institucional)
 
@@ -225,12 +257,58 @@ cookies e do checkbox de cadastro. Mesmo mecanismo de build-time; já nasceu
 adicionada em `ci.yml` e `deploy-dashboard.yml`.
 
 1. Repo → Settings → Secrets and variables → Actions → aba **Variables**.
-2. Adicionar `PUBLIC_SITE_URL` com a URL pública do site institucional (ex.:
-   `https://example.com`, ou o `*.workers.dev` do landing enquanto o domínio
-   real não existe).
+2. Adicionar `PUBLIC_SITE_URL` com a URL pública do site institucional:
+   **`https://marcelus.app`** (domínio real já definido — não é mais
+   placeholder).
 
 Sem essa variable, o `typecheck`/`build` do dashboard quebra pelo mesmo
 motivo das outras `PUBLIC_` envs acima.
+
+### Repository variable — `PUBLIC_GOOGLE_SITE_VERIFICATION` (revisão do OAuth consent screen)
+
+Env pública do `apps/landing`, mesmo mecanismo das anteriores — renderiza
+`<meta name="google-site-verification" content="...">` na home
+(`[lang=lang]/+layout.svelte`), exigida pela revisão da tela de consentimento
+OAuth do Google (ver seção abaixo). **Opcional**: se ficar vazia a meta tag
+simplesmente não é renderizada (mesmo padrão do `PUBLIC_CLARITY_PROJECT_ID`)
+— mas a chave precisa existir no ambiente do build, por isso já nasceu
+adicionada em `ci.yml` e `deploy-landing.yml`.
+
+1. Google Search Console (https://search.google.com/search-console) →
+   Adicionar propriedade → tipo **URL prefix** com `https://marcelus.app` →
+   método **HTML tag**.
+2. Copiar só o valor do atributo `content` da tag `<meta
+   name="google-site-verification" content="AQUI">` que o Search Console
+   mostrar.
+3. Repo → Settings → Secrets and variables → Actions → aba **Variables** →
+   adicionar `PUBLIC_GOOGLE_SITE_VERIFICATION` com esse valor.
+4. Cortar release da landing (`bun run release:landing`) e, no Search
+   Console, clicar em "Verificar".
+
+### Checklist pra resolver os 3 erros da revisão do OAuth consent screen
+
+O Google reportou 3 problemas na tela de consentimento OAuth do app
+"Marcelus" (Google Cloud Console → APIs e serviços → Tela de consentimento
+OAuth). Nenhum dos 3 pode ser resolvido só no código — dependem de contas
+externas (Search Console, Cloud Console) que só você tem acesso:
+
+1. **"O site do URL da sua página inicial não está registrado para você"** —
+   verificação de propriedade de domínio. Ação: completar a verificação via
+   `PUBLIC_GOOGLE_SITE_VERIFICATION` acima (mecanismo de código já pronto,
+   só falta você gerar o código no Search Console e a variable no GitHub).
+2. **"A página inicial não explica a finalidade do app"** — corrigido no
+   código: o subtítulo da home (`apps/landing/src/lib/i18n/messages.ts`,
+   `home.subtitle`, pt/en/es) agora abre com uma frase explícita ("Marcelus
+   é um aplicativo de organização financeira pessoal: ..."). Nenhuma ação
+   manual necessária além de fazer o deploy.
+3. **"O nome do app 'Marcelus' não corresponde ao nome na página inicial"**
+   — reforçado no código: o wordmark do header já mostra "Marcelus" com
+   destaque, e foi adicionado `<meta property="og:site_name" content="Marcelus">`.
+   Confirme no Google Cloud Console que o nome configurado na tela de
+   consentimento é exatamente `Marcelus` (sem sufixo/prefixo diferente).
+
+Depois de configurar a variable e fazer o deploy, volte na tela de
+consentimento OAuth do Cloud Console e peça nova verificação/revisão.
 
 ### Consentimento de cookies (Clarity gated por opt-in)
 
@@ -243,18 +321,80 @@ código, mas documentando a mudança de comportamento pra quem for investigar
 por que o Clarity "parou" de aparecer imediatamente: ele só aparece depois
 do clique em "Aceitar todos" (ou em visitas seguintes, se já aceito antes).
 
-### Domínio customizado (pendente até o usuário decidir/comprar o domínio)
+### ⚠️ Diagnóstico: planos "Pro"/"Plus" não aparecem em `/planos` (só "Free")
 
-Enquanto isso, os dois Workers seguem em `*.workers.dev`. Quando o domínio
-real existir:
+Reportado em produção: a página de Planos da landing só mostra o card
+"Free" (que é markup estático, não vem da API), mesmo com "Pro"/"Plus"
+ativos e públicos no painel admin. Investigado e **2 causas reais
+encontradas, as duas confirmadas ao vivo**:
 
-1. Adicionar o domínio à conta Cloudflare (Zone).
-2. `apps/dashboard/wrangler.toml` ganha `routes = [{ pattern =
-   "dash.<dominio>/*", custom_domain = true }]`.
-3. `apps/landing/wrangler.toml` ganha `routes = [{ pattern = "<dominio>/*",
-   custom_domain = true }]`.
-4. Atualizar `PUBLIC_APP_URL` (variable acima) e `[vars] PUBLIC_APP_URL` em
-   `apps/landing/wrangler.toml` pro domínio real.
+**1. `API_URL` nunca foi configurada de verdade em produção.** Os dois
+`wrangler.toml` (`apps/landing` e `apps/dashboard`) tinham `API_URL =
+"https://marcelus-app.example.dev"` em `[vars]` — um domínio que nunca
+existiu. Diferente das envs `PUBLIC_*` (resolvidas em tempo de build via
+GitHub Actions), `API_URL` é privada e lida via `$env/dynamic/private` **em
+runtime**, direto do ambiente do próprio Worker — então esse placeholder ia
+rodando em produção sem ninguém perceber (`listPublicPlans()` engolindo o
+erro de rede silenciosamente, caindo pra `plans: []`, sem log nem erro
+visível).
+
+**Correção aplicada — e por que não é mais `[vars]` em texto plano:**
+`API_URL` saiu do `wrangler.toml` (nunca mais fica em texto plano,
+versionado no git) e virou um **Cloudflare secret**, configurado uma vez
+direto na conta, fora do repositório:
+
+```
+bunx wrangler secret put API_URL --name marcelus-site       # apps/landing
+bunx wrangler secret put API_URL --name marcelus-dashboard  # apps/dashboard
+```
+
+Em ambos, quando pedir o valor, colar `https://marcelus-app.fly.dev`
+(domínio padrão do Fly pro app `marcelus-app` — confirmado ao vivo: `GET
+/health` → `{"status":"ok"}`). Secret e var comum (`[vars]`) são lidos de
+forma idêntica pelo `$env/dynamic/private` em runtime — nada muda no
+código, só deixa de vazar no git. Se o dashboard já funcionava normalmente
+em produção apesar do placeholder antigo no arquivo, é sinal de que alguém
+já tinha sobrescrito essa var manualmente no painel Cloudflare — rodar o
+`wrangler secret put` acima consolida isso da forma certa (secret, não
+`[vars]` texto plano) e remove o risco de um futuro `wrangler deploy`
+reverter pro placeholder do arquivo.
+
+**2. O backend de produção está rodando código desatualizado.** Testado ao
+vivo: `GET https://marcelus-app.fly.dev/plans` retorna **401
+Unauthorized** — mas o código atual em `apps/backend/src/http/modules/
+billing/routes/plans.ts` **não exige autenticação nessa rota** (foi
+deliberadamente removida pra tornar `/plans` pública, decisão documentada
+no plano desta feature). Ou seja, o Fly em produção ainda está rodando uma
+versão anterior do backend, de antes dessa mudança — precisa de um novo
+deploy.
+
+**Ações concretas que só você consegue fazer:**
+1. Rodar os dois `wrangler secret put API_URL` acima (uma vez cada,
+   direto contra a conta Cloudflare — não precisa de deploy pra isso
+   já ficar valendo no próximo request do Worker).
+2. Cortar uma nova release do backend: `bun run release:api` (ou o comando
+   equivalente que dispara `.github/workflows/deploy-backend.yml`) — isso
+   sobe o código atual (com `/plans` pública) pro Fly.
+3. Depois disso, recarregar `https://marcelus.app/pt/pricing` e confirmar
+   que Pro/Plus aparecem.
+
+### Domínio customizado (`marcelus.app` — já definido, falta só o setup na Cloudflare)
+
+O domínio real já é conhecido: **`marcelus.app`** (site institucional) e
+**`dash.marcelus.app`** (dashboard). `PUBLIC_APP_URL`/`PUBLIC_SITE_URL` acima
+e o `[vars] PUBLIC_APP_URL` em `apps/landing/wrangler.toml` já refletem esse
+domínio. Falta só o setup manual na Cloudflare pra ele ficar de fato
+resolvendo (enquanto isso os dois Workers seguem em `*.workers.dev`):
+
+1. Adicionar o domínio (`marcelus.app`) à conta Cloudflare (Zone) — inclui
+   apontar o registrador DNS pros nameservers da Cloudflare.
+2. `apps/dashboard/wrangler.toml` ganha `[[routes]] pattern =
+   "dash.marcelus.app/*"` + `custom_domain = true`.
+3. `apps/landing/wrangler.toml` já tem esse bloco comentado — só descomentar
+   (`pattern = "marcelus.app/*"`).
+4. Depois de ativo, usar `https://marcelus.app` (sem `*.workers.dev`) como
+   "Application home page" no Google Cloud Console (tela de consentimento
+   OAuth) — ver checklist do OAuth logo abaixo.
 
 ### Cortar uma release
 
