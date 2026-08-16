@@ -77,7 +77,7 @@
 
 				{#if plan.trialDays > 0}
 					<p
-						class="w-fit border border-foreground/30 px-2 py-0.5 text-xs font-medium tracking-wide text-foreground uppercase"
+						class="w-fit border border-brand-dark/40 px-2 py-0.5 text-xs font-medium tracking-wide text-brand-dark uppercase"
 					>
 						{t.pricing.trialDays(plan.trialDays)}
 					</p>

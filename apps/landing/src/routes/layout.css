@@ -6,69 +6,83 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
- * Paleta própria do site institucional — mais quente e editorial que o
- * dashboard/mobile (aqueles seguem a paleta de produto/SaaS, ver
- * apps/dashboard/src/routes/layout.css). --primary (teal #2ec4b6) é mantido
- * idêntico ao resto do produto — é a cor de marca, não muda — mas o fundo,
- * texto e bordas migram de um branco/azulado neutro pra um marfim/carvão
- * quente (papel/tinta). Sem segundo acento de cor: elementos informativos
- * (ícones de feature, badges) usam só --foreground/--muted-foreground —
- * preto-e-branco puro, decisão deliberada pra manter o teal como ÚNICA cor
- * saturada da página (reservada só pra ação), reforçando o registro
- * editorial/luxuoso em vez de "app de produtividade" colorido.
+ * Paleta própria do site institucional — preto-e-branco neutro de verdade
+ * (sem os tons quentes de marfim/espresso da versão anterior, que liam como
+ * marrom/amarelo) + duas cores de marca, ambas pedidas explicitamente pelo
+ * usuário com hex exato:
+ *   --primary  #2DC8BB — teal vívido, reservado só pra ação (CTA, foco,
+ *              link primário). Idêntico em espírito ao resto do produto
+ *              (dashboard/mobile usam a mesma família de teal).
+ *   --brand-dark #114A45 — variante escura do MESMO matiz (~175°), reservada
+ *              só pra elementos informativos/decorativos (ícone de feature,
+ *              badge de trial) — nunca aparece ao lado do botão de ação, pra
+ *              não competir com ele. Por ser tom (mesmo matiz, brilho
+ *              diferente) e não um matiz concorrente, funciona como "tinta de
+ *              marca" e não como segunda cor de destaque.
+ * Fora essas duas, tudo é cinza neutro (0% de saturação) — fundo, texto,
+ * bordas, superfícies de hover. --destructive/--success são exceções
+ * semânticas (erro/sucesso), não fazem parte da paleta decorativa.
  * --radius zerado de propósito — ângulos retos em vez de cantos
  * arredondados é decisão de marca do site, não do produto (o dashboard
  * mantém o radius arredondado dele).
  */
 :root {
 	color-scheme: light;
-	--background: hsl(42 26% 96%); /* marfim quente, não branco-azulado */
-	--foreground: hsl(20 12% 11%); /* tinta quase-preta, quente */
-	--card: hsl(40 22% 98%);
-	--card-foreground: hsl(20 12% 11%);
-	--popover: hsl(40 22% 98%);
-	--popover-foreground: hsl(20 12% 11%);
-	--primary: hsl(174 62% 47%); /* #2ec4b6 — marca, idêntico ao resto do produto */
+	--background: hsl(0 0% 100%);
+	--foreground: hsl(0 0% 9%);
+	--card: hsl(0 0% 100%);
+	--card-foreground: hsl(0 0% 9%);
+	--popover: hsl(0 0% 100%);
+	--popover-foreground: hsl(0 0% 9%);
+	--primary: hsl(175 63% 48%); /* #2DC8BB */
 	--primary-foreground: hsl(0 0% 100%);
-	--secondary: hsl(38 18% 91%);
-	--secondary-foreground: hsl(20 12% 11%);
-	--muted: hsl(38 18% 91%);
-	--muted-foreground: hsl(30 9% 38%);
-	--accent: hsl(36 20% 88%);
-	--accent-foreground: hsl(20 12% 11%);
+	--secondary: hsl(0 0% 94%);
+	--secondary-foreground: hsl(0 0% 9%);
+	--muted: hsl(0 0% 94%);
+	--muted-foreground: hsl(0 0% 40%);
+	--accent: hsl(0 0% 92%);
+	--accent-foreground: hsl(0 0% 9%);
 	--destructive: hsl(357 96% 58%);
 	--destructive-foreground: hsl(0 0% 100%);
 	--success: hsl(144 100% 39%);
 	--success-foreground: hsl(0 0% 100%);
-	--border: hsl(32 14% 84%);
-	--input: hsl(32 14% 84%);
-	--ring: hsl(174 62% 47%);
+	--brand-dark: hsl(175 63% 18%); /* #114A45 */
+	--brand-dark-foreground: hsl(0 0% 100%);
+	--border: hsl(0 0% 88%);
+	--input: hsl(0 0% 88%);
+	--ring: hsl(175 63% 48%);
 	--radius: 0px;
 }
 
 .dark {
 	color-scheme: dark;
-	--background: hsl(30 12% 7%); /* carvão/espresso quente, não azul-preto */
-	--foreground: hsl(40 24% 95%);
-	--card: hsl(30 10% 10%);
-	--card-foreground: hsl(40 24% 95%);
-	--popover: hsl(30 10% 10%);
-	--popover-foreground: hsl(40 24% 95%);
-	--primary: hsl(174 62% 47%);
+	--background: hsl(0 0% 6%);
+	--foreground: hsl(0 0% 96%);
+	--card: hsl(0 0% 9%);
+	--card-foreground: hsl(0 0% 96%);
+	--popover: hsl(0 0% 9%);
+	--popover-foreground: hsl(0 0% 96%);
+	--primary: hsl(175 63% 48%);
 	--primary-foreground: hsl(0 0% 100%);
-	--secondary: hsl(30 8% 16%);
-	--secondary-foreground: hsl(40 24% 95%);
-	--muted: hsl(30 8% 16%);
-	--muted-foreground: hsl(36 12% 68%);
-	--accent: hsl(30 8% 20%);
-	--accent-foreground: hsl(40 24% 95%);
+	--secondary: hsl(0 0% 15%);
+	--secondary-foreground: hsl(0 0% 96%);
+	--muted: hsl(0 0% 15%);
+	--muted-foreground: hsl(0 0% 65%);
+	--accent: hsl(0 0% 18%);
+	--accent-foreground: hsl(0 0% 96%);
 	--destructive: hsl(357 75% 42%);
 	--destructive-foreground: hsl(0 0% 100%);
 	--success: hsl(144 100% 30%);
 	--success-foreground: hsl(0 0% 100%);
-	--border: hsl(30 8% 20%);
-	--input: hsl(30 8% 20%);
-	--ring: hsl(174 62% 47%);
+	/* Variante mais clara do brand-dark no modo escuro — o valor original
+	   (#114A45, L=18%) contra um fundo quase-preto (L=6%) perderia contraste
+	   de leitura; sobe pra L=58% mantendo o mesmo matiz, lendo como "teal
+	   contido" ao lado do --primary vívido. */
+	--brand-dark: hsl(175 40% 58%);
+	--brand-dark-foreground: hsl(0 0% 7%);
+	--border: hsl(0 0% 18%);
+	--input: hsl(0 0% 18%);
+	--ring: hsl(175 63% 48%);
 }
 
 @theme inline {
@@ -81,6 +95,8 @@
 	--color-destructive-foreground: var(--destructive-foreground);
 	--color-success: var(--success);
 	--color-success-foreground: var(--success-foreground);
+	--color-brand-dark: var(--brand-dark);
+	--color-brand-dark-foreground: var(--brand-dark-foreground);
 	--color-accent-foreground: var(--accent-foreground);
 	--color-accent: var(--accent);
 	--color-muted-foreground: var(--muted-foreground);

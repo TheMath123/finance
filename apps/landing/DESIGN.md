@@ -14,16 +14,19 @@ de alto contraste, papel/tinta quente em vez de branco-azulado neutro.
 
 ## OWN-WORLD
 
-- **Paleta:** marfim/papel quente (`hsl(42 26% 96%)`) no claro, carvão/espresso
-  quente (`hsl(30 12% 7%)`) no escuro — nunca branco-azulado nem preto-azulado
-  (esses lêem "tech", não "banco privado"). `--primary` (teal `#2ec4b6`) é
-  **idêntico** ao resto do produto (dashboard/mobile) — marca não muda, só a
-  moldura ao redor dela. Sem segundo acento de cor: elementos informativos
-  (ícones de feature, badge de trial) usam só preto-e-branco
-  (`--foreground`/`--muted-foreground`) — decisão revisada após o primeiro
-  acento (`--brass`, dourado/latão) entrar em conflito de matiz com o teal
-  (ambos ~174-175° de hue, só diferiam em brilho/saturação); o teal segue
-  como a única cor saturada da página, reservada só pra ação.
+- **Paleta:** preto-e-branco neutro de verdade (0% de saturação em fundo,
+  texto, bordas, superfícies de hover) — a versão anterior usava marfim/papel
+  quente (`hsl(42 26% 96%)`) e carvão/espresso quente (`hsl(30 12% 7%)`), que
+  na prática liam como marrom/amarelo; revisado a pedido do usuário pra
+  cinza puro. Duas cores de marca, com hex pinado explicitamente pelo
+  usuário: **`--primary` `#2DC8BB`** (teal vívido, reservado só pra ação —
+  CTA, foco, link primário) e **`--brand-dark` `#114A45`** (mesma família de
+  matiz do primary, ~175°, só mais escura — reservada só pra elementos
+  informativos/decorativos: ícone de feature, badge de trial). Por serem
+  tom-sobre-tom do mesmo matiz (não um matiz concorrente), `--brand-dark`
+  funciona como "tinta de marca" sem nunca aparecer ao lado do botão de ação
+  — evita o conflito que o primeiro acento (`--brass`, dourado/latão)
+  causava por competir visualmente com o primary.
 - **Radius:** `--radius: 0px` — zerado de propósito, só nesse app (o dashboard
   mantém radius arredondado, não é tocado). Ângulos retos em botões, cards de
   plano, painel de cookies, tudo.

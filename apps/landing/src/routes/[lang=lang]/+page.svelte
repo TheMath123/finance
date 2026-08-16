@@ -67,7 +67,7 @@
 				class="group flex flex-col gap-4 border-b border-border py-10 transition-colors last:border-b-0 sm:flex-row sm:items-baseline sm:gap-12 sm:py-12"
 			>
 				<div class="flex shrink-0 items-center gap-3 sm:w-72">
-					<Icon size={20} weight="light" class="text-foreground" />
+					<Icon size={20} weight="light" class="text-brand-dark" />
 					<h2 class="font-display text-xl tracking-tight">{feature.title}</h2>
 				</div>
 				<p class="max-w-xl text-muted-foreground">{feature.description}</p>
