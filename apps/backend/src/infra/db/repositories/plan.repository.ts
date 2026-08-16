@@ -1,5 +1,5 @@
 import { planPrices, plans, workspaces } from '@finance/db';
-import { and, asc, eq, ne, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, ne, sql } from 'drizzle-orm';
 import type {
   Plan,
   PlanRepository,
@@ -17,9 +17,13 @@ function sortPrices<T extends Pick<Plan, 'prices'>>(plan: T): T {
 
 export function createPlanRepository(db: DbHandle): PlanRepository {
   return {
+    // Painel admin (/saas/plans): mais recente primeiro — é uma lista de
+    // gestão, não o catálogo que o cliente vê (essa é a `listActive` abaixo,
+    // que continua em `sortOrder`: curadoria deliberada de exibição, ex.
+    // Free < Básico < Premium, sem relação com quando cada um foi criado).
     async list() {
       const rows = await db.query.plans.findMany({
-        orderBy: asc(plans.sortOrder),
+        orderBy: desc(plans.createdAt),
         with: withPrices,
       });
       return rows.map(sortPrices);

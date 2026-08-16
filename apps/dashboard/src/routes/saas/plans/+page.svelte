@@ -3,6 +3,7 @@
 	import { SvelteSet } from 'svelte/reactivity';
 
 	import { enhance } from '$app/forms';
+	import { resolve } from '$app/paths';
 
 	import { Button } from '$lib/components/ui/button';
 	import * as Dialog from '$lib/components/ui/dialog';
@@ -321,21 +322,34 @@
 		<p class="text-sm text-destructive">{form.message}</p>
 	{/if}
 
+	<!-- Ativos/Desativados são duas listagens separadas (nunca misturadas) — mesmo padrão de abas usado em Transações. -->
+	<nav class="flex gap-2">
+		<a
+			href={resolve('/saas/plans')}
+			class="rounded-lg px-3 py-1.5 text-sm transition-colors {!data.showInactive
+				? 'bg-primary font-medium text-primary-foreground'
+				: 'bg-primary/10 text-primary hover:bg-primary/20'}"
+		>
+			Ativos
+		</a>
+		<a
+			href="{resolve('/saas/plans')}?status=inactive"
+			class="rounded-lg px-3 py-1.5 text-sm transition-colors {data.showInactive
+				? 'bg-primary font-medium text-primary-foreground'
+				: 'bg-primary/10 text-primary hover:bg-primary/20'}"
+		>
+			Desativados
+		</a>
+	</nav>
+
 	<div class="grid gap-2 sm:grid-cols-2">
 		{#each data.plans as plan (plan.id)}
-			<div
-				class="flex flex-col gap-3 rounded-lg border border-foreground/10 p-4 {plan.isActive
-					? ''
-					: 'opacity-60'}"
-			>
+			<div class="flex flex-col gap-3 rounded-lg border border-foreground/10 p-4">
 				<div class="flex items-start justify-between gap-2">
 					<div>
 						<p class="text-sm font-medium">
 							{plan.name}
 							<span class="text-xs text-muted-foreground">({plan.key})</span>
-							{#if !plan.isActive}
-								<span class="text-xs text-destructive">(inativo)</span>
-							{/if}
 						</p>
 						{#if plan.isPrivate}
 							<p class="text-xs text-primary">Privado</p>
@@ -420,7 +434,9 @@
 				</form>
 			</div>
 		{:else}
-			<p class="text-sm text-muted-foreground">Nenhum plano cadastrado.</p>
+			<p class="text-sm text-muted-foreground">
+				{data.showInactive ? 'Nenhum plano desativado.' : 'Nenhum plano ativo.'}
+			</p>
 		{/each}
 	</div>
 </div>

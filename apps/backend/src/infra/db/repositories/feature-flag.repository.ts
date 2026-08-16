@@ -1,5 +1,5 @@
 import { featureFlags } from '@finance/db';
-import { asc, eq, sql } from 'drizzle-orm';
+import { asc, desc, eq, sql } from 'drizzle-orm';
 import type { FeatureFlagRepository } from '../../../application/ports/feature-flag-repository';
 import { toPrefixTsQuery } from '../full-text-search';
 import type { DbHandle } from '../handle';
@@ -14,7 +14,8 @@ export function createFeatureFlagRepository(
         where: tsQuery
           ? sql`${featureFlags.searchVector} @@ to_tsquery('portuguese', ${tsQuery})`
           : undefined,
-        orderBy: asc(featureFlags.key),
+        // Ativas primeiro, ordem alfabética dentro de cada grupo.
+        orderBy: [desc(featureFlags.enabled), asc(featureFlags.key)],
       });
     },
     findByKey: (key) =>

@@ -5,15 +5,20 @@ import * as adminApi from '$lib/server/admin-api';
 
 import type { Actions, PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async ({ locals }) => {
+export const load: PageServerLoad = async ({ locals, url }) => {
 	if (!locals.session) redirect(303, '/login');
 
 	const [plansResult, flagsResult] = await Promise.all([
 		adminApi.listPlans(locals.session.accessToken),
 		adminApi.listFeatureFlags(locals.session.accessToken)
 	]);
+	// API já devolve do created_at mais recente pro mais antigo (ver
+	// plan.repository.ts) — só separa em duas abas aqui, sem reordenar.
+	const allPlans = plansResult.ok ? plansResult.value : [];
+	const showInactive = url.searchParams.get('status') === 'inactive';
 	return {
-		plans: plansResult.ok ? plansResult.value : [],
+		plans: allPlans.filter((plan) => plan.isActive !== showInactive),
+		showInactive,
 		featureFlags: flagsResult.ok ? flagsResult.value : []
 	};
 };
