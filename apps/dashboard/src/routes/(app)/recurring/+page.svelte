@@ -4,7 +4,9 @@
 
 	import { enhance } from '$app/forms';
 
+	import { resolveCategoryIcon } from '$lib/category-icon';
 	import { Button } from '$lib/components/ui/button';
+	import { ComboSelect } from '$lib/components/ui/combo-select';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
@@ -93,7 +95,12 @@
 	const WEEKDAY_OPTIONS = WEEKDAY_LABELS.map((label, value) => ({ value: String(value), label }));
 	const MONTH_OPTIONS = MONTH_NAMES.map((label, index) => ({ value: String(index + 1), label }));
 	const categoryOptions = $derived(
-		data.categories.map((category) => ({ value: category.id, label: category.name }))
+		data.categories.map((category) => ({
+			value: category.id,
+			label: category.name,
+			icon: resolveCategoryIcon(category.icon),
+			color: category.color
+		}))
 	);
 	const activeCardOptions = $derived(
 		activeCards.map((card) => ({ value: card.id, label: card.name }))
@@ -260,7 +267,7 @@
 	</div>
 	<div class="grid gap-2">
 		<Label for="{prefix}-category">Categoria</Label>
-		<Select
+		<ComboSelect
 			id="{prefix}-category"
 			name="categoryId"
 			required

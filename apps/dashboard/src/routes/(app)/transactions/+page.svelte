@@ -18,6 +18,7 @@
 	import AttachmentField from '$lib/components/transactions/attachment-field.svelte';
 	import ImportCsvDialog from '$lib/components/transactions/import-csv-dialog.svelte';
 	import { Button } from '$lib/components/ui/button';
+	import { ComboSelect } from '$lib/components/ui/combo-select';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
@@ -166,7 +167,12 @@
 		{ value: 'external', label: 'Externo' }
 	];
 	const categoryOptions = $derived(
-		data.categories.map((category) => ({ value: category.id, label: category.name }))
+		data.categories.map((category) => ({
+			value: category.id,
+			label: category.name,
+			icon: resolveCategoryIcon(category.icon),
+			color: category.color
+		}))
 	);
 	const activeCardOptions = $derived(
 		activeCards.map((card) => ({ value: card.id, label: card.name }))
@@ -392,7 +398,7 @@
 			</div>
 			<div class="grid gap-2">
 				<Label for="categoryId">Categoria</Label>
-				<Select
+				<ComboSelect
 					id="categoryId"
 					name="categoryId"
 					options={filterCategoryOptions}
@@ -673,7 +679,7 @@
 			</div>
 			<div class="grid gap-2">
 				<Label for="new-category">Categoria</Label>
-				<Select
+				<ComboSelect
 					id="new-category"
 					name="categoryId"
 					required
@@ -834,7 +840,7 @@
 				</div>
 				<div class="grid gap-2">
 					<Label for="edit-category">Categoria</Label>
-					<Select
+					<ComboSelect
 						id="edit-category"
 						name="categoryId"
 						required

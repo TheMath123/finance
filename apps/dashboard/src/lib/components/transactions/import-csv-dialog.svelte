@@ -1,6 +1,8 @@
 <script lang="ts">
+	import { resolveCategoryIcon } from '$lib/category-icon';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
+	import { ComboSelect } from '$lib/components/ui/combo-select';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
@@ -49,7 +51,12 @@
 		{ value: 'cash', label: 'Dinheiro' }
 	];
 	const categoryOptions = $derived(
-		categories.map((category) => ({ value: category.id, label: category.name }))
+		categories.map((category) => ({
+			value: category.id,
+			label: category.name,
+			icon: resolveCategoryIcon(category.icon),
+			color: category.color
+		}))
 	);
 
 	type Step =
@@ -322,7 +329,7 @@
 		open = next;
 	}}
 >
-	<Dialog.Content class="sm:max-w-2xl">
+	<Dialog.Content class="max-h-[90vh] overflow-y-auto sm:max-w-4xl">
 		<Dialog.Header>
 			<Dialog.Title>Importar CSV</Dialog.Title>
 			<Dialog.Description>
@@ -469,7 +476,7 @@
 						Cabeçalho não reconhecido — colunas assumidas por posição, confira os valores abaixo.
 					{/if}
 				</p>
-				<div class="max-h-96 overflow-y-auto rounded-xl border border-foreground/10">
+				<div class="max-h-[55vh] overflow-y-auto rounded-xl border border-foreground/10">
 					<table class="w-full text-sm">
 						<thead class="sticky top-0 bg-popover text-xs text-muted-foreground">
 							<tr class="border-b border-foreground/10">
@@ -522,7 +529,7 @@
 									</td>
 									<td class="px-3 py-2">
 										{#if row.status === 'new'}
-											<Select
+											<ComboSelect
 												options={categoryOptions}
 												bind:value={row.categoryId}
 												disabled={!row.include}
@@ -560,7 +567,7 @@
 						Cabeçalho não reconhecido — colunas assumidas por posição, confira os valores abaixo.
 					{/if}
 				</p>
-				<div class="max-h-96 overflow-y-auto rounded-xl border border-foreground/10">
+				<div class="max-h-[55vh] overflow-y-auto rounded-xl border border-foreground/10">
 					<table class="w-full text-sm">
 						<thead class="sticky top-0 bg-popover text-xs text-muted-foreground">
 							<tr class="border-b border-foreground/10">
@@ -602,7 +609,7 @@
 									</td>
 									<td class="px-3 py-2">
 										{#if row.status === 'new'}
-											<Select
+											<ComboSelect
 												options={categoryOptions}
 												bind:value={row.categoryId}
 												disabled={!row.include}
