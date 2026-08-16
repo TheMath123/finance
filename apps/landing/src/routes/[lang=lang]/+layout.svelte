@@ -5,7 +5,6 @@
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
-	import { PUBLIC_GOOGLE_SITE_VERIFICATION } from '$env/static/public';
 	import { PUBLIC_APP_URL } from '$lib/public-env';
 	import CookieConsentBanner from '$lib/components/cookie-consent-banner.svelte';
 	import { MESSAGES } from '$lib/i18n/messages';
@@ -45,15 +44,11 @@
 
 <svelte:head>
 	<!--
-		Meta de verificação de propriedade do Google Search Console — exigida
-		pela revisão da tela de consentimento OAuth (o Google precisa confirmar
-		que quem configurou o app no Cloud Console também é dono do domínio da
-		"Application home page"). Sem PUBLIC_GOOGLE_SITE_VERIFICATION setada,
-		o meta simplesmente não é renderizado (mesmo padrão do Clarity/GA).
+		Verificação de propriedade do domínio (revisão da tela de consentimento
+		OAuth) foi resolvida via DNS direto no Search Console — não precisa de
+		meta tag no HTML. og:site_name reforça que o nome do app bate com a
+		home page (2º requisito da mesma revisão).
 	-->
-	{#if PUBLIC_GOOGLE_SITE_VERIFICATION}
-		<meta name="google-site-verification" content={PUBLIC_GOOGLE_SITE_VERIFICATION} />
-	{/if}
 	<meta property="og:site_name" content="Marcelus" />
 </svelte:head>
 

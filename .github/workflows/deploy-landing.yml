@@ -18,10 +18,6 @@ jobs:
       # PUBLIC_GOOGLE_CLIENT_ID/PUBLIC_CLARITY_PROJECT_ID). Repo variable
       # (Settings → Secrets and variables → Actions → Variables), não secret.
       PUBLIC_APP_URL: ${{ vars.PUBLIC_APP_URL }}
-      # Mesmo motivo/mecanismo acima — meta de verificação do Google Search
-      # Console (revisão da tela de consentimento OAuth). Opcional (pode
-      # ficar vazia), mas a CHAVE precisa existir no ambiente do build.
-      PUBLIC_GOOGLE_SITE_VERIFICATION: ${{ vars.PUBLIC_GOOGLE_SITE_VERIFICATION }}
 
     steps:
       - uses: actions/checkout@v4

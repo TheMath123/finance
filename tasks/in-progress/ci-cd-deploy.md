@@ -264,27 +264,6 @@ adicionada em `ci.yml` e `deploy-dashboard.yml`.
 Sem essa variable, o `typecheck`/`build` do dashboard quebra pelo mesmo
 motivo das outras `PUBLIC_` envs acima.
 
-### Repository variable — `PUBLIC_GOOGLE_SITE_VERIFICATION` (revisão do OAuth consent screen)
-
-Env pública do `apps/landing`, mesmo mecanismo das anteriores — renderiza
-`<meta name="google-site-verification" content="...">` na home
-(`[lang=lang]/+layout.svelte`), exigida pela revisão da tela de consentimento
-OAuth do Google (ver seção abaixo). **Opcional**: se ficar vazia a meta tag
-simplesmente não é renderizada (mesmo padrão do `PUBLIC_CLARITY_PROJECT_ID`)
-— mas a chave precisa existir no ambiente do build, por isso já nasceu
-adicionada em `ci.yml` e `deploy-landing.yml`.
-
-1. Google Search Console (https://search.google.com/search-console) →
-   Adicionar propriedade → tipo **URL prefix** com `https://marcelus.app` →
-   método **HTML tag**.
-2. Copiar só o valor do atributo `content` da tag `<meta
-   name="google-site-verification" content="AQUI">` que o Search Console
-   mostrar.
-3. Repo → Settings → Secrets and variables → Actions → aba **Variables** →
-   adicionar `PUBLIC_GOOGLE_SITE_VERIFICATION` com esse valor.
-4. Cortar release da landing (`bun run release:landing`) e, no Search
-   Console, clicar em "Verificar".
-
 ### Checklist pra resolver os 3 erros da revisão do OAuth consent screen
 
 O Google reportou 3 problemas na tela de consentimento OAuth do app
@@ -293,9 +272,14 @@ OAuth). Nenhum dos 3 pode ser resolvido só no código — dependem de contas
 externas (Search Console, Cloud Console) que só você tem acesso:
 
 1. **"O site do URL da sua página inicial não está registrado para você"** —
-   verificação de propriedade de domínio. Ação: completar a verificação via
-   `PUBLIC_GOOGLE_SITE_VERIFICATION` acima (mecanismo de código já pronto,
-   só falta você gerar o código no Search Console e a variable no GitHub).
+   verificação de propriedade de domínio. **Resolvido via DNS**: propriedade
+   tipo Domínio (`marcelus.app`) verificada no Search Console pelo provedor
+   do nome de domínio, cobrindo `https://marcelus.app` automaticamente.
+   (Chegou a existir um mecanismo alternativo via meta tag
+   `PUBLIC_GOOGLE_SITE_VERIFICATION`/`google-site-verification`, removido do
+   código depois que a verificação por DNS resolveu sozinha — deixar os dois
+   caminhos ativos era complexidade sem necessidade, e a env vazia estava
+   causando erro 500 em produção.)
 2. **"A página inicial não explica a finalidade do app"** — corrigido no
    código: o subtítulo da home (`apps/landing/src/lib/i18n/messages.ts`,
    `home.subtitle`, pt/en/es) agora abre com uma frase explícita ("Marcelus
