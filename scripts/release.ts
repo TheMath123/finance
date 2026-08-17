@@ -1,24 +1,29 @@
 /**
  * Cria e empurra a tag de release que dispara o deploy (ver
- * .github/workflows/deploy-dashboard.yml, deploy-landing.yml e
- * deploy-backend.yml — cada um só reage ao próprio prefixo de tag). Uso:
+ * .github/workflows/deploy-dashboard.yml, deploy-landing.yml,
+ * deploy-backend.yml e release-mobile.yml — cada um só reage ao próprio
+ * prefixo de tag). Uso:
  *
  *   bun run release:dashboard [patch|minor|major]  (default: patch)
  *   bun run release:landing [patch|minor|major]
  *   bun run release:api [patch|minor|major]
+ *   bun run release:mobile [patch|minor|major]
  *
  * Não mexe em package.json — só lê a última tag existente do prefixo certo,
  * sobe o número e cria+empurra a tag anotada. Evita o erro manual de digitar
  * `git tag` errado (prefixo trocado, número duplicado, etc.).
  */
 
-type Target = 'dashboard' | 'landing' | 'api';
+type Target = 'dashboard' | 'landing' | 'api' | 'mobile';
 type Bump = 'patch' | 'minor' | 'major';
 
 const TARGETS: Record<Target, { prefix: string; label: string }> = {
   dashboard: { prefix: 'dashboard-web-v', label: 'dashboard' },
   landing: { prefix: 'landingpage-v', label: 'landing' },
   api: { prefix: 'api-v', label: 'api' },
+  // Não vai pra loja (Play Store) ainda — a tag só dispara o build do APK
+  // (assinado com o keystore de debug do Expo) anexado à GitHub Release.
+  mobile: { prefix: 'mobile-v', label: 'mobile' },
 };
 
 async function run(cmd: string[]): Promise<string> {
@@ -56,7 +61,7 @@ async function main() {
 
   if (!targetArg || !(targetArg in TARGETS)) {
     console.error(
-      'Uso: bun run release:<dashboard|landing|api> [patch|minor|major]'
+      'Uso: bun run release:<dashboard|landing|api|mobile> [patch|minor|major]'
     );
     process.exit(1);
   }

@@ -134,8 +134,11 @@ Cada app de frontend/backend tem seu próprio ciclo de release, disparado por **
 | Dashboard | `bun run release:dashboard [patch\|minor\|major]` | `dashboard-web-v*` | `deploy-dashboard.yml` |
 | Landing | `bun run release:landing [patch\|minor\|major]` | `landingpage-v*` | `deploy-landing.yml` |
 | Backend | `bun run release:api [patch\|minor\|major]` | `api-v*` | `deploy-backend.yml` |
+| Mobile | `bun run release:mobile [patch\|minor\|major]` | `mobile-v*` | `release-mobile.yml` |
 
 O script (`scripts/release.ts`) lê a última tag local daquele prefixo, soma a versão e faz `git push` da tag nova — é isso que dispara o deploy em produção via GitHub Actions. Rode sempre a partir da `main`, com a working tree limpa, e com as tags locais sincronizadas (`git fetch --tags`) antes de gerar uma release.
+
+O mobile ainda não vai pra Play Store — `release-mobile.yml` builda o APK localmente no runner (`expo prebuild` + Gradle, assinado com o keystore de debug do próprio Expo) e anexa o `.apk` na GitHub Release da tag, apontando pra API de produção (`EXPO_PUBLIC_API_URL`). Instalação é via sideload direto no aparelho.
 
 ## Roadmap
 

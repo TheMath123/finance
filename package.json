@@ -26,6 +26,7 @@
     "release:dashboard": "bun scripts/release.ts dashboard",
     "release:landing": "bun scripts/release.ts landing",
     "release:api": "bun scripts/release.ts api",
+    "release:mobile": "bun scripts/release.ts mobile",
     "auth:login": "bun scripts/api-login.ts",
     "docs:api": "bun docs/api/merge-fragments.ts"
   },

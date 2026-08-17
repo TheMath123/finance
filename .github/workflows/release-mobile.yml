@@ -1,0 +1,101 @@
+name: Build APK mobile (GitHub Release)
+
+# Enquanto o app não vai pra Play Store, a distribuição é o APK anexado à
+# GitHub Release da própria tag — sem conta EAS/Expo, sem Play Console. Build
+# 100% local no runner (expo prebuild + Gradle), assinado com o keystore de
+# debug que o próprio Expo já embute no template (ver comentário em
+# android/app/build.gradle: buildTypes.release.signingConfig aponta pro
+# signingConfigs.debug por padrão) — suficiente pra instalar via sideload,
+# não pra Play Store (isso exigiria keystore de release de verdade).
+on:
+  push:
+    tags:
+      - 'mobile-v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    environment: production
+
+    env:
+      # Públicas por natureza (viram literal no bundle JS, sempre visíveis
+      # em qualquer APK instalado) — mesmo mecanismo/convenção das PUBLIC_*
+      # do dashboard/landing (ver ci.yml, deploy-dashboard.yml): repo
+      # Variable, não Secret. Fallback já aponta pro domínio de produção
+      # real do backend (ver tasks/done/ci-cd-deploy.md) pra funcionar sem
+      # nenhum setup manual extra.
+      EXPO_PUBLIC_API_URL: ${{ vars.EXPO_PUBLIC_API_URL || 'https://marcelus-app.fly.dev' }}
+      EXPO_PUBLIC_WHATSAPP_NUMBER: ${{ vars.EXPO_PUBLIC_WHATSAPP_NUMBER }}
+      # Mesma repo Variable que já alimenta o dashboard/landing — um projeto
+      # Clarity só, fontes diferentes dentro do mesmo painel (ver
+      # apps/mobile/.env.example).
+      EXPO_PUBLIC_CLARITY_PROJECT_ID: ${{ vars.PUBLIC_CLARITY_PROJECT_ID }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Instalar dependências
+        run: bun install --frozen-lockfile
+
+      - name: Typecheck do mobile
+        run: bun run typecheck --filter=mobile
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Calcular versionCode a partir da tag
+        # mobile-v1.2.3 -> 10203 (major*10000 + minor*100 + patch), crescente
+        # a cada release — é o que faz o Android tratar uma reinstalação
+        # como upgrade em vez de rejeitar como downgrade.
+        id: version
+        run: |
+          TAG="${GITHUB_REF_NAME#mobile-v}"
+          MAJOR=$(echo "$TAG" | cut -d. -f1)
+          MINOR=$(echo "$TAG" | cut -d. -f2)
+          PATCH=$(echo "$TAG" | cut -d. -f3)
+          CODE=$((MAJOR * 10000 + MINOR * 100 + PATCH))
+          echo "code=$CODE" >> "$GITHUB_OUTPUT"
+          echo "versionName=$TAG" >> "$GITHUB_OUTPUT"
+
+      - name: expo prebuild (gera o projeto Android nativo)
+        working-directory: apps/mobile
+        run: bunx expo prebuild --platform android --clean
+        env:
+          ANDROID_VERSION_CODE: ${{ steps.version.outputs.code }}
+
+      # Só depois do prebuild: apps/mobile/android (com o gradlew) só existe
+      # a partir daqui — antes disso não há o que a action detectar/cachear.
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          build-root-directory: apps/mobile/android
+
+      - name: Build do APK release
+        working-directory: apps/mobile/android
+        run: ./gradlew assembleRelease --no-daemon
+
+      - name: Renomear APK
+        run: |
+          mkdir -p artifacts
+          cp apps/mobile/android/app/build/outputs/apk/release/app-release.apk \
+            "artifacts/marcelus-${{ steps.version.outputs.versionName }}.apk"
+
+      - name: Publicar na GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Mobile ${{ steps.version.outputs.versionName }}
+          files: artifacts/*.apk
+          generate_release_notes: true
+          body: |
+            APK de produção (aponta pra API em ${{ env.EXPO_PUBLIC_API_URL }}), assinado com o keystore de debug do Expo — instalação via sideload (fora da Play Store). Baixe o `.apk` abaixo e instale direto no aparelho (ative "Instalar apps de fontes desconhecidas" se pedido).
