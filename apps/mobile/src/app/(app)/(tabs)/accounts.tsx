@@ -3,9 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import {
   ArrowsSplitIcon,
-  CalculatorIcon,
   CaretRightIcon,
-  ChartLineUpIcon,
   CreditCardIcon,
   EnvelopeSimpleIcon,
   HandCoinsIcon,
@@ -181,16 +179,6 @@ export default function AccountsScreen() {
           label="Categorias"
           count={categories?.length ?? 0}
           onPress={() => router.push('/categories')}
-        />
-        <NavRow
-          icon={<ChartLineUpIcon size={18} color="#2563EB" />}
-          label="Gasto variável"
-          onPress={() => router.push('/variable-expense')}
-        />
-        <NavRow
-          icon={<CalculatorIcon size={18} color="#2563EB" />}
-          label="Calculadora de fórmulas"
-          onPress={() => router.push('/formulas')}
         />
         <NavRow
           icon={<UsersIcon size={18} color="#2563EB" />}

@@ -1,7 +1,7 @@
 import { useQueries, useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { CaretDownIcon, CaretRightIcon } from 'phosphor-react-native';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, Pressable, View } from 'react-native';
 
 import { BalanceOverview } from '@/components/finance/balance-overview';
 import { HeaderChip } from '@/components/finance/header-chip';
@@ -70,19 +70,25 @@ function nextMonth(
     : { year, month: month + 1 };
 }
 
-/** Linha com divisor no topo (label + valor + descrição opcional) — mesmo padrão flat dos 3 blocos da Home no Figma, sem Card/borda ao redor. */
+/** Linha com divisor no topo (label + valor + descrição opcional) — mesmo padrão flat dos blocos da Home no Figma, sem Card/borda ao redor. Navegável quando `onPress` é passado (ex.: Gasto variável abre o detalhamento por categoria). */
 function SummaryListRow({
   label,
   value,
   description,
+  onPress,
 }: {
   label: string;
   value: React.ReactNode;
   description?: string;
+  onPress?: () => void;
 }) {
   const theme = useTheme();
+  const Container = onPress ? Pressable : View;
   return (
-    <View className="w-full flex-row items-start justify-center border-t border-foreground/10 px-4 pt-4">
+    <Container
+      onPress={onPress}
+      className="w-full flex-row items-start justify-center border-t border-foreground/10 px-4 pt-4 active:opacity-70"
+    >
       <View className="flex-1 gap-2.5">
         <Text className="text-[10px] font-normal leading-tight text-foreground">
           {label}
@@ -97,7 +103,7 @@ function SummaryListRow({
         )}
       </View>
       <CaretRightIcon size={14} weight="bold" color={theme.textSecondary} />
-    </View>
+    </Container>
   );
 }
 
@@ -133,6 +139,15 @@ export default function HomeScreen() {
 
   const nextInvoice = useNextInvoice(workspaceId);
   const recurringPending = useRecurringPendingTotal(workspaceId);
+
+  const { data: variableExpense } = useQuery({
+    queryKey: ['variable-expense-estimate', workspaceId],
+    queryFn: () => summaryApi.getVariableExpenseEstimate(workspaceId!),
+    enabled: Boolean(workspaceId),
+  });
+  const variableExpenseTopCategory = [
+    ...(variableExpense?.byCategory ?? []),
+  ].sort((a, b) => b.estimated - a.estimated)[0];
 
   const { data: workspaces } = useQuery({
     queryKey: ['workspaces'],
@@ -198,6 +213,17 @@ export default function HomeScreen() {
             : '—'
         }
         description="Saldo atual + recorrências previstas − faturas em aberto − estimativa de gasto variável."
+      />
+
+      <SummaryListRow
+        label="Gasto variável estimado"
+        value={formatCents(variableExpense?.total ?? 0)}
+        description={
+          variableExpenseTopCategory
+            ? `Maior categoria: ${variableExpenseTopCategory.name} (${formatCents(variableExpenseTopCategory.estimated)})`
+            : 'Média dos últimos 3 meses por categoria.'
+        }
+        onPress={() => router.push('/variable-expense')}
       />
 
       <PinnedFormulas workspaceId={workspaceId} pinnedField="pinnedHome" />
