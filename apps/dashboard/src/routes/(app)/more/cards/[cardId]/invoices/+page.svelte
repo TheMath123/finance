@@ -2,13 +2,11 @@
 	import ArrowLeftIcon from 'phosphor-svelte/lib/ArrowLeftIcon';
 
 	import { enhance } from '$app/forms';
-	import { goto, invalidateAll } from '$app/navigation';
+	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 
-	import { resolveCategoryIcon } from '$lib/category-icon';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
-	import { ComboSelect } from '$lib/components/ui/combo-select';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
@@ -16,11 +14,7 @@
 	import { dialogFormSubmit } from '$lib/dialog-form';
 	import { MONTH_NAMES } from '$lib/month-names';
 	import { formatCents } from '$lib/money';
-	import type {
-		CsvImportPreviewResult,
-		CsvImportRowStatus,
-		InvoiceView
-	} from '$lib/server/invoice-api';
+	import type { InvoiceView } from '$lib/server/invoice-api';
 
 	let { data, form } = $props();
 
@@ -52,158 +46,22 @@
 		paying = invoice;
 	}
 
-	// --- Import de CSV de fatura (feature-flagged) ---
-
-	interface CsvReviewRow {
-		rowIndex: number;
-		date: string;
-		description: string;
-		amount: number;
-		status: CsvImportRowStatus;
-		installmentDetected: { number: number; total: number } | null;
-		treatAsInstallment: boolean;
-		categoryId: string;
-		include: boolean;
-	}
-
-	const CSV_STATUS_LABELS: Record<CsvImportRowStatus, string> = {
-		new: 'Nova',
-		duplicate: 'Duplicada',
-		invalid: 'Inválida'
-	};
-	const CSV_STATUS_BADGE_CLASS: Record<CsvImportRowStatus, string> = {
-		new: 'border-success/30 bg-success/10 text-success',
-		duplicate: 'text-muted-foreground',
-		invalid: 'border-destructive/30 bg-destructive/10 text-destructive'
-	};
-
-	function defaultCsvMonth(): string {
+	// Mês/ano padrão pro link de "Importar CSV" — a rota /import lê da query
+	// string, sem precisar recarregar faturas/mês corrente por conta própria.
+	function defaultCsvMonth(): { month: number; year: number } {
 		if (data.monthFilter && data.yearFilter) {
-			return `${data.yearFilter}-${String(data.monthFilter).padStart(2, '0')}`;
+			return { month: data.monthFilter, year: data.yearFilter };
 		}
 		if (data.current) {
-			return `${data.current.yearReference}-${String(data.current.monthReference).padStart(2, '0')}`;
+			return { month: data.current.monthReference, year: data.current.yearReference };
 		}
-		return new Date().toISOString().slice(0, 7);
+		const now = new Date();
+		return { month: now.getMonth() + 1, year: now.getFullYear() };
 	}
-
-	let csvImportOpen = $state(false);
-	let csvStep = $state<'select' | 'review' | 'done'>('select');
-	let csvFile = $state<File | null>(null);
-	let csvMonth = $state(defaultCsvMonth());
-	let csvLoading = $state(false);
-	let csvError = $state<string | null>(null);
-	let csvPreview = $state<CsvImportPreviewResult | null>(null);
-	let reviewRows = $state<CsvReviewRow[]>([]);
-	let csvSummary = $state<{
-		created: number;
-		skippedDuplicates: number;
-		skippedPaidInvoice: number;
-	} | null>(null);
-
-	const includedCount = $derived(reviewRows.filter((r) => r.status === 'new' && r.include).length);
-	const categoryOptions = $derived(
-		data.categories.map((category) => ({
-			value: category.id,
-			label: category.name,
-			icon: resolveCategoryIcon(category.icon),
-			color: category.color
-		}))
-	);
-
-	function openCsvImport() {
-		csvStep = 'select';
-		csvFile = null;
-		csvMonth = defaultCsvMonth();
-		csvError = null;
-		csvPreview = null;
-		reviewRows = [];
-		csvSummary = null;
-		csvLoading = false;
-		csvImportOpen = true;
-	}
-
-	async function runCsvPreview() {
-		if (!csvFile || !csvMonth) return;
-		const [year, month] = csvMonth.split('-').map(Number);
-		if (!year || !month) return;
-
-		csvLoading = true;
-		csvError = null;
-		const formData = new FormData();
-		formData.set('file', csvFile);
-		formData.set('month', String(month));
-		formData.set('year', String(year));
-
-		const response = await fetch(`/more/cards/${data.card.id}/invoices/csv-import/preview`, {
-			method: 'POST',
-			body: formData
-		});
-		const payload = await response.json();
-		csvLoading = false;
-
-		if (!response.ok) {
-			csvError = payload?.error?.message ?? 'Não foi possível ler o CSV.';
-			return;
-		}
-
-		csvPreview = payload as CsvImportPreviewResult;
-		reviewRows = csvPreview.rows.map((r) => ({
-			rowIndex: r.rowIndex,
-			date: r.date ?? '',
-			description: r.description ?? '(descrição vazia)',
-			amount: r.amount ?? 0,
-			status: r.status,
-			installmentDetected: r.installment,
-			treatAsInstallment: r.installment !== null,
-			categoryId: r.suggestedCategoryId ?? data.categories[0]?.id ?? '',
-			include: r.status === 'new'
-		}));
-		csvStep = 'review';
-	}
-
-	async function runCsvConfirm() {
-		if (!csvMonth) return;
-		const [year, month] = csvMonth.split('-').map(Number);
-		if (!year || !month) return;
-
-		const rows = reviewRows
-			.filter((r) => r.status === 'new' && r.include)
-			.map((r) => ({
-				date: r.date,
-				description: r.description,
-				amount: r.amount,
-				categoryId: r.categoryId,
-				installment: r.treatAsInstallment && r.installmentDetected ? r.installmentDetected : null
-			}));
-		if (rows.length === 0) {
-			csvError = 'Nenhuma linha selecionada pra importar.';
-			return;
-		}
-
-		csvLoading = true;
-		csvError = null;
-		const response = await fetch(`/more/cards/${data.card.id}/invoices/csv-import/confirm`, {
-			method: 'POST',
-			headers: { 'content-type': 'application/json' },
-			body: JSON.stringify({ month, year, rows })
-		});
-		const payload = await response.json();
-		csvLoading = false;
-
-		if (!response.ok) {
-			csvError = payload?.error?.message ?? 'Não foi possível confirmar a importação.';
-			return;
-		}
-
-		csvSummary = payload;
-		csvStep = 'done';
-	}
-
-	async function finishCsvImport() {
-		csvImportOpen = false;
-		await invalidateAll();
-	}
+	const csvImportHref = $derived.by(() => {
+		const { month, year } = defaultCsvMonth();
+		return `${resolve(`/more/cards/${data.card.id}/invoices/import`)}?month=${month}&year=${year}`;
+	});
 
 	const STATUS_LABELS: Record<string, string> = {
 		open: 'Aberta',
@@ -320,7 +178,7 @@
 			<h2 class="text-sm font-medium text-muted-foreground">Histórico</h2>
 			<div class="flex flex-wrap items-center gap-2">
 				{#if data.csvImportEnabled}
-					<Button type="button" variant="outline" size="sm" onclick={openCsvImport}>
+					<Button type="button" variant="outline" size="sm" href={csvImportHref}>
 						Importar CSV
 					</Button>
 				{/if}
@@ -520,183 +378,6 @@
 					</Button>
 				</Dialog.Footer>
 			</form>
-		{/if}
-	</Dialog.Content>
-</Dialog.Root>
-
-<Dialog.Root
-	open={csvImportOpen}
-	onOpenChange={(open) => {
-		if (!open) csvImportOpen = false;
-	}}
->
-	<Dialog.Content class="max-h-[90vh] overflow-y-auto sm:max-w-4xl">
-		<Dialog.Header>
-			<Dialog.Title>Importar CSV de fatura</Dialog.Title>
-			<Dialog.Description>
-				Extrato do banco (ou fatura já fechada) pra {data.card.name} — linhas duplicadas são puladas automaticamente
-				e nunca sobrescrevem o que já existe.
-			</Dialog.Description>
-		</Dialog.Header>
-
-		{#if csvError}
-			<p class="text-sm text-destructive">{csvError}</p>
-		{/if}
-
-		{#if csvStep === 'select'}
-			<div class="grid gap-4">
-				<div class="grid gap-2">
-					<Label for="csv-month">Mês da fatura</Label>
-					<Input id="csv-month" type="month" bind:value={csvMonth} required />
-				</div>
-				<div class="grid gap-2">
-					<Label for="csv-file">Arquivo CSV</Label>
-					<input
-						id="csv-file"
-						type="file"
-						accept=".csv,text/csv"
-						class="h-9 w-full rounded-lg border border-foreground/10 bg-transparent text-sm outline-none file:mr-3 file:h-full file:cursor-pointer file:border-0 file:bg-foreground/5 file:px-3 file:text-sm file:font-medium focus-visible:ring-2 focus-visible:ring-ring"
-						onchange={(e) => (csvFile = e.currentTarget.files?.[0] ?? null)}
-					/>
-					<p class="text-xs text-muted-foreground">
-						Precisa ter data, descrição e valor — o formato exato do banco é detectado
-						automaticamente.
-					</p>
-				</div>
-				<Dialog.Footer>
-					<Button
-						type="button"
-						disabled={!csvFile || !csvMonth || csvLoading}
-						onclick={runCsvPreview}
-					>
-						{csvLoading ? 'Analisando…' : 'Analisar CSV'}
-					</Button>
-				</Dialog.Footer>
-			</div>
-		{:else if csvStep === 'review' && csvPreview}
-			<div class="grid gap-3">
-				<p class="text-sm text-muted-foreground">
-					{includedCount} linha{includedCount === 1 ? '' : 's'} selecionada{includedCount === 1
-						? ''
-						: 's'} pra importar de {csvPreview.rows.length} lida{csvPreview.rows.length === 1
-						? ''
-						: 's'}.
-					{#if !csvPreview.headerDetected}
-						Cabeçalho não reconhecido — colunas assumidas por posição, confira os valores abaixo.
-					{/if}
-				</p>
-
-				<div class="max-h-[55vh] overflow-y-auto rounded-xl border border-foreground/10">
-					<table class="w-full text-sm">
-						<thead class="sticky top-0 bg-popover text-xs text-muted-foreground">
-							<tr class="border-b border-foreground/10">
-								<th class="px-3 py-2 text-left font-medium">Incluir</th>
-								<th class="px-3 py-2 text-left font-medium">Data</th>
-								<th class="px-3 py-2 text-left font-medium">Descrição</th>
-								<th class="px-3 py-2 text-right font-medium">Valor</th>
-								<th class="px-3 py-2 text-left font-medium">Categoria</th>
-								<th class="px-3 py-2 text-left font-medium">Status</th>
-							</tr>
-						</thead>
-						<tbody>
-							{#each reviewRows as row (row.rowIndex)}
-								<tr class="border-b border-foreground/5 last:border-0">
-									<td class="px-3 py-2">
-										{#if row.status === 'new'}
-											<input
-												type="checkbox"
-												bind:checked={row.include}
-												aria-label="Incluir esta linha na importação"
-												class="h-4 w-4"
-											/>
-										{/if}
-									</td>
-									<td class="px-3 py-2 whitespace-nowrap tabular-nums">{row.date || '—'}</td>
-									<td class="px-3 py-2">
-										{#if row.status === 'new'}
-											<Input
-												bind:value={row.description}
-												disabled={!row.include}
-												class="h-8 text-sm"
-											/>
-											{#if row.installmentDetected}
-												<label class="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
-													<input
-														type="checkbox"
-														bind:checked={row.treatAsInstallment}
-														disabled={!row.include}
-													/>
-													Parcela {row.installmentDetected.number} de {row.installmentDetected
-														.total} — lança as próximas faturas
-												</label>
-											{/if}
-										{:else}
-											<span class="text-muted-foreground">{row.description}</span>
-										{/if}
-									</td>
-									<td class="px-3 py-2 text-right whitespace-nowrap tabular-nums">
-										{formatCents(row.amount)}
-									</td>
-									<td class="px-3 py-2">
-										{#if row.status === 'new'}
-											<ComboSelect
-												options={categoryOptions}
-												bind:value={row.categoryId}
-												disabled={!row.include}
-												class="h-8"
-											/>
-										{/if}
-									</td>
-									<td class="px-3 py-2">
-										<Badge variant="outline" class={CSV_STATUS_BADGE_CLASS[row.status]}>
-											{CSV_STATUS_LABELS[row.status]}
-										</Badge>
-									</td>
-								</tr>
-							{/each}
-						</tbody>
-					</table>
-				</div>
-
-				<Dialog.Footer>
-					<Button type="button" variant="outline" onclick={() => (csvStep = 'select')}>
-						Voltar
-					</Button>
-					<Button
-						type="button"
-						disabled={includedCount === 0 || csvLoading}
-						onclick={runCsvConfirm}
-					>
-						{csvLoading ? 'Importando…' : `Confirmar importação (${includedCount})`}
-					</Button>
-				</Dialog.Footer>
-			</div>
-		{:else if csvStep === 'done' && csvSummary}
-			<div class="grid gap-3">
-				<p class="text-sm">
-					<span class="font-medium text-success">{csvSummary.created}</span>
-					transação{csvSummary.created === 1 ? '' : 'ões'} criada{csvSummary.created === 1
-						? ''
-						: 's'}.
-				</p>
-				{#if csvSummary.skippedDuplicates > 0}
-					<p class="text-sm text-muted-foreground">
-						{csvSummary.skippedDuplicates} pulada{csvSummary.skippedDuplicates === 1 ? '' : 's'} por já
-						existir (duplicata).
-					</p>
-				{/if}
-				{#if csvSummary.skippedPaidInvoice > 0}
-					<p class="text-sm text-muted-foreground">
-						{csvSummary.skippedPaidInvoice} parcela{csvSummary.skippedPaidInvoice === 1 ? '' : 's'} futura{csvSummary.skippedPaidInvoice ===
-						1
-							? ''
-							: 's'} não lançada{csvSummary.skippedPaidInvoice === 1 ? '' : 's'} — fatura já paga.
-					</p>
-				{/if}
-				<Dialog.Footer>
-					<Button type="button" onclick={finishCsvImport}>Fechar</Button>
-				</Dialog.Footer>
-			</div>
 		{/if}
 	</Dialog.Content>
 </Dialog.Root>

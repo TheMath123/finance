@@ -16,7 +16,6 @@
 	import { resolveCategoryIcon } from '$lib/category-icon';
 	import FormulaDialog from '$lib/components/calculator/formula-dialog.svelte';
 	import AttachmentField from '$lib/components/transactions/attachment-field.svelte';
-	import ImportCsvDialog from '$lib/components/transactions/import-csv-dialog.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { ComboSelect } from '$lib/components/ui/combo-select';
 	import * as Dialog from '$lib/components/ui/dialog';
@@ -77,7 +76,6 @@
 
 	let createOpen = $state(false);
 	let createError = $state<string | null>(null);
-	let importOpen = $state(false);
 	/** Transferência entre usuários da plataforma (M3-02) — o botão/form vivia
 	 *  em Mais > Transferências; movido pra cá porque é uma forma de lançar
 	 *  transação como qualquer outra. Envia pro form action de lá mesmo
@@ -299,7 +297,7 @@
 				Calculadora
 			</Button>
 			{#if canManage && csvImportAvailable}
-				<Button variant="outline" onclick={() => (importOpen = true)}>
+				<Button variant="outline" href={resolve('/transactions/import')}>
 					<UploadSimpleIcon size={16} />
 					Importar
 				</Button>
@@ -1205,17 +1203,4 @@
 	values={formulaCatalog.values}
 	formulas={data.formulas}
 	{form}
-/>
-
-<ImportCsvDialog
-	bind:open={importOpen}
-	cards={data.cards}
-	accounts={data.accounts}
-	categories={data.categories}
-	cardCsvImportEnabled={data.cardCsvImportEnabled}
-	accountCsvImportEnabled={data.accountCsvImportEnabled}
-	ondone={async () => {
-		importOpen = false;
-		await invalidateAll();
-	}}
 />
