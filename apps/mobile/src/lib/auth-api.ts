@@ -28,6 +28,8 @@ export interface AuthSession {
     emailVerifiedAt: string | null;
     pendingEmail: string | null;
     avatarUrl: string | null;
+    /** Conta Google vinculada (login social) — decide "Vincular"/"Desvincular" na tela de perfil. */
+    googleLinked: boolean;
   };
   defaultWorkspaceId: string;
   accessToken: string;
@@ -55,6 +57,24 @@ export const authApi = {
       body: input,
       skipAuth: true,
     }),
+
+  /** Login/cadastro via Google — mesmo endpoint faz as duas coisas: cria a conta na hora se o e-mail do Google ainda não existir. */
+  googleSignIn: (idToken: string) =>
+    apiRequest<AuthSession>('/auth/google', {
+      method: 'POST',
+      body: { idToken, termsAccepted: true },
+      skipAuth: true,
+    }),
+
+  /** Vincula Google à conta logada — exige que o e-mail do Google bata com o e-mail da conta. */
+  linkGoogle: (idToken: string) =>
+    apiRequest<void>('/auth/me/google/link', {
+      method: 'POST',
+      body: { idToken },
+    }),
+
+  unlinkGoogle: () =>
+    apiRequest<void>('/auth/me/google/unlink', { method: 'POST' }),
 
   logout: (refreshToken: string) =>
     apiRequest<void>('/auth/logout', {

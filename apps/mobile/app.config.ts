@@ -25,5 +25,25 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       ...base.android,
       ...(androidVersionCode ? { versionCode: androidVersionCode } : {}),
     },
+    plugins: [
+      ...(base.plugins ?? []),
+      // `GOOGLE_IOS_URL_SCHEME` (não EXPO_PUBLIC_*, só build-time — ver
+      // .env.example) é o client ID iOS invertido; o plugin usa isso pra
+      // registrar o redirect do GoogleSignin no Info.plist durante o `expo
+      // prebuild`. O plugin EXIGE essa opção mesmo em build Android-only
+      // (senão `expo prebuild` quebra com "Missing iosUrlScheme" antes de
+      // sequer olhar pra plataforma) — sem a env real (Android-only, ou
+      // setup do Google Cloud ainda não feito), cai num placeholder inerte:
+      // só afeta o Info.plist do build iOS, que ainda não existe neste repo
+      // (ver "fora de escopo" em tasks/done/ci-cd-deploy.md).
+      [
+        '@react-native-google-signin/google-signin',
+        {
+          iosUrlScheme:
+            process.env.GOOGLE_IOS_URL_SCHEME ??
+            'com.googleusercontent.apps.placeholder',
+        },
+      ],
+    ],
   };
 };

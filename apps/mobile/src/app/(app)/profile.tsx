@@ -6,6 +6,7 @@ import {
   ArrowLeftIcon,
   EnvelopeIcon,
   FingerprintIcon,
+  GoogleLogoIcon,
   LockKeyIcon,
   PencilSimpleIcon,
   SignOutIcon,
@@ -26,11 +27,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { GoogleAuthButton } from '@/components/ui/google-auth-button';
 import { Screen } from '@/components/ui/screen';
 import { useBiometricLock } from '@/context/biometric-lock';
 import { useSession } from '@/context/session';
 import { ApiError } from '@/lib/api-client';
 import { authApi } from '@/lib/auth-api';
+import { googleAuthAvailable } from '@/lib/hooks/use-google-auth';
 
 function inferMimeType(uri: string): string {
   const ext = uri.split('.').pop()?.toLowerCase();
@@ -48,6 +51,7 @@ export default function ProfileScreen() {
   } = useBiometricLock();
   const [signingOut, setSigningOut] = useState(false);
   const [editingName, setEditingName] = useState(false);
+  const [googleError, setGoogleError] = useState<string | null>(null);
 
   const uploadAvatar = useMutation({
     mutationFn: (asset: ImagePicker.ImagePickerAsset) =>
@@ -81,6 +85,33 @@ export default function ProfileScreen() {
           : 'Não foi possível remover a foto.'
       ),
   });
+
+  const unlinkGoogle = useMutation({
+    mutationFn: () => authApi.unlinkGoogle(),
+    onSuccess: () => refreshUser(),
+    onError: (err) =>
+      Alert.alert(
+        'Erro',
+        err instanceof ApiError
+          ? err.message
+          : 'Não foi possível desvincular sua conta Google.'
+      ),
+  });
+
+  const confirmUnlinkGoogle = () => {
+    Alert.alert(
+      'Desvincular conta Google?',
+      'Você continua podendo entrar com e-mail e senha normalmente.',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Desvincular',
+          style: 'destructive',
+          onPress: () => unlinkGoogle.mutate(),
+        },
+      ]
+    );
+  };
 
   const pickAvatar = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -220,6 +251,50 @@ export default function ProfileScreen() {
             onValueChange={setBiometricsEnabled}
             trackColor={{ false: '#d4d4d8', true: '#2563EB' }}
           />
+        </Card>
+      )}
+
+      {(googleAuthAvailable || user?.googleLinked) && (
+        <Card className="gap-3">
+          <View className="flex-row items-center gap-3">
+            <View className="h-9 w-9 items-center justify-center rounded-full bg-primary/10">
+              <GoogleLogoIcon size={18} color="#2563EB" weight="bold" />
+            </View>
+            <View className="flex-1">
+              <ThemedText type="smallBold">Conta Google</ThemedText>
+              <ThemedText type="small" themeColor="textSecondary">
+                {user?.googleLinked
+                  ? 'Vinculada — você também pode entrar com Google.'
+                  : 'Vincule pra entrar mais rápido, sem digitar senha.'}
+              </ThemedText>
+            </View>
+            {user?.googleLinked ? (
+              <Button
+                variant="outline"
+                size="sm"
+                loading={unlinkGoogle.isPending}
+                onPress={confirmUnlinkGoogle}
+              >
+                Desvincular
+              </Button>
+            ) : (
+              <GoogleAuthButton
+                label="Vincular"
+                size="sm"
+                onIdToken={async (idToken) => {
+                  setGoogleError(null);
+                  await authApi.linkGoogle(idToken);
+                  await refreshUser();
+                }}
+                onError={setGoogleError}
+              />
+            )}
+          </View>
+          {googleError && (
+            <ThemedText type="small" style={{ color: '#DC2626' }}>
+              {googleError}
+            </ThemedText>
+          )}
         </Card>
       )}
 

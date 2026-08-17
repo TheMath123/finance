@@ -162,9 +162,11 @@ cadastrado.
   `oauth_accounts` (não campo em `users`) já deixa multi-provedor barato.
   E-mail do Google que já tem conta por senha é rejeitado (pede login com
   senha ou reset) — vínculo manual fica pra depois. Fase 2 (mobile) em
-  [`backlog/m5-06b-google-login-mobile.md`](backlog/m5-06b-google-login-mobile.md),
-  bloqueada esperando o usuário criar Client IDs iOS/Android no Google
-  Cloud Console.
+  [`validations/m5-06b-google-login-mobile.md`](validations/m5-06b-google-login-mobile.md):
+  código implementado em 2026-08-17 (`@react-native-google-signin/google-signin`,
+  não `expo-auth-session` como planejado — ver o porquê no arquivo), mas
+  aguardando o usuário criar Client IDs iOS/Android no Google Cloud
+  Console antes de revalidar o fluxo real.
 - [M5-07 — Vínculo de conta Google pelo perfil + avatar de usuário](done/m5-07-vinculo-google-avatar.md):
   concluída em 2026-08-14, validada com testes reais contra Postgres +
   typecheck/lint/build em backend, dashboard e mobile. Vincular/desvincular

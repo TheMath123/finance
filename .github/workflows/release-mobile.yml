@@ -33,6 +33,13 @@ jobs:
       # Clarity só, fontes diferentes dentro do mesmo painel (ver
       # apps/mobile/.env.example).
       EXPO_PUBLIC_CLARITY_PROJECT_ID: ${{ vars.PUBLIC_CLARITY_PROJECT_ID }}
+      # Login com Google (ver apps/mobile/.env.example e
+      # lib/hooks/use-google-auth.ts) — Client IDs do Google Cloud Console,
+      # não são segredo. Sem eles configurados como repo Variable, caem em
+      # string vazia e o botão "Continuar com Google" simplesmente some do
+      # APK (googleAuthAvailable), sem quebrar o build.
+      EXPO_PUBLIC_CLIENT_ID: ${{ vars.EXPO_PUBLIC_CLIENT_ID }}
+      EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID: ${{ vars.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID }}
 
     steps:
       - uses: actions/checkout@v4

@@ -7,6 +7,7 @@ import {
 } from 'react';
 
 import { type AuthSession, authApi } from '@/lib/auth-api';
+import { signOutGoogleLocally } from '@/lib/hooks/use-google-auth';
 import {
   registerForPushNotifications,
   unregisterCurrentPushToken,
@@ -85,6 +86,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     setFeatureFlags({});
     if (refreshToken) await authApi.logout(refreshToken).catch(() => {});
     void unregisterCurrentPushToken();
+    void signOutGoogleLocally();
   };
 
   const refreshUser = async () => {

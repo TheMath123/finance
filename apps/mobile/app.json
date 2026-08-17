@@ -8,10 +8,10 @@
     "userInterfaceStyle": "automatic",
     "ios": {
       "icon": "./assets/images/icon.png",
-      "bundleIdentifier": "com.matheuspa.financeguide"
+      "bundleIdentifier": "app.marcelus.mobile"
     },
     "android": {
-      "package": "com.matheuspa.financeguide",
+      "package": "app.marcelus.mobile",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
