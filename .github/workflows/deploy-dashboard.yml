@@ -17,15 +17,18 @@ jobs:
       # quebrando o typecheck/build do dashboard (ver
       # google-sign-in-button.svelte / google-link-button.svelte). Repo
       # variable (Settings → Secrets and variables → Actions → Variables),
-      # não secret.
-      PUBLIC_GOOGLE_CLIENT_ID: ${{ vars.PUBLIC_GOOGLE_CLIENT_ID }}
+      # não secret. Nome da repo variable com prefixo DASH_ (organização —
+      # agrupa com as outras vars do dashboard na lista do GitHub); o nome
+      # da env em si (esquerda) continua PUBLIC_GOOGLE_CLIENT_ID porque é
+      # isso que o SvelteKit exige pra expor no bundle do client.
+      PUBLIC_GOOGLE_CLIENT_ID: ${{ vars.DASH_PUBLIC_GOOGLE_CLIENT_ID }}
       # Mesmo motivo/mecanismo do PUBLIC_GOOGLE_CLIENT_ID acima (env pública
       # resolvida em tempo de build) — ver +layout.svelte.
-      PUBLIC_CLARITY_PROJECT_ID: ${{ vars.PUBLIC_CLARITY_PROJECT_ID }}
+      PUBLIC_CLARITY_PROJECT_ID: ${{ vars.DASH_PUBLIC_CLARITY_PROJECT_ID }}
       # Mesmo motivo/mecanismo acima — URL do site institucional, usada só
       # pra linkar Privacidade/Termos a partir do dashboard (banner de
       # cookies, checkbox de cadastro).
-      PUBLIC_SITE_URL: ${{ vars.PUBLIC_SITE_URL }}
+      PUBLIC_SITE_URL: ${{ vars.DASH_PUBLIC_SITE_URL }}
 
     steps:
       - uses: actions/checkout@v4

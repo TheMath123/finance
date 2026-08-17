@@ -32,23 +32,27 @@ jobs:
       # quebrando o typecheck/build do dashboard (ver
       # google-sign-in-button.svelte / google-link-button.svelte). Repo
       # variable (Settings → Secrets and variables → Actions → Variables),
-      # não secret.
-      PUBLIC_GOOGLE_CLIENT_ID: ${{ vars.PUBLIC_GOOGLE_CLIENT_ID }}
+      # não secret. Nomes das repo variables com prefixo DASH_/SITE_ por app
+      # (organização — agrupa cada app na lista do GitHub); os nomes das envs
+      # em si (esquerda) continuam PUBLIC_* porque é isso que o SvelteKit
+      # exige pra expor no bundle do client (ver deploy-dashboard.yml/
+      # deploy-landing.yml, que usam o mesmo mapeamento).
+      PUBLIC_GOOGLE_CLIENT_ID: ${{ vars.DASH_PUBLIC_GOOGLE_CLIENT_ID }}
       # Mesmo motivo/mecanismo do PUBLIC_GOOGLE_CLIENT_ID acima (env pública
       # resolvida em tempo de build) — ver +layout.svelte.
-      PUBLIC_CLARITY_PROJECT_ID: ${{ vars.PUBLIC_CLARITY_PROJECT_ID }}
+      PUBLIC_CLARITY_PROJECT_ID: ${{ vars.DASH_PUBLIC_CLARITY_PROJECT_ID }}
       # Mesmo motivo/mecanismo acima, mas pro app novo apps/landing — ver
       # [lang=lang]/+layout.svelte (botão "Entrar" + CTAs).
-      PUBLIC_APP_URL: ${{ vars.PUBLIC_APP_URL }}
+      PUBLIC_APP_URL: ${{ vars.SITE_PUBLIC_APP_URL }}
       # Mesmo motivo/mecanismo acima — URL do site institucional, usada só
       # pra linkar Privacidade/Termos a partir do dashboard (banner de
       # cookies, checkbox de cadastro). Ver cookie-consent-banner.svelte e
       # routes/register/+page.svelte.
-      PUBLIC_SITE_URL: ${{ vars.PUBLIC_SITE_URL }}
+      PUBLIC_SITE_URL: ${{ vars.DASH_PUBLIC_SITE_URL }}
       # Mesmo motivo/mecanismo do PUBLIC_CLARITY_PROJECT_ID acima, mas projeto
       # Clarity PRÓPRIO do landing (separado do dashboard) — ver
       # [lang=lang]/+layout.svelte.
-      PUBLIC_SITE_CLARITY_PROJECT_ID: ${{ vars.PUBLIC_SITE_CLARITY_PROJECT_ID }}
+      PUBLIC_SITE_CLARITY_PROJECT_ID: ${{ vars.SITE_PUBLIC_CLARITY_PROJECT_ID }}
 
     steps:
       - uses: actions/checkout@v4

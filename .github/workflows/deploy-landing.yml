@@ -17,11 +17,15 @@ jobs:
       # typecheck/build do landing (mesmo problema já visto no dashboard com
       # PUBLIC_GOOGLE_CLIENT_ID/PUBLIC_CLARITY_PROJECT_ID). Repo variable
       # (Settings → Secrets and variables → Actions → Variables), não secret.
-      PUBLIC_APP_URL: ${{ vars.PUBLIC_APP_URL }}
+      # Nome da repo variable com prefixo SITE_ (organização — agrupa com as
+      # outras vars do landing na lista do GitHub); o nome da env em si
+      # (esquerda) continua PUBLIC_APP_URL porque é isso que o SvelteKit
+      # exige pra expor no bundle do client.
+      PUBLIC_APP_URL: ${{ vars.SITE_PUBLIC_APP_URL }}
       # Mesmo motivo/mecanismo acima — projeto Clarity PRÓPRIO do landing
       # (separado do PUBLIC_CLARITY_PROJECT_ID do dashboard), ver
       # [lang=lang]/+layout.svelte.
-      PUBLIC_SITE_CLARITY_PROJECT_ID: ${{ vars.PUBLIC_SITE_CLARITY_PROJECT_ID }}
+      PUBLIC_SITE_CLARITY_PROJECT_ID: ${{ vars.SITE_PUBLIC_CLARITY_PROJECT_ID }}
 
     steps:
       - uses: actions/checkout@v4
