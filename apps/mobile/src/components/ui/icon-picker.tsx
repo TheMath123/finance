@@ -75,6 +75,8 @@ export function IconPicker({
       >
         {SelectedIcon && (
           <View className="h-6 w-6 items-center justify-center rounded-full bg-primary/15">
+            {/* resolveCategoryIcon escolhe entre ícones Phosphor já existentes (não cria nada novo); trocar de ícone conforme o valor selecionado é intencional, sem estado interno a perder. */}
+            {/* eslint-disable-next-line react-hooks/static-components */}
             <SelectedIcon size={14} color={theme.text} />
           </View>
         )}
