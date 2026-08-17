@@ -29,3 +29,21 @@ export function setConsent(value: ConsentValue): void {
 	const maxAge = MAX_AGE_DAYS * 24 * 60 * 60;
 	document.cookie = `${CONSENT_COOKIE_NAME}=${value}; path=/; max-age=${maxAge}; samesite=lax`;
 }
+
+let clarityLoaded = false;
+
+/**
+ * Injeta o script do Microsoft Clarity (heatmap/gravação de sessão) — só
+ * deve ser chamado depois que o visitante consentir com cookies de
+ * rastreio (`getConsent() === 'all'`). Mesma implementação de
+ * apps/dashboard/src/lib/cookie-consent.ts — `document.createElement` +
+ * `appendChild` (em vez de `{@html}`/`innerHTML`) porque scripts inseridos
+ * via `innerHTML` não executam.
+ */
+export function loadClarity(projectId: string): void {
+	if (typeof document === 'undefined' || clarityLoaded) return;
+	clarityLoaded = true;
+	const script = document.createElement('script');
+	script.text = `(function(c,l,a,r,i,t,y){c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y)})(window, document, "clarity", "script", "${projectId}");`;
+	document.head.appendChild(script);
+}

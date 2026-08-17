@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { PUBLIC_SITE_CLARITY_PROJECT_ID } from '$env/static/public';
 	import { mode, ModeWatcher } from 'mode-watcher';
 	import CaretDownIcon from 'phosphor-svelte/lib/CaretDownIcon';
 
@@ -7,6 +8,7 @@
 	import { navigating, page } from '$app/state';
 	import { PUBLIC_APP_URL } from '$lib/public-env';
 	import CookieConsentBanner from '$lib/components/cookie-consent-banner.svelte';
+	import { getConsent, loadClarity, type ConsentValue } from '$lib/cookie-consent';
 	import PricingSkeleton from '$lib/components/pricing-skeleton.svelte';
 	import { MESSAGES } from '$lib/i18n/messages';
 	import { SUPPORTED_LANGS, type Lang } from '../../params/lang';
@@ -47,6 +49,21 @@
 	// rotas a navegação já é rápida o bastante (sem chamada de API) pra não
 	// precisar de estado de carregamento próprio.
 	const navigatingToPricing = $derived(navigating.to?.url.pathname.endsWith('/pricing') ?? false);
+
+	// Heatmap + gravação de sessão (analytics) — mesmo padrão do dashboard
+	// (ver apps/dashboard/src/routes/+layout.svelte): só carrega depois de
+	// consentimento (banner de cookies), nunca incondicionalmente. Projeto
+	// Clarity próprio do landing, separado do dashboard (PUBLIC_SITE_CLARITY_PROJECT_ID).
+	$effect(() => {
+		if (PUBLIC_SITE_CLARITY_PROJECT_ID && getConsent() === 'all') {
+			loadClarity(PUBLIC_SITE_CLARITY_PROJECT_ID);
+		}
+	});
+
+	function handleConsent(value: ConsentValue) {
+		if (value === 'all' && PUBLIC_SITE_CLARITY_PROJECT_ID)
+			loadClarity(PUBLIC_SITE_CLARITY_PROJECT_ID);
+	}
 </script>
 
 <svelte:head>
@@ -184,4 +201,5 @@
 	t={t.cookieConsent}
 	lang={data.lang as Lang}
 	initialConsent={data.cookieConsent}
+	onConsent={handleConsent}
 />

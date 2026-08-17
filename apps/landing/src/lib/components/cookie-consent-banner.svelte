@@ -15,8 +15,15 @@
 	let {
 		t,
 		lang,
-		initialConsent
-	}: { t: Messages['cookieConsent']; lang: Lang; initialConsent: ConsentValue | null } = $props();
+		initialConsent,
+		onConsent
+	}: {
+		t: Messages['cookieConsent'];
+		lang: Lang;
+		initialConsent: ConsentValue | null;
+		/** Chamado na escolha (não só no próximo load) — pra quem ouve poder carregar scripts de rastreio (Clarity) na hora, sem esperar reload. */
+		onConsent?: (value: ConsentValue) => void;
+	} = $props();
 
 	let consent = $state(initialConsent);
 	let visible = $derived(consent === null);
@@ -24,6 +31,7 @@
 	function choose(value: ConsentValue) {
 		setConsent(value);
 		consent = value;
+		onConsent?.(value);
 	}
 </script>
 
