@@ -1,6 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
 import { Link } from 'expo-router';
+import { EnvelopeSimpleIcon } from 'phosphor-react-native';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { View } from 'react-native';
@@ -8,11 +9,13 @@ import { View } from 'react-native';
 import { PasswordField } from '@/components/form/password-field';
 import { TextField } from '@/components/form/text-field';
 import { ThemedText } from '@/components/themed-text';
-import { Button } from '@/components/ui/button';
+import { AuthButton } from '@/components/ui/auth-button';
 import { GoogleAuthButton } from '@/components/ui/google-auth-button';
 import { useSession } from '@/context/session';
+import { useTheme } from '@/hooks/use-theme';
 import { ApiError } from '@/lib/api-client';
 import { authApi } from '@/lib/auth-api';
+import { AUTH_FIELD_CLASSNAME } from '@/lib/auth-field-style';
 import { googleAuthAvailable } from '@/lib/hooks/use-google-auth';
 import { usePersistEmailField } from '@/lib/hooks/use-persist-email-field';
 import { type LoginInput, loginSchema } from '@/lib/schemas/auth';
@@ -20,6 +23,7 @@ import { lastEmailStore } from '@/lib/secure-store';
 
 export function LoginForm() {
   const { signIn } = useSession();
+  const theme = useTheme();
   const [googleError, setGoogleError] = useState<string | null>(null);
   const { control, handleSubmit, setValue } = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
@@ -48,8 +52,11 @@ export function LoginForm() {
       <TextField
         control={control}
         name="email"
-        label="E-mail"
-        placeholder="voce@exemplo.com"
+        placeholder="E-mail"
+        className={AUTH_FIELD_CLASSNAME}
+        trailingIcon={
+          <EnvelopeSimpleIcon size={18} color={theme.textSecondary} />
+        }
         autoCapitalize="none"
         autoComplete="email"
         keyboardType="email-address"
@@ -58,8 +65,8 @@ export function LoginForm() {
       <PasswordField
         control={control}
         name="password"
-        label="Senha"
-        placeholder="••••••••"
+        placeholder="Senha"
+        className={AUTH_FIELD_CLASSNAME}
         autoComplete="password"
         returnKeyType="done"
         onSubmitEditing={onSubmit}
@@ -73,13 +80,17 @@ export function LoginForm() {
         </ThemedText>
       )}
 
-      <Button loading={mutation.isPending} onPress={onSubmit}>
+      <AuthButton loading={mutation.isPending} onPress={onSubmit}>
         Entrar
-      </Button>
+      </AuthButton>
+
+      <Link href="/forgot-password" className="text-center">
+        <ThemedText type="linkPrimary">Esqueci minha senha</ThemedText>
+      </Link>
 
       {googleAuthAvailable && (
         <>
-          <View className="flex-row items-center gap-3">
+          <View className="flex-row items-center gap-3 py-1">
             <View className="h-px flex-1 bg-border" />
             <ThemedText type="small" themeColor="textSecondary">
               ou
@@ -87,6 +98,7 @@ export function LoginForm() {
             <View className="h-px flex-1 bg-border" />
           </View>
           <GoogleAuthButton
+            className="h-14 rounded-full"
             onIdToken={async (idToken) => {
               setGoogleError(null);
               const session = await authApi.googleSignIn(idToken);
@@ -103,13 +115,10 @@ export function LoginForm() {
       )}
 
       <Link href="/register" className="pt-2 text-center">
-        <ThemedText type="linkPrimary">
-          Ainda não tem conta? Criar conta
+        <ThemedText type="small" themeColor="textSecondary">
+          Ainda não tem conta?{' '}
+          <ThemedText type="linkPrimary">Criar conta</ThemedText>
         </ThemedText>
-      </Link>
-
-      <Link href="/forgot-password" className="text-center">
-        <ThemedText type="linkPrimary">Esqueci minha senha</ThemedText>
       </Link>
     </View>
   );

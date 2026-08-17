@@ -1,6 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
 import { Link } from 'expo-router';
+import { EnvelopeSimpleIcon, UserIcon } from 'phosphor-react-native';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { View } from 'react-native';
@@ -9,11 +10,13 @@ import { CheckboxField } from '@/components/form/checkbox-field';
 import { PasswordField } from '@/components/form/password-field';
 import { TextField } from '@/components/form/text-field';
 import { ThemedText } from '@/components/themed-text';
-import { Button } from '@/components/ui/button';
+import { AuthButton } from '@/components/ui/auth-button';
 import { GoogleAuthButton } from '@/components/ui/google-auth-button';
 import { useSession } from '@/context/session';
+import { useTheme } from '@/hooks/use-theme';
 import { ApiError } from '@/lib/api-client';
 import { authApi } from '@/lib/auth-api';
+import { AUTH_FIELD_CLASSNAME } from '@/lib/auth-field-style';
 import { googleAuthAvailable } from '@/lib/hooks/use-google-auth';
 import { usePersistEmailField } from '@/lib/hooks/use-persist-email-field';
 import { type RegisterInput, registerSchema } from '@/lib/schemas/auth';
@@ -21,6 +24,7 @@ import { lastEmailStore } from '@/lib/secure-store';
 
 export function RegisterForm() {
   const { signIn } = useSession();
+  const theme = useTheme();
   const [googleError, setGoogleError] = useState<string | null>(null);
   const { control, handleSubmit, setValue } = useForm<RegisterInput>({
     resolver: zodResolver(registerSchema),
@@ -47,15 +51,19 @@ export function RegisterForm() {
       <TextField
         control={control}
         name="name"
-        label="Nome"
-        placeholder="Seu nome"
+        placeholder="Nome"
+        className={AUTH_FIELD_CLASSNAME}
+        trailingIcon={<UserIcon size={18} color={theme.textSecondary} />}
         autoComplete="name"
       />
       <TextField
         control={control}
         name="email"
-        label="E-mail"
-        placeholder="voce@exemplo.com"
+        placeholder="E-mail"
+        className={AUTH_FIELD_CLASSNAME}
+        trailingIcon={
+          <EnvelopeSimpleIcon size={18} color={theme.textSecondary} />
+        }
         autoCapitalize="none"
         autoComplete="email"
         keyboardType="email-address"
@@ -63,8 +71,8 @@ export function RegisterForm() {
       <PasswordField
         control={control}
         name="password"
-        label="Senha"
         placeholder="Crie uma senha"
+        className={AUTH_FIELD_CLASSNAME}
         autoComplete="new-password"
         showRequirements
       />
@@ -82,16 +90,16 @@ export function RegisterForm() {
         </ThemedText>
       )}
 
-      <Button
+      <AuthButton
         loading={mutation.isPending}
         onPress={handleSubmit((input) => mutation.mutate(input))}
       >
         Criar conta
-      </Button>
+      </AuthButton>
 
       {googleAuthAvailable && (
         <>
-          <View className="flex-row items-center gap-3">
+          <View className="flex-row items-center gap-3 py-1">
             <View className="h-px flex-1 bg-border" />
             <ThemedText type="small" themeColor="textSecondary">
               ou
@@ -100,6 +108,7 @@ export function RegisterForm() {
           </View>
           <GoogleAuthButton
             label="Continuar com Google"
+            className="h-14 rounded-full"
             onIdToken={async (idToken) => {
               setGoogleError(null);
               const session = await authApi.googleSignIn(idToken);
@@ -123,7 +132,9 @@ export function RegisterForm() {
       )}
 
       <Link href="/login" className="pt-2 text-center">
-        <ThemedText type="linkPrimary">Já tenho conta</ThemedText>
+        <ThemedText type="small" themeColor="textSecondary">
+          Já tem uma conta? <ThemedText type="linkPrimary">Entrar</ThemedText>
+        </ThemedText>
       </Link>
     </View>
   );

@@ -1,6 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
 import { Link, useRouter } from 'expo-router';
+import { EnvelopeSimpleIcon } from 'phosphor-react-native';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { View } from 'react-native';
@@ -8,9 +9,12 @@ import { View } from 'react-native';
 import { CodeField } from '@/components/form/code-field';
 import { TextField } from '@/components/form/text-field';
 import { ThemedText } from '@/components/themed-text';
+import { AuthButton } from '@/components/ui/auth-button';
 import { Button } from '@/components/ui/button';
+import { useTheme } from '@/hooks/use-theme';
 import { ApiError } from '@/lib/api-client';
 import { authApi } from '@/lib/auth-api';
+import { AUTH_FIELD_CLASSNAME } from '@/lib/auth-field-style';
 import {
   type VerifyResetCodeInput,
   verifyResetCodeSchema,
@@ -29,6 +33,7 @@ export function ResetPasswordForm({
   defaultCode,
 }: ResetPasswordFormProps) {
   const router = useRouter();
+  const theme = useTheme();
   const [resendMessage, setResendMessage] = useState<string | null>(null);
 
   const { control, handleSubmit, getValues } = useForm<VerifyResetCodeInput>({
@@ -60,8 +65,11 @@ export function ResetPasswordForm({
       <TextField
         control={control}
         name="email"
-        label="E-mail"
-        placeholder="voce@exemplo.com"
+        placeholder="E-mail"
+        className={AUTH_FIELD_CLASSNAME}
+        trailingIcon={
+          <EnvelopeSimpleIcon size={18} color={theme.textSecondary} />
+        }
         autoCapitalize="none"
         autoComplete="email"
         keyboardType="email-address"
@@ -70,7 +78,7 @@ export function ResetPasswordForm({
       <CodeField
         control={control}
         name="code"
-        label="Código"
+        className={`${AUTH_FIELD_CLASSNAME} rounded-2xl text-center text-lg font-semibold`}
         onComplete={() => onSubmit()}
       />
 
@@ -82,9 +90,9 @@ export function ResetPasswordForm({
         </ThemedText>
       )}
 
-      <Button loading={verifyMutation.isPending} onPress={onSubmit}>
+      <AuthButton loading={verifyMutation.isPending} onPress={onSubmit}>
         Verificar código
-      </Button>
+      </AuthButton>
 
       {resendMessage && (
         <ThemedText

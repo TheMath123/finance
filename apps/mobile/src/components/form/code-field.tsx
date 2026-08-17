@@ -7,11 +7,13 @@ import {
 import { View } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { Input } from '@/components/ui/input';
+import { cn } from '@/lib/cn';
 
 export interface CodeFieldProps<T extends FieldValues> {
   control: Control<T>;
   name: Path<T>;
   label?: string;
+  className?: string;
   /** Chamado assim que o código atinge os 6 dígitos — usado pra auto-enviar o formulário. */
   onComplete?: (code: string) => void;
 }
@@ -24,6 +26,7 @@ export function CodeField<T extends FieldValues>({
   control,
   name,
   label,
+  className,
   onComplete,
 }: CodeFieldProps<T>) {
   const { field, fieldState } = useController({ control, name });
@@ -38,7 +41,7 @@ export function CodeField<T extends FieldValues>({
     <View className="gap-1.5">
       {label && <ThemedText type="smallBold">{label}</ThemedText>}
       <Input
-        className={fieldState.error ? 'border-destructive' : undefined}
+        className={cn(fieldState.error && 'border-destructive', className)}
         value={(field.value as string | undefined) ?? ''}
         onChangeText={handleChangeText}
         onBlur={field.onBlur}

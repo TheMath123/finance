@@ -16,11 +16,13 @@ import { signInWithGoogle } from '@/lib/hooks/use-google-auth';
 export function GoogleAuthButton({
   label = 'Continuar com Google',
   size = 'md',
+  className,
   onIdToken,
   onError,
 }: {
   label?: string;
   size?: 'sm' | 'md' | 'lg';
+  className?: string;
   onIdToken: (idToken: string) => Promise<void>;
   onError?: (message: string) => void;
 }) {
@@ -46,6 +48,7 @@ export function GoogleAuthButton({
     <Button
       variant="outline"
       size={size}
+      className={className}
       loading={loading}
       icon={<GoogleLogoIcon size={18} weight="bold" />}
       onPress={handlePress}

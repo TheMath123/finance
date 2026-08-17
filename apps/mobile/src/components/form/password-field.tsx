@@ -9,6 +9,7 @@ import { type TextInputProps, View } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { PasswordInput } from '@/components/ui/password-input';
 import { PasswordRequirements } from '@/components/ui/password-requirements';
+import { cn } from '@/lib/cn';
 
 export interface PasswordFieldProps<T extends FieldValues>
   extends Pick<
@@ -18,6 +19,7 @@ export interface PasswordFieldProps<T extends FieldValues>
   control: Control<T>;
   name: Path<T>;
   label?: string;
+  className?: string;
   /** Mostra o checklist de requisitos da senha `strong` abaixo do campo — só no campo de senha NOVA (cadastro, reset, troca), nunca em confirmação/senha atual. */
   showRequirements?: boolean;
 }
@@ -26,6 +28,7 @@ export function PasswordField<T extends FieldValues>({
   control,
   name,
   label,
+  className,
   showRequirements,
   ...inputProps
 }: PasswordFieldProps<T>) {
@@ -35,7 +38,7 @@ export function PasswordField<T extends FieldValues>({
     <View className="gap-1.5">
       {label && <ThemedText type="smallBold">{label}</ThemedText>}
       <PasswordInput
-        className={fieldState.error ? 'border-destructive' : undefined}
+        className={cn(fieldState.error && 'border-destructive', className)}
         value={(field.value as string | undefined) ?? ''}
         onChangeText={field.onChange}
         onBlur={field.onBlur}

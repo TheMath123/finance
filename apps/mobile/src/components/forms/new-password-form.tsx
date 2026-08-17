@@ -6,9 +6,10 @@ import { View } from 'react-native';
 
 import { PasswordField } from '@/components/form/password-field';
 import { ThemedText } from '@/components/themed-text';
-import { Button } from '@/components/ui/button';
+import { AuthButton } from '@/components/ui/auth-button';
 import { ApiError } from '@/lib/api-client';
 import { authApi } from '@/lib/auth-api';
+import { AUTH_FIELD_CLASSNAME } from '@/lib/auth-field-style';
 import { type NewPasswordInput, newPasswordSchema } from '@/lib/schemas/auth';
 
 interface NewPasswordFormProps {
@@ -26,7 +27,6 @@ export function NewPasswordForm({ email, code }: NewPasswordFormProps) {
   });
 
   const mutation = useMutation({
-    // O código é reenviado aqui pra revalidar (não expirou, ainda é válido) antes de trocar a senha
     mutationFn: (input: NewPasswordInput) =>
       authApi.resetPassword({ email, code, password: input.password }),
     onSuccess: () => router.replace('/login'),
@@ -37,16 +37,16 @@ export function NewPasswordForm({ email, code }: NewPasswordFormProps) {
       <PasswordField
         control={control}
         name="password"
-        label="Nova senha"
         placeholder="Crie uma senha"
+        className={AUTH_FIELD_CLASSNAME}
         autoComplete="new-password"
         showRequirements
       />
       <PasswordField
         control={control}
         name="confirmPassword"
-        label="Confirmar nova senha"
         placeholder="Repita a nova senha"
+        className={AUTH_FIELD_CLASSNAME}
         autoComplete="new-password"
       />
 
@@ -58,12 +58,12 @@ export function NewPasswordForm({ email, code }: NewPasswordFormProps) {
         </ThemedText>
       )}
 
-      <Button
+      <AuthButton
         loading={mutation.isPending}
         onPress={handleSubmit((input) => mutation.mutate(input))}
       >
         Redefinir senha
-      </Button>
+      </AuthButton>
     </View>
   );
 }
