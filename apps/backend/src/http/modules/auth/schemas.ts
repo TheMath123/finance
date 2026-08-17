@@ -1,9 +1,10 @@
 import { passwordValidator } from '@finance/shared';
 import { z } from 'zod';
 
-/** Toda senha NOVA (cadastro, reset, troca) passa por aqui — letra + número,
- *  mesma política em toda a borda da API, não só no client. */
-const newPasswordSchema = passwordValidator({ force: 'regular' }).max(128);
+/** Toda senha NOVA (cadastro, reset, troca) passa por aqui — maiúscula +
+ *  minúscula + número + caractere especial, mesma política em toda a borda
+ *  da API, não só no client. */
+const newPasswordSchema = passwordValidator({ force: 'strong' }).max(128);
 /** Senha EXISTENTE (login, reconfirmação) — só presença/tamanho, sem exigir
  *  complexidade de algo que já foi criado sob a política vigente na época. */
 const existingPasswordSchema = passwordValidator({ force: 'weak' });

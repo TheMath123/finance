@@ -38,8 +38,9 @@ export function NewPasswordForm({ email, code }: NewPasswordFormProps) {
         control={control}
         name="password"
         label="Nova senha"
-        placeholder="Mínimo de 8 caracteres"
+        placeholder="Crie uma senha"
         autoComplete="new-password"
+        showRequirements
       />
       <PasswordField
         control={control}

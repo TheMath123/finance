@@ -5,10 +5,10 @@ import { z } from 'zod';
  * Espelham a validação do backend (http/modules/auth/schemas.ts) pro form dar
  * feedback antes do submit — a regra de verdade continua na borda da API.
  * Mesmo `passwordValidator` de @finance/shared usado lá: `weak` pra senha já
- * existente (login, reconfirmação), `regular` pra senha nova (cadastro,
+ * existente (login, reconfirmação), `strong` pra senha nova (cadastro,
  * reset, troca).
  */
-const newPasswordSchema = passwordValidator({ force: 'regular' }).max(128);
+const newPasswordSchema = passwordValidator({ force: 'strong' }).max(128);
 const existingPasswordSchema = passwordValidator({ force: 'weak' });
 
 export const loginSchema = z.object({

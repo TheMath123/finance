@@ -1,11 +1,11 @@
 <script lang="ts">
-	import { PASSWORD_REGULAR_REQUIREMENTS } from '@finance/shared';
+	import { PASSWORD_STRONG_REQUIREMENTS } from '@finance/shared';
 	import CheckCircleIcon from 'phosphor-svelte/lib/CheckCircle';
 	import CircleIcon from 'phosphor-svelte/lib/Circle';
 	import { cn } from '$lib/utils.js';
 
 	/**
-	 * Checklist visual dos requisitos da senha `regular` (política única em
+	 * Checklist visual dos requisitos da senha `strong` (política única em
 	 * @finance/shared, mesma usada no Zod do form e da API) — reage a cada
 	 * tecla digitada. É só feedback incremental de UI: quem valida de verdade
 	 * no submit continua sendo o schema Zod.
@@ -13,16 +13,16 @@
 	let { password = '', id }: { password?: string; id?: string } = $props();
 
 	const metCount = $derived(
-		PASSWORD_REGULAR_REQUIREMENTS.filter((requirement) => requirement.test(password)).length
+		PASSWORD_STRONG_REQUIREMENTS.filter((requirement) => requirement.test(password)).length
 	);
 </script>
 
 <div {id}>
 	<span class="sr-only" aria-live="polite">
-		{metCount} de {PASSWORD_REGULAR_REQUIREMENTS.length} requisitos da senha atendidos
+		{metCount} de {PASSWORD_STRONG_REQUIREMENTS.length} requisitos da senha atendidos
 	</span>
 	<ul class="mt-1.5 space-y-1 text-xs">
-		{#each PASSWORD_REGULAR_REQUIREMENTS as requirement (requirement.key)}
+		{#each PASSWORD_STRONG_REQUIREMENTS as requirement (requirement.key)}
 			{@const met = requirement.test(password)}
 			<li
 				class={cn(

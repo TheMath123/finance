@@ -61,8 +61,9 @@ export function RegisterForm() {
         control={control}
         name="password"
         label="Senha"
-        placeholder="Mínimo de 8 caracteres"
+        placeholder="Crie uma senha"
         autoComplete="new-password"
+        showRequirements
       />
       <CheckboxField
         control={control}

@@ -1,19 +1,25 @@
+import { passwordValidator } from '@finance/shared';
 import { z } from 'zod';
 
 /**
- * Espelha os schemas de apps/backend/src/http/modules/auth/schemas.ts.
- * TODO: mover para packages/shared quando o backend expuser schemas de auth
- * reutilizáveis entre app e API (spec: Zod compartilhado "quando fizer sentido").
+ * Espelha os schemas de apps/backend/src/http/modules/auth/schemas.ts —
+ * mesmo `passwordValidator` de @finance/shared usado lá e no dashboard:
+ * `weak` pra senha já existente (login, reconfirmação, senha atual antes de
+ * trocar), `strong` pra senha nova (cadastro, reset, troca) — maiúscula +
+ * minúscula + número + caractere especial.
  */
+const strongPasswordSchema = passwordValidator({ force: 'strong' }).max(128);
+const weakPasswordSchema = passwordValidator({ force: 'weak' });
+
 export const loginSchema = z.object({
   email: z.string().email('E-mail inválido'),
-  password: z.string().min(1, 'Informe sua senha'),
+  password: weakPasswordSchema,
 });
 
 export const registerSchema = z.object({
   name: z.string().min(1, 'Informe seu nome').max(120),
   email: z.string().email('E-mail inválido'),
-  password: z.string().min(8, 'Mínimo de 8 caracteres').max(128),
+  password: strongPasswordSchema,
   termsAccepted: z
     .boolean()
     .refine((v) => v, { message: 'aceite dos termos é obrigatório' }),
@@ -36,7 +42,7 @@ export const verifyResetCodeSchema = z.object({
 export const resetPasswordSchema = z.object({
   email: z.string().email('E-mail inválido'),
   code: resetCodeSchema,
-  password: z.string().min(8, 'Mínimo de 8 caracteres').max(128),
+  password: strongPasswordSchema,
 });
 
 export const verifyEmailSchema = z.object({
@@ -45,7 +51,7 @@ export const verifyEmailSchema = z.object({
 
 export const newPasswordSchema = z
   .object({
-    password: z.string().min(8, 'Mínimo de 8 caracteres').max(128),
+    password: strongPasswordSchema,
     confirmPassword: z.string().min(1, 'Confirme a nova senha'),
   })
   .refine((data) => data.password === data.confirmPassword, {
@@ -60,7 +66,7 @@ export const updateNameSchema = z.object({
 
 export const requestEmailChangeSchema = z.object({
   newEmail: z.string().email('E-mail inválido'),
-  currentPassword: z.string().min(1, 'Informe sua senha atual'),
+  currentPassword: weakPasswordSchema,
 });
 
 export const confirmEmailChangeSchema = z.object({
@@ -68,7 +74,7 @@ export const confirmEmailChangeSchema = z.object({
 });
 
 export const requestAccountDeletionSchema = z.object({
-  password: z.string().min(1, 'Informe sua senha'),
+  password: weakPasswordSchema,
 });
 
 export const confirmAccountDeletionSchema = z.object({
@@ -77,8 +83,8 @@ export const confirmAccountDeletionSchema = z.object({
 
 export const changePasswordSchema = z
   .object({
-    currentPassword: z.string().min(1, 'Informe sua senha atual'),
-    newPassword: z.string().min(8, 'Mínimo de 8 caracteres').max(128),
+    currentPassword: weakPasswordSchema,
+    newPassword: strongPasswordSchema,
     confirmNewPassword: z.string().min(1, 'Confirme a nova senha'),
   })
   .refine((data) => data.newPassword === data.confirmNewPassword, {

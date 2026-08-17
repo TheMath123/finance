@@ -1,7 +1,7 @@
 import { cva, type VariantProps } from 'class-variance-authority';
 import { EyeIcon, EyeSlashIcon } from 'phosphor-react-native';
 import React, { useState } from 'react';
-import { Pressable, Text, TextInput, useColorScheme, View } from 'react-native';
+import { Pressable, TextInput, useColorScheme, View } from 'react-native';
 import { cn } from '../../lib/cn';
 
 const passwordVariants = cva(
@@ -29,89 +29,44 @@ export interface PasswordInputProps
     >,
     VariantProps<typeof passwordVariants> {
   className?: string;
-  showStrength?: boolean;
 }
 
-function getStrength(value: string): number {
-  let score = 0;
-  if (value.length >= 8) score++;
-  if (/[A-Z]/.test(value)) score++;
-  if (/[0-9]/.test(value)) score++;
-  if (/[^A-Za-z0-9]/.test(value)) score++;
-  return score;
-}
-
-const strengthColors = [
-  'bg-destructive',
-  'bg-orange-500',
-  'bg-yellow-500',
-  'bg-green-500',
-];
-const strengthLabels = ['Weak', 'Fair', 'Good', 'Strong'];
-
+/** Input de senha com olhinho pra alternar visibilidade — mesma casca do PasswordInput do dashboard, sem lógica de força embutida (ver PasswordRequirements). */
 export const PasswordInput = React.forwardRef<
   React.ElementRef<typeof TextInput>,
   PasswordInputProps
->(function PasswordInput(
-  { variant, size, className, showStrength, onChangeText, ...props },
-  ref
-) {
+>(function PasswordInput({ variant, size, className, ...props }, ref) {
   const [visible, setVisible] = useState(false);
-  const [value, setValue] = useState('');
-  const strength = getStrength(value);
   const dark = useColorScheme() === 'dark';
   const caret = dark ? '#fafafa' : '#18181b';
 
   return (
-    <View className="gap-2">
-      <View className={cn(passwordVariants({ variant, size }), className)}>
-        <TextInput
-          ref={ref}
-          className="flex-1 text-foreground p-0 text-base"
-          placeholderTextColor={dark ? '#a1a1aa' : '#71717a'}
-          keyboardAppearance={dark ? 'dark' : 'light'}
-          selectionColor={caret}
-          cursorColor={caret}
-          secureTextEntry={!visible}
-          onChangeText={(text) => {
-            setValue(text);
-            onChangeText?.(text);
-          }}
-          accessibilityLabel="Password"
-          {...props}
-        />
-        <Pressable
-          onPress={() => setVisible(!visible)}
-          accessible={true}
-          accessibilityRole="button"
-          accessibilityLabel={visible ? 'Hide password' : 'Show password'}
-          className="ms-2 min-h-8 min-w-8 items-center justify-center"
-        >
-          {visible ? (
-            <EyeSlashIcon size={20} color="#71717a" />
-          ) : (
-            <EyeIcon size={20} color="#71717a" />
-          )}
-        </Pressable>
-      </View>
-      {showStrength && value.length > 0 && (
-        <View className="flex-row items-center gap-2">
-          <View className="flex-1 flex-row gap-1">
-            {[0, 1, 2, 3].map((i) => (
-              <View
-                key={i}
-                className={cn(
-                  'flex-1 h-1 rounded-full',
-                  i < strength ? strengthColors[strength - 1] : 'bg-muted'
-                )}
-              />
-            ))}
-          </View>
-          <Text className="text-xs text-muted-foreground">
-            {strengthLabels[strength - 1] ?? ''}
-          </Text>
-        </View>
-      )}
+    <View className={cn(passwordVariants({ variant, size }), className)}>
+      <TextInput
+        ref={ref}
+        className="flex-1 text-foreground p-0 text-base"
+        placeholderTextColor={dark ? '#a1a1aa' : '#71717a'}
+        keyboardAppearance={dark ? 'dark' : 'light'}
+        selectionColor={caret}
+        cursorColor={caret}
+        secureTextEntry={!visible}
+        accessibilityLabel="Password"
+        {...props}
+      />
+      <Pressable
+        onPress={() => setVisible(!visible)}
+        accessible={true}
+        accessibilityRole="button"
+        accessibilityLabel={visible ? 'Ocultar senha' : 'Mostrar senha'}
+        accessibilityState={{ selected: visible }}
+        className="ms-2 min-h-8 min-w-8 items-center justify-center"
+      >
+        {visible ? (
+          <EyeSlashIcon size={20} color="#71717a" />
+        ) : (
+          <EyeIcon size={20} color="#71717a" />
+        )}
+      </Pressable>
     </View>
   );
 });

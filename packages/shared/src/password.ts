@@ -94,3 +94,36 @@ export const PASSWORD_REGULAR_REQUIREMENTS: {
     test: (p) => /[0-9]/.test(p),
   },
 ];
+
+/** Mesma ideia de `PASSWORD_REGULAR_REQUIREMENTS`, mas espelhando as regras de `passwordStrongValidator` (política em uso hoje pra toda senha nova). */
+export const PASSWORD_STRONG_REQUIREMENTS: {
+  key: string;
+  label: string;
+  test: (password: string) => boolean;
+}[] = [
+  {
+    key: 'length',
+    label: 'Pelo menos 8 caracteres',
+    test: (p) => p.length >= 8,
+  },
+  {
+    key: 'uppercase',
+    label: 'Uma letra maiúscula',
+    test: (p) => /[A-Z]/.test(p),
+  },
+  {
+    key: 'lowercase',
+    label: 'Uma letra minúscula',
+    test: (p) => /[a-z]/.test(p),
+  },
+  {
+    key: 'number',
+    label: 'Um número',
+    test: (p) => /[0-9]/.test(p),
+  },
+  {
+    key: 'special',
+    label: 'Um caractere especial',
+    test: (p) => /[^A-Za-z0-9]/.test(p),
+  },
+];

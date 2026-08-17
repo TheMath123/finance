@@ -49,9 +49,9 @@ export function ChangePasswordForm() {
         control={control}
         name="newPassword"
         label="Nova senha"
-        placeholder="Mínimo de 8 caracteres"
+        placeholder="Crie uma senha"
         autoComplete="new-password"
-        showStrength
+        showRequirements
       />
       <PasswordField
         control={control}
