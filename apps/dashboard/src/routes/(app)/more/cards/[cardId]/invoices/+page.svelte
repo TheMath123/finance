@@ -7,8 +7,8 @@
 
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
+	import { DatePicker } from '$lib/components/ui/date-picker';
 	import * as Dialog from '$lib/components/ui/dialog';
-	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
 	import { Select } from '$lib/components/ui/select';
 	import { dialogFormSubmit } from '$lib/dialog-form';
@@ -359,7 +359,7 @@
 				<div class="grid grid-cols-2 gap-4">
 					<div class="grid gap-2">
 						<Label for="pay-date">Data</Label>
-						<Input id="pay-date" name="date" type="date" value={todayIso()} required />
+						<DatePicker id="pay-date" name="date" value={todayIso()} required />
 					</div>
 					<div class="grid gap-2">
 						<Label for="pay-method">Método</Label>

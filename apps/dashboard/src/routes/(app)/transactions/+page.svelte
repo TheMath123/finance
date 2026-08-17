@@ -5,6 +5,7 @@
 	import CalculatorIcon from 'phosphor-svelte/lib/Calculator';
 	import PencilSimpleIcon from 'phosphor-svelte/lib/PencilSimpleIcon';
 	import UploadSimpleIcon from 'phosphor-svelte/lib/UploadSimpleIcon';
+	import XIcon from 'phosphor-svelte/lib/X';
 	import { dndzone } from 'svelte-dnd-action';
 
 	import { enhance } from '$app/forms';
@@ -18,6 +19,7 @@
 	import AttachmentField from '$lib/components/transactions/attachment-field.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { ComboSelect } from '$lib/components/ui/combo-select';
+	import { DatePicker } from '$lib/components/ui/date-picker';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
@@ -276,6 +278,26 @@
 	// "" explícito (setado pelo clearPeriodQuery) é o estado "ver tudo" — diferente
 	// de ausente na URL, que o load já preenche com o mês atual antes de chegar aqui.
 	const isShowingAllPeriods = $derived(!data.filters.from && !data.filters.to);
+
+	/** Só limpa filtro de verdade (q/categoria/conta/cartão/período) — preserva
+	 *  Ativas/Arquivadas, que é outra dimensão (não um "filtro" pro usuário). */
+	function clearAllFiltersQuery(): string {
+		const params = new SvelteURLSearchParams();
+		if (archivedView) params.set('deletedOnly', 'true');
+		return params.toString();
+	}
+
+	// Período "ativo" = usuário mexeu de propósito (URL tem from/to, mesmo que
+	// vazio pelo "Ver tudo") — o mês atual pré-preenchido pelo load() na
+	// primeira visita não conta como filtro configurado.
+	const hasActiveFilters = $derived(
+		Boolean(data.filters.q) ||
+			Boolean(data.filters.categoryId) ||
+			Boolean(data.filters.accountId) ||
+			Boolean(data.filters.cardId) ||
+			page.url.searchParams.has('from') ||
+			page.url.searchParams.has('to')
+	);
 </script>
 
 <svelte:head>
@@ -385,14 +407,23 @@
 			<Label for="q">Buscar</Label>
 			<Input id="q" name="q" value={data.filters.q ?? ''} placeholder="Descrição" />
 		</div>
+		{#if hasActiveFilters}
+			<a
+				href="{resolve('/transactions')}?{clearAllFiltersQuery()}"
+				class="flex items-center gap-1 rounded-lg px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-primary/10 hover:text-foreground"
+			>
+				<XIcon size={14} />
+				Limpar filtros
+			</a>
+		{/if}
 		<div class="grid grid-cols-2 gap-3 sm:contents">
 			<div class="grid gap-2">
 				<Label for="from">De</Label>
-				<Input id="from" name="from" type="date" value={data.filters.from ?? ''} />
+				<DatePicker id="from" name="from" value={data.filters.from ?? ''} />
 			</div>
 			<div class="grid gap-2">
 				<Label for="to">Até</Label>
-				<Input id="to" name="to" type="date" value={data.filters.to ?? ''} />
+				<DatePicker id="to" name="to" value={data.filters.to ?? ''} />
 			</div>
 			<div class="grid gap-2">
 				<Label for="categoryId">Categoria</Label>
@@ -649,7 +680,7 @@
 				</div>
 				<div class="grid gap-2">
 					<Label for="new-date">Data</Label>
-					<Input id="new-date" name="date" type="date" value={todayIso()} required />
+					<DatePicker id="new-date" name="date" value={todayIso()} required />
 				</div>
 			</div>
 			<div class="grid grid-cols-2 gap-4">
@@ -826,10 +857,9 @@
 					</div>
 					<div class="grid gap-2">
 						<Label for="edit-date">Data</Label>
-						<Input
+						<DatePicker
 							id="edit-date"
 							name={locked ? undefined : 'date'}
-							type="date"
 							disabled={locked}
 							value={editing.date}
 							required

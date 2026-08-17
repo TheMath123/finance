@@ -11,6 +11,7 @@
 	import { FileDrop } from '$lib/components/ui/file-drop';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
+	import { MonthPicker } from '$lib/components/ui/month-picker';
 	import { formatCents } from '$lib/money';
 	import type { CsvImportPreviewResult, CsvImportRowStatus } from '$lib/server/invoice-api';
 	import { formatTransactionDate } from '$lib/transaction-labels';
@@ -188,7 +189,7 @@
 		<div class="grid max-w-md gap-4">
 			<div class="grid gap-2">
 				<Label for="csv-month">Mês da fatura</Label>
-				<Input id="csv-month" type="month" bind:value={csvMonth} required />
+				<MonthPicker id="csv-month" bind:value={csvMonth} required />
 			</div>
 			<div class="grid gap-2">
 				<Label for="csv-file">Arquivo CSV</Label>
