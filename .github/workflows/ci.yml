@@ -64,6 +64,18 @@ jobs:
       - name: Instalar dependências
         run: bun install --frozen-lockfile
 
+      # expo-env.d.ts (apps/mobile) é gitignored por convenção do próprio
+      # Expo — sem ele, `tsc` não enxerga `declare module '*.css'` (vem de
+      # expo/types/global.d.ts via a referência tripla-slash deste arquivo),
+      # e o import de global.css em constants/theme.ts quebra o typecheck do
+      # pacote mobile (incluso no `turbo typecheck` abaixo) com TS2882.
+      # Mesmo problema/fix documentado em release-mobile.yml. Conteúdo
+      # idêntico ao que o Expo CLI escreve sozinho.
+      - name: Gerar expo-env.d.ts (mobile)
+        working-directory: apps/mobile
+        run: |
+          printf '/// <reference types="expo/types" />\n\n// NOTE: This file should not be edited and should be in your git ignore\n' > expo-env.d.ts
+
       - name: Typecheck (turbo)
         run: bun run typecheck
 

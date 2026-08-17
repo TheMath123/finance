@@ -51,6 +51,21 @@ jobs:
       - name: Instalar dependências
         run: bun install --frozen-lockfile
 
+      # expo-env.d.ts é gitignored por convenção do próprio Expo (gerado
+      # automaticamente na primeira vez que roda `expo start`/`expo prebuild`
+      # localmente) — sem ele, `tsc` não enxerga a declaração ambiente de
+      # `declare module '*.css'` (vem de expo/types/global.d.ts via a
+      # referência tripla-slash deste arquivo), e o import de global.css em
+      # constants/theme.ts quebra o typecheck com TS2882. `expo prebuild`
+      # mais abaixo também geraria esse arquivo, mas só roda DEPOIS do
+      # typecheck — não dá pra inverter a ordem (prebuild depende do
+      # versionCode calculado a partir da tag). Conteúdo idêntico ao que o
+      # Expo CLI escreve sozinho.
+      - name: Gerar expo-env.d.ts
+        working-directory: apps/mobile
+        run: |
+          printf '/// <reference types="expo/types" />\n\n// NOTE: This file should not be edited and should be in your git ignore\n' > expo-env.d.ts
+
       - name: Typecheck do mobile
         run: bun run typecheck --filter=mobile
 
