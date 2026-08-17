@@ -9,28 +9,22 @@ export interface RecurringPendingTotal {
 }
 
 /**
- * Soma das recorrências ainda não confirmadas do mês corrente — usado no card
- * da Home e no menu de gerenciar recorrências (explore.tsx). Mesma queryKey
- * dos dois lugares: compartilha cache e invalidação (confirmar/excluir
- * recorrência já invalida os dois de uma vez).
+ * Soma das recorrências ainda não confirmadas de um mês — usado no card da
+ * Home (mês navegável, ver monthCursor em index.tsx) e no menu de gerenciar
+ * recorrências (explore.tsx, sempre mês corrente). Mesma queryKey nos dois
+ * lugares quando `period` é omitido: compartilha cache e invalidação
+ * (confirmar/excluir recorrência já invalida os dois de uma vez).
  */
 export function useRecurringPendingTotal(
-  workspaceId: string | null
+  workspaceId: string | null,
+  period?: { year: number; month: number }
 ): RecurringPendingTotal | null {
   const now = new Date();
+  const year = period?.year ?? now.getFullYear();
+  const month = period?.month ?? now.getMonth() + 1;
   const { data } = useQuery({
-    queryKey: [
-      'recurring-pending',
-      workspaceId,
-      now.getFullYear(),
-      now.getMonth() + 1,
-    ],
-    queryFn: () =>
-      recurringApi.listPending(
-        workspaceId!,
-        now.getFullYear(),
-        now.getMonth() + 1
-      ),
+    queryKey: ['recurring-pending', workspaceId, year, month],
+    queryFn: () => recurringApi.listPending(workspaceId!, year, month),
     enabled: Boolean(workspaceId),
   });
 
