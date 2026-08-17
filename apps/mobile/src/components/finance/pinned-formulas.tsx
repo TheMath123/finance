@@ -1,6 +1,6 @@
 import { evaluateFormula } from '@finance/formula';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 import DraggableFlatList, {
   type RenderItemParams,
@@ -68,13 +68,17 @@ export function PinnedFormulas({
   /**
    * Espelho local da ordem — o `DraggableFlatList` precisa controlar a lista
    * durante o arraste; ressincroniza quando os dados do servidor mudarem de
-   * verdade (ex.: depois do `invalidateQueries` no fim do reorder).
+   * verdade (ex.: depois do `invalidateQueries` no fim do reorder). setState
+   * durante o render (não num useEffect) é o padrão recomendado pra "resetar
+   * estado quando uma prop muda" sem disparar uma renderização extra —
+   * https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes
    */
   const [items, setItems] = useState<SavedFormula[]>(pinned);
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- ressincroniza só quando a query em si mudar, não a cada render (pinned é recriado sempre).
-  useEffect(() => {
+  const [syncedFormulas, setSyncedFormulas] = useState(formulas);
+  if (formulas !== syncedFormulas) {
+    setSyncedFormulas(formulas);
     setItems(pinned);
-  }, [formulas]);
+  }
 
   const reorderMutation = useMutation({
     mutationFn: (formulaIds: string[]) =>
