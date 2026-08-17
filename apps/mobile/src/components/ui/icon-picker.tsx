@@ -6,10 +6,10 @@ import {
   Pressable,
   Text,
   TextInput,
-  useColorScheme,
   View,
 } from 'react-native';
 
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTheme } from '@/hooks/use-theme';
 import {
   CATEGORY_ICON_OPTIONS,

@@ -1,6 +1,7 @@
 import { cva, type VariantProps } from 'class-variance-authority';
 import React from 'react';
-import { Platform, TextInput, useColorScheme, View } from 'react-native';
+import { Platform, TextInput, View } from 'react-native';
+import { useColorScheme } from '../../hooks/use-color-scheme';
 import { cn } from '../../lib/cn';
 
 const inputVariants = cva(

@@ -4,18 +4,24 @@ import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import {
   ArrowLeftIcon,
+  BellRingingIcon,
+  CaretRightIcon,
+  CircleHalfIcon,
   EnvelopeIcon,
   FingerprintIcon,
   GoogleLogoIcon,
   LockKeyIcon,
+  MoonIcon,
   PencilSimpleIcon,
   SignOutIcon,
+  SunIcon,
   TrashIcon,
   UserIcon,
   XIcon,
 } from 'phosphor-react-native';
+import type { ComponentType } from 'react';
 import { useState } from 'react';
-import { Alert, Image, Pressable, Switch, View } from 'react-native';
+import { Alert, Image, Platform, Pressable, Switch, View } from 'react-native';
 
 import { EditNameForm } from '@/components/forms/edit-name-form';
 import { ThemedText } from '@/components/themed-text';
@@ -31,9 +37,24 @@ import { GoogleAuthButton } from '@/components/ui/google-auth-button';
 import { Screen } from '@/components/ui/screen';
 import { useBiometricLock } from '@/context/biometric-lock';
 import { useSession } from '@/context/session';
+import { useThemePreference } from '@/context/theme-preference';
+import { useTheme } from '@/hooks/use-theme';
 import { ApiError } from '@/lib/api-client';
 import { authApi } from '@/lib/auth-api';
 import { googleAuthAvailable } from '@/lib/hooks/use-google-auth';
+import type { ThemePreference } from '@/lib/secure-store';
+
+interface ThemeOption {
+  value: ThemePreference;
+  label: string;
+  icon: ComponentType<{ size?: number; color?: string }>;
+}
+
+const THEME_OPTIONS: ThemeOption[] = [
+  { value: 'light', label: 'Claro', icon: SunIcon },
+  { value: 'dark', label: 'Escuro', icon: MoonIcon },
+  { value: 'system', label: 'Automático', icon: CircleHalfIcon },
+];
 
 function inferMimeType(uri: string): string {
   const ext = uri.split('.').pop()?.toLowerCase();
@@ -44,6 +65,8 @@ function inferMimeType(uri: string): string {
 
 export default function ProfileScreen() {
   const { user, signOut, refreshUser } = useSession();
+  const theme = useTheme();
+  const { preference, setPreference } = useThemePreference();
   const {
     available: biometricsAvailable,
     enabled: biometricsEnabled,
@@ -235,6 +258,43 @@ export default function ProfileScreen() {
         </Card>
       )}
 
+      <Card className="gap-3">
+        <View className="flex-row items-center gap-3">
+          <View className="h-9 w-9 items-center justify-center rounded-full bg-primary/10">
+            <CircleHalfIcon size={18} color="#2563EB" />
+          </View>
+          <View className="flex-1">
+            <ThemedText type="smallBold">Tema</ThemedText>
+            <ThemedText type="small" themeColor="textSecondary">
+              Escolha a aparência do app.
+            </ThemedText>
+          </View>
+        </View>
+        <View className="flex-row gap-2">
+          {THEME_OPTIONS.map((option) => {
+            const selected = preference === option.value;
+            const Icon = option.icon;
+            return (
+              <Button
+                key={option.value}
+                variant={selected ? 'default' : 'outline'}
+                size="sm"
+                className="flex-1"
+                icon={
+                  <Icon
+                    size={16}
+                    color={selected ? '#FFFFFF' : theme.textSecondary}
+                  />
+                }
+                onPress={() => setPreference(option.value)}
+              >
+                {option.label}
+              </Button>
+            );
+          })}
+        </View>
+      </Card>
+
       {biometricsAvailable && (
         <Card className="flex-row items-center gap-3">
           <View className="h-9 w-9 items-center justify-center rounded-full bg-primary/10">
@@ -252,6 +312,26 @@ export default function ProfileScreen() {
             trackColor={{ false: '#d4d4d8', true: '#2563EB' }}
           />
         </Card>
+      )}
+
+      {Platform.OS === 'android' && (
+        <Pressable
+          onPress={() => router.push('/notification-access')}
+          className="active:opacity-70"
+        >
+          <Card className="flex-row items-center gap-3">
+            <View className="h-9 w-9 items-center justify-center rounded-full bg-primary/10">
+              <BellRingingIcon size={18} color="#2563EB" />
+            </View>
+            <View className="flex-1">
+              <ThemedText type="smallBold">Detecção automática</ThemedText>
+              <ThemedText type="small" themeColor="textSecondary">
+                Sugerir transações a partir de notificações de banco/cartão.
+              </ThemedText>
+            </View>
+            <CaretRightIcon size={16} color={theme.textSecondary} />
+          </Card>
+        </Pressable>
       )}
 
       {(googleAuthAvailable || user?.googleLinked) && (

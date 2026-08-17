@@ -6,10 +6,10 @@ import {
   ScrollView,
   Text,
   TextInput,
-  useColorScheme,
   View,
 } from 'react-native';
 
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTheme } from '@/hooks/use-theme';
 import { cn } from '../../lib/cn';
 

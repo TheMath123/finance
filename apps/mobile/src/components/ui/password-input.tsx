@@ -1,7 +1,8 @@
 import { cva, type VariantProps } from 'class-variance-authority';
 import { EyeIcon, EyeSlashIcon } from 'phosphor-react-native';
 import React, { useState } from 'react';
-import { Pressable, TextInput, useColorScheme, View } from 'react-native';
+import { Pressable, TextInput, View } from 'react-native';
+import { useColorScheme } from '../../hooks/use-color-scheme';
 import { cn } from '../../lib/cn';
 
 const passwordVariants = cva(

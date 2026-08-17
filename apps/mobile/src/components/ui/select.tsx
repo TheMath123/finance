@@ -8,11 +8,11 @@ import {
   ScrollView,
   Text,
   TextInput,
-  useColorScheme,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
+import { useColorScheme } from '../../hooks/use-color-scheme';
 import { cn } from '../../lib/cn';
 
 export interface SelectOption {

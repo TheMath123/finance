@@ -9,11 +9,12 @@ import {
 } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
-import { useColorScheme } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { SessionProvider } from '@/context/session';
+import { ThemePreferenceProvider } from '@/context/theme-preference';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import { handleNotificationAction } from '@/lib/notification-actions';
 import {
   addNotificationResponseListener,
@@ -57,13 +58,15 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <QueryClientProvider client={queryClient}>
         <SafeAreaProvider>
-          <SessionProvider>
-            <ThemeProvider
-              value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}
-            >
-              <Slot />
-            </ThemeProvider>
-          </SessionProvider>
+          <ThemePreferenceProvider>
+            <SessionProvider>
+              <ThemeProvider
+                value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}
+              >
+                <Slot />
+              </ThemeProvider>
+            </SessionProvider>
+          </ThemePreferenceProvider>
         </SafeAreaProvider>
       </QueryClientProvider>
     </GestureHandlerRootView>

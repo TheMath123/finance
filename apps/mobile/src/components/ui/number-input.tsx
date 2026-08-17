@@ -1,6 +1,7 @@
 import { cva, type VariantProps } from 'class-variance-authority';
 import React, { useCallback, useState } from 'react';
-import { Pressable, Text, TextInput, useColorScheme, View } from 'react-native';
+import { Pressable, Text, TextInput, View } from 'react-native';
+import { useColorScheme } from '../../hooks/use-color-scheme';
 import { cn } from '../../lib/cn';
 
 const numberVariants = cva('flex-row items-center rounded-md border', {
