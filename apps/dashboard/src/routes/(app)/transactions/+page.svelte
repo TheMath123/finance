@@ -307,7 +307,7 @@
 <div class="flex flex-col gap-6">
 	<div class="flex flex-wrap items-center justify-between gap-3">
 		<h1 class="text-xl font-semibold">Transações</h1>
-		<div class="flex items-center gap-2">
+		<div class="flex flex-wrap items-center gap-2">
 			<a
 				href={resolve('/transactions/export')}
 				class="rounded-lg border border-foreground/10 px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-primary/10 hover:text-foreground"
@@ -347,7 +347,7 @@
 	{#if pinnedFormulas.length > 0}
 		<!-- Arrastável (svelte-dnd-action) — solta reordena de verdade via action `reorderFormulas`. -->
 		<div
-			class="flex flex-wrap gap-3"
+			class="grid grid-cols-2 gap-3 sm:grid-cols-4"
 			use:dndzone={{ items: pinnedFormulas, flipDurationMs: 150 }}
 			onconsider={handlePinnedConsider}
 			onfinalize={handlePinnedFinalize}
