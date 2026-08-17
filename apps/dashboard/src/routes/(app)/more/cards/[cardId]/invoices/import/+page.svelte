@@ -8,10 +8,12 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
 	import { ComboSelect } from '$lib/components/ui/combo-select';
+	import { FileDrop } from '$lib/components/ui/file-drop';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
 	import { formatCents } from '$lib/money';
 	import type { CsvImportPreviewResult, CsvImportRowStatus } from '$lib/server/invoice-api';
+	import { formatTransactionDate } from '$lib/transaction-labels';
 
 	let { data } = $props();
 
@@ -60,6 +62,19 @@
 			color: category.color
 		}))
 	);
+
+	// Busca em memória, sem acento (mesma técnica usada em ui/combo-select) —
+	// filtra só a exibição, `includedCount` continua contando a lista inteira.
+	let search = $state('');
+	const DIACRITICS_PATTERN = /[̀-ͯ]/g;
+	function normalize(text: string): string {
+		return text.normalize('NFD').replace(DIACRITICS_PATTERN, '').toLowerCase();
+	}
+	const filteredRows = $derived.by(() => {
+		const query = normalize(search.trim());
+		if (!query) return reviewRows;
+		return reviewRows.filter((r) => normalize(r.description).includes(query));
+	});
 
 	async function runPreview() {
 		if (!csvFile || !csvMonth) return;
@@ -147,7 +162,7 @@
 	<title>Importar CSV — {data.card.name} — Marcelus</title>
 </svelte:head>
 
-<div class="mx-auto flex max-w-3xl flex-col gap-6">
+<div class="flex flex-col gap-6">
 	<div class="flex items-center gap-3">
 		<a
 			href={resolve(`/more/cards/${data.card.id}/invoices`)}
@@ -170,20 +185,14 @@
 	{/if}
 
 	{#if step === 'select'}
-		<div class="grid gap-4">
+		<div class="grid max-w-md gap-4">
 			<div class="grid gap-2">
 				<Label for="csv-month">Mês da fatura</Label>
 				<Input id="csv-month" type="month" bind:value={csvMonth} required />
 			</div>
 			<div class="grid gap-2">
 				<Label for="csv-file">Arquivo CSV</Label>
-				<input
-					id="csv-file"
-					type="file"
-					accept=".csv,text/csv"
-					class="h-9 w-full rounded-lg border border-foreground/10 bg-transparent text-sm outline-none file:mr-3 file:h-full file:cursor-pointer file:border-0 file:bg-foreground/5 file:px-3 file:text-sm file:font-medium focus-visible:ring-2 focus-visible:ring-ring"
-					onchange={(e) => (csvFile = e.currentTarget.files?.[0] ?? null)}
-				/>
+				<FileDrop id="csv-file" accept=".csv,text/csv" bind:file={csvFile} />
 				<p class="text-xs text-muted-foreground">
 					Precisa ter data, descrição e valor — o formato exato do banco é detectado
 					automaticamente.
@@ -195,16 +204,36 @@
 		</div>
 	{:else if step === 'review' && csvPreview}
 		<div class="grid gap-3">
-			<p class="text-sm text-muted-foreground">
-				{includedCount} linha{includedCount === 1 ? '' : 's'} selecionada{includedCount === 1
-					? ''
-					: 's'} pra importar de {csvPreview.rows.length} lida{csvPreview.rows.length === 1
-					? ''
-					: 's'}.
-				{#if !csvPreview.headerDetected}
-					Cabeçalho não reconhecido — colunas assumidas por posição, confira os valores abaixo.
-				{/if}
-			</p>
+			<div class="flex flex-wrap items-center justify-between gap-3">
+				<p class="text-sm text-muted-foreground">
+					{includedCount} linha{includedCount === 1 ? '' : 's'} selecionada{includedCount === 1
+						? ''
+						: 's'} pra importar de {csvPreview.rows.length} lida{csvPreview.rows.length === 1
+						? ''
+						: 's'}.
+					{#if !csvPreview.headerDetected}
+						Cabeçalho não reconhecido — colunas assumidas por posição, confira os valores abaixo.
+					{/if}
+				</p>
+				<div class="flex flex-wrap items-center gap-2">
+					<Input
+						type="search"
+						placeholder="Buscar por descrição"
+						bind:value={search}
+						class="h-8 w-56 text-sm"
+					/>
+					<!-- Cópia do botão de confirmar lá embaixo — listas longas não obrigam
+					     rolar até o fim só pra concluir a importação. -->
+					<Button
+						type="button"
+						size="sm"
+						disabled={includedCount === 0 || loading}
+						onclick={runConfirm}
+					>
+						{loading ? 'Importando…' : `Confirmar importação (${includedCount})`}
+					</Button>
+				</div>
+			</div>
 
 			<div class="overflow-x-auto rounded-xl border border-foreground/10">
 				<table class="w-full min-w-[760px] text-sm">
@@ -213,13 +242,13 @@
 							<th class="px-3 py-2 text-left font-medium">Incluir</th>
 							<th class="px-3 py-2 text-left font-medium">Data</th>
 							<th class="px-3 py-2 text-left font-medium">Descrição</th>
-							<th class="px-3 py-2 text-right font-medium">Valor</th>
+							<th class="px-3 py-2 text-left font-medium">Valor</th>
 							<th class="px-3 py-2 text-left font-medium">Categoria</th>
 							<th class="px-3 py-2 text-left font-medium">Status</th>
 						</tr>
 					</thead>
 					<tbody>
-						{#each reviewRows as row (row.rowIndex)}
+						{#each filteredRows as row (row.rowIndex)}
 							<tr class="border-b border-foreground/5 last:border-0">
 								<td class="px-3 py-2">
 									{#if row.status === 'new'}
@@ -231,7 +260,9 @@
 										/>
 									{/if}
 								</td>
-								<td class="px-3 py-2 whitespace-nowrap tabular-nums">{row.date || '—'}</td>
+								<td class="px-3 py-2 whitespace-nowrap tabular-nums">
+									{row.date ? formatTransactionDate(row.date) : '—'}
+								</td>
 								<td class="px-3 py-2">
 									{#if row.status === 'new'}
 										<Input
@@ -254,7 +285,7 @@
 										<span class="text-muted-foreground">{row.description}</span>
 									{/if}
 								</td>
-								<td class="px-3 py-2 text-right whitespace-nowrap tabular-nums">
+								<td class="px-3 py-2 text-left whitespace-nowrap tabular-nums">
 									{formatCents(row.amount)}
 								</td>
 								<td class="px-3 py-2">
@@ -270,6 +301,12 @@
 									<Badge variant="outline" class={STATUS_BADGE_CLASS[row.status]}>
 										{STATUS_LABELS[row.status]}
 									</Badge>
+								</td>
+							</tr>
+						{:else}
+							<tr>
+								<td colspan="6" class="px-3 py-6 text-center text-sm text-muted-foreground">
+									Nenhuma linha encontrada pra "{search}".
 								</td>
 							</tr>
 						{/each}

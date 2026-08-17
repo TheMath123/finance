@@ -8,6 +8,7 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
 	import { ComboSelect } from '$lib/components/ui/combo-select';
+	import { FileDrop } from '$lib/components/ui/file-drop';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
 	import { Select } from '$lib/components/ui/select';
@@ -17,6 +18,7 @@
 		AccountCsvImportRowStatus
 	} from '$lib/server/account-api';
 	import type { CsvImportPreviewResult, CsvImportRowStatus } from '$lib/server/invoice-api';
+	import { formatTransactionDate } from '$lib/transaction-labels';
 
 	let { data } = $props();
 
@@ -89,11 +91,30 @@
 	let csvMonth = $state('');
 	let csvFile = $state<File | null>(null);
 	let cardReviewRows = $state<CardCsvReviewRow[]>([]);
+	let cardSearch = $state('');
 
 	let selectedAccountId = $state(activeAccounts[0]?.id ?? '');
 	let selectedMethod = $state<'pix' | 'debit' | 'cash'>('pix');
 	let accountFile = $state<File | null>(null);
 	let accountReviewRows = $state<AccountCsvReviewRow[]>([]);
+	let accountSearch = $state('');
+
+	// Busca em memória, sem acento (mesma técnica usada em ui/combo-select) —
+	// filtra só a exibição, `includedCount` continua contando a lista inteira.
+	const DIACRITICS_PATTERN = /[̀-ͯ]/g;
+	function normalize(text: string): string {
+		return text.normalize('NFD').replace(DIACRITICS_PATTERN, '').toLowerCase();
+	}
+	const filteredCardRows = $derived.by(() => {
+		const query = normalize(cardSearch.trim());
+		if (!query) return cardReviewRows;
+		return cardReviewRows.filter((r) => normalize(r.description).includes(query));
+	});
+	const filteredAccountRows = $derived.by(() => {
+		const query = normalize(accountSearch.trim());
+		if (!query) return accountReviewRows;
+		return accountReviewRows.filter((r) => normalize(r.description).includes(query));
+	});
 
 	let headerDetected = $state(true);
 	let loading = $state(false);
@@ -296,7 +317,7 @@
 	<title>Importar CSV — Marcelus</title>
 </svelte:head>
 
-<div class="mx-auto flex max-w-3xl flex-col gap-6">
+<div class="flex flex-col gap-6">
 	<div class="flex items-center gap-3">
 		<a
 			href={resolve('/transactions')}
@@ -325,7 +346,7 @@
 	{/if}
 
 	{#if step === 'choose'}
-		<div class="grid gap-3">
+		<div class="grid max-w-md gap-3">
 			<button
 				type="button"
 				class="rounded-lg border border-foreground/10 p-4 text-left transition-colors hover:bg-muted"
@@ -348,7 +369,7 @@
 			</button>
 		</div>
 	{:else if step === 'card-select'}
-		<div class="grid gap-4">
+		<div class="grid max-w-md gap-4">
 			{#if showChoice}
 				<button
 					type="button"
@@ -368,13 +389,7 @@
 			</div>
 			<div class="grid gap-2">
 				<Label for="csv-file">Arquivo CSV</Label>
-				<input
-					id="csv-file"
-					type="file"
-					accept=".csv,text/csv"
-					class="h-9 w-full rounded-lg border border-foreground/10 bg-transparent text-sm outline-none file:mr-3 file:h-full file:cursor-pointer file:border-0 file:bg-foreground/5 file:px-3 file:text-sm file:font-medium focus-visible:ring-2 focus-visible:ring-ring"
-					onchange={(e) => (csvFile = e.currentTarget.files?.[0] ?? null)}
-				/>
+				<FileDrop id="csv-file" accept=".csv,text/csv" bind:file={csvFile} />
 				<p class="text-xs text-muted-foreground">
 					Precisa ter data, descrição e valor — o formato exato do banco é detectado
 					automaticamente.
@@ -389,7 +404,7 @@
 			</Button>
 		</div>
 	{:else if step === 'account-select'}
-		<div class="grid gap-4">
+		<div class="grid max-w-md gap-4">
 			{#if showChoice}
 				<button
 					type="button"
@@ -417,13 +432,7 @@
 			</div>
 			<div class="grid gap-2">
 				<Label for="csv-account-file">Arquivo CSV</Label>
-				<input
-					id="csv-account-file"
-					type="file"
-					accept=".csv,text/csv"
-					class="h-9 w-full rounded-lg border border-foreground/10 bg-transparent text-sm outline-none file:mr-3 file:h-full file:cursor-pointer file:border-0 file:bg-foreground/5 file:px-3 file:text-sm file:font-medium focus-visible:ring-2 focus-visible:ring-ring"
-					onchange={(e) => (accountFile = e.currentTarget.files?.[0] ?? null)}
-				/>
+				<FileDrop id="csv-account-file" accept=".csv,text/csv" bind:file={accountFile} />
 				<p class="text-xs text-muted-foreground">
 					Precisa ter data, descrição e valor — positivo é entrada, negativo é saída.
 				</p>
@@ -438,16 +447,36 @@
 		</div>
 	{:else if step === 'card-review'}
 		<div class="grid gap-3">
-			<p class="text-sm text-muted-foreground">
-				{includedCount} linha{includedCount === 1 ? '' : 's'} selecionada{includedCount === 1
-					? ''
-					: 's'} pra importar de {cardReviewRows.length} lida{cardReviewRows.length === 1
-					? ''
-					: 's'}.
-				{#if !headerDetected}
-					Cabeçalho não reconhecido — colunas assumidas por posição, confira os valores abaixo.
-				{/if}
-			</p>
+			<div class="flex flex-wrap items-center justify-between gap-3">
+				<p class="text-sm text-muted-foreground">
+					{includedCount} linha{includedCount === 1 ? '' : 's'} selecionada{includedCount === 1
+						? ''
+						: 's'} pra importar de {cardReviewRows.length} lida{cardReviewRows.length === 1
+						? ''
+						: 's'}.
+					{#if !headerDetected}
+						Cabeçalho não reconhecido — colunas assumidas por posição, confira os valores abaixo.
+					{/if}
+				</p>
+				<div class="flex flex-wrap items-center gap-2">
+					<Input
+						type="search"
+						placeholder="Buscar por descrição"
+						bind:value={cardSearch}
+						class="h-8 w-56 text-sm"
+					/>
+					<!-- Cópia do botão de confirmar lá embaixo — listas longas não obrigam
+					     rolar até o fim só pra concluir a importação. -->
+					<Button
+						type="button"
+						size="sm"
+						disabled={includedCount === 0 || loading}
+						onclick={runCardConfirm}
+					>
+						{loading ? 'Importando…' : `Confirmar importação (${includedCount})`}
+					</Button>
+				</div>
+			</div>
 			<div class="overflow-x-auto rounded-xl border border-foreground/10">
 				<table class="w-full min-w-[760px] text-sm">
 					<thead class="sticky top-0 bg-popover text-xs text-muted-foreground">
@@ -455,13 +484,13 @@
 							<th class="px-3 py-2 text-left font-medium">Incluir</th>
 							<th class="px-3 py-2 text-left font-medium">Data</th>
 							<th class="px-3 py-2 text-left font-medium">Descrição</th>
-							<th class="px-3 py-2 text-right font-medium">Valor</th>
+							<th class="px-3 py-2 text-left font-medium">Valor</th>
 							<th class="px-3 py-2 text-left font-medium">Categoria</th>
 							<th class="px-3 py-2 text-left font-medium">Status</th>
 						</tr>
 					</thead>
 					<tbody>
-						{#each cardReviewRows as row (row.rowIndex)}
+						{#each filteredCardRows as row (row.rowIndex)}
 							<tr class="border-b border-foreground/5 last:border-0">
 								<td class="px-3 py-2">
 									{#if row.status === 'new'}
@@ -473,7 +502,9 @@
 										/>
 									{/if}
 								</td>
-								<td class="px-3 py-2 whitespace-nowrap tabular-nums">{row.date || '—'}</td>
+								<td class="px-3 py-2 whitespace-nowrap tabular-nums">
+									{row.date ? formatTransactionDate(row.date) : '—'}
+								</td>
 								<td class="px-3 py-2">
 									{#if row.status === 'new'}
 										<Input
@@ -496,7 +527,7 @@
 										<span class="text-muted-foreground">{row.description}</span>
 									{/if}
 								</td>
-								<td class="px-3 py-2 text-right whitespace-nowrap tabular-nums">
+								<td class="px-3 py-2 text-left whitespace-nowrap tabular-nums">
 									{formatCents(row.amount)}
 								</td>
 								<td class="px-3 py-2">
@@ -514,6 +545,12 @@
 									</Badge>
 								</td>
 							</tr>
+						{:else}
+							<tr>
+								<td colspan="6" class="px-3 py-6 text-center text-sm text-muted-foreground">
+									Nenhuma linha encontrada pra "{cardSearch}".
+								</td>
+							</tr>
 						{/each}
 					</tbody>
 				</table>
@@ -529,16 +566,36 @@
 		</div>
 	{:else if step === 'account-review'}
 		<div class="grid gap-3">
-			<p class="text-sm text-muted-foreground">
-				{includedCount} linha{includedCount === 1 ? '' : 's'} selecionada{includedCount === 1
-					? ''
-					: 's'} pra importar de {accountReviewRows.length} lida{accountReviewRows.length === 1
-					? ''
-					: 's'}.
-				{#if !headerDetected}
-					Cabeçalho não reconhecido — colunas assumidas por posição, confira os valores abaixo.
-				{/if}
-			</p>
+			<div class="flex flex-wrap items-center justify-between gap-3">
+				<p class="text-sm text-muted-foreground">
+					{includedCount} linha{includedCount === 1 ? '' : 's'} selecionada{includedCount === 1
+						? ''
+						: 's'} pra importar de {accountReviewRows.length} lida{accountReviewRows.length === 1
+						? ''
+						: 's'}.
+					{#if !headerDetected}
+						Cabeçalho não reconhecido — colunas assumidas por posição, confira os valores abaixo.
+					{/if}
+				</p>
+				<div class="flex flex-wrap items-center gap-2">
+					<Input
+						type="search"
+						placeholder="Buscar por descrição"
+						bind:value={accountSearch}
+						class="h-8 w-56 text-sm"
+					/>
+					<!-- Cópia do botão de confirmar lá embaixo — listas longas não obrigam
+					     rolar até o fim só pra concluir a importação. -->
+					<Button
+						type="button"
+						size="sm"
+						disabled={includedCount === 0 || loading}
+						onclick={runAccountConfirm}
+					>
+						{loading ? 'Importando…' : `Confirmar importação (${includedCount})`}
+					</Button>
+				</div>
+			</div>
 			<div class="overflow-x-auto rounded-xl border border-foreground/10">
 				<table class="w-full min-w-[760px] text-sm">
 					<thead class="sticky top-0 bg-popover text-xs text-muted-foreground">
@@ -546,13 +603,13 @@
 							<th class="px-3 py-2 text-left font-medium">Incluir</th>
 							<th class="px-3 py-2 text-left font-medium">Data</th>
 							<th class="px-3 py-2 text-left font-medium">Descrição</th>
-							<th class="px-3 py-2 text-right font-medium">Valor</th>
+							<th class="px-3 py-2 text-left font-medium">Valor</th>
 							<th class="px-3 py-2 text-left font-medium">Categoria</th>
 							<th class="px-3 py-2 text-left font-medium">Status</th>
 						</tr>
 					</thead>
 					<tbody>
-						{#each accountReviewRows as row (row.rowIndex)}
+						{#each filteredAccountRows as row (row.rowIndex)}
 							<tr class="border-b border-foreground/5 last:border-0">
 								<td class="px-3 py-2">
 									{#if row.status === 'new'}
@@ -564,7 +621,9 @@
 										/>
 									{/if}
 								</td>
-								<td class="px-3 py-2 whitespace-nowrap tabular-nums">{row.date || '—'}</td>
+								<td class="px-3 py-2 whitespace-nowrap tabular-nums">
+									{row.date ? formatTransactionDate(row.date) : '—'}
+								</td>
 								<td class="px-3 py-2">
 									{#if row.status === 'new'}
 										<Input
@@ -576,7 +635,7 @@
 										<span class="text-muted-foreground">{row.description}</span>
 									{/if}
 								</td>
-								<td class="px-3 py-2 text-right whitespace-nowrap tabular-nums">
+								<td class="px-3 py-2 text-left whitespace-nowrap tabular-nums">
 									{formatCents(row.amount)}
 								</td>
 								<td class="px-3 py-2">
@@ -592,6 +651,12 @@
 									<Badge variant="outline" class={STATUS_BADGE_CLASS[row.status]}>
 										{STATUS_LABELS[row.status]}
 									</Badge>
+								</td>
+							</tr>
+						{:else}
+							<tr>
+								<td colspan="6" class="px-3 py-6 text-center text-sm text-muted-foreground">
+									Nenhuma linha encontrada pra "{accountSearch}".
 								</td>
 							</tr>
 						{/each}
