@@ -43,8 +43,9 @@ function useNextInvoice(workspaceId: string | null): NextInvoice | null {
   let best: NextInvoice | null = null;
   invoiceQueries.forEach((query, index) => {
     const card = cards[index];
-    if (!card || !query.data) return;
-    for (const invoice of query.data) {
+    if (!card || !Array.isArray(query.data)) return;
+    for (let i = 0; i < query.data.length; i++) {
+      const invoice = query.data[i];
       if (invoice.effectiveStatus === 'paid') continue;
       const dueDate = new Date(
         invoice.yearReference,
