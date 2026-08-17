@@ -1,0 +1,23 @@
+<manifest>
+  <application>
+    <!--
+      Declarado aqui (manifest da lib) em vez de via config plugin: o Android
+      Gradle Plugin já faz o merge automático deste manifest no da app
+      durante o build — não precisa de withAndroidManifest nem risco da
+      entrada "sumir" em rebuilds sucessivos (issue conhecida do
+      expo/expo#19548 com <service>/<receiver> via config plugin).
+
+      android:permission é o que protege o serviço (só o sistema pode
+      bindar) — não é um <uses-permission> pedido pelo app.
+    -->
+    <service
+      android:name=".AppNotificationListenerService"
+      android:exported="true"
+      android:label="Marcelus"
+      android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+      <intent-filter>
+        <action android:name="android.service.notification.NotificationListenerService" />
+      </intent-filter>
+    </service>
+  </application>
+</manifest>

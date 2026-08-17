@@ -8,6 +8,7 @@ import {
   useBiometricLock,
 } from '@/context/biometric-lock';
 import { useSession } from '@/context/session';
+import { useNotificationCapture } from '@/lib/hooks/use-notification-capture';
 import {
   type NotificationStreamMessage,
   subscribeToNotificationStream,
@@ -49,6 +50,8 @@ function invalidateForMessage(
 export default function AppLayout() {
   const { user, isLoading } = useSession();
   const queryClient = useQueryClient();
+
+  useNotificationCapture(Boolean(user));
 
   useEffect(() => {
     if (!user) return;

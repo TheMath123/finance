@@ -117,6 +117,23 @@ export async function unregisterCurrentPushToken(): Promise<void> {
   }
 }
 
+/** Alerta local (não vem do backend) — usado pra avisar de uma sugestão de transação detectada via notification-listener enquanto o app está em segundo plano. Silencioso se não suportado aqui. */
+export async function presentLocalNotification(
+  title: string,
+  body: string
+): Promise<void> {
+  const Notifications = loadNotificationsModule();
+  if (!Notifications) return;
+  try {
+    await Notifications.scheduleNotificationAsync({
+      content: { title, body },
+      trigger: null,
+    });
+  } catch {
+    // Sem permissão de notificação local — a sugestão continua salva e visível dentro do app.
+  }
+}
+
 export type NotificationResponse =
   | { kind: 'tap'; data: Record<string, unknown> | undefined }
   | {

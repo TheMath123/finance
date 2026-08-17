@@ -54,7 +54,16 @@ function todayIso(): string {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 }
 
-export function CreateTransactionForm({ onDone }: { onDone: () => void }) {
+export function CreateTransactionForm({
+  onDone,
+  initialValues,
+}: {
+  onDone: () => void;
+  /** Pré-preenchimento vindo de uma sugestão detectada por notificação (ver notification-suggestions.tsx) — usuário sempre revisa/completa antes de salvar, nada é enviado automaticamente. */
+  initialValues?: Partial<
+    Pick<TransactionInput, 'description' | 'amount' | 'type' | 'method'>
+  >;
+}) {
   const { workspaceId } = useSession();
   const queryClient = useQueryClient();
 
@@ -83,6 +92,7 @@ export function CreateTransactionForm({ onDone }: { onDone: () => void }) {
       accountId: undefined,
       cardId: undefined,
       installments: '1',
+      ...initialValues,
     },
   });
 

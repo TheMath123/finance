@@ -43,3 +43,30 @@ export const lastEmailStore = {
   getEmail: () => SecureStore.getItemAsync(LAST_EMAIL_KEY),
   setEmail: (email: string) => SecureStore.setItemAsync(LAST_EMAIL_KEY, email),
 };
+
+const NOTIFICATION_CAPTURE_ENABLED_KEY = 'app.notificationCaptureEnabled';
+
+/** Preferência de detecção automática de transações via notificação (Android) — desligada por padrão, mesmo com a permissão do sistema concedida (ver notification-access.tsx). */
+export const notificationCaptureStore = {
+  getEnabled: async () =>
+    (await SecureStore.getItemAsync(NOTIFICATION_CAPTURE_ENABLED_KEY)) === '1',
+  setEnabled: (enabled: boolean) =>
+    SecureStore.setItemAsync(
+      NOTIFICATION_CAPTURE_ENABLED_KEY,
+      enabled ? '1' : '0'
+    ),
+};
+
+const THEME_PREFERENCE_KEY = 'app.themePreference';
+
+export type ThemePreference = 'light' | 'dark' | 'system';
+
+/** Tema manual (Claro/Escuro/Automático, ver context/theme-preference.tsx) — mesma justificativa do biometricStore: não é segredo, reaproveita o SecureStore por simplicidade. */
+export const themeStore = {
+  getPreference: async (): Promise<ThemePreference> => {
+    const value = await SecureStore.getItemAsync(THEME_PREFERENCE_KEY);
+    return value === 'light' || value === 'dark' ? value : 'system';
+  },
+  setPreference: (preference: ThemePreference) =>
+    SecureStore.setItemAsync(THEME_PREFERENCE_KEY, preference),
+};
