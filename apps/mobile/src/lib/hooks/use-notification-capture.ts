@@ -32,11 +32,12 @@ export function useNotificationCapture(enabled: boolean): void {
 
     async function evaluate() {
       if (unsubscribeRef.current) return; // já assinado — nada a fazer
-      const [enabled, granted] = await Promise.all([
-        notificationCaptureStore.getEnabled(),
-        Promise.resolve(isNotificationAccessGranted()),
-      ]);
-      if (cancelled || !enabled || !granted) return;
+      // Checa a preferência local ANTES de tocar em isNotificationAccessGranted
+      // (que força o require() do módulo nativo) — evita o "Cannot find native
+      // module" do Expo Go pra quem nunca ligou o toggle (caso comum/default).
+      const captureEnabled = await notificationCaptureStore.getEnabled();
+      if (cancelled || !captureEnabled) return;
+      if (!isNotificationAccessGranted()) return;
 
       unsubscribeRef.current = subscribeToNotifications((event) => {
         const parsed = parseBankNotification(event);
