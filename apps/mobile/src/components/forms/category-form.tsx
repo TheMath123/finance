@@ -3,7 +3,8 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { View } from 'react-native';
 
-import { SelectField } from '@/components/form/select-field';
+import { ColorField } from '@/components/form/color-field';
+import { IconField } from '@/components/form/icon-field';
 import { TextField } from '@/components/form/text-field';
 import { ThemedText } from '@/components/themed-text';
 import { Button } from '@/components/ui/button';
@@ -11,17 +12,6 @@ import { useSession } from '@/context/session';
 import { ApiError } from '@/lib/api-client';
 import { type Category, categoriesApi } from '@/lib/categories-api';
 import { type CategoryInput, categorySchema } from '@/lib/schemas/finance';
-
-const COLOR_OPTIONS = [
-  { label: 'Verde', value: '#22C55E' },
-  { label: 'Azul', value: '#3B82F6' },
-  { label: 'Vermelho', value: '#EF4444' },
-  { label: 'Laranja', value: '#F59E0B' },
-  { label: 'Roxo', value: '#8B5CF6' },
-  { label: 'Rosa', value: '#EC4899' },
-  { label: 'Ciano', value: '#06B6D4' },
-  { label: 'Cinza', value: '#6B7280' },
-];
 
 export function CategoryForm({
   category,
@@ -61,18 +51,17 @@ export function CategoryForm({
         label="Nome"
         placeholder="Ex.: Mercado"
       />
-      <TextField
+      <IconField
         control={control}
         name="icon"
         label="Ícone"
-        placeholder="Ex.: shopping-cart"
+        placeholder="Selecione um ícone"
       />
-      <SelectField
+      <ColorField
         control={control}
         name="color"
         label="Cor"
         placeholder="Selecione a cor"
-        options={COLOR_OPTIONS}
       />
       {mutation.isError && (
         <ThemedText type="small" style={{ color: '#DC2626' }}>
