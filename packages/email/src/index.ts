@@ -46,6 +46,7 @@ export interface Mailer {
     to: string;
     inviterName: string;
     workspaceName: string;
+    inviteUrl: string;
   }): Promise<void>;
   /** Enviado para o e-mail NOVO na troca de e-mail do perfil (prova de posse). */
   sendConfirmEmailChange(input: {
@@ -80,11 +81,11 @@ export const mailer: Mailer = {
       'Atividade suspeita na sua conta',
       AccountLockedEmail({ name, minutes })
     ),
-  sendWorkspaceInvite: ({ to, inviterName, workspaceName }) =>
+  sendWorkspaceInvite: ({ to, inviterName, workspaceName, inviteUrl }) =>
     send(
       to,
       `Convite para o workspace ${workspaceName}`,
-      WorkspaceInviteEmail({ inviterName, workspaceName })
+      WorkspaceInviteEmail({ inviterName, workspaceName, inviteUrl })
     ),
   sendConfirmEmailChange: ({ to, name, code }) =>
     send(

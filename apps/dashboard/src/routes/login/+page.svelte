@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import { resolve } from '$app/paths';
+	import { page } from '$app/state';
 
 	import GoogleSignInButton from '$lib/components/auth/google-sign-in-button.svelte';
 	import { Button } from '$lib/components/ui/button';
@@ -8,10 +9,12 @@
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
 	import { PasswordInput } from '$lib/components/ui/password-input';
+	import { safeRedirectTarget } from '$lib/safe-redirect';
 
 	let { form } = $props();
 
 	let submitting = $state(false);
+	const redirectTo = $derived(safeRedirectTarget(page.url.searchParams.get('redirectTo')));
 </script>
 
 <svelte:head>
@@ -36,6 +39,7 @@
 					};
 				}}
 			>
+				<input type="hidden" name="redirectTo" value={redirectTo} />
 				<div class="grid gap-2">
 					<Label for="email">E-mail</Label>
 					<Input
@@ -72,13 +76,15 @@
 					{submitting ? 'Entrando…' : 'Entrar'}
 				</Button>
 			</form>
-			<GoogleSignInButton />
+			<GoogleSignInButton {redirectTo} />
 		</Card.Content>
 		<Card.Footer>
 			<p class="text-sm text-muted-foreground">
 				Não tem conta?
-				<a href={resolve('/register')} class="text-primary underline-offset-4 hover:underline"
-					>Criar conta</a
+				<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- destino tem query string dinâmica (redirectTo), resolve() não compõe isso -->
+				<a
+					href="{resolve('/register')}?redirectTo={encodeURIComponent(redirectTo)}"
+					class="text-primary underline-offset-4 hover:underline">Criar conta</a
 				>
 			</p>
 		</Card.Footer>

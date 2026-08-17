@@ -5,7 +5,10 @@ import * as workspaceApi from '$lib/server/workspace-api';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals }) => {
-	if (!locals.session) redirect(303, '/login');
+	// redirectTo leva o usuário de volta pra cá depois de logar/criar conta —
+	// é o destino do link de "Aceitar convite" no e-mail (ver create-invite.ts
+	// no backend + workspace-invite.tsx no pacote email).
+	if (!locals.session) redirect(303, '/login?redirectTo=/workspace/my-invites');
 
 	const result = await workspaceApi.listMyInvites(locals.session.accessToken);
 	return { myInvites: result.ok ? result.value : [] };

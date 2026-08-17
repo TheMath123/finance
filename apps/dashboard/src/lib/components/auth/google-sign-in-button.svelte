@@ -16,6 +16,9 @@
 	 * repassa o token pro endpoint `/login/google` da própria dashboard.
 	 */
 
+	/** Mesmo mecanismo de redirectTo do form de e-mail/senha (ver login/+page.server.ts) — precisa como prop porque este componente nunca passa pelo backend do SvelteKit (fetch direto, sem form action). */
+	let { redirectTo = '/' }: { redirectTo?: string } = $props();
+
 	let container = $state<HTMLDivElement>();
 	let error = $state('');
 
@@ -32,7 +35,7 @@
 				error = payload.error?.message ?? 'Não foi possível entrar com o Google.';
 				return;
 			}
-			window.location.href = '/';
+			window.location.href = redirectTo;
 		} catch {
 			error = 'Não foi possível falar com o servidor. Tente novamente.';
 		}

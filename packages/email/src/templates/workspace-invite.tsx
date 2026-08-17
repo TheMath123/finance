@@ -1,12 +1,14 @@
-import { Text } from '@react-email/components';
-import { EmailLayout } from './layout';
+import { Button, Link, Text } from '@react-email/components';
+import { buttonStyle, EmailLayout } from './layout';
 
 export function WorkspaceInviteEmail({
   inviterName,
   workspaceName,
+  inviteUrl,
 }: {
   inviterName: string;
   workspaceName: string;
+  inviteUrl: string;
 }) {
   return (
     <EmailLayout title="Convite para workspace">
@@ -14,8 +16,12 @@ export function WorkspaceInviteEmail({
         {inviterName} convidou você para participar do workspace{' '}
         <strong>{workspaceName}</strong>.
       </Text>
-      <Text>
-        Abra o app e veja o convite na tela "Convites" pra aceitar ou recusar.
+      <Button href={inviteUrl} style={buttonStyle}>
+        Ver convite
+      </Button>
+      <Text style={{ color: '#71717a', fontSize: 12, marginTop: 16 }}>
+        Se o botão não funcionar, copie e cole este link no navegador:{' '}
+        <Link href={inviteUrl}>{inviteUrl}</Link>
       </Text>
     </EmailLayout>
   );

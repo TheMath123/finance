@@ -14,11 +14,18 @@ export interface JobPayloads {
   /** Código de 6 dígitos pra autorizar a exclusão da conta (perfil), enviado pro próprio e-mail cadastrado. */
   'email.confirm-account-deletion': { to: string; name: string; code: string };
   'email.account-locked': { to: string; name: string; minutes: number };
-  /** Sem link (mesmo motivo do reset por código: clientes de e-mail removem <a href> com esquema custom) — o convite é aceito na tela "Convites" do app. */
+  /**
+   * `inviteUrl` é link normal (`https://dash...`), não esquema custom — o
+   * problema do reset por código (clientes de e-mail removem `<a href>` com
+   * esquema tipo `mobile://`) não se aplica aqui, leva pro dashboard web
+   * (`/workspace/my-invites`), que já lista/aceita convites (exige login;
+   * quem não tem conta cai no cadastro e volta pra cá via redirectTo).
+   */
   'email.workspace-invite': {
     to: string;
     inviterName: string;
     workspaceName: string;
+    inviteUrl: string;
   };
   /**
    * Um ou mais tokens do Expo Push Service (mesmo usuário pode ter vários devices).

@@ -1,13 +1,15 @@
 import { fail, redirect } from '@sveltejs/kit';
 
 import { registerSchema } from '$lib/schemas/auth';
+import { safeRedirectTarget } from '$lib/safe-redirect';
 import * as authApi from '$lib/server/auth-api';
 import { setSessionCookies } from '$lib/server/session';
 
 import type { Actions, PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async ({ locals }) => {
-	if (locals.session) redirect(303, '/');
+/** `?redirectTo=` — mesmo mecanismo de login/+page.server.ts. */
+export const load: PageServerLoad = async ({ locals, url }) => {
+	if (locals.session) redirect(303, safeRedirectTarget(url.searchParams.get('redirectTo')));
 };
 
 export const actions: Actions = {
@@ -21,6 +23,7 @@ export const actions: Actions = {
 			termsAccepted: form.get('terms') === 'on'
 		};
 		const values = { name: raw.name, email: raw.email };
+		const redirectTo = safeRedirectTarget(form.get('redirectTo')?.toString());
 
 		const parsed = registerSchema.safeParse(raw);
 		if (!parsed.success) {
@@ -45,6 +48,6 @@ export const actions: Actions = {
 		}
 
 		setSessionCookies(cookies, result.value);
-		redirect(303, '/');
+		redirect(303, redirectTo);
 	}
 };

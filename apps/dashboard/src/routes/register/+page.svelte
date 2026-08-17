@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import { resolve } from '$app/paths';
+	import { page } from '$app/state';
 	import { PUBLIC_SITE_URL } from '$env/static/public';
 
 	import GoogleSignInButton from '$lib/components/auth/google-sign-in-button.svelte';
@@ -10,12 +11,14 @@
 	import { Label } from '$lib/components/ui/label';
 	import { PasswordInput } from '$lib/components/ui/password-input';
 	import { PasswordRequirements } from '$lib/components/ui/password-requirements';
+	import { safeRedirectTarget } from '$lib/safe-redirect';
 
 	let { form } = $props();
 
 	let submitting = $state(false);
 	let password = $state('');
 	let confirmPassword = $state('');
+	const redirectTo = $derived(safeRedirectTarget(page.url.searchParams.get('redirectTo')));
 </script>
 
 <svelte:head>
@@ -40,6 +43,7 @@
 					};
 				}}
 			>
+				<input type="hidden" name="redirectTo" value={redirectTo} />
 				<div class="grid gap-2">
 					<Label for="name">Nome</Label>
 					<Input id="name" name="name" autocomplete="name" value={form?.name ?? ''} required />
@@ -114,13 +118,15 @@
 					{submitting ? 'Criando conta…' : 'Criar conta'}
 				</Button>
 			</form>
-			<GoogleSignInButton />
+			<GoogleSignInButton {redirectTo} />
 		</Card.Content>
 		<Card.Footer>
 			<p class="text-sm text-muted-foreground">
 				Já tem conta?
-				<a href={resolve('/login')} class="text-primary underline-offset-4 hover:underline"
-					>Entrar</a
+				<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- destino tem query string dinâmica (redirectTo), resolve() não compõe isso -->
+				<a
+					href="{resolve('/login')}?redirectTo={encodeURIComponent(redirectTo)}"
+					class="text-primary underline-offset-4 hover:underline">Entrar</a
 				>
 			</p>
 		</Card.Footer>

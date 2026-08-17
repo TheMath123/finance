@@ -67,10 +67,16 @@ export async function createInvite(
   if (looksLikeEmail && workspace) {
     const inviter = await deps.repos.user.findById(actor.userId);
     if (inviter) {
+      // Leva direto pra tela que já lista e aceita convites — precisa estar
+      // logado pra acessar; sem sessão, redirect(303, '/login?redirectTo=...')
+      // (my-invites/+page.server.ts) manda pro login/cadastro e volta pra cá
+      // depois (login/register +page.server.ts, mesmo mecanismo).
+      const inviteUrl = new URL('/workspace/my-invites', deps.dashboardOrigin);
       await deps.dispatch('email.workspace-invite', {
         to: target,
         inviterName: inviter.name,
         workspaceName: workspace.name,
+        inviteUrl: inviteUrl.toString(),
       });
       // Notificação in-app/push só dá pra criar se o convidado já tem conta (precisa de userId).
       if (invitedUser) {
