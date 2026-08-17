@@ -35,8 +35,16 @@ export async function acceptInvite(
   const target = invite.emailOrPhone.toLowerCase();
   const matchesEmail = user.email.toLowerCase() === target;
   const matchesPhone = !!user.phone && user.phone.toLowerCase() === target;
+  // Continua 404 genérico pra quem o convite nem é (auditoria 2026-07-19) —
+  // mas quando o convite já bateu com o próprio e-mail do usuário logado,
+  // "e-mail não verificado" não revela nada sobre terceiros (o usuário já
+  // sabe que o convite é dele e que o e-mail dele não está verificado), então
+  // vale um erro honesto/acionável em vez do mesmo "não encontrado" confuso
+  // (bug real em produção: convite aparecia em "Meus convites" — listMyInvites
+  // não filtra por verificação — mas o aceite falhava com mensagem genérica).
   if (!matchesEmail && !matchesPhone) return left('invite_not_found');
-  if (matchesEmail && !user.emailVerifiedAt) return left('invite_not_found');
+  if (matchesEmail && !user.emailVerifiedAt)
+    return left('invite_email_not_verified');
 
   // Reforça o limite de membros (M2-03) — já checado na criação do convite, mas
   // vários convites pendentes podem ter sido aceitos em paralelo desde então.

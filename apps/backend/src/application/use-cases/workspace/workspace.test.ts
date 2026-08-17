@@ -308,7 +308,7 @@ describe('workspace: convites', () => {
     );
     expect(result.ok).toBe(false);
     if (result.ok) return;
-    expect(result.error).toBe('invite_not_found');
+    expect(result.error).toBe('invite_email_not_verified');
 
     // Depois de verificar o e-mail, o mesmo convite pode ser aceito normalmente.
     await deps.repos.user.markEmailVerified(registered.value.user.id);

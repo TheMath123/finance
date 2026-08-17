@@ -6,6 +6,7 @@ export type WorkspaceError =
   | 'forbidden'
   | 'already_member'
   | 'invite_not_found'
+  | 'invite_email_not_verified'
   | 'invite_not_pending'
   | 'invite_forbidden'
   | 'plan_limit_reached';

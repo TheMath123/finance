@@ -39,6 +39,12 @@ export const WORKSPACE_ERRORS: Record<WorkspaceError, HttpError> = {
     code: 'invite_not_found',
     message: 'Convite não encontrado.',
   },
+  invite_email_not_verified: {
+    status: 403,
+    code: 'invite_email_not_verified',
+    message:
+      'Confirme seu e-mail antes de aceitar este convite — veja o e-mail de confirmação que enviamos no cadastro.',
+  },
   invite_not_pending: {
     status: 409,
     code: 'invite_not_pending',
