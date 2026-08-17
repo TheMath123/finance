@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import { useColorScheme } from '../../hooks/use-color-scheme';
 import { cn } from '../../lib/cn';
+import { CategoryBadge } from './category-badge';
 
 export interface SelectOption {
   label: string;
@@ -22,24 +23,6 @@ export interface SelectOption {
   icon?: ComponentType<IconProps>;
   /** Cor de fundo da bolinha do ícone — só importa se `icon` também vier. */
   color?: string;
-}
-
-/** Bolinha colorida com ícone dentro — mesmo padrão do ComboSelect do dashboard (categorias etc.). */
-function OptionIcon({
-  icon: Icon,
-  color,
-}: {
-  icon: ComponentType<IconProps>;
-  color?: string;
-}) {
-  return (
-    <View
-      className="h-6 w-6 items-center justify-center rounded-full"
-      style={{ backgroundColor: color ?? '#6B7280' }}
-    >
-      <Icon size={13} weight="fill" color="#FFFFFF" />
-    </View>
-  );
 }
 
 export interface SelectProps {
@@ -129,7 +112,12 @@ export function Select({
       >
         <View className="flex-1 flex-row items-center gap-2">
           {selected?.icon && (
-            <OptionIcon icon={selected.icon} color={selected.color} />
+            <CategoryBadge
+              icon={selected.icon}
+              color={selected.color ?? '#6B7280'}
+              size={24}
+              iconSize={13}
+            />
           )}
           <Text
             className={cn(
@@ -217,7 +205,12 @@ export function Select({
                 >
                   {o.icon && (
                     <View className="mr-2">
-                      <OptionIcon icon={o.icon} color={o.color} />
+                      <CategoryBadge
+                        icon={o.icon}
+                        color={o.color ?? '#6B7280'}
+                        size={24}
+                        iconSize={13}
+                      />
                     </View>
                   )}
                   <Text

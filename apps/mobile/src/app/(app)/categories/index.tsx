@@ -10,10 +10,12 @@ import { ActivityIndicator, Alert, Pressable, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { Card } from '@/components/ui/card';
+import { CategoryBadge } from '@/components/ui/category-badge';
 import { Screen } from '@/components/ui/screen';
 import { useSession } from '@/context/session';
 import { ApiError } from '@/lib/api-client';
 import { type Category, categoriesApi } from '@/lib/categories-api';
+import { resolveCategoryIcon } from '@/lib/category-icons';
 
 export default function CategoriesScreen() {
   const { workspaceId, featureFlags } = useSession();
@@ -84,9 +86,10 @@ export default function CategoriesScreen() {
               className="flex-row items-center justify-between"
             >
               <View className="flex-row items-center gap-3">
-                <View
-                  className="h-3 w-3 rounded-full"
-                  style={{ backgroundColor: category.color }}
+                <CategoryBadge
+                  color={category.color}
+                  icon={resolveCategoryIcon(category.icon)}
+                  size={32}
                 />
                 <ThemedText type="smallBold">{category.name}</ThemedText>
               </View>
@@ -105,9 +108,10 @@ export default function CategoriesScreen() {
                 className="flex-1 flex-row items-center gap-3"
                 onPress={() => router.push(`/categories/${category.id}`)}
               >
-                <View
-                  className="h-3 w-3 rounded-full"
-                  style={{ backgroundColor: category.color }}
+                <CategoryBadge
+                  color={category.color}
+                  icon={resolveCategoryIcon(category.icon)}
+                  size={32}
                 />
                 <ThemedText type="smallBold">{category.name}</ThemedText>
               </Pressable>

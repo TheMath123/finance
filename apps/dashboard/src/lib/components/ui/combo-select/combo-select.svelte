@@ -3,6 +3,7 @@
 	import CaretDownIcon from 'phosphor-svelte/lib/CaretDown';
 	import CheckIcon from 'phosphor-svelte/lib/Check';
 	import TagIcon from 'phosphor-svelte/lib/TagIcon';
+	import { CategoryBadge } from '$lib/components/ui/category-badge';
 	import { cn } from '$lib/utils.js';
 
 	// Mesmo truque de $lib/category-icon.ts: não há subpath exportado pro tipo
@@ -100,13 +101,13 @@
 >
 	<div class="relative">
 		{#if selected?.icon && !open}
-			{@const Icon = selected.icon}
-			<span
-				class="pointer-events-none absolute top-1/2 left-1.5 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full text-white"
-				style="background-color: {selected.color ?? '#6B7280'}"
-			>
-				<Icon size={13} weight="fill" />
-			</span>
+			<CategoryBadge
+				icon={selected.icon}
+				color={selected.color ?? '#6B7280'}
+				size={24}
+				iconSize={13}
+				class="pointer-events-none absolute top-1/2 left-1.5 -translate-y-1/2"
+			/>
 		{/if}
 		<Combobox.Input
 			{id}
@@ -139,13 +140,12 @@
 					class="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm outline-none data-highlighted:bg-primary/10"
 				>
 					{#if option.icon}
-						{@const Icon = option.icon}
-						<span
-							class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-white"
-							style="background-color: {option.color ?? '#6B7280'}"
-						>
-							<Icon size={13} weight="fill" />
-						</span>
+						<CategoryBadge
+							icon={option.icon}
+							color={option.color ?? '#6B7280'}
+							size={24}
+							iconSize={13}
+						/>
 					{/if}
 					<span class="min-w-0 flex-1 truncate">{option.label}</span>
 					{#if value === option.value}

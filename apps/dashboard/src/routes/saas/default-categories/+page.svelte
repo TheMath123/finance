@@ -2,6 +2,7 @@
 	import { enhance } from '$app/forms';
 
 	import { Button } from '$lib/components/ui/button';
+	import { CategoryBadge } from '$lib/components/ui/category-badge';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
@@ -123,17 +124,16 @@
 
 	<div class="flex flex-col gap-2">
 		{#each data.categories as category (category.id)}
-			{@const CategoryIcon = resolveCategoryIcon(category.icon)}
 			<div
 				class="flex items-center justify-between gap-4 rounded-lg border border-foreground/10 px-4 py-3"
 			>
 				<div class="flex min-w-0 items-center gap-3">
-					<span
-						class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-white"
-						style="background-color: {category.color}"
-					>
-						<CategoryIcon size={18} weight="fill" />
-					</span>
+					<CategoryBadge
+						icon={resolveCategoryIcon(category.icon)}
+						color={category.color}
+						size={36}
+						iconSize={18}
+					/>
 					<div class="min-w-0">
 						<p class="truncate text-sm font-medium">
 							{category.name}
