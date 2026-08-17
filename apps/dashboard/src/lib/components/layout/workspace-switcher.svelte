@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { tick } from 'svelte';
+
 	import { enhance } from '$app/forms';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
@@ -30,13 +32,24 @@
 
 	let formEl = $state<HTMLFormElement>();
 
-	function handleChange(value: string) {
+	/**
+	 * Bug real em produção (auditoria 2026-08-17): requestSubmit() síncrono
+	 * logo após `selected = value` submetia o valor ANTERIOR — o input hidden
+	 * que o bits-ui usa pra participar do form nativo (select-hidden-input.svelte)
+	 * reflete `value` via binding reativo do Svelte, que só chega no DOM no
+	 * próximo flush, não na mesma linha síncrona. Resultado: quem tentava
+	 * trocar pro workspace convidado sempre "trocava" de volta pro workspace
+	 * pessoal (era o valor selecionado por padrão, então parecia nunca sair
+	 * dele). `tick()` espera esse flush antes de submeter.
+	 */
+	async function handleChange(value: string) {
 		if (value === NEW_WORKSPACE) {
 			selected = activeWorkspace?.id ?? '';
 			void goto(resolve('/workspace/new'));
 			return;
 		}
 		selected = value;
+		await tick();
 		formEl?.requestSubmit();
 	}
 </script>

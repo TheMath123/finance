@@ -1,5 +1,6 @@
 <script lang="ts">
 	import UserCircleIcon from 'phosphor-svelte/lib/UserCircleIcon';
+	import { tick } from 'svelte';
 
 	import { enhance } from '$app/forms';
 
@@ -38,6 +39,18 @@
 	// não expõe `e.currentTarget.form` como o <select> nativo, então guardamos o
 	// próprio form pra disparar `requestSubmit()` a partir do `onValueChange`.
 	const roleForms: Record<string, HTMLFormElement | undefined> = {};
+
+	/**
+	 * Bug real em produção (auditoria 2026-08-17, mesma causa do
+	 * workspace-switcher.svelte): requestSubmit() síncrono dentro do
+	 * onValueChange submetia o papel ANTERIOR — o input hidden do bits-ui
+	 * só reflete o valor novo no DOM depois do próximo flush reativo do
+	 * Svelte, não na mesma linha síncrona. `tick()` espera esse flush.
+	 */
+	async function handleRoleChange(userId: string) {
+		await tick();
+		roleForms[userId]?.requestSubmit();
+	}
 </script>
 
 <svelte:head>
@@ -119,7 +132,7 @@
 								name="role"
 								options={MEMBER_ROLE_OPTIONS}
 								value={member.role}
-								onValueChange={() => roleForms[member.userId]?.requestSubmit()}
+								onValueChange={() => handleRoleChange(member.userId)}
 							/>
 						</form>
 						<form method="POST" action="?/remove" use:enhance>
