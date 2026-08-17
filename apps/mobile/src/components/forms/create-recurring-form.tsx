@@ -18,6 +18,7 @@ import { accountsApi } from '@/lib/accounts-api';
 import { ApiError } from '@/lib/api-client';
 import { cardsApi } from '@/lib/cards-api';
 import { categoriesApi } from '@/lib/categories-api';
+import { buildCategoryOptions } from '@/lib/category-select-options';
 import { type RecurringTransaction, recurringApi } from '@/lib/recurring-api';
 import { type RecurringInput, recurringSchema } from '@/lib/schemas/finance';
 
@@ -234,10 +235,7 @@ export function CreateRecurringForm({
     },
   });
 
-  const categoryOptions = (categories ?? []).map((c) => ({
-    label: c.name,
-    value: c.id,
-  }));
+  const categoryOptions = buildCategoryOptions(categories);
   const accountOptions = (accounts ?? []).map((a) => ({
     label: a.name,
     value: a.id,
@@ -274,6 +272,8 @@ export function CreateRecurringForm({
         label="Categoria"
         placeholder="Selecione a categoria"
         options={categoryOptions}
+        searchable
+        searchPlaceholder="Buscar categoria..."
       />
       {isCredit ? (
         <SelectField

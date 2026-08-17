@@ -17,6 +17,7 @@ import {
   cardsApi,
 } from '@/lib/cards-api';
 import type { Category } from '@/lib/categories-api';
+import { buildCategoryOptions } from '@/lib/category-select-options';
 import { formatCents } from '@/lib/money';
 
 const MONTH_OPTIONS = [
@@ -75,10 +76,7 @@ export function CsvImportForm({
   const [rows, setRows] = useState<CsvReviewRow[]>([]);
   const [summary, setSummary] = useState<ConfirmCsvImportResult | null>(null);
 
-  const categoryOptions = categories.map((c) => ({
-    label: c.name,
-    value: c.id,
-  }));
+  const categoryOptions = buildCategoryOptions(categories);
   const includedCount = rows.filter(
     (r) => r.status === 'new' && r.include
   ).length;
@@ -298,6 +296,8 @@ export function CsvImportForm({
                       updateRow(row.rowIndex, { categoryId: value })
                     }
                     placeholder="Categoria"
+                    searchable
+                    searchPlaceholder="Buscar categoria..."
                   />
                 </>
               ) : (

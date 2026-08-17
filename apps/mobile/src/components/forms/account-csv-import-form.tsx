@@ -17,6 +17,7 @@ import {
 } from '@/lib/accounts-api';
 import { ApiError } from '@/lib/api-client';
 import type { Category } from '@/lib/categories-api';
+import { buildCategoryOptions } from '@/lib/category-select-options';
 import { formatCents } from '@/lib/money';
 
 const STATUS_LABELS: Record<AccountCsvImportRowStatus, string> = {
@@ -60,10 +61,7 @@ export function AccountCsvImportForm({
     null
   );
 
-  const categoryOptions = categories.map((c) => ({
-    label: c.name,
-    value: c.id,
-  }));
+  const categoryOptions = buildCategoryOptions(categories);
   const includedCount = rows.filter(
     (r) => r.status === 'new' && r.include
   ).length;
@@ -231,6 +229,8 @@ export function AccountCsvImportForm({
                       updateRow(row.rowIndex, { categoryId: value })
                     }
                     placeholder="Categoria"
+                    searchable
+                    searchPlaceholder="Buscar categoria..."
                   />
                 </>
               ) : (

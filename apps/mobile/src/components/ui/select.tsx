@@ -1,3 +1,5 @@
+import type { IconProps } from 'phosphor-react-native';
+import type { ComponentType } from 'react';
 import { useRef, useState } from 'react';
 import {
   Dimensions,
@@ -16,6 +18,28 @@ import { cn } from '../../lib/cn';
 export interface SelectOption {
   label: string;
   value: string;
+  /** Ícone Phosphor já resolvido (ex.: `resolveCategoryIcon`) — vira bolinha colorida antes do rótulo. */
+  icon?: ComponentType<IconProps>;
+  /** Cor de fundo da bolinha do ícone — só importa se `icon` também vier. */
+  color?: string;
+}
+
+/** Bolinha colorida com ícone dentro — mesmo padrão do ComboSelect do dashboard (categorias etc.). */
+function OptionIcon({
+  icon: Icon,
+  color,
+}: {
+  icon: ComponentType<IconProps>;
+  color?: string;
+}) {
+  return (
+    <View
+      className="h-6 w-6 items-center justify-center rounded-full"
+      style={{ backgroundColor: color ?? '#6B7280' }}
+    >
+      <Icon size={13} weight="fill" color="#FFFFFF" />
+    </View>
+  );
 }
 
 export interface SelectProps {
@@ -103,15 +127,20 @@ export function Select({
         accessibilityRole="button"
         accessibilityLabel={label ?? placeholder}
       >
-        <Text
-          className={cn(
-            'text-base flex-1',
-            selected ? 'text-foreground' : 'text-muted-foreground'
+        <View className="flex-1 flex-row items-center gap-2">
+          {selected?.icon && (
+            <OptionIcon icon={selected.icon} color={selected.color} />
           )}
-          numberOfLines={1}
-        >
-          {selected?.label ?? placeholder}
-        </Text>
+          <Text
+            className={cn(
+              'text-base flex-1',
+              selected ? 'text-foreground' : 'text-muted-foreground'
+            )}
+            numberOfLines={1}
+          >
+            {selected?.label ?? placeholder}
+          </Text>
+        </View>
         <Svg
           width={16}
           height={16}
@@ -186,6 +215,11 @@ export function Select({
                   accessibilityRole="button"
                   accessibilityState={{ selected: isSelected }}
                 >
+                  {o.icon && (
+                    <View className="mr-2">
+                      <OptionIcon icon={o.icon} color={o.color} />
+                    </View>
+                  )}
                   <Text
                     className={cn(
                       'flex-1 text-base text-foreground',

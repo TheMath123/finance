@@ -17,6 +17,7 @@ import { useSession } from '@/context/session';
 import { accountsApi } from '@/lib/accounts-api';
 import { ApiError } from '@/lib/api-client';
 import { cardsApi } from '@/lib/cards-api';
+import { buildCategoryOptions } from '@/lib/category-select-options';
 import { useCategories } from '@/lib/hooks/use-categories';
 import {
   type ConvertToRecurringInput,
@@ -308,10 +309,7 @@ export function EditTransactionForm({
     },
   });
 
-  const categoryOptions = (categories ?? []).map((c) => ({
-    label: c.name,
-    value: c.id,
-  }));
+  const categoryOptions = buildCategoryOptions(categories);
   const accountOptions = (accounts ?? []).map((a) => ({
     label: a.name,
     value: a.id,
@@ -386,6 +384,8 @@ export function EditTransactionForm({
         label="Categoria"
         placeholder="Selecione a categoria"
         options={categoryOptions}
+        searchable
+        searchPlaceholder="Buscar categoria..."
       />
       <DateField control={control} name="date" label="Data" />
       {canEditAccount && (

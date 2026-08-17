@@ -15,6 +15,8 @@ export interface SelectFieldProps<T extends FieldValues> {
   label?: string;
   placeholder?: string;
   options: SelectOption[];
+  searchable?: boolean;
+  searchPlaceholder?: string;
 }
 
 export function SelectField<T extends FieldValues>({
@@ -23,6 +25,8 @@ export function SelectField<T extends FieldValues>({
   label,
   placeholder,
   options,
+  searchable,
+  searchPlaceholder,
 }: SelectFieldProps<T>) {
   const { field, fieldState } = useController({ control, name });
 
@@ -35,6 +39,8 @@ export function SelectField<T extends FieldValues>({
         options={options}
         value={field.value as string | undefined}
         onValueChange={field.onChange}
+        searchable={searchable}
+        searchPlaceholder={searchPlaceholder}
       />
       {fieldState.error?.message && (
         <ThemedText type="small" style={{ color: '#DC2626' }}>

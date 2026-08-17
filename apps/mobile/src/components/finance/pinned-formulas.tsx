@@ -6,6 +6,7 @@ import DraggableFlatList, {
   type RenderItemParams,
 } from 'react-native-draggable-flatlist';
 import { ThemedText } from '@/components/themed-text';
+import { Accordion } from '@/components/ui/accordion';
 import { Card } from '@/components/ui/card';
 import { accountsApi } from '@/lib/accounts-api';
 import { cardsApi } from '@/lib/cards-api';
@@ -92,45 +93,48 @@ export function PinnedFormulas({
     : { values: {} };
 
   return (
-    <View className="w-full gap-2 px-4">
-      <ThemedText type="small" themeColor="textSecondary">
-        Fórmulas salvas
-      </ThemedText>
-      <DraggableFlatList
-        data={items}
-        keyExtractor={(item) => item.id}
-        scrollEnabled={false}
-        onDragEnd={({ data }) => {
-          setItems(data);
-          reorderMutation.mutate(data.map((f) => f.id));
-        }}
-        renderItem={({
-          item,
-          drag,
-          isActive,
-        }: RenderItemParams<SavedFormula>) => {
-          const result = evaluateFormula(item.expression, values);
-          const displayValue = result.ok
-            ? item.displayFormat === 'currency'
-              ? formatCents(Math.round(result.value * 100))
-              : String(result.value)
-            : '—';
-          return (
-            <Pressable onLongPress={drag} disabled={isActive} className="mb-2">
-              <Card
-                className={
-                  isActive
-                    ? 'flex-row items-center justify-between opacity-70'
-                    : 'flex-row items-center justify-between'
-                }
+    <View className="w-full px-4">
+      <Accordion title="Fórmulas salvas">
+        <DraggableFlatList
+          data={items}
+          keyExtractor={(item) => item.id}
+          scrollEnabled={false}
+          onDragEnd={({ data }) => {
+            setItems(data);
+            reorderMutation.mutate(data.map((f) => f.id));
+          }}
+          renderItem={({
+            item,
+            drag,
+            isActive,
+          }: RenderItemParams<SavedFormula>) => {
+            const result = evaluateFormula(item.expression, values);
+            const displayValue = result.ok
+              ? item.displayFormat === 'currency'
+                ? formatCents(Math.round(result.value * 100))
+                : String(result.value)
+              : '—';
+            return (
+              <Pressable
+                onLongPress={drag}
+                disabled={isActive}
+                className="mb-2"
               >
-                <ThemedText type="smallBold">{item.name}</ThemedText>
-                <ThemedText type="smallBold">{displayValue}</ThemedText>
-              </Card>
-            </Pressable>
-          );
-        }}
-      />
+                <Card
+                  className={
+                    isActive
+                      ? 'flex-row items-center justify-between opacity-70'
+                      : 'flex-row items-center justify-between'
+                  }
+                >
+                  <ThemedText type="smallBold">{item.name}</ThemedText>
+                  <ThemedText type="smallBold">{displayValue}</ThemedText>
+                </Card>
+              </Pressable>
+            );
+          }}
+        />
+      </Accordion>
     </View>
   );
 }

@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import {
+  CalculatorIcon,
   CaretDownIcon,
   FunnelIcon,
   FunnelXIcon,
@@ -52,6 +53,7 @@ import { type Account, accountsApi } from '@/lib/accounts-api';
 import { type Card as CardAccount, cardsApi } from '@/lib/cards-api';
 import type { Category } from '@/lib/categories-api';
 import { resolveCategoryIcon } from '@/lib/category-icons';
+import { buildCategoryOptions } from '@/lib/category-select-options';
 import { cn } from '@/lib/cn';
 import { useCategories } from '@/lib/hooks/use-categories';
 import { useRecurringPendingTotal } from '@/lib/hooks/use-recurring-pending-total';
@@ -576,7 +578,7 @@ export default function TransactionsScreen() {
 
   const categoryOptions = [
     { label: 'Todas as categorias', value: ALL_CATEGORIES_VALUE },
-    ...(categories ?? []).map((c) => ({ label: c.name, value: c.id })),
+    ...buildCategoryOptions(categories),
   ];
   const accountOptions = [
     { label: 'Todas as contas', value: ALL_ACCOUNTS_VALUE },
@@ -622,6 +624,12 @@ export default function TransactionsScreen() {
           </HeaderChip>
         )}
         <View className="flex-row items-center gap-4">
+          <HeaderChip
+            onPress={() => router.push('/formulas')}
+            accessibilityLabel="Calculadora de fórmulas"
+          >
+            <CalculatorIcon size={16} color={theme.textSecondary} />
+          </HeaderChip>
           {(featureFlags.card_invoice_csv_import === true ||
             featureFlags.account_csv_import === true) && (
             <HeaderChip
@@ -647,6 +655,11 @@ export default function TransactionsScreen() {
       </View>
 
       <BalanceOverview summary={summary} />
+
+      <PinnedFormulas
+        workspaceId={workspaceId}
+        pinnedField="pinnedTransactions"
+      />
 
       <View className="w-full flex-row items-center gap-2 px-4">
         {searchOpen ? (
@@ -687,6 +700,8 @@ export default function TransactionsScreen() {
               options={categoryOptions}
               value={categoryFilter}
               onValueChange={setCategoryFilter}
+              searchable
+              searchPlaceholder="Buscar categoria..."
             />
             <HeaderChip
               className="h-12 w-12 rounded-lg"
@@ -780,11 +795,6 @@ export default function TransactionsScreen() {
           workspaceId={workspaceId!}
         />
       ))}
-
-      <PinnedFormulas
-        workspaceId={workspaceId}
-        pinnedField="pinnedTransactions"
-      />
 
       {isLoading ? (
         <ActivityIndicator className="mt-8" />
