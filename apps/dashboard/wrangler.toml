@@ -1,6 +1,6 @@
 # Config do Cloudflare Worker do dashboard (SvelteKit via @sveltejs/adapter-cloudflare).
 # `name` precisa bater com o Worker criado no painel/CLI do Cloudflare (ver
-# runbook em tasks/in-progress/ci-cd-deploy.md).
+# runbook em tasks/done/ci-cd-deploy.md).
 name = "marcelus-dashboard"
 main = ".svelte-kit/cloudflare/_worker.js"
 compatibility_date = "2026-08-01"
@@ -12,9 +12,9 @@ compatibility_flags = ["nodejs_compat"]
 binding = "ASSETS"
 directory = ".svelte-kit/cloudflare"
 
-# Observability (Cloudflare Workers Logs) — logs de produção direto no
-# painel Cloudflare (Workers & Pages → marcelus-dashboard → Logs). Traces
-# desligado (não usamos instrumentação distribuída ainda).
+# Observability (Cloudflare Workers Logs + Traces) — logs e traces de
+# produção direto no painel Cloudflare (Workers & Pages → marcelus-dashboard
+# → Observability).
 [observability]
 enabled = false
 head_sampling_rate = 1
@@ -26,7 +26,7 @@ persist = true
 invocation_logs = true
 
 [observability.traces]
-enabled = false
+enabled = true
 persist = true
 head_sampling_rate = 1
 
@@ -34,7 +34,7 @@ head_sampling_rate = 1
 # `[vars]` aqui — isso ficaria em texto plano no repositório. É um
 # Cloudflare **secret** (`wrangler secret put API_URL --name
 # marcelus-dashboard`), configurado uma vez direto na conta Cloudflare, fora
-# do git. Ver runbook em tasks/in-progress/ci-cd-deploy.md pro valor real e
+# do git. Ver runbook em tasks/done/ci-cd-deploy.md pro valor real e
 # o passo a passo — o mesmo mecanismo `$env/dynamic/private` (nodejs_compat
 # acima) lê secret e var comum de forma idêntica em runtime, então nada
 # muda no código.
