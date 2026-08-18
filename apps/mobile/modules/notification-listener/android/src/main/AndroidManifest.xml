@@ -1,14 +1,14 @@
-<manifest>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
   <application>
     <!--
       Declarado aqui (manifest da lib) em vez de via config plugin: o Android
       Gradle Plugin já faz o merge automático deste manifest no da app
       durante o build — não precisa de withAndroidManifest nem risco da
-      entrada "sumir" em rebuilds sucessivos (issue conhecida do
-      expo/expo#19548 com <service>/<receiver> via config plugin).
+      entrada sumir em rebuilds sucessivos (issue conhecida do expo/expo#19548
+      com service/receiver via config plugin).
 
       android:permission é o que protege o serviço (só o sistema pode
-      bindar) — não é um <uses-permission> pedido pelo app.
+      bindar) — não é uma permissão pedida pelo app.
     -->
     <service
       android:name=".AppNotificationListenerService"
