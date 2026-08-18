@@ -9,10 +9,12 @@ import {
 } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
+import { vars } from 'nativewind';
 import { useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { darkVars, lightVars } from '@/constants/design-tokens';
 import { SessionProvider } from '@/context/session';
 import { ThemePreferenceProvider } from '@/context/theme-preference';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -56,7 +58,9 @@ export default function RootLayout() {
   return (
     // Pré-requisito do react-native-gesture-handler (usado pelo drag-and-drop
     // dos widgets fixados, M5-01c) — sem isso os gestos de arraste não funcionam.
-    <GestureHandlerRootView style={{ flex: 1 }}>
+    <GestureHandlerRootView
+      style={[{ flex: 1 }, vars(colorScheme === 'dark' ? darkVars : lightVars)]}
+    >
       {/* Nunca reagia ao tema (nem ao automático do SO, nem à preferência manual do
           app) — não existia NENHUM <StatusBar/> renderizado, então ficava preso no
           default nativo, ilegível quando o fundo virava a cor oposta. `style`
@@ -70,15 +74,7 @@ export default function RootLayout() {
               <ThemeProvider
                 value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}
               >
-                {/* `key` força remount de toda a árvore quando o tema muda —
-                    telas/Cards já montados antes da troca (ex.: aba "Mais")
-                    ficavam com a classe `.dark` do NativeWind resolvida uma
-                    vez só, no primeiro render, e nunca reaplicavam depois
-                    (bug real relatado: card branco sólido, texto sem
-                    contraste, mesmo com o resto da UI já escuro). Perde
-                    estado de navegação/scroll na hora da troca — aceitável,
-                    é uma ação deliberada e rara do usuário (Perfil > Tema). */}
-                <Slot key={colorScheme} />
+                <Slot />
               </ThemeProvider>
             </SessionProvider>
           </ThemePreferenceProvider>
