@@ -1,17 +1,11 @@
 import { CaretDownIcon, CheckIcon } from 'phosphor-react-native';
 import { useState } from 'react';
-import {
-  Modal,
-  Pressable,
-  ScrollView,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTheme } from '@/hooks/use-theme';
 import { cn } from '../../lib/cn';
+import { PickerSheet } from './picker-sheet';
 
 const HEX_PATTERN = /^#[0-9A-Fa-f]{6}$/;
 
@@ -104,96 +98,92 @@ export function ColorInput({
         <CaretDownIcon size={14} color={theme.textSecondary} />
       </Pressable>
 
-      <Modal
+      <PickerSheet
         visible={open}
-        transparent
-        animationType="slide"
-        statusBarTranslucent
-        onRequestClose={() => setOpen(false)}
+        onClose={() => setOpen(false)}
+        sheetStyle={{
+          paddingHorizontal: 16,
+          paddingBottom: 32,
+          paddingTop: 16,
+          gap: 16,
+        }}
       >
-        <Pressable
-          style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
-          className="bg-black/50"
-          onPress={() => setOpen(false)}
-        />
-        <View className="mt-auto gap-4 rounded-t-2xl border-t border-border bg-card px-4 pb-8 pt-4">
-          <Text className="text-base font-semibold text-foreground">
-            Escolher cor
-          </Text>
+        <Text className="text-base font-semibold text-foreground">
+          Escolher cor
+        </Text>
 
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ gap: 10 }}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ gap: 10 }}
+        >
+          {PRESET_COLORS.map((color) => {
+            const selected = color.toLowerCase() === value?.toLowerCase();
+            return (
+              <Pressable
+                key={color}
+                onPress={() => pick(color)}
+                accessibilityRole="button"
+                accessibilityLabel={color}
+                className="h-11 w-11 items-center justify-center rounded-full"
+                style={{
+                  backgroundColor: color,
+                  borderWidth: selected ? 2 : 0,
+                  borderColor: theme.text,
+                }}
+              >
+                {selected && (
+                  <CheckIcon size={16} color="#FFFFFF" weight="bold" />
+                )}
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+
+        <Text className="text-sm text-muted-foreground">
+          Ou digite o código hex
+        </Text>
+        <View className="flex-row items-center gap-3">
+          <View
+            className="h-11 w-11 rounded-full border border-border"
+            style={{
+              backgroundColor: isValidDraft ? hexDraft : 'transparent',
+            }}
+          />
+          <TextInput
+            value={hexDraft}
+            onChangeText={setHexDraft}
+            placeholder="#22C55E"
+            placeholderTextColor={dark ? '#a1a1aa' : '#71717a'}
+            keyboardAppearance={dark ? 'dark' : 'light'}
+            selectionColor={caret}
+            cursorColor={caret}
+            autoCapitalize="characters"
+            autoCorrect={false}
+            maxLength={7}
+            className="h-11 flex-1 rounded-lg border border-input bg-background px-3 text-base text-foreground"
+          />
+          <Pressable
+            onPress={applyDraft}
+            disabled={!isValidDraft}
+            className={cn(
+              'h-11 items-center justify-center rounded-lg px-4',
+              isValidDraft ? 'bg-primary active:opacity-80' : 'bg-muted'
+            )}
           >
-            {PRESET_COLORS.map((color) => {
-              const selected = color.toLowerCase() === value?.toLowerCase();
-              return (
-                <Pressable
-                  key={color}
-                  onPress={() => pick(color)}
-                  accessibilityRole="button"
-                  accessibilityLabel={color}
-                  className="h-11 w-11 items-center justify-center rounded-full"
-                  style={{
-                    backgroundColor: color,
-                    borderWidth: selected ? 2 : 0,
-                    borderColor: theme.text,
-                  }}
-                >
-                  {selected && (
-                    <CheckIcon size={16} color="#FFFFFF" weight="bold" />
-                  )}
-                </Pressable>
-              );
-            })}
-          </ScrollView>
-
-          <Text className="text-sm text-muted-foreground">
-            Ou digite o código hex
-          </Text>
-          <View className="flex-row items-center gap-3">
-            <View
-              className="h-11 w-11 rounded-full border border-border"
-              style={{
-                backgroundColor: isValidDraft ? hexDraft : 'transparent',
-              }}
-            />
-            <TextInput
-              value={hexDraft}
-              onChangeText={setHexDraft}
-              placeholder="#22C55E"
-              placeholderTextColor={dark ? '#a1a1aa' : '#71717a'}
-              keyboardAppearance={dark ? 'dark' : 'light'}
-              selectionColor={caret}
-              cursorColor={caret}
-              autoCapitalize="characters"
-              autoCorrect={false}
-              maxLength={7}
-              className="h-11 flex-1 rounded-lg border border-input bg-background px-3 text-base text-foreground"
-            />
-            <Pressable
-              onPress={applyDraft}
-              disabled={!isValidDraft}
+            <Text
               className={cn(
-                'h-11 items-center justify-center rounded-lg px-4',
-                isValidDraft ? 'bg-primary active:opacity-80' : 'bg-muted'
+                'text-sm font-semibold',
+                isValidDraft
+                  ? 'text-primary-foreground'
+                  : 'text-muted-foreground'
               )}
             >
-              <Text
-                className={cn(
-                  'text-sm font-semibold',
-                  isValidDraft
-                    ? 'text-primary-foreground'
-                    : 'text-muted-foreground'
-                )}
-              >
-                Aplicar
-              </Text>
-            </Pressable>
-          </View>
+              Aplicar
+            </Text>
+          </Pressable>
         </View>
-      </Modal>
+      </PickerSheet>
     </View>
   );
 }

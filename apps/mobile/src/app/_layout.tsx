@@ -8,6 +8,7 @@ import {
   ThemeProvider,
 } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
+import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -56,6 +57,12 @@ export default function RootLayout() {
     // Pré-requisito do react-native-gesture-handler (usado pelo drag-and-drop
     // dos widgets fixados, M5-01c) — sem isso os gestos de arraste não funcionam.
     <GestureHandlerRootView style={{ flex: 1 }}>
+      {/* Nunca reagia ao tema (nem ao automático do SO, nem à preferência manual do
+          app) — não existia NENHUM <StatusBar/> renderizado, então ficava preso no
+          default nativo, ilegível quando o fundo virava a cor oposta. `style`
+          explícito a partir do MESMO colorScheme (nativewind) que já pinta o resto
+          da UI, não `Appearance` do SO direto. */}
+      <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
       <QueryClientProvider client={queryClient}>
         <SafeAreaProvider>
           <ThemePreferenceProvider>
