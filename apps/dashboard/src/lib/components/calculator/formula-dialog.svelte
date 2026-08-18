@@ -51,6 +51,12 @@
 	let contentEl = $state<HTMLElement | null>(null);
 
 	function startDrag(event: PointerEvent) {
+		// O botão de fechar (X) mora dentro do cabeçalho arrastável — sem este
+		// guard, o setPointerCapture abaixo captura o ponteiro pro <div> assim
+		// que o botão é pressionado, e o pointerup/click do X nunca chega a
+		// disparar de verdade (bug real em produção: "X" da calculadora parava
+		// de fechar o dialog).
+		if ((event.target as HTMLElement).closest('button')) return;
 		dragging = true;
 		dragStart = {
 			x: event.clientX,
