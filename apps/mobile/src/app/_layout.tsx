@@ -70,7 +70,15 @@ export default function RootLayout() {
               <ThemeProvider
                 value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}
               >
-                <Slot />
+                {/* `key` força remount de toda a árvore quando o tema muda —
+                    telas/Cards já montados antes da troca (ex.: aba "Mais")
+                    ficavam com a classe `.dark` do NativeWind resolvida uma
+                    vez só, no primeiro render, e nunca reaplicavam depois
+                    (bug real relatado: card branco sólido, texto sem
+                    contraste, mesmo com o resto da UI já escuro). Perde
+                    estado de navegação/scroll na hora da troca — aceitável,
+                    é uma ação deliberada e rara do usuário (Perfil > Tema). */}
+                <Slot key={colorScheme} />
               </ThemeProvider>
             </SessionProvider>
           </ThemePreferenceProvider>
