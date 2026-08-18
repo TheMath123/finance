@@ -29,7 +29,10 @@ class NotificationListenerModule : Module() {
     }
 
     Function("openNotificationSettings") {
-      val context = appContext.reactContext ?: return@Function
+      // `Function {}` espera Any? — return@Function sem valor só compila se o
+      // alvo fosse Unit, daqui o `null` explícito (não tem nada útil pra
+      // devolver pro JS de qualquer forma).
+      val context = appContext.reactContext ?: return@Function null
       val intent = Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS).apply {
         addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
       }
