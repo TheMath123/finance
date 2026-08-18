@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { evaluateFormula } from '@finance/formula';
+	import { evaluateFormula, formatFormulaDisplay } from '@finance/formula';
 	import { Dialog as DialogPrimitive } from 'bits-ui';
 	import BackspaceIcon from 'phosphor-svelte/lib/BackspaceIcon';
 	import XIcon from 'phosphor-svelte/lib/X';
@@ -139,6 +139,10 @@
 		if (!expression.trim()) return null;
 		return evaluateFormula(expression, values);
 	});
+
+	/** token → label, pra mostrar a expressão de forma legível acima do campo cru (ver formatFormulaDisplay abaixo) em vez de só o identificador (ex.: fatura_cartao_01a00c4f7b...). */
+	const tokenLabels = $derived(Object.fromEntries(variables.map((v) => [v.token, v.label])));
+	const readableExpression = $derived(formatFormulaDisplay(expression, tokenLabels));
 
 	/**
 	 * Chips agrupados (em vez de uma lista plana) — com o catálogo estendido
@@ -282,8 +286,17 @@
 				     dialog gigante na vertical; em telas estreitas cai pra empilhado normal. -->
 				<div class="flex flex-col gap-4 md:flex-row md:items-start">
 					<div class="flex flex-col gap-3 md:w-64 md:shrink-0">
-						<!-- "Tela" da calculadora: fórmula + resultado, monoespaçado, alinhado à direita. -->
+						<!-- "Tela" da calculadora: fórmula + resultado, alinhado à direita. Linha
+						     legível (nomes em vez de identificador cru) fica ACIMA do campo de
+						     digitação de verdade — trocar o próprio input pelo texto formatado
+						     quebraria digitação livre por teclado (só o dashboard permite isso,
+						     diferente do mobile, que só edita via teclado numérico on-screen). -->
 						<div class="rounded-lg bg-muted/50 p-3 text-right">
+							{#if readableExpression.trim()}
+								<p class="mb-1 text-xs break-words text-muted-foreground">
+									{readableExpression}
+								</p>
+							{/if}
 							<input
 								id="formula-expression"
 								name="expression"
@@ -339,8 +352,8 @@
 									{#each items as variable (variable.token)}
 										<button
 											type="button"
-											class="max-w-[9.5rem] truncate rounded-full border border-foreground/10 px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-primary/10 hover:text-foreground"
-											title="{variable.label} — {variable.description}"
+											class="max-w-[14rem] rounded-lg border border-foreground/10 px-2.5 py-1 text-left text-xs text-muted-foreground transition-colors hover:bg-primary/10 hover:text-foreground"
+											title={variable.description}
 											onclick={() => insertVariable(variable.token)}
 										>
 											{variable.label}

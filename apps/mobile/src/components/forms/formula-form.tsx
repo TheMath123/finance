@@ -1,4 +1,4 @@
-import { evaluateFormula } from '@finance/formula';
+import { evaluateFormula, formatFormulaDisplay } from '@finance/formula';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { BackspaceIcon } from 'phosphor-react-native';
@@ -151,6 +151,12 @@ export function FormulaForm({
     ? buildClientFormulaCatalog(summary, accounts, cards)
     : { values: {}, variables: [] };
 
+  /** token → label, pra mostrar a expressão de forma legível na "tela" da calculadora (ver formatFormulaDisplay abaixo) em vez do identificador cru (ex.: fatura_cartao_01a00c4f7b...). */
+  const tokenLabels = useMemo(
+    () => Object.fromEntries(variables.map((v) => [v.token, v.label])),
+    [variables]
+  );
+
   /** Grupos rotulados em vez de uma lista plana — o catálogo estendido (conta/cartão/método) fica difícil de escanear sem isso. */
   const groupedVariables = useMemo(() => {
     const byGroup = new Map<FormulaVariableGroup, FormulaVariableValue[]>();
@@ -228,8 +234,8 @@ export function FormulaForm({
   return (
     <View className="gap-4">
       <View className="items-end gap-1 rounded-lg bg-muted/50 p-3">
-        <Text className="w-full text-right font-mono text-lg text-foreground">
-          {expression || '0'}
+        <Text className="w-full text-right text-lg text-foreground">
+          {formatFormulaDisplay(expression, tokenLabels) || '0'}
         </Text>
         <Text className="w-full text-right font-mono text-xs text-muted-foreground">
           {preview
@@ -290,16 +296,10 @@ export function FormulaForm({
                 <Pressable
                   key={variable.token}
                   onPress={() => insertVariable(variable.token)}
-                  className="max-w-[150px] rounded-full border border-border px-2.5 py-1.5 active:opacity-70"
+                  className="max-w-[220px] rounded-lg border border-border px-2.5 py-1.5 active:opacity-70"
                   accessibilityLabel={`${variable.label}: ${variable.description}`}
                 >
-                  <Text
-                    className="text-foreground"
-                    numberOfLines={1}
-                    ellipsizeMode="tail"
-                  >
-                    {variable.label}
-                  </Text>
+                  <Text className="text-foreground">{variable.label}</Text>
                 </Pressable>
               ))}
             </View>

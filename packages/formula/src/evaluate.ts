@@ -216,6 +216,27 @@ function evaluateNode(node: Node, variables: Record<string, number>): number {
   }
 }
 
+const DISPLAY_IDENTIFIER_PATTERN = /[A-Za-z_][A-Za-z0-9_]*/g;
+
+/**
+ * Troca cada identificador conhecido (ex.: `fatura_cartao_01a00c4f7b...`)
+ * pelo label legível (ex.: "Fatura em aberto — Nubank") só pra EXIBIÇÃO — o
+ * `expression` de verdade (salvo/avaliado) nunca passa por aqui. Regex
+ * isolada do `tokenize()`/`Parser` acima de propósito: essa formatação é
+ * cosmética, então mantém zero risco de afetar avaliação/precisão numérica
+ * — só troca substrings de identificador, preserva números/operadores/
+ * espaços/parênteses exatamente como estão.
+ */
+export function formatFormulaDisplay(
+  expression: string,
+  labels: Record<string, string>
+): string {
+  return expression.replace(
+    DISPLAY_IDENTIFIER_PATTERN,
+    (match) => labels[match] ?? match
+  );
+}
+
 export function evaluateFormula(
   expression: string,
   variables: Record<string, number>
