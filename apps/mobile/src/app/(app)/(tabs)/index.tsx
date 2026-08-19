@@ -22,14 +22,25 @@ import { formatCents } from '@/lib/money';
 import { summaryApi } from '@/lib/summary-api';
 import { workspaceApi } from '@/lib/workspace-api';
 
-interface NextInvoice {
-  cardName: string;
+interface MonthInvoiceSummary {
   total: number;
-  dueDate: Date;
+  cardCount: number;
+  dueDate: Date | null;
 }
 
-/** Próxima fatura em aberto (menor data de vencimento entre todos os cartões), pro card do Resumo. */
-function useNextInvoice(workspaceId: string | null): NextInvoice | null {
+/**
+ * Soma das faturas ainda em aberto de todos os cartões pro mês informado —
+ * usado no card "Fatura de {mês}" da Home, sempre com o mês SEGUINTE ao
+ * cursor (nunca o mês corrente: quando o usuário olha a Home, a fatura do
+ * mês atual já fechou/foi paga há tempo, quem importa acompanhar é a
+ * próxima). Soma entre cartões (em vez de só o cartão com vencimento mais
+ * próximo, como era antes) porque cada cartão fecha fatura pro mesmo mês de
+ * referência, então faz sentido consolidar num único total.
+ */
+function useMonthInvoiceTotal(
+  workspaceId: string | null,
+  month: MonthCursor
+): MonthInvoiceSummary {
   const { data: cards } = useQuery({
     queryKey: ['cards', workspaceId],
     queryFn: () => cardsApi.list(workspaceId!),
@@ -44,26 +55,26 @@ function useNextInvoice(workspaceId: string | null): NextInvoice | null {
     })),
   });
 
-  if (!cards) return null;
-
-  let best: NextInvoice | null = null;
+  let total = 0;
+  let cardCount = 0;
+  let dueDate: Date | null = null;
   invoiceQueries.forEach((query, index) => {
-    const card = cards[index];
+    const card = cards?.[index];
     if (!card || !Array.isArray(query.data)) return;
-    for (let i = 0; i < query.data.length; i++) {
-      const invoice = query.data[i];
-      if (invoice.effectiveStatus === 'paid') continue;
-      const dueDate = new Date(
-        invoice.yearReference,
-        invoice.monthReference - 1,
-        card.dueDay
-      );
-      if (!best || dueDate < best.dueDate) {
-        best = { cardName: card.name, total: invoice.total, dueDate };
-      }
-    }
+    const invoice = query.data.find(
+      (inv) =>
+        inv.yearReference === month.year &&
+        inv.monthReference === month.month &&
+        inv.effectiveStatus !== 'paid'
+    );
+    if (!invoice) return;
+    total += invoice.total;
+    cardCount += 1;
+    const invoiceDueDate = new Date(month.year, month.month - 1, card.dueDay);
+    if (!dueDate || invoiceDueDate < dueDate) dueDate = invoiceDueDate;
   });
-  return best;
+
+  return { total, cardCount, dueDate };
 }
 
 interface MonthCursor {
@@ -189,6 +200,12 @@ export default function HomeScreen() {
     cursor.month - 1,
     1
   ).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+  const cursorNextMonth = nextMonth(cursor);
+  const nextMonthLabel = new Date(
+    cursorNextMonth.year,
+    cursorNextMonth.month - 1,
+    1
+  ).toLocaleDateString('pt-BR', { month: 'long' });
 
   const { data: summary, isLoading } = useQuery({
     queryKey: ['summary', workspaceId, cursor.year, cursor.month],
@@ -197,19 +214,13 @@ export default function HomeScreen() {
     enabled: Boolean(workspaceId),
   });
 
-  // Mesma fórmula do mês selecionado (saldo + recorrências previstas − faturas
-  // em aberto − estimativa de gasto variável), só que aplicada ao mês
-  // seguinte — o backend (monthlySummary) já suporta isso, só pedindo o mês certo.
-  const { year: nextYear, month: nextMonthNumber } = nextMonth(cursor);
-  const { data: nextSummary } = useQuery({
-    queryKey: ['summary', workspaceId, nextYear, nextMonthNumber],
-    queryFn: () =>
-      summaryApi.getMonthly(workspaceId!, nextYear, nextMonthNumber),
-    enabled: Boolean(workspaceId),
-  });
-
-  const nextInvoice = useNextInvoice(workspaceId);
-  const recurringPending = useRecurringPendingTotal(workspaceId, cursor);
+  // Fatura e recorrências da Home sempre olham pro mês SEGUINTE ao cursor —
+  // nunca o mês atual, que quando o usuário chega a olhar já fechou/foi pago.
+  const monthInvoice = useMonthInvoiceTotal(workspaceId, cursorNextMonth);
+  const recurringPending = useRecurringPendingTotal(
+    workspaceId,
+    cursorNextMonth
+  );
 
   const { data: variableExpense } = useQuery({
     queryKey: ['variable-expense-estimate', workspaceId],
@@ -292,22 +303,26 @@ export default function HomeScreen() {
         <BalanceOverview summary={summary} />
       )}
 
-      {nextInvoice ? (
+      {monthInvoice.cardCount > 0 ? (
         <SummaryListRow
-          label={`Próxima fatura - ${nextInvoice.cardName}`}
-          value={formatCents(nextInvoice.total)}
-          description={`Vence em ${nextInvoice.dueDate.toLocaleDateString('pt-BR')}`}
+          label={`Fatura de ${nextMonthLabel}`}
+          value={formatCents(monthInvoice.total)}
+          description={
+            monthInvoice.dueDate
+              ? `Vence em ${monthInvoice.dueDate.toLocaleDateString('pt-BR')}${monthInvoice.cardCount > 1 ? ` · ${monthInvoice.cardCount} cartões` : ''}`
+              : undefined
+          }
         />
       ) : (
         <SummaryListRow
-          label="Nenhuma fatura este mês"
+          label={`Fatura de ${nextMonthLabel}`}
           value="—"
           description="Suas próximas faturas de cartão aparecem aqui."
         />
       )}
 
       <SummaryListRow
-        label="Recorrências deste mês"
+        label={`Recorrências de ${nextMonthLabel}`}
         value={
           recurringPending && recurringPending.count > 0
             ? formatCents(recurringPending.income - recurringPending.expense)
@@ -316,18 +331,8 @@ export default function HomeScreen() {
         description={
           recurringPending && recurringPending.count > 0
             ? `${formatCents(recurringPending.income)} a receber, ${formatCents(recurringPending.expense)} a pagar`
-            : 'Nenhuma recorrência pendente este mês.'
+            : 'Nenhuma recorrência pendente nesse mês.'
         }
-      />
-
-      <SummaryListRow
-        label={`Projeção para ${new Date(nextYear, nextMonthNumber - 1, 1).toLocaleDateString('pt-BR', { month: 'long' })}`}
-        value={
-          nextSummary?.projectedAvailable != null
-            ? formatCents(nextSummary.projectedAvailable)
-            : '—'
-        }
-        description="Saldo atual + recorrências previstas − faturas em aberto − estimativa de gasto variável."
       />
 
       <View className="w-full gap-2 border-t border-foreground/10 px-4 pt-4">
