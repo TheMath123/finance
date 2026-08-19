@@ -8,6 +8,7 @@ import { ThemedText } from '@/components/themed-text';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Screen } from '@/components/ui/screen';
+import { useTheme } from '@/hooks/use-theme';
 import { ApiError } from '@/lib/api-client';
 import { workspaceApi } from '@/lib/workspace-api';
 
@@ -18,6 +19,7 @@ const ROLE_LABELS: Record<string, string> = {
 };
 
 export default function InviteToWorkspaceScreen() {
+  const theme = useTheme();
   const { workspaceId } = useLocalSearchParams<{ workspaceId: string }>();
   const queryClient = useQueryClient();
 
@@ -50,7 +52,7 @@ export default function InviteToWorkspaceScreen() {
           hitSlop={8}
           className="active:opacity-60"
         >
-          <ArrowLeftIcon size={22} />
+          <ArrowLeftIcon size={22} color={theme.text} />
         </Pressable>
         <ThemedText type="subtitle">Convidar</ThemedText>
       </View>

@@ -13,6 +13,8 @@ import { ActivityIndicator, Pressable, View } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { Card } from '@/components/ui/card';
 import { Screen } from '@/components/ui/screen';
+import { BrandColors } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 import { type AuditLogView, workspaceApi } from '@/lib/workspace-api';
 
 const ENTITY_LABELS: Record<string, string> = {
@@ -59,7 +61,7 @@ function ActivityRow({ entry }: { entry: AuditLogView }) {
   return (
     <Card className="flex-row items-center gap-3">
       <View className="h-9 w-9 items-center justify-center rounded-full bg-primary/10">
-        <Icon size={18} color="#2563EB" />
+        <Icon size={18} color={BrandColors.primary} />
       </View>
       <View className="flex-1">
         <ThemedText type="smallBold">
@@ -74,6 +76,7 @@ function ActivityRow({ entry }: { entry: AuditLogView }) {
 }
 
 export default function WorkspaceActivityScreen() {
+  const theme = useTheme();
   const { workspaceId } = useLocalSearchParams<{ workspaceId: string }>();
 
   const { data: activity, isLoading } = useQuery({
@@ -89,7 +92,7 @@ export default function WorkspaceActivityScreen() {
           hitSlop={8}
           className="active:opacity-60"
         >
-          <ArrowLeftIcon size={22} />
+          <ArrowLeftIcon size={22} color={theme.text} />
         </Pressable>
         <ThemedText type="subtitle">Atividade</ThemedText>
       </View>

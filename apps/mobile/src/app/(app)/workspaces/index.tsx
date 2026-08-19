@@ -26,6 +26,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Screen } from '@/components/ui/screen';
 import { useSession } from '@/context/session';
+import { useTheme } from '@/hooks/use-theme';
 import { ApiError } from '@/lib/api-client';
 import { type WorkspaceSummary, workspaceApi } from '@/lib/workspace-api';
 
@@ -43,6 +44,7 @@ const ROLE_LABELS: Record<string, string> = {
 };
 
 export default function WorkspacesScreen() {
+  const theme = useTheme();
   const { workspaceId, switchWorkspace } = useSession();
   const queryClient = useQueryClient();
   const [editingWorkspace, setEditingWorkspace] =
@@ -89,7 +91,7 @@ export default function WorkspacesScreen() {
           hitSlop={8}
           className="active:opacity-60"
         >
-          <ArrowLeftIcon size={22} />
+          <ArrowLeftIcon size={22} color={theme.text} />
         </Pressable>
         <ThemedText type="subtitle">Workspaces</ThemedText>
       </View>

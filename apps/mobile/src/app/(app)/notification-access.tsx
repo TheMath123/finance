@@ -13,6 +13,8 @@ import { ThemedText } from '@/components/themed-text';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Screen } from '@/components/ui/screen';
+import { BrandColors } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 import {
   isNotificationAccessGranted,
   notificationListenerAvailable,
@@ -35,6 +37,7 @@ const SUPPORTED_BANKS = [
 ];
 
 export default function NotificationAccessScreen() {
+  const theme = useTheme();
   const [granted, setGranted] = useState(false);
   const [enabled, setEnabled] = useState(false);
   const [loaded, setLoaded] = useState(false);
@@ -71,7 +74,7 @@ export default function NotificationAccessScreen() {
           hitSlop={8}
           className="active:opacity-60"
         >
-          <ArrowLeftIcon size={22} />
+          <ArrowLeftIcon size={22} color={theme.text} />
         </Pressable>
         <ThemedText type="subtitle">Detecção automática</ThemedText>
       </View>
@@ -143,7 +146,7 @@ export default function NotificationAccessScreen() {
               value={loaded && enabled}
               onValueChange={handleToggle}
               disabled={!loaded}
-              trackColor={{ false: '#d4d4d8', true: '#2563EB' }}
+              trackColor={{ false: '#d4d4d8', true: BrandColors.primary }}
             />
           </Card>
 
@@ -154,7 +157,7 @@ export default function NotificationAccessScreen() {
             <Card className="flex-row items-center justify-between gap-3">
               <View className="flex-row items-center gap-3">
                 <View className="h-9 w-9 items-center justify-center rounded-full bg-primary/10">
-                  <BellRingingIcon size={18} color="#2563EB" />
+                  <BellRingingIcon size={18} color={BrandColors.primary} />
                 </View>
                 <ThemedText type="smallBold">Sugestões pendentes</ThemedText>
               </View>

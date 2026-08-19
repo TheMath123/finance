@@ -5,8 +5,10 @@ import { Pressable, View } from 'react-native';
 import { ChangeEmailForm } from '@/components/forms/change-email-form';
 import { ThemedText } from '@/components/themed-text';
 import { Screen } from '@/components/ui/screen';
+import { useTheme } from '@/hooks/use-theme';
 
 export default function ChangeEmailScreen() {
+  const theme = useTheme();
   return (
     <Screen className="gap-6 pb-28">
       <View className="flex-row items-center gap-3">
@@ -15,7 +17,7 @@ export default function ChangeEmailScreen() {
           hitSlop={8}
           className="active:opacity-60"
         >
-          <ArrowLeftIcon size={22} />
+          <ArrowLeftIcon size={22} color={theme.text} />
         </Pressable>
         <ThemedText type="subtitle">Alterar e-mail</ThemedText>
       </View>

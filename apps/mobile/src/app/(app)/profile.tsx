@@ -35,6 +35,7 @@ import {
 } from '@/components/ui/dialog';
 import { GoogleAuthButton } from '@/components/ui/google-auth-button';
 import { Screen } from '@/components/ui/screen';
+import { BrandColors } from '@/constants/theme';
 import { useBiometricLock } from '@/context/biometric-lock';
 import { useSession } from '@/context/session';
 import { useThemePreference } from '@/context/theme-preference';
@@ -178,7 +179,7 @@ export default function ProfileScreen() {
           hitSlop={8}
           className="active:opacity-60"
         >
-          <ArrowLeftIcon size={22} />
+          <ArrowLeftIcon size={22} color={theme.text} />
         </Pressable>
         <ThemedText type="subtitle">Perfil</ThemedText>
       </View>
@@ -197,7 +198,7 @@ export default function ProfileScreen() {
               />
             ) : (
               <View className="h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-                <UserIcon size={22} color="#2563EB" />
+                <UserIcon size={22} color={BrandColors.primary} />
               </View>
             )}
           </Pressable>
@@ -209,7 +210,7 @@ export default function ProfileScreen() {
           </View>
           <Button
             variant="ghost"
-            icon={<PencilSimpleIcon size={18} />}
+            icon={<PencilSimpleIcon size={18} color={theme.text} />}
             onPress={() => setEditingName(true)}
           >
             Editar
@@ -222,7 +223,7 @@ export default function ProfileScreen() {
             hitSlop={8}
             className="active:opacity-60"
           >
-            <ThemedText type="small" style={{ color: '#2563EB' }}>
+            <ThemedText type="small" style={{ color: BrandColors.primary }}>
               {uploadAvatar.isPending ? 'Enviando…' : 'Alterar foto'}
             </ThemedText>
           </Pressable>
@@ -233,7 +234,10 @@ export default function ProfileScreen() {
               hitSlop={8}
               className="active:opacity-60"
             >
-              <ThemedText type="small" style={{ color: '#DC2626' }}>
+              <ThemedText
+                type="small"
+                style={{ color: BrandColors.destructive }}
+              >
                 Remover foto
               </ThemedText>
             </Pressable>
@@ -261,7 +265,7 @@ export default function ProfileScreen() {
       <Card className="gap-3">
         <View className="flex-row items-center gap-3">
           <View className="h-9 w-9 items-center justify-center rounded-full bg-primary/10">
-            <CircleHalfIcon size={18} color="#2563EB" />
+            <CircleHalfIcon size={18} color={BrandColors.primary} />
           </View>
           <View className="flex-1">
             <ThemedText type="smallBold">Tema</ThemedText>
@@ -298,7 +302,7 @@ export default function ProfileScreen() {
       {biometricsAvailable && (
         <Card className="flex-row items-center gap-3">
           <View className="h-9 w-9 items-center justify-center rounded-full bg-primary/10">
-            <FingerprintIcon size={18} color="#2563EB" />
+            <FingerprintIcon size={18} color={BrandColors.primary} />
           </View>
           <View className="flex-1">
             <ThemedText type="smallBold">Travar com biometria</ThemedText>
@@ -309,7 +313,7 @@ export default function ProfileScreen() {
           <Switch
             value={biometricsEnabled}
             onValueChange={setBiometricsEnabled}
-            trackColor={{ false: '#d4d4d8', true: '#2563EB' }}
+            trackColor={{ false: '#d4d4d8', true: BrandColors.primary }}
           />
         </Card>
       )}
@@ -321,7 +325,7 @@ export default function ProfileScreen() {
         >
           <Card className="flex-row items-center gap-3">
             <View className="h-9 w-9 items-center justify-center rounded-full bg-primary/10">
-              <BellRingingIcon size={18} color="#2563EB" />
+              <BellRingingIcon size={18} color={BrandColors.primary} />
             </View>
             <View className="flex-1">
               <ThemedText type="smallBold">Detecção automática</ThemedText>
@@ -338,7 +342,11 @@ export default function ProfileScreen() {
         <Card className="gap-3">
           <View className="flex-row items-center gap-3">
             <View className="h-9 w-9 items-center justify-center rounded-full bg-primary/10">
-              <GoogleLogoIcon size={18} color="#2563EB" weight="bold" />
+              <GoogleLogoIcon
+                size={18}
+                color={BrandColors.primary}
+                weight="bold"
+              />
             </View>
             <View className="flex-1">
               <ThemedText type="smallBold">Conta Google</ThemedText>
@@ -380,7 +388,7 @@ export default function ProfileScreen() {
 
       <Button
         variant="outline"
-        icon={<EnvelopeIcon size={18} />}
+        icon={<EnvelopeIcon size={18} color={theme.text} />}
         onPress={() => router.push('/change-email')}
       >
         Alterar e-mail
@@ -388,7 +396,7 @@ export default function ProfileScreen() {
 
       <Button
         variant="outline"
-        icon={<LockKeyIcon size={18} />}
+        icon={<LockKeyIcon size={18} color={theme.text} />}
         onPress={() => router.push('/change-password')}
       >
         Alterar senha
@@ -430,7 +438,7 @@ export default function ProfileScreen() {
               hitSlop={8}
               className="active:opacity-60"
             >
-              <XIcon size={20} />
+              <XIcon size={20} color={theme.text} />
             </Pressable>
           </DialogHeader>
           <EditNameForm onSuccess={() => setEditingName(false)} />

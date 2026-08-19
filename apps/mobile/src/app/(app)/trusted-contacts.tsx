@@ -6,10 +6,12 @@ import { ActivityIndicator, Alert, Pressable, View } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { Card } from '@/components/ui/card';
 import { Screen } from '@/components/ui/screen';
+import { useTheme } from '@/hooks/use-theme';
 import { ApiError } from '@/lib/api-client';
 import { transferApi } from '@/lib/transfer-api';
 
 export default function TrustedContactsScreen() {
+  const theme = useTheme();
   const queryClient = useQueryClient();
 
   const { data: contacts, isLoading } = useQuery({
@@ -36,7 +38,7 @@ export default function TrustedContactsScreen() {
           hitSlop={8}
           className="active:opacity-60"
         >
-          <ArrowLeftIcon size={22} />
+          <ArrowLeftIcon size={22} color={theme.text} />
         </Pressable>
         <ThemedText type="subtitle">Contatos confiáveis</ThemedText>
       </View>

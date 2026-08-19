@@ -23,6 +23,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Screen } from '@/components/ui/screen';
+import { BrandColors } from '@/constants/theme';
 import { useSession } from '@/context/session';
 import { accountsApi } from '@/lib/accounts-api';
 import { ApiError } from '@/lib/api-client';
@@ -160,7 +161,7 @@ export default function CardDetailScreen() {
             onPress={() => router.back()}
             className="h-9 w-9 items-center justify-center rounded-full bg-primary/10 active:opacity-70"
           >
-            <ArrowLeftIcon size={18} color="#2563EB" />
+            <ArrowLeftIcon size={18} color={BrandColors.primary} />
           </Pressable>
           <ThemedText type="subtitle">{cardItem?.name ?? 'Cartão'}</ThemedText>
         </View>
@@ -170,7 +171,7 @@ export default function CardDetailScreen() {
               onPress={() => setEditing((value) => !value)}
               className="h-8 w-8 items-center justify-center rounded-full bg-primary/10 active:opacity-70"
             >
-              <PencilIcon size={16} color="#2563EB" />
+              <PencilIcon size={16} color={BrandColors.primary} />
             </Pressable>
             <Pressable
               onPress={() => archiveMutation.mutate()}
@@ -178,9 +179,12 @@ export default function CardDetailScreen() {
               className="h-8 w-8 items-center justify-center rounded-full bg-primary/10 active:opacity-70"
             >
               {cardItem.archivedAt ? (
-                <ArrowCounterClockwiseIcon size={16} color="#2563EB" />
+                <ArrowCounterClockwiseIcon
+                  size={16}
+                  color={BrandColors.primary}
+                />
               ) : (
-                <ArchiveIcon size={16} color="#2563EB" />
+                <ArchiveIcon size={16} color={BrandColors.primary} />
               )}
             </Pressable>
             <Pressable

@@ -7,6 +7,8 @@ import { ActivityIndicator, Pressable, Switch, View } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { Card } from '@/components/ui/card';
 import { Screen } from '@/components/ui/screen';
+import { BrandColors } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 import { notificationApi } from '@/lib/notification-api';
 
 const TYPE_LABELS: Record<
@@ -58,6 +60,7 @@ const TYPE_LABELS: Record<
 };
 
 export default function NotificationSettingsScreen() {
+  const theme = useTheme();
   const queryClient = useQueryClient();
 
   const { data: preferences, isLoading } = useQuery({
@@ -86,7 +89,7 @@ export default function NotificationSettingsScreen() {
           hitSlop={8}
           className="active:opacity-60"
         >
-          <ArrowLeftIcon size={22} />
+          <ArrowLeftIcon size={22} color={theme.text} />
         </Pressable>
         <ThemedText type="subtitle">Notificações</ThemedText>
       </View>
@@ -111,7 +114,7 @@ export default function NotificationSettingsScreen() {
               <Switch
                 value={preference.enabled}
                 onValueChange={(value) => toggle(preference.type, value)}
-                trackColor={{ false: '#d4d4d8', true: '#2563EB' }}
+                trackColor={{ false: '#d4d4d8', true: BrandColors.primary }}
               />
             </Card>
           ))}

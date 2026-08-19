@@ -4,6 +4,7 @@ import { View } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { Button } from '@/components/ui/button';
 import { Screen } from '@/components/ui/screen';
+import { BrandColors } from '@/constants/theme';
 import { useBiometricLock } from '@/context/biometric-lock';
 
 /** Tela cheia exibida por cima do app quando travado (M2-12) — não substitui login, só uma trava a mais sobre a sessão. */
@@ -45,7 +46,7 @@ export function BiometricLockScreen() {
   return (
     <Screen center className="items-center gap-6">
       <View className="h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-        <LockKeyIcon size={28} color="#2563EB" />
+        <LockKeyIcon size={28} color={BrandColors.primary} />
       </View>
       <View className="items-center gap-1">
         <ThemedText type="subtitle">App travado</ThemedText>

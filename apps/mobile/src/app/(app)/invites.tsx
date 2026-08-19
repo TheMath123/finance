@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Screen } from '@/components/ui/screen';
 import { useSession } from '@/context/session';
+import { useTheme } from '@/hooks/use-theme';
 import { ApiError } from '@/lib/api-client';
 import { workspaceApi } from '@/lib/workspace-api';
 
@@ -19,6 +20,7 @@ const ROLE_LABELS: Record<string, string> = {
 };
 
 export default function MyInvitesScreen() {
+  const theme = useTheme();
   const queryClient = useQueryClient();
   const { switchWorkspace } = useSession();
   const [acceptingId, setAcceptingId] = useState<string | null>(null);
@@ -56,7 +58,7 @@ export default function MyInvitesScreen() {
           hitSlop={8}
           className="active:opacity-60"
         >
-          <ArrowLeftIcon size={22} />
+          <ArrowLeftIcon size={22} color={theme.text} />
         </Pressable>
         <ThemedText type="subtitle">Convites recebidos</ThemedText>
       </View>

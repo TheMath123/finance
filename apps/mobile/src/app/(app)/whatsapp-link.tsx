@@ -15,11 +15,13 @@ import { Card } from '@/components/ui/card';
 import { Screen } from '@/components/ui/screen';
 import { useSession } from '@/context/session';
 import { env } from '@/env';
+import { useTheme } from '@/hooks/use-theme';
 import { ApiError } from '@/lib/api-client';
 import { whatsappApi } from '@/lib/whatsapp-api';
 
 /** Vínculo do WhatsApp por OTP (spec: nasce no app, código de 6 dígitos, TTL de 5min). */
 export default function WhatsAppLinkScreen() {
+  const theme = useTheme();
   const { user, refreshUser } = useSession();
   const [code, setCode] = useState<string | null>(null);
   const [secondsLeft, setSecondsLeft] = useState(0);
@@ -146,7 +148,7 @@ export default function WhatsAppLinkScreen() {
           hitSlop={8}
           className="active:opacity-60"
         >
-          <ArrowLeftIcon size={22} />
+          <ArrowLeftIcon size={22} color={theme.text} />
         </Pressable>
         <ThemedText type="subtitle">Vincular WhatsApp</ThemedText>
       </View>
@@ -189,7 +191,7 @@ export default function WhatsAppLinkScreen() {
             <ThemedText type="title" style={{ letterSpacing: 4 }}>
               {code}
             </ThemedText>
-            <CopyIcon size={20} />
+            <CopyIcon size={20} color={theme.text} />
           </Pressable>
           <ThemedText type="small" themeColor="textSecondary">
             {secondsLeft > 0

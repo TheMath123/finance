@@ -21,6 +21,7 @@ import { ActivityIndicator, Pressable, View } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { Card } from '@/components/ui/card';
 import { Screen } from '@/components/ui/screen';
+import { BrandColors } from '@/constants/theme';
 import { useSession } from '@/context/session';
 import { accountsApi } from '@/lib/accounts-api';
 import { cardsApi } from '@/lib/cards-api';
@@ -39,7 +40,7 @@ function SectionHeader({ title, onAdd }: { title: string; onAdd: () => void }) {
         onPress={onAdd}
         className="h-8 w-8 items-center justify-center rounded-full bg-primary/10 active:opacity-70"
       >
-        <PlusIcon size={16} color="#2563EB" weight="bold" />
+        <PlusIcon size={16} color={BrandColors.primary} weight="bold" />
       </Pressable>
     </View>
   );
@@ -169,63 +170,63 @@ export default function AccountsScreen() {
 
       <View className="gap-3">
         <NavRow
-          icon={<CreditCardIcon size={18} color="#2563EB" />}
+          icon={<CreditCardIcon size={18} color={BrandColors.primary} />}
           label="Cartões"
           count={cards?.length ?? 0}
           onPress={() => router.push('/cards')}
         />
         <NavRow
-          icon={<TagIcon size={18} color="#2563EB" />}
+          icon={<TagIcon size={18} color={BrandColors.primary} />}
           label="Categorias"
           count={categories?.length ?? 0}
           onPress={() => router.push('/categories')}
         />
         <NavRow
-          icon={<UsersIcon size={18} color="#2563EB" />}
+          icon={<UsersIcon size={18} color={BrandColors.primary} />}
           label="Workspaces"
           onPress={() => router.push('/workspaces')}
         />
         {myInvites && myInvites.length > 0 && (
           <NavRow
-            icon={<EnvelopeSimpleIcon size={18} color="#2563EB" />}
+            icon={<EnvelopeSimpleIcon size={18} color={BrandColors.primary} />}
             label="Convites recebidos"
             count={myInvites.length}
             onPress={() => router.push('/invites')}
           />
         )}
         <NavRow
-          icon={<PaperPlaneTiltIcon size={18} color="#2563EB" />}
+          icon={<PaperPlaneTiltIcon size={18} color={BrandColors.primary} />}
           label="Enviar transferência"
           onPress={() => router.push('/transfers/new')}
         />
         {pendingTransfers && pendingTransfers.length > 0 && (
           <NavRow
-            icon={<HandCoinsIcon size={18} color="#2563EB" />}
+            icon={<HandCoinsIcon size={18} color={BrandColors.primary} />}
             label="Transferências pendentes"
             count={pendingTransfers.length}
             onPress={() => router.push('/transfers')}
           />
         )}
         <NavRow
-          icon={<HandshakeIcon size={18} color="#2563EB" />}
+          icon={<HandshakeIcon size={18} color={BrandColors.primary} />}
           label="Contatos confiáveis"
           onPress={() => router.push('/trusted-contacts')}
         />
         {pendingSplitsCount > 0 && (
           <NavRow
-            icon={<ArrowsSplitIcon size={18} color="#2563EB" />}
+            icon={<ArrowsSplitIcon size={18} color={BrandColors.primary} />}
             label="Splits pendentes"
             count={pendingSplitsCount}
             onPress={() => router.push('/splits')}
           />
         )}
         <NavRow
-          icon={<WhatsappLogoIcon size={18} color="#2563EB" />}
+          icon={<WhatsappLogoIcon size={18} color={BrandColors.primary} />}
           label="WhatsApp"
           onPress={() => router.push('/whatsapp-link')}
         />
         <NavRow
-          icon={<UserIcon size={18} color="#2563EB" />}
+          icon={<UserIcon size={18} color={BrandColors.primary} />}
           label="Perfil"
           onPress={() => router.push('/profile')}
         />

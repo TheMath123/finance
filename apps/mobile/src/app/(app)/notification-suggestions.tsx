@@ -20,6 +20,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Screen } from '@/components/ui/screen';
+import { BrandColors } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 import { formatCents } from '@/lib/money';
 import {
   type PendingSuggestion,
@@ -37,6 +39,8 @@ function SuggestionRow({
   onAdd: () => void;
   onIgnore: () => void;
 }) {
+  const theme = useTheme();
+
   return (
     <Card className="gap-3">
       <View>
@@ -53,14 +57,14 @@ function SuggestionRow({
           <Button
             size="sm"
             variant="outline"
-            icon={<XIcon size={14} />}
+            icon={<XIcon size={14} color={theme.text} />}
             onPress={onIgnore}
           >
             Ignorar
           </Button>
           <Button
             size="sm"
-            icon={<CheckIcon size={14} weight="bold" />}
+            icon={<CheckIcon size={14} weight="bold" color="#FFFFFF" />}
             onPress={onAdd}
           >
             Adicionar
@@ -72,6 +76,7 @@ function SuggestionRow({
 }
 
 export default function NotificationSuggestionsScreen() {
+  const theme = useTheme();
   const queryClient = useQueryClient();
   const [confirming, setConfirming] = useState<PendingSuggestion | null>(null);
 
@@ -96,7 +101,7 @@ export default function NotificationSuggestionsScreen() {
           hitSlop={8}
           className="active:opacity-60"
         >
-          <ArrowLeftIcon size={22} />
+          <ArrowLeftIcon size={22} color={theme.text} />
         </Pressable>
         <ThemedText type="subtitle">Transações detectadas</ThemedText>
       </View>
@@ -122,7 +127,7 @@ export default function NotificationSuggestionsScreen() {
       ) : (
         <Card className="items-center gap-3 py-10">
           <View className="h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-            <BellRingingIcon size={22} color="#2563EB" />
+            <BellRingingIcon size={22} color={BrandColors.primary} />
           </View>
           <ThemedText type="smallBold">Nenhuma sugestão pendente</ThemedText>
           <ThemedText

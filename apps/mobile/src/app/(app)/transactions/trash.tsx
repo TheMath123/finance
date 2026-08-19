@@ -11,7 +11,9 @@ import { ThemedText } from '@/components/themed-text';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Screen } from '@/components/ui/screen';
+import { BrandColors } from '@/constants/theme';
 import { useSession } from '@/context/session';
+import { useTheme } from '@/hooks/use-theme';
 import { formatCents } from '@/lib/money';
 import { type Transaction, transactionsApi } from '@/lib/transactions-api';
 
@@ -25,6 +27,7 @@ function TrashRow({
   transaction: Transaction;
   workspaceId: string;
 }) {
+  const theme = useTheme();
   const queryClient = useQueryClient();
   const isExpense = transaction.type === 'expense';
 
@@ -62,7 +65,13 @@ function TrashRow({
         size="sm"
         variant="secondary"
         loading={restoreMutation.isPending}
-        icon={<ArrowCounterClockwiseIcon size={16} weight="bold" />}
+        icon={
+          <ArrowCounterClockwiseIcon
+            size={16}
+            weight="bold"
+            color={theme.text}
+          />
+        }
         onPress={() => restoreMutation.mutate()}
       >
         Restaurar
@@ -72,6 +81,7 @@ function TrashRow({
 }
 
 export default function TransactionsTrashScreen() {
+  const theme = useTheme();
   const { workspaceId } = useSession();
 
   const { data: transactions, isLoading } = useQuery({
@@ -89,7 +99,7 @@ export default function TransactionsTrashScreen() {
           hitSlop={8}
           className="active:opacity-60"
         >
-          <ArrowLeftIcon size={22} />
+          <ArrowLeftIcon size={22} color={theme.text} />
         </Pressable>
         <ThemedText type="subtitle">Lixeira</ThemedText>
       </View>
@@ -109,7 +119,7 @@ export default function TransactionsTrashScreen() {
       ) : (
         <Card className="items-center gap-3 py-10">
           <View className="h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-            <TrashIcon size={22} color="#2563EB" />
+            <TrashIcon size={22} color={BrandColors.primary} />
           </View>
           <ThemedText type="smallBold">Nenhuma transação excluída</ThemedText>
         </Card>

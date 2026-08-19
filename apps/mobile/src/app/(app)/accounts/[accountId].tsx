@@ -12,11 +12,14 @@ import { ActivityIndicator, Alert, Pressable, View } from 'react-native';
 import { CreateAccountForm } from '@/components/forms/create-account-form';
 import { ThemedText } from '@/components/themed-text';
 import { Screen } from '@/components/ui/screen';
+import { BrandColors } from '@/constants/theme';
 import { useSession } from '@/context/session';
+import { useTheme } from '@/hooks/use-theme';
 import { accountsApi } from '@/lib/accounts-api';
 import { ApiError } from '@/lib/api-client';
 
 export default function EditAccountScreen() {
+  const theme = useTheme();
   const { accountId } = useLocalSearchParams<{ accountId: string }>();
   const { workspaceId } = useSession();
   const queryClient = useQueryClient();
@@ -85,7 +88,7 @@ export default function EditAccountScreen() {
             hitSlop={8}
             className="active:opacity-60"
           >
-            <ArrowLeftIcon size={22} />
+            <ArrowLeftIcon size={22} color={theme.text} />
           </Pressable>
           <ThemedText type="subtitle">Editar conta</ThemedText>
         </View>
@@ -97,9 +100,12 @@ export default function EditAccountScreen() {
               className="h-8 w-8 items-center justify-center rounded-full bg-primary/10 active:opacity-70"
             >
               {account.archivedAt ? (
-                <ArrowCounterClockwiseIcon size={16} color="#2563EB" />
+                <ArrowCounterClockwiseIcon
+                  size={16}
+                  color={BrandColors.primary}
+                />
               ) : (
-                <ArchiveIcon size={16} color="#2563EB" />
+                <ArchiveIcon size={16} color={BrandColors.primary} />
               )}
             </Pressable>
             <Pressable

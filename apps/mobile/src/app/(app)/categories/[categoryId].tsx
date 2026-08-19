@@ -8,9 +8,11 @@ import { CategoryForm } from '@/components/forms/category-form';
 import { ThemedText } from '@/components/themed-text';
 import { Screen } from '@/components/ui/screen';
 import { useSession } from '@/context/session';
+import { useTheme } from '@/hooks/use-theme';
 import { categoriesApi } from '@/lib/categories-api';
 
 export default function EditCategoryScreen() {
+  const theme = useTheme();
   const { categoryId } = useLocalSearchParams<{ categoryId: string }>();
   const { workspaceId, featureFlags } = useSession();
   const canManageCategories = featureFlags.custom_category_creation === true;
@@ -42,7 +44,7 @@ export default function EditCategoryScreen() {
           hitSlop={8}
           className="active:opacity-60"
         >
-          <ArrowLeftIcon size={22} />
+          <ArrowLeftIcon size={22} color={theme.text} />
         </Pressable>
         <ThemedText type="subtitle">Editar categoria</ThemedText>
       </View>

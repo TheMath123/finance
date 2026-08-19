@@ -12,7 +12,9 @@ import { ActivityIndicator, Alert, Pressable, View } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { Card } from '@/components/ui/card';
 import { Screen } from '@/components/ui/screen';
+import { BrandColors } from '@/constants/theme';
 import { useSession } from '@/context/session';
+import { useTheme } from '@/hooks/use-theme';
 import { accountsApi } from '@/lib/accounts-api';
 import { ApiError } from '@/lib/api-client';
 import { cardsApi } from '@/lib/cards-api';
@@ -58,7 +60,7 @@ function FormulaRow({
             onPress={() => router.push(`/formulas/${formula.id}`)}
             className="h-8 w-8 items-center justify-center rounded-full bg-primary/10 active:opacity-70"
           >
-            <PencilIcon size={16} color="#2563EB" />
+            <PencilIcon size={16} color={BrandColors.primary} />
           </Pressable>
           <Pressable
             onPress={onDelete}
@@ -78,6 +80,7 @@ function FormulaRow({
 }
 
 export default function FormulasScreen() {
+  const theme = useTheme();
   const { workspaceId } = useSession();
   const queryClient = useQueryClient();
   const now = new Date();
@@ -148,7 +151,7 @@ export default function FormulasScreen() {
             hitSlop={8}
             className="active:opacity-60"
           >
-            <ArrowLeftIcon size={22} />
+            <ArrowLeftIcon size={22} color={theme.text} />
           </Pressable>
           <ThemedText type="subtitle">Calculadora</ThemedText>
         </View>
@@ -156,7 +159,7 @@ export default function FormulasScreen() {
           onPress={() => router.push('/formulas/new')}
           className="h-9 w-9 items-center justify-center rounded-full bg-primary/10 active:opacity-70"
         >
-          <PlusIcon size={18} color="#2563EB" weight="bold" />
+          <PlusIcon size={18} color={BrandColors.primary} weight="bold" />
         </Pressable>
       </View>
 

@@ -12,12 +12,15 @@ import { ThemedText } from '@/components/themed-text';
 import { Card } from '@/components/ui/card';
 import { CategoryBadge } from '@/components/ui/category-badge';
 import { Screen } from '@/components/ui/screen';
+import { BrandColors } from '@/constants/theme';
 import { useSession } from '@/context/session';
+import { useTheme } from '@/hooks/use-theme';
 import { ApiError } from '@/lib/api-client';
 import { type Category, categoriesApi } from '@/lib/categories-api';
 import { resolveCategoryIcon } from '@/lib/category-icons';
 
 export default function CategoriesScreen() {
+  const theme = useTheme();
   const { workspaceId, featureFlags } = useSession();
   const canManageCategories = featureFlags.custom_category_creation === true;
   const queryClient = useQueryClient();
@@ -62,7 +65,7 @@ export default function CategoriesScreen() {
             hitSlop={8}
             className="active:opacity-60"
           >
-            <ArrowLeftIcon size={22} />
+            <ArrowLeftIcon size={22} color={theme.text} />
           </Pressable>
           <ThemedText type="subtitle">Categorias</ThemedText>
         </View>
@@ -71,7 +74,7 @@ export default function CategoriesScreen() {
             onPress={() => router.push('/categories/new')}
             className="h-9 w-9 items-center justify-center rounded-full bg-primary/10 active:opacity-70"
           >
-            <PlusIcon size={18} color="#2563EB" weight="bold" />
+            <PlusIcon size={18} color={BrandColors.primary} weight="bold" />
           </Pressable>
         )}
       </View>
@@ -120,7 +123,7 @@ export default function CategoriesScreen() {
                   onPress={() => router.push(`/categories/${category.id}`)}
                   className="h-8 w-8 items-center justify-center rounded-full bg-primary/10 active:opacity-70"
                 >
-                  <PencilIcon size={16} color="#2563EB" />
+                  <PencilIcon size={16} color={BrandColors.primary} />
                 </Pressable>
                 <Pressable
                   onPress={() => confirmDeleteCategory(category)}

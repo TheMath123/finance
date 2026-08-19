@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { useSession } from '@/context/session';
+import { useTheme } from '@/hooks/use-theme';
 import { ApiError } from '@/lib/api-client';
 import { type CreateSplitParticipant, splitApi } from '@/lib/split-api';
 import type { Transaction } from '@/lib/transactions-api';
@@ -35,6 +36,7 @@ export function CreateSplitForm({
   onDone: () => void;
 }) {
   const { workspaceId } = useSession();
+  const theme = useTheme();
   const queryClient = useQueryClient();
   const [equal, setEqual] = useState(true);
   const [rows, setRows] = useState<ParticipantRow[]>([newRow('user')]);
@@ -116,7 +118,7 @@ export function CreateSplitForm({
           className="flex-1"
           variant="outline"
           size="sm"
-          icon={<PlusIcon size={14} />}
+          icon={<PlusIcon size={14} color={theme.text} />}
           onPress={() => setRows((prev) => [...prev, newRow('user')])}
         >
           Usuário
@@ -125,7 +127,7 @@ export function CreateSplitForm({
           className="flex-1"
           variant="outline"
           size="sm"
-          icon={<PlusIcon size={14} />}
+          icon={<PlusIcon size={14} color={theme.text} />}
           onPress={() => setRows((prev) => [...prev, newRow('external')])}
         >
           Externo

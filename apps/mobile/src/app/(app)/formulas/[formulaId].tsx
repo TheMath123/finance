@@ -8,9 +8,11 @@ import { FormulaForm } from '@/components/forms/formula-form';
 import { ThemedText } from '@/components/themed-text';
 import { Screen } from '@/components/ui/screen';
 import { useSession } from '@/context/session';
+import { useTheme } from '@/hooks/use-theme';
 import { formulaApi } from '@/lib/formula-api';
 
 export default function EditFormulaScreen() {
+  const theme = useTheme();
   const { formulaId } = useLocalSearchParams<{ formulaId: string }>();
   const { workspaceId } = useSession();
 
@@ -35,7 +37,7 @@ export default function EditFormulaScreen() {
           hitSlop={8}
           className="active:opacity-60"
         >
-          <ArrowLeftIcon size={22} />
+          <ArrowLeftIcon size={22} color={theme.text} />
         </Pressable>
         <ThemedText type="subtitle">Editar fórmula</ThemedText>
       </View>

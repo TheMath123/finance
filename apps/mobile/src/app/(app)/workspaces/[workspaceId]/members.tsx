@@ -24,7 +24,9 @@ import {
 } from '@/components/ui/dialog';
 import { Screen } from '@/components/ui/screen';
 import { Select } from '@/components/ui/select';
+import { BrandColors } from '@/constants/theme';
 import { useSession } from '@/context/session';
+import { useTheme } from '@/hooks/use-theme';
 import { ApiError } from '@/lib/api-client';
 import { type WorkspaceMemberView, workspaceApi } from '@/lib/workspace-api';
 
@@ -43,6 +45,7 @@ const ROLE_OPTIONS = [
 ];
 
 export default function WorkspaceMembersScreen() {
+  const theme = useTheme();
   const { workspaceId } = useLocalSearchParams<{ workspaceId: string }>();
   const { user } = useSession();
   const queryClient = useQueryClient();
@@ -169,7 +172,7 @@ export default function WorkspaceMembersScreen() {
           hitSlop={8}
           className="active:opacity-60"
         >
-          <ArrowLeftIcon size={22} />
+          <ArrowLeftIcon size={22} color={theme.text} />
         </Pressable>
         <ThemedText type="subtitle">Membros</ThemedText>
       </View>
@@ -219,7 +222,7 @@ export default function WorkspaceMembersScreen() {
       {canManage && (
         <Button
           variant="outline"
-          icon={<DownloadSimpleIcon size={18} color="#2563EB" />}
+          icon={<DownloadSimpleIcon size={18} color={BrandColors.primary} />}
           loading={exporting}
           onPress={exportData}
         >

@@ -6,8 +6,10 @@ import { DeleteAccountForm } from '@/components/forms/delete-account-form';
 import { ThemedText } from '@/components/themed-text';
 import { Card } from '@/components/ui/card';
 import { Screen } from '@/components/ui/screen';
+import { useTheme } from '@/hooks/use-theme';
 
 export default function DeleteAccountScreen() {
+  const theme = useTheme();
   return (
     <Screen className="gap-6 pb-28">
       <View className="flex-row items-center gap-3">
@@ -16,7 +18,7 @@ export default function DeleteAccountScreen() {
           hitSlop={8}
           className="active:opacity-60"
         >
-          <ArrowLeftIcon size={22} />
+          <ArrowLeftIcon size={22} color={theme.text} />
         </Pressable>
         <ThemedText type="subtitle">Excluir conta</ThemedText>
       </View>

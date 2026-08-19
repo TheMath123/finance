@@ -10,6 +10,7 @@ import { Card } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Screen } from '@/components/ui/screen';
 import { Select, type SelectOption } from '@/components/ui/select';
+import { useTheme } from '@/hooks/use-theme';
 import { ApiError } from '@/lib/api-client';
 import { formatCents } from '@/lib/money';
 import { type PendingTransfer, transferApi } from '@/lib/transfer-api';
@@ -109,6 +110,7 @@ function PendingTransferCard({
 }
 
 export default function PendingTransfersScreen() {
+  const theme = useTheme();
   const { data: pending, isLoading } = useQuery({
     queryKey: ['transfers-pending'],
     queryFn: transferApi.listPending,
@@ -131,7 +133,7 @@ export default function PendingTransfersScreen() {
           hitSlop={8}
           className="active:opacity-60"
         >
-          <ArrowLeftIcon size={22} />
+          <ArrowLeftIcon size={22} color={theme.text} />
         </Pressable>
         <ThemedText type="subtitle">Transferências pendentes</ThemedText>
       </View>

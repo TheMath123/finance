@@ -7,12 +7,15 @@ import { ActivityIndicator, Pressable, View } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { Card } from '@/components/ui/card';
 import { Screen } from '@/components/ui/screen';
+import { BrandColors } from '@/constants/theme';
 import { useSession } from '@/context/session';
+import { useTheme } from '@/hooks/use-theme';
 import { cardsApi } from '@/lib/cards-api';
 import { cn } from '@/lib/cn';
 import { formatCents } from '@/lib/money';
 
 export default function CardsScreen() {
+  const theme = useTheme();
   const { workspaceId } = useSession();
 
   const { data: cards, isLoading } = useQuery({
@@ -32,7 +35,7 @@ export default function CardsScreen() {
             hitSlop={8}
             className="active:opacity-60"
           >
-            <ArrowLeftIcon size={22} />
+            <ArrowLeftIcon size={22} color={theme.text} />
           </Pressable>
           <ThemedText type="subtitle">Cartões</ThemedText>
         </View>
@@ -40,7 +43,7 @@ export default function CardsScreen() {
           onPress={() => router.push('/cards/new')}
           className="h-9 w-9 items-center justify-center rounded-full bg-primary/10 active:opacity-70"
         >
-          <PlusIcon size={18} color="#2563EB" weight="bold" />
+          <PlusIcon size={18} color={BrandColors.primary} weight="bold" />
         </Pressable>
       </View>
 
@@ -60,7 +63,7 @@ export default function CardsScreen() {
             >
               <View className="flex-row items-center gap-3">
                 <View className="h-9 w-9 items-center justify-center rounded-full bg-primary/10">
-                  <CreditCardIcon size={18} color="#2563EB" />
+                  <CreditCardIcon size={18} color={BrandColors.primary} />
                 </View>
                 <View>
                   <View className="flex-row items-center gap-2">

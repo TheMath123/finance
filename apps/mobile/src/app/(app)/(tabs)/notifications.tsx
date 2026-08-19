@@ -19,6 +19,8 @@ import { ThemedText } from '@/components/themed-text';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Screen } from '@/components/ui/screen';
+import { BrandColors } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 import { type NotificationView, notificationApi } from '@/lib/notification-api';
 import { notificationTargetRoute } from '@/lib/push-notifications';
 
@@ -47,6 +49,7 @@ function timeAgo(iso: string): string {
 }
 
 export default function NotificationsScreen() {
+  const theme = useTheme();
   const [showArchived, setShowArchived] = useState(false);
   const queryClient = useQueryClient();
 
@@ -88,7 +91,7 @@ export default function NotificationsScreen() {
           hitSlop={8}
           className="active:opacity-60"
         >
-          <GearIcon size={22} />
+          <GearIcon size={22} color={theme.text} />
         </Pressable>
       </View>
 
@@ -125,7 +128,7 @@ export default function NotificationsScreen() {
                   onPress={() => openNotification(notification)}
                 >
                   <View className="h-9 w-9 items-center justify-center rounded-full bg-primary/10">
-                    <Icon size={18} color="#2563EB" />
+                    <Icon size={18} color={BrandColors.primary} />
                   </View>
                   <View className="flex-1 gap-0.5">
                     <View className="flex-row items-center gap-2">

@@ -2,6 +2,7 @@ import { GoogleLogoIcon } from 'phosphor-react-native';
 import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
+import { useTheme } from '@/hooks/use-theme';
 import { ApiError } from '@/lib/api-client';
 import { signInWithGoogle } from '@/lib/hooks/use-google-auth';
 
@@ -26,6 +27,7 @@ export function GoogleAuthButton({
   onIdToken: (idToken: string) => Promise<void>;
   onError?: (message: string) => void;
 }) {
+  const theme = useTheme();
   const [loading, setLoading] = useState(false);
 
   const handlePress = async () => {
@@ -50,7 +52,7 @@ export function GoogleAuthButton({
       size={size}
       className={className}
       loading={loading}
-      icon={<GoogleLogoIcon size={18} weight="bold" />}
+      icon={<GoogleLogoIcon size={18} weight="bold" color={theme.text} />}
       onPress={handlePress}
     >
       {label}

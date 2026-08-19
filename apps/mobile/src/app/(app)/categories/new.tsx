@@ -7,8 +7,10 @@ import { CategoryForm } from '@/components/forms/category-form';
 import { ThemedText } from '@/components/themed-text';
 import { Screen } from '@/components/ui/screen';
 import { useSession } from '@/context/session';
+import { useTheme } from '@/hooks/use-theme';
 
 export default function NewCategoryScreen() {
+  const theme = useTheme();
   const { featureFlags } = useSession();
 
   // Protege contra navegação direta/deep link com a flag desligada.
@@ -24,7 +26,7 @@ export default function NewCategoryScreen() {
           hitSlop={8}
           className="active:opacity-60"
         >
-          <ArrowLeftIcon size={22} />
+          <ArrowLeftIcon size={22} color={theme.text} />
         </Pressable>
         <ThemedText type="subtitle">Nova categoria</ThemedText>
       </View>

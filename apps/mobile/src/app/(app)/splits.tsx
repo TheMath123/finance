@@ -8,6 +8,7 @@ import { ThemedText } from '@/components/themed-text';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Screen } from '@/components/ui/screen';
+import { useTheme } from '@/hooks/use-theme';
 import { ApiError } from '@/lib/api-client';
 import { formatCents } from '@/lib/money';
 import {
@@ -105,6 +106,7 @@ function OwedToMeCard({ share }: { share: OwedToMeShare }) {
 }
 
 export default function SplitsScreen() {
+  const theme = useTheme();
   const [tab, setTab] = useState<'owed-by-me' | 'owed-to-me'>('owed-by-me');
 
   const { data: owedByMe, isLoading: loadingOwedByMe } = useQuery({
@@ -124,7 +126,7 @@ export default function SplitsScreen() {
           hitSlop={8}
           className="active:opacity-60"
         >
-          <ArrowLeftIcon size={22} />
+          <ArrowLeftIcon size={22} color={theme.text} />
         </Pressable>
         <ThemedText type="subtitle">Splits pendentes</ThemedText>
       </View>
