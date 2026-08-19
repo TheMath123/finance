@@ -42,9 +42,17 @@ export default function NotificationAccessScreen() {
   const [enabled, setEnabled] = useState(false);
   const [loaded, setLoaded] = useState(false);
 
+  // Chave própria, DIFERENTE de ['pending-notification-suggestions'] (usada em
+  // notification-suggestions.tsx e agora também em (tabs)/notifications.tsx
+  // pra guardar a LISTA) — as duas dividindo a mesma chave fazia o cache de
+  // uma sobrescrever a outra com formato incompatível (number vs array):
+  // quem montasse por último ficava com `suggestions.length` de um número
+  // (undefined), mostrando "nenhuma sugestão pendente" mesmo com item real
+  // salvo no AsyncStorage.
   const { data: pendingCount } = useQuery({
-    queryKey: ['pending-notification-suggestions'],
+    queryKey: ['pending-notification-suggestions-count'],
     queryFn: async () => (await pendingTransactionStore.list()).length,
+    staleTime: 0,
   });
 
   useFocusEffect(
