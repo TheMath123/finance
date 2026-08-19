@@ -41,7 +41,8 @@ export function useNotificationCapture(enabled: boolean): void {
         });
         presentLocalNotification(
           'Transação detectada',
-          `${parsed.bankLabel} — ${formatCents(parsed.amountCents)}. Toque para revisar.`
+          `${parsed.bankLabel} — ${formatCents(parsed.amountCents)}. Toque para revisar.`,
+          { notificationSuggestion: true }
         );
       });
     }

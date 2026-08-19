@@ -120,13 +120,14 @@ export async function unregisterCurrentPushToken(): Promise<void> {
 /** Alerta local (não vem do backend) — usado pra avisar de uma sugestão de transação detectada via notification-listener enquanto o app está em segundo plano. Silencioso se não suportado aqui. */
 export async function presentLocalNotification(
   title: string,
-  body: string
+  body: string,
+  data?: Record<string, unknown>
 ): Promise<void> {
   const Notifications = loadNotificationsModule();
   if (!Notifications) return;
   try {
     await Notifications.scheduleNotificationAsync({
-      content: { title, body },
+      content: { title, body, data },
       trigger: null,
     });
   } catch {
@@ -185,5 +186,6 @@ export function notificationTargetRoute(
   if (data.recurringId) return '/explore';
   if (data.transferId) return '/transfers';
   if (data.splitId) return '/splits';
+  if (data.notificationSuggestion) return '/notifications';
   return null;
 }
