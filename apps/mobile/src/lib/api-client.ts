@@ -86,6 +86,47 @@ async function rawRequest<T>(
   return data as T;
 }
 
+type RefreshedSession = { accessToken: string; refreshToken: string };
+
+/**
+ * O access token dura só 15min (jose-token-service.ts) e o app costuma disparar
+ * várias chamadas em paralelo (várias telas/abas com `useQuery` habilitado ao
+ * mesmo tempo) — sem isso, CADA requisição que batesse 401 ao mesmo tempo lia o
+ * MESMO refresh token (ainda não rotacionado) e chamava `/auth/refresh`
+ * independentemente. O backend rotaciona o refresh token a cada uso (linha
+ * `deleteRefreshById` em refresh.ts) — a primeira chamada concorrente rotaciona
+ * com sucesso, mas as outras, usando o token já invalidado, voltam
+ * `invalid_token`, e cada uma delas por sua vez fazia `tokenStore.clearTokens()`
+ * — apagando a sessão que a primeira chamada tinha acabado de renovar com
+ * sucesso segundos antes. Era exatamente esse "logoff automático" logo depois
+ * de um login (é quando mais telas disparam requisições em paralelo de uma
+ * vez). Compartilhar a MESMA promise entre chamadas concorrentes garante que
+ * só existe uma renovação de verdade em voo por vez.
+ */
+let refreshPromise: Promise<RefreshedSession | null> | null = null;
+
+async function refreshSession(): Promise<RefreshedSession | null> {
+  if (!refreshPromise) {
+    refreshPromise = (async () => {
+      const refreshToken = await tokenStore.getRefreshToken();
+      if (!refreshToken) return null;
+      const session = await rawRequest<RefreshedSession>('/auth/refresh', {
+        method: 'POST',
+        body: { refreshToken },
+        skipAuth: true,
+      }).catch(() => null);
+      if (session)
+        await tokenStore.setTokens(session.accessToken, session.refreshToken);
+      return session;
+    })();
+  }
+  try {
+    return await refreshPromise;
+  } finally {
+    refreshPromise = null;
+  }
+}
+
 /** Faz uma requisição autenticada; em 401, tenta renovar a sessão uma única vez antes de desistir. */
 export async function apiRequest<T>(
   path: string,
@@ -101,24 +142,12 @@ export async function apiRequest<T>(
     )
       throw error;
 
-    const refreshToken = await tokenStore.getRefreshToken();
-    if (!refreshToken) throw error;
-
-    const session = await rawRequest<{
-      accessToken: string;
-      refreshToken: string;
-    }>('/auth/refresh', {
-      method: 'POST',
-      body: { refreshToken },
-      skipAuth: true,
-    }).catch(() => null);
-
+    const session = await refreshSession();
     if (!session) {
       await tokenStore.clearTokens();
       throw error;
     }
 
-    await tokenStore.setTokens(session.accessToken, session.refreshToken);
     return rawRequest<T>(path, options);
   }
 }
@@ -176,24 +205,12 @@ export async function apiRequestText(
     )
       throw error;
 
-    const refreshToken = await tokenStore.getRefreshToken();
-    if (!refreshToken) throw error;
-
-    const session = await rawRequest<{
-      accessToken: string;
-      refreshToken: string;
-    }>('/auth/refresh', {
-      method: 'POST',
-      body: { refreshToken },
-      skipAuth: true,
-    }).catch(() => null);
-
+    const session = await refreshSession();
     if (!session) {
       await tokenStore.clearTokens();
       throw error;
     }
 
-    await tokenStore.setTokens(session.accessToken, session.refreshToken);
     return rawTextRequest(path, options);
   }
 }
@@ -278,24 +295,12 @@ export async function apiRequestUpload<T>(
   } catch (error) {
     if (!(error instanceof ApiError) || error.status !== 401) throw error;
 
-    const refreshToken = await tokenStore.getRefreshToken();
-    if (!refreshToken) throw error;
-
-    const session = await rawRequest<{
-      accessToken: string;
-      refreshToken: string;
-    }>('/auth/refresh', {
-      method: 'POST',
-      body: { refreshToken },
-      skipAuth: true,
-    }).catch(() => null);
-
+    const session = await refreshSession();
     if (!session) {
       await tokenStore.clearTokens();
       throw error;
     }
 
-    await tokenStore.setTokens(session.accessToken, session.refreshToken);
     return rawUploadRequest<T>(path, file, parameters);
   }
 }
