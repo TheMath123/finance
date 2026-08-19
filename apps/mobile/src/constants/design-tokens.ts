@@ -16,10 +16,14 @@
  *
  * `vars()` é um `style` de verdade (não uma classe) — reage a re-render do
  * React normalmente, com a MESMA confiabilidade que já validamos em
- * ThemedText/ThemedView/StatusBar. Aplicado uma vez no topo da árvore
- * (app/_layout.tsx), toda classe `bg-card`/`text-foreground`/`border-input`/
- * etc. já espalhada pelo app continua funcionando exatamente como escrita —
- * só passa a resolver o valor certo de verdade.
+ * ThemedText/ThemedView/StatusBar. Aplicado num <View> (react-native puro) no
+ * topo da árvore (app/_layout.tsx) — precisa ser especificamente um
+ * componente que passa pelo swap do react-native-css-interop (View/Text/...;
+ * ver node_modules/react-native-css-interop/src/runtime/components.ts), ou o
+ * `style` com `vars()` é um no-op silencioso — toda classe
+ * `bg-card`/`text-foreground`/`border-input`/etc. já espalhada pelo app
+ * continua funcionando exatamente como escrita — só passa a resolver o
+ * valor certo de verdade.
  */
 export const lightVars = {
   background: '100 100% 99%',
