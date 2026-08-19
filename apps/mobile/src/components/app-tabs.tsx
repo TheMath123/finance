@@ -1,4 +1,3 @@
-import { BlurView } from 'expo-blur';
 import type { Href } from 'expo-router';
 import {
   TabList,
@@ -16,9 +15,8 @@ import {
   SquaresFourIcon,
 } from 'phosphor-react-native';
 import type { ComponentType } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 
-import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTheme } from '@/hooks/use-theme';
 import { cn } from '@/lib/cn';
 
@@ -80,9 +78,6 @@ function TabButton({
 }
 
 function CustomTabList(props: TabListProps) {
-  const scheme = useColorScheme();
-  const dark = scheme === 'dark';
-
   return (
     <View
       {...props}
@@ -99,19 +94,18 @@ function CustomTabList(props: TabListProps) {
         padding: 16,
       }}
     >
-      <View className="overflow-hidden rounded-lg" style={{ height: 58 }}>
-        {/*
-          expo-blur só faz blur de verdade no iOS — no Android (mesmo com blurMethod setado,
-          conforme o próprio README do pacote) o suporte é experimental/instável e pode nem estar
-          presente no binário do Expo Go instalado, então cai num View translúcido simples.
-          Deixando sem blurMethod (default 'none') pra não fingir um efeito que não é garantido: o
-          tint mais forte abaixo (bg-primary/20) é a aproximação honesta pro Android.
-        */}
-        <BlurView
-          intensity={30}
-          tint={dark ? 'dark' : 'light'}
-          style={StyleSheet.absoluteFill}
-        />
+      {/*
+        Mantém o mesmo visual (tint bg-primary/20), mas com uma camada opaca (bg-card) por
+        baixo — antes só existia o tint translúcido + BlurView, e no Android o expo-blur não
+        faz blur de verdade (suporte experimental/instável, ausente no binário do Expo Go),
+        então virava um View semi-transparente puro deixando o conteúdo da tela vazar através
+        da barra. Com o bg-card opaco por trás, o tint continua com a mesma cor/aparência de
+        antes, só que sem nada vazando.
+      */}
+      <View
+        className="overflow-hidden rounded-lg bg-card"
+        style={{ height: 58 }}
+      >
         <View
           className="flex-row items-center gap-4 bg-primary/20 p-2"
           style={{ height: 58 }}
