@@ -38,5 +38,14 @@ class NotificationListenerModule : Module() {
       }
       context.startActivity(intent)
     }
+
+    // Notificações que chegaram com o app fechado/em segundo plano (sem
+    // bridge JS viva pro sendEvent alcançar) ficam acumuladas nativamente —
+    // ver AppNotificationListenerService.bufferNotification. Chamado pelo JS
+    // toda vez que o app volta pro primeiro plano, pra não perder nada.
+    Function("drainBufferedNotifications") {
+      val context = appContext.reactContext ?: return@Function emptyList<Map<String, Any?>>()
+      AppNotificationListenerService.drainBuffer(context)
+    }
   }
 }

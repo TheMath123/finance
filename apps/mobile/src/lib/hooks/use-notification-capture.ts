@@ -5,6 +5,7 @@ import { AppState } from 'react-native';
 import { parseBankNotification } from '@/lib/bank-notification-parser';
 import { formatCents } from '@/lib/money';
 import {
+  drainBufferedNotifications,
   isNotificationAccessGranted,
   notificationListenerAvailable,
   subscribeToNotifications,
@@ -12,6 +13,7 @@ import {
 import { pendingTransactionStore } from '@/lib/pending-transaction-store';
 import { presentLocalNotification } from '@/lib/push-notifications';
 import { notificationCaptureStore } from '@/lib/secure-store';
+import type { NotificationPostedEvent } from '../../../modules/notification-listener/src/NotificationListener.types';
 
 /**
  * Liga a captura de notificações bancárias assim que a preferência do
@@ -30,8 +32,21 @@ export function useNotificationCapture(enabled: boolean): void {
 
     let cancelled = false;
 
+    function processEvent(event: NotificationPostedEvent) {
+      const parsed = parseBankNotification(event);
+      if (!parsed) return;
+      pendingTransactionStore.add(parsed).then(() => {
+        queryClient.invalidateQueries({
+          queryKey: ['pending-notification-suggestions'],
+        });
+        presentLocalNotification(
+          'Transação detectada',
+          `${parsed.bankLabel} — ${formatCents(parsed.amountCents)}. Toque para revisar.`
+        );
+      });
+    }
+
     async function evaluate() {
-      if (unsubscribeRef.current) return; // já assinado — nada a fazer
       // Checa a preferência local ANTES de tocar em isNotificationAccessGranted
       // (que força o require() do módulo nativo) — evita o "Cannot find native
       // module" do Expo Go pra quem nunca ligou o toggle (caso comum/default).
@@ -39,19 +54,14 @@ export function useNotificationCapture(enabled: boolean): void {
       if (cancelled || !captureEnabled) return;
       if (!isNotificationAccessGranted()) return;
 
-      unsubscribeRef.current = subscribeToNotifications((event) => {
-        const parsed = parseBankNotification(event);
-        if (!parsed) return;
-        pendingTransactionStore.add(parsed).then(() => {
-          queryClient.invalidateQueries({
-            queryKey: ['pending-notification-suggestions'],
-          });
-          presentLocalNotification(
-            'Transação detectada',
-            `${parsed.bankLabel} — ${formatCents(parsed.amountCents)}. Toque para revisar.`
-          );
-        });
-      });
+      // Roda em toda reavaliação (não só a primeira vez) — é assim que
+      // notificações que chegaram com o app fechado (buffer nativo, ver
+      // AppNotificationListenerService.kt) são recuperadas: cada volta ao
+      // primeiro plano drena o que se acumulou desde a última vez.
+      for (const event of drainBufferedNotifications()) processEvent(event);
+
+      if (unsubscribeRef.current) return; // já assinado ao vivo — nada mais a fazer
+      unsubscribeRef.current = subscribeToNotifications(processEvent);
     }
 
     evaluate();

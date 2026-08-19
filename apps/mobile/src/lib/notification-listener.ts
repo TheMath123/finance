@@ -51,3 +51,14 @@ export function subscribeToNotifications(
   const subscription = mod.addListener('onNotificationPosted', onNotification);
   return () => subscription.remove();
 }
+
+/**
+ * Notificações que chegaram nativamente enquanto o app estava fechado/em
+ * segundo plano (sem bridge JS viva pro evento ao vivo alcançar) — sem isso
+ * eram descartadas silenciosamente, mesmo com a permissão concedida. Lê e
+ * limpa o buffer nativo de uma vez; chamar sempre que o app volta pro
+ * primeiro plano (ver use-notification-capture.ts).
+ */
+export function drainBufferedNotifications(): NotificationPostedEvent[] {
+  return loadNotificationListener()?.drainBufferedNotifications() ?? [];
+}
