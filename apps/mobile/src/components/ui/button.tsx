@@ -1,6 +1,7 @@
 import { cva, type VariantProps } from 'class-variance-authority';
 import type React from 'react';
 import { ActivityIndicator, Pressable, Text } from 'react-native';
+import { useTheme } from '../../hooks/use-theme';
 import { cn } from '../../lib/cn';
 
 const buttonVariants = cva(
@@ -66,6 +67,7 @@ export function Button({
   disabled,
   ...props
 }: ButtonProps) {
+  const theme = useTheme();
   const isDisabled = disabled || loading;
   const light =
     variant === 'default' || variant === 'destructive' || variant === 'success';
@@ -84,7 +86,14 @@ export function Button({
       {...props}
     >
       {loading ? (
-        <ActivityIndicator size="small" color={light ? '#fafafa' : '#18181b'} />
+        // Fundos "light" (default/destructive/success) são o mesmo tom saturado
+        // nos dois temas — branco fixo continua certo. Os demais (outline/ghost/
+        // secondary/link) têm fundo neutro que muda com o tema — sem isso o
+        // spinner ficava preto fixo (#18181b), quase invisível num fundo escuro.
+        <ActivityIndicator
+          size="small"
+          color={light ? '#fafafa' : theme.text}
+        />
       ) : (
         (icon ?? null)
       )}
