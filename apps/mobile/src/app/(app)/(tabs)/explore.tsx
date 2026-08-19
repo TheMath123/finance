@@ -479,6 +479,14 @@ function RecurringManagerDialog({
   );
 }
 
+function startOfMonth(date: Date): Date {
+  return new Date(date.getFullYear(), date.getMonth(), 1);
+}
+
+function endOfMonth(date: Date): Date {
+  return new Date(date.getFullYear(), date.getMonth() + 1, 0);
+}
+
 export default function TransactionsScreen() {
   const { workspaceId, featureFlags } = useSession();
   const queryClient = useQueryClient();
@@ -494,8 +502,15 @@ export default function TransactionsScreen() {
   const [categoryFilter, setCategoryFilter] = useState(ALL_CATEGORIES_VALUE);
   const [accountFilter, setAccountFilter] = useState(ALL_ACCOUNTS_VALUE);
   const [cardFilter, setCardFilter] = useState(ALL_CARDS_VALUE);
-  const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
-  const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
+  // Sem isso, a listagem trazia "os 50 lançamentos mais recentes" de qualquer
+  // época — sem noção de mês. Mês atual como padrão (igual à Home); "Limpar"
+  // no painel de filtros continua removendo esse limite, não só voltando pra ele.
+  const [dateFrom, setDateFrom] = useState<Date | undefined>(() =>
+    startOfMonth(new Date())
+  );
+  const [dateTo, setDateTo] = useState<Date | undefined>(() =>
+    endOfMonth(new Date())
+  );
   const [filtersOpen, setFiltersOpen] = useState(false);
 
   useEffect(() => {
