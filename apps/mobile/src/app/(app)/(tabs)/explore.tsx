@@ -33,6 +33,7 @@ import { CreateTransactionForm } from '@/components/forms/create-transaction-for
 import { EditTransactionForm } from '@/components/forms/edit-transaction-form';
 import { ImportCsvForm } from '@/components/forms/import-csv-form';
 import { ThemedText } from '@/components/themed-text';
+import { Accordion } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { DatePicker } from '@/components/ui/date-picker';
@@ -50,6 +51,7 @@ import { BrandColors } from '@/constants/theme';
 import { useSession } from '@/context/session';
 import { useTheme } from '@/hooks/use-theme';
 import { type Account, accountsApi } from '@/lib/accounts-api';
+import { ApiError } from '@/lib/api-client';
 import { type Card as CardAccount, cardsApi } from '@/lib/cards-api';
 import type { Category } from '@/lib/categories-api';
 import { resolveCategoryIcon } from '@/lib/category-icons';
@@ -241,6 +243,23 @@ function PendingOccurrenceRow({
         queryKey: ['transactions', workspaceId],
       });
       queryClient.invalidateQueries({ queryKey: ['summary', workspaceId] });
+      queryClient.invalidateQueries({
+        queryKey: ['recurring-pending', workspaceId],
+      });
+    },
+    // Sem isso, uma falha (ex.: ocorrência já confirmada por outro
+    // dispositivo/sweep automático) não dava nenhum sinal — o botão só
+    // parava de carregar e a linha continuava exatamente igual, parecendo
+    // que "não confirma".
+    onError: (err) => {
+      if (!(err instanceof ApiError))
+        console.error('[confirm occurrence]', err);
+      Alert.alert(
+        'Erro ao confirmar',
+        err instanceof ApiError
+          ? err.message
+          : 'Não foi possível confirmar essa recorrência.'
+      );
       queryClient.invalidateQueries({
         queryKey: ['recurring-pending', workspaceId],
       });
@@ -782,19 +801,22 @@ export default function TransactionsScreen() {
       )}
 
       {pending && pending.length > 0 && (
-        <View className="w-full gap-2 px-4">
-          <Text className="text-[10px] font-semibold leading-tight text-foreground">
-            Recorrências pendentes deste mês
-          </Text>
+        <View className="w-full px-4">
+          <Accordion
+            title={`Recorrências pendentes deste mês (${pending.length})`}
+          >
+            <View className="w-full -mx-4">
+              {pending.map((occurrence) => (
+                <PendingOccurrenceRow
+                  key={`${occurrence.recurringId}-${occurrence.date}`}
+                  occurrence={occurrence}
+                  workspaceId={workspaceId!}
+                />
+              ))}
+            </View>
+          </Accordion>
         </View>
       )}
-      {pending?.map((occurrence) => (
-        <PendingOccurrenceRow
-          key={`${occurrence.recurringId}-${occurrence.date}`}
-          occurrence={occurrence}
-          workspaceId={workspaceId!}
-        />
-      ))}
 
       {isLoading ? (
         <ActivityIndicator className="mt-8" />
