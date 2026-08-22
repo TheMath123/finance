@@ -8,8 +8,8 @@ import {
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, View } from 'react-native';
 
-import { BalanceOverview } from '@/components/finance/balance-overview';
 import { HeaderChip } from '@/components/finance/header-chip';
+import { HomeStatGrid } from '@/components/finance/home-stat-grid';
 import { PinnedFormulas } from '@/components/finance/pinned-formulas';
 import { Screen } from '@/components/ui/screen';
 import { Text } from '@/components/ui/text';
@@ -300,7 +300,7 @@ export default function HomeScreen() {
       {isLoading ? (
         <ActivityIndicator className="ml-4 self-start" />
       ) : (
-        <BalanceOverview summary={summary} />
+        <HomeStatGrid summary={summary} />
       )}
 
       {monthInvoice.cardCount > 0 ? (
@@ -374,11 +374,19 @@ export default function HomeScreen() {
                     : 'text-muted-foreground'
                 )}
               >
-                Média (3m)
+                Média (3 meses)
               </Text>
             </Pressable>
           </View>
         </View>
+
+        {categoryView === 'estimate' && (
+          <Text className="text-[10px] leading-tight text-muted-foreground">
+            Média dos últimos 3 meses — só o que não é recorrência nem parcela.
+            É a mesma estimativa usada em &quot;Disponível projetado&quot; acima
+            ({formatCents(variableExpense?.total ?? 0)} por mês).
+          </Text>
+        )}
 
         {categoryRows.length > 0 ? (
           <View className="w-full -mx-4">
