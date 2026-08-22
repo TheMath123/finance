@@ -113,10 +113,11 @@ export function CreateTransactionForm({
   const cardId = useWatch({ control, name: 'cardId' });
   const date = useWatch({ control, name: 'date' });
 
-  // Avisa ANTES de tentar salvar se a fatura do cartão/data escolhidos já
-  // está paga (imutável) — sem isso o usuário só descobria depois de tentar
-  // salvar e ler o erro do backend, mais confuso ainda numa transação que ele
-  // sabe que é real (veio de uma notificação detectada).
+  // Avisa quando a fatura do cartão/data escolhidos já está paga — o backend
+  // rola automaticamente pra próxima fatura em aberto nesse caso (igual um
+  // cartão de verdade: uma cobrança que chega depois da fatura fechada/paga
+  // cai na fatura seguinte), então isso não bloqueia o salvamento — é só um
+  // aviso pra não confundir quando o extrato não bater com a data exibida.
   const selectedCard = cards?.find((c) => c.id === cardId);
   const { data: cardInvoices } = useQuery({
     queryKey: ['invoices', cardId],
@@ -131,7 +132,7 @@ export function CreateTransactionForm({
         inv.monthReference === period.month && inv.yearReference === period.year
     );
     if (invoice?.effectiveStatus !== 'paid') return null;
-    return `A fatura de ${selectedCard.name} pra essa data já está paga (imutável) — troque o cartão/data, ou faça um estorno na fatura paga.`;
+    return `A fatura de ${selectedCard.name} pra essa data já está paga — a transação vai cair automaticamente na fatura seguinte em aberto.`;
   })();
 
   const installmentCount = Number(installments ?? '1');
