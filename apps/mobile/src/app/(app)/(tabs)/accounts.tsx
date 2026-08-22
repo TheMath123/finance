@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import {
   ArrowsSplitIcon,
+  BellRingingIcon,
   CaretRightIcon,
   CreditCardIcon,
   EnvelopeSimpleIcon,
@@ -28,6 +29,7 @@ import { cardsApi } from '@/lib/cards-api';
 import { categoriesApi } from '@/lib/categories-api';
 import { cn } from '@/lib/cn';
 import { formatCents } from '@/lib/money';
+import { notificationListenerAvailable } from '@/lib/notification-listener';
 import { splitApi } from '@/lib/split-api';
 import { transferApi } from '@/lib/transfer-api';
 import { workspaceApi } from '@/lib/workspace-api';
@@ -225,6 +227,13 @@ export default function AccountsScreen() {
           label="WhatsApp"
           onPress={() => router.push('/whatsapp-link')}
         />
+        {notificationListenerAvailable && (
+          <NavRow
+            icon={<BellRingingIcon size={18} color={BrandColors.primary} />}
+            label="Detecção automática"
+            onPress={() => router.push('/notification-access')}
+          />
+        )}
         <NavRow
           icon={<UserIcon size={18} color={BrandColors.primary} />}
           label="Perfil"

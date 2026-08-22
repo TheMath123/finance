@@ -4,8 +4,6 @@ import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import {
   ArrowLeftIcon,
-  BellRingingIcon,
-  CaretRightIcon,
   CircleHalfIcon,
   EnvelopeIcon,
   FingerprintIcon,
@@ -21,7 +19,7 @@ import {
 } from 'phosphor-react-native';
 import type { ComponentType } from 'react';
 import { useState } from 'react';
-import { Alert, Image, Platform, Pressable, Switch, View } from 'react-native';
+import { Alert, Image, Pressable, Switch, View } from 'react-native';
 
 import { EditNameForm } from '@/components/forms/edit-name-form';
 import { ThemedText } from '@/components/themed-text';
@@ -316,26 +314,6 @@ export default function ProfileScreen() {
             trackColor={{ false: '#d4d4d8', true: BrandColors.primary }}
           />
         </Card>
-      )}
-
-      {Platform.OS === 'android' && (
-        <Pressable
-          onPress={() => router.push('/notification-access')}
-          className="active:opacity-70"
-        >
-          <Card className="flex-row items-center gap-3">
-            <View className="h-9 w-9 items-center justify-center rounded-full bg-primary/10">
-              <BellRingingIcon size={18} color={BrandColors.primary} />
-            </View>
-            <View className="flex-1">
-              <ThemedText type="smallBold">Detecção automática</ThemedText>
-              <ThemedText type="small" themeColor="textSecondary">
-                Sugerir transações a partir de notificações de banco/cartão.
-              </ThemedText>
-            </View>
-            <CaretRightIcon size={16} color={theme.textSecondary} />
-          </Card>
-        </Pressable>
       )}
 
       {(googleAuthAvailable || user?.googleLinked) && (
