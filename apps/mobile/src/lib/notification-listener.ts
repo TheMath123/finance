@@ -62,3 +62,18 @@ export function subscribeToNotifications(
 export function drainBufferedNotifications(): NotificationPostedEvent[] {
   return loadNotificationListener()?.drainBufferedNotifications() ?? [];
 }
+
+/**
+ * `false` = o Android pode matar o processo do app (e o listener nativo
+ * junto) agressivamente quando ele fica em segundo plano — a causa mais
+ * comum de "só detecta com o app aberto". `true` também quando o módulo não
+ * está disponível (nada a resolver aqui nesse caso).
+ */
+export function isIgnoringBatteryOptimizations(): boolean {
+  return loadNotificationListener()?.isIgnoringBatteryOptimizations() ?? true;
+}
+
+/** Abre o diálogo nativo do Android pra isentar o app da otimização de bateria — único jeito de garantir captura confiável com o app fechado. */
+export function requestIgnoreBatteryOptimizations(): void {
+  loadNotificationListener()?.requestIgnoreBatteryOptimizations();
+}

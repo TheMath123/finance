@@ -16,9 +16,11 @@ import { Screen } from '@/components/ui/screen';
 import { BrandColors } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import {
+  isIgnoringBatteryOptimizations,
   isNotificationAccessGranted,
   notificationListenerAvailable,
   openNotificationAccessSettings,
+  requestIgnoreBatteryOptimizations,
 } from '@/lib/notification-listener';
 import { pendingTransactionStore } from '@/lib/pending-transaction-store';
 import { notificationCaptureStore } from '@/lib/secure-store';
@@ -39,6 +41,7 @@ const SUPPORTED_BANKS = [
 export default function NotificationAccessScreen() {
   const theme = useTheme();
   const [granted, setGranted] = useState(false);
+  const [batteryUnrestricted, setBatteryUnrestricted] = useState(true);
   const [enabled, setEnabled] = useState(false);
   const [loaded, setLoaded] = useState(false);
 
@@ -58,6 +61,7 @@ export default function NotificationAccessScreen() {
   useFocusEffect(
     useCallback(() => {
       setGranted(isNotificationAccessGranted());
+      setBatteryUnrestricted(isIgnoringBatteryOptimizations());
       notificationCaptureStore.getEnabled().then((value) => {
         setEnabled(value);
         setLoaded(true);
@@ -139,6 +143,32 @@ export default function NotificationAccessScreen() {
               </Button>
             )}
           </Card>
+
+          {!batteryUnrestricted && (
+            <Card className="gap-3">
+              <View className="flex-row items-center gap-3">
+                <View className="h-9 w-9 items-center justify-center rounded-full bg-amber-500/15">
+                  <WarningCircleIcon size={18} color="#B45309" />
+                </View>
+                <View className="flex-1">
+                  <ThemedText type="smallBold">
+                    Detecção só funciona com o app aberto
+                  </ThemedText>
+                  <ThemedText type="small" themeColor="textSecondary">
+                    O Android pode fechar o Marcelus sozinho pra economizar
+                    bateria — isso também para a detecção. Isente o app dessa
+                    otimização pra manter funcionando com a tela desligada.
+                  </ThemedText>
+                </View>
+              </View>
+              <Button
+                variant="outline"
+                onPress={requestIgnoreBatteryOptimizations}
+              >
+                Isentar da otimização de bateria
+              </Button>
+            </Card>
+          )}
 
           <Card className="flex-row items-center gap-3">
             <View className="flex-1">

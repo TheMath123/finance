@@ -1,4 +1,14 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <!--
+    Permissão "normal" (concedida automaticamente, sem diálogo) — só habilita
+    o app a MOSTRAR o convite do sistema pra sair da lista de otimização de
+    bateria (Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS); quem
+    decide aceitar ou não continua sendo o usuário, na tela do próprio
+    Android. Sem isso o processo do app (e o NotificationListenerService
+    junto, já que vivem no mesmo processo) é o alvo nº1 de otimizações
+    agressivas de bateria com o app fechado.
+  -->
+  <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
   <application>
     <!--
       Declarado aqui (manifest da lib) em vez de via config plugin: o Android

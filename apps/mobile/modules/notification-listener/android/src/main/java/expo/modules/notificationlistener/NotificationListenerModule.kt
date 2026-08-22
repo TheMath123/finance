@@ -1,6 +1,9 @@
 package expo.modules.notificationlistener
 
+import android.content.Context
 import android.content.Intent
+import android.net.Uri
+import android.os.PowerManager
 import android.provider.Settings
 import androidx.core.app.NotificationManagerCompat
 import expo.modules.kotlin.modules.Module
@@ -46,6 +49,29 @@ class NotificationListenerModule : Module() {
     Function("drainBufferedNotifications") {
       val context = appContext.reactContext ?: return@Function emptyList<Map<String, Any?>>()
       AppNotificationListenerService.drainBuffer(context)
+    }
+
+    // Otimização de bateria do Android é a causa mais comum de "detecção só
+    // funciona com o app aberto": o sistema mata o processo (e junto o
+    // NotificationListenerService, que vive no mesmo processo) quando o app
+    // fica muito tempo em segundo plano sem interação — em fabricantes como
+    // Xiaomi/Samsung/Oppo isso acontece de forma bem agressiva por padrão.
+    // Ficar isento dessa otimização é o único jeito de garantir captura com o
+    // app fechado sem virar um foreground service com notificação fixa (que
+    // gastaria mais recurso, não menos).
+    Function("isIgnoringBatteryOptimizations") {
+      val context = appContext.reactContext ?: return@Function false
+      val powerManager = context.getSystemService(Context.POWER_SERVICE) as PowerManager
+      powerManager.isIgnoringBatteryOptimizations(context.packageName)
+    }
+
+    Function("requestIgnoreBatteryOptimizations") {
+      val context = appContext.reactContext ?: return@Function null
+      val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+        data = Uri.parse("package:${context.packageName}")
+        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+      }
+      context.startActivity(intent)
     }
   }
 }
