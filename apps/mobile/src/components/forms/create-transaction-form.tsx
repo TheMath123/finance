@@ -54,6 +54,16 @@ function todayIso(): string {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 }
 
+/** Mesma regra de competência do backend (invoice-rules.ts) — compra até o dia de fechamento cai na fatura do mês da compra, depois no mês seguinte. Só pra avisar ANTES de tentar salvar; quem garante de verdade é o backend. */
+function competencePeriod(
+  date: string,
+  closingDay: number
+): { month: number; year: number } {
+  const [y, m, d] = date.split('-').map(Number) as [number, number, number];
+  if (d <= closingDay) return { month: m, year: y };
+  return m === 12 ? { month: 1, year: y + 1 } : { month: m + 1, year: y };
+}
+
 export function CreateTransactionForm({
   onDone,
   initialValues,
@@ -100,6 +110,29 @@ export function CreateTransactionForm({
   const isCredit = method === 'credit';
   const amount = useWatch({ control, name: 'amount' });
   const installments = useWatch({ control, name: 'installments' });
+  const cardId = useWatch({ control, name: 'cardId' });
+  const date = useWatch({ control, name: 'date' });
+
+  // Avisa ANTES de tentar salvar se a fatura do cartão/data escolhidos já
+  // está paga (imutável) — sem isso o usuário só descobria depois de tentar
+  // salvar e ler o erro do backend, mais confuso ainda numa transação que ele
+  // sabe que é real (veio de uma notificação detectada).
+  const selectedCard = cards?.find((c) => c.id === cardId);
+  const { data: cardInvoices } = useQuery({
+    queryKey: ['invoices', cardId],
+    queryFn: () => cardsApi.listInvoices(workspaceId!, cardId!),
+    enabled: Boolean(workspaceId && isCredit && cardId),
+  });
+  const paidInvoiceWarning = (() => {
+    if (!isCredit || !selectedCard || !cardInvoices || !date) return null;
+    const period = competencePeriod(date, selectedCard.closingDay);
+    const invoice = cardInvoices.find(
+      (inv) =>
+        inv.monthReference === period.month && inv.yearReference === period.year
+    );
+    if (invoice?.effectiveStatus !== 'paid') return null;
+    return `A fatura de ${selectedCard.name} pra essa data já está paga (imutável) — troque o cartão/data, ou faça um estorno na fatura paga.`;
+  })();
 
   const installmentCount = Number(installments ?? '1');
   const installmentPreview =
@@ -210,6 +243,11 @@ export function CreateTransactionForm({
           placeholder="Selecione a conta"
           options={accountOptions}
         />
+      )}
+      {paidInvoiceWarning && (
+        <ThemedText type="small" style={{ color: '#B45309' }}>
+          {paidInvoiceWarning}
+        </ThemedText>
       )}
       {mutation.isError && (
         <ThemedText type="small" style={{ color: '#DC2626' }}>
