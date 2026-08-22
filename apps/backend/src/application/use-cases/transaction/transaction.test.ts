@@ -407,6 +407,52 @@ describe('crédito, fatura e pagamento', () => {
     expect(leaked).toHaveLength(0);
   });
 
+  test('compra cuja competência cai numa fatura já paga: rola pra fatura seguinte em aberto', async () => {
+    // Fatura de setembro/2027 já paga antecipadamente (isolada — nenhum outro teste toca esse período).
+    const preTx = await createTransaction(deps, actor, {
+      description: 'Assinatura pré-paga (rollover)',
+      amount: 1_000,
+      type: 'expense',
+      method: 'credit',
+      date: '2027-09-05', // dia ≤ 10 → competência setembro/2027
+      categoryId,
+      cardId,
+    });
+    if (!preTx.ok) throw new Error('setup falhou');
+    const septemberInvoiceId = preTx.value[0]!.invoiceId!;
+    const paidSeptember = await payInvoice(deps, actor, septemberInvoiceId, {
+      accountId,
+      date: '2027-09-06',
+      method: 'pix',
+    });
+    expect(paidSeptember.ok).toBe(true);
+
+    // Uma cobrança que "chegaria" em setembro (mesma competência) não pode
+    // ficar travada numa fatura já paga — igual um cartão de verdade, ela
+    // simplesmente cai na fatura seguinte em aberto.
+    const result = await createTransaction(deps, actor, {
+      description: 'Compra detectada depois da fatura fechada e paga',
+      amount: 4_500,
+      type: 'expense',
+      method: 'credit',
+      date: '2027-09-08', // mesma competência de setembro/2027, já paga
+      categoryId,
+      cardId,
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    expect(result.value[0]!.invoiceId).not.toBe(septemberInvoiceId);
+    const invoices = await listInvoices(deps, actor, cardId);
+    if (!invoices.ok) throw new Error('listagem falhou');
+    const october = invoices.value.invoices.find(
+      (i) => i.monthReference === 10 && i.yearReference === 2027
+    );
+    if (!october) throw new Error('fatura 10/2027 não encontrada');
+    expect(result.value[0]!.invoiceId).toBe(october.id);
+    expect(october.effectiveStatus).not.toBe('paid');
+  });
+
   test('duas chamadas paralelas de payInvoice: só uma vence a corrida, nunca dois pagamentos', async () => {
     // Fatura isolada (dezembro/2026) — nenhum outro teste deste arquivo toca esse período.
     const created = await createTransaction(deps, actor, {

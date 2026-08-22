@@ -119,7 +119,22 @@ export async function createTransaction(
 
     const count = input.installments ?? 1;
     const amounts = splitInstallments(input.amount, count);
-    const firstPeriod = competencePeriod(input.date, card.closingDay);
+    let firstPeriod = competencePeriod(input.date, card.closingDay);
+    // Fatura paga é imutável (regra do spec) — se a competência calculada pela
+    // data da compra cair numa fatura já paga, rola pra frente até achar uma
+    // em aberto. É o que acontece de verdade com um cartão: uma cobrança que
+    // chega depois da fatura já fechada/paga entra na fatura seguinte, nunca
+    // fica travada tentando "voltar no tempo" pra uma fatura já quitada.
+    // Guard de 24 meses só por segurança (nunca deveria ter 24 faturas
+    // seguidas pagas com antecedência).
+    for (let guard = 0; guard < 24; guard++) {
+      const existing = await deps.repos.invoice.findByCardAndPeriod(
+        card.id,
+        firstPeriod
+      );
+      if (!existing || existing.status !== 'paid') break;
+      firstPeriod = addMonths(firstPeriod, 1);
+    }
     const groupId = count > 1 ? crypto.randomUUID() : null;
 
     try {
